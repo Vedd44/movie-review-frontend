@@ -20,7 +20,7 @@ function SearchResults() {
     }
 
     axios
-      .get(`http://localhost:5001/search?query=${searchQuery}`)
+      .get(`${process.env.REACT_APP_API_URL}/search?query=${searchQuery}`)
       .then((response) => {
         console.log("✅ API Response:", response.data); // Debugging
         if (response.data.results) {

@@ -15,10 +15,10 @@ function MovieDetails() {
     const fetchMovieDetails = async () => {
       try {
         setLoading(true);
-        const movieResponse = await axios.get(`http://localhost:5001/movies/${id}`);
+        const movieResponse = await axios.get(`${process.env.REACT_APP_API_URL}/movies/${id}`);
         setMovie(movieResponse.data);
 
-        const aiResponse = await axios.get(`http://localhost:5001/movies/${id}/ai-summary`);
+        const aiResponse = await axios.get(`${process.env.REACT_APP_API_URL}/movies/${id}/ai-summary`);
         setAiSummary(aiResponse.data);
 
         setError(null);

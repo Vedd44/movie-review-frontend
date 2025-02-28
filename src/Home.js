@@ -19,7 +19,7 @@ function Home() {
   useEffect(() => {
     setError(null);
     axios
-      .get(`http://localhost:5001/movies?type=${movieType}&page=${currentPage}`)
+      .get(`${process.env.REACT_APP_API_URL}movies?type=${movieType}&page=${currentPage}`)
       .then((response) => {
         setMovies(response.data.results);
         setTotalPages(response.data.total_pages);
@@ -39,7 +39,7 @@ function Home() {
     setModalOpen(true);
 
     axios
-      .get(`http://localhost:5001/movies/${movie.id}/ai-summary`)
+      .get(`${process.env.REACT_APP_API_URL}/movies/${movie.id}/ai-summary`)
       .then((response) => {
         setAiSummary(response.data);
       })
