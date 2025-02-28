@@ -1,224 +1,20 @@
-/* 🌟 General Styles */
+/* ✅ Global Styles */
 body {
-  font-family: 'Inter', sans-serif; /* ✅ Clean, modern sans-serif font */
-  background-color: #f8f9fa;
-  color: #333;
+  font-family: 'Open Sans', sans-serif;
+  background-color: #1e1e1e;
+  color: #f0f0f0;
   margin: 0;
   padding: 0;
 }
 
-/* 🌟 Main Container */
 .container {
-  width: 80%;
-  margin: auto;
+  width: 90%;
+  max-width: 1200px;
+  margin: 20px auto;
   text-align: center;
-  padding: 20px;
 }
 
-/* 🌟 Movie Grid Layout */
-.movie-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* ✅ Responsive Grid */
-  gap: 15px;
-  justify-content: center;
-  padding: 20px;
-}
-
-/* 🌟 Movie Card */
-.movie-card {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  text-align: center;
-  transition: transform 0.2s ease-in-out;
-}
-
-.movie-card:hover {
-  transform: translateY(-5px);
-}
-
-/* 🌟 Movie Poster */
-.movie-poster {
-  width: 100%;
-  height: auto;
-  border-radius: 10px;
-}
-
-/* 🎬 Buttons */
-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  margin-top: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-/* 🔄 Loading Message */
-.loading-message {
-  font-size: 18px;
-  color: blue;
-  margin-top: 15px;
-}
-
-/* ❌ Error Message */
-.error-message {
-  color: red;
-  font-weight: bold;
-}
-
-/* 🌙 Dark Mode */
-.dark-mode {
-  background-color: #121212;
-  color: white;
-}
-
-.dark-mode .movie-card {
-  background: #1e1e1e;
-  color: white;
-}
-
-.dark-mode button {
-  background-color: #007bff;
-}
-
-.dark-mode button:hover {
-  background-color: #0056b3;
-}
-
-.dark-mode .error-message {
-  color: #ff6961;
-}
-
-/* 🌙 Dark Mode Toggle */
-.dark-mode-toggle {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: #333;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.dark-mode-toggle:hover {
-  background: #555;
-}
-
-/* 🖼️ Modal Styling */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  width: 80%; /* ✅ Increased width */
-  max-width: 700px; /* ✅ Prevents full width */
-  max-height: 80vh; /* ✅ Keeps it contained */
-  overflow-y: auto; /* ✅ Enables scrolling */
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  text-align: left;
-  font-family: 'Inter', sans-serif;
-  line-height: 1.6;
-}
-
-/* 🌙 Dark Mode for Modal */
-.dark-mode .modal-content {
-  background: #1e1e1e;
-  color: white;
-}
-
-/* ❌ Close Button */
-.close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  font-size: 24px;
-  cursor: pointer;
-  color: #555;
-  background: white;
-  border: none;
-  border-radius: 50%;
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease-in-out;
-}
-
-.close-button:hover {
-  background: red;
-  color: white;
-}
-
-/* 🌙 Dark Mode Close Button */
-.dark-mode .close-button {
-  background: #333;
-  color: white;
-}
-
-.dark-mode .close-button:hover {
-  background: red;
-}
-
-/* 📜 AI Summary Formatting */
-.modal-content h2 {
-  font-size: 22px;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.modal-content p {
-  font-size: 16px;
-  margin-bottom: 10px;
-}
-
-/* 🔢 Numbered List Styling */
-.modal-content strong {
-  font-weight: 600;
-  color: #007bff;
-}
-
-.modal-content ul {
-  margin: 10px 0;
-  padding-left: 20px;
-}
-
-.modal-content ul li {
-  font-size: 16px;
-  margin-bottom: 5px;
-  line-height: 1.5;
-}
-
-/* 🔍 Search Bar */
+/* ✅ Search Bar */
 .search-bar {
   display: flex;
   justify-content: center;
@@ -226,52 +22,276 @@ button:disabled {
 }
 
 .search-bar input {
-  width: 250px;
   padding: 10px;
-  border: 2px solid #ddd;
+  width: 300px;
+  border: 1px solid #444;
   border-radius: 5px;
   font-size: 16px;
-  outline: none;
 }
 
 .search-bar button {
   padding: 10px 15px;
-  border: none;
-  background: #007bff;
+  background-color: #4caf50;
   color: white;
+  border: none;
   cursor: pointer;
-  border-radius: 5px;
   margin-left: 10px;
-  font-size: 16px;
+  border-radius: 5px;
 }
 
 .search-bar button:hover {
-  background: #0056b3;
+  background-color: #45a049;
 }
 
-/* ⬅ Back Button */
-.back-button {
-  background: #555;
-  color: white;
-  padding: 10px 15px;
+/* ✅ Movie List */
+.movie-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.movie-card {
+  background: #292929;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s;
+}
+
+.movie-card:hover {
+  transform: scale(1.05);
+}
+
+.movie-poster {
+  width: 100%;
   border-radius: 5px;
-  border: none;
-  cursor: pointer;
+}
+
+.no-poster {
+  background: #444;
+  color: white;
+  padding: 40px 10px;
+  font-size: 14px;
+  border-radius: 5px;
+}
+
+.movie-card h3 {
   font-size: 16px;
-  margin-bottom: 15px;
+  margin: 10px 0;
 }
 
-.back-button:hover {
-  background: #777;
+.movie-card button {
+  background-color: #4caf50;
+  border: none;
+  padding: 8px 12px;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
 }
 
-/* 🎬 Recommended Movies List */
-.movie-link {
-  color: #007bff;
+.movie-card button:hover {
+  background-color: #45a049;
+}
+
+/* ✅ Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  padding: 10px 15px;
+  margin: 0 10px;
+  border: none;
+  background: #444;
+  cursor: pointer;
+  color: white;
+  font-size: 16px;
+  border-radius: 5px;
+}
+
+.tabs .active {
+  background: #4caf50;
+}
+
+/* ✅ Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.pagination button {
+  padding: 10px 15px;
+  margin: 0 5px;
+  border: none;
+  background: #4caf50;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.pagination button:disabled {
+  background: #444;
+  cursor: not-allowed;
+}
+
+/* ✅ Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: #222;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 800px;
+  text-align: left;
+  color: white;
+  position: relative;
+  height: 75%;
+  overflow-y: auto;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* ✅ AI Summary */
+.modal-content h3 {
+  margin-top: 20px;
+  font-size: 18px;
+}
+
+.modal-content p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ✅ Review Read More/Less */
+.review-text {
+  position: relative;
+  overflow: hidden;
+  max-height: 150px;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.review-text.expanded {
+  max-height: 1000px;
+}
+
+.review-toggle {
+  background: none;
+  border: none;
+  color: #4caf50;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+/* ✅ Recommended Movies */
+.recommended-movies {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.movie-recommendation {
+  display: flex;
+  align-items: center;
+  background: #333;
+  padding: 5px 10px;
+  border-radius: 5px;
   text-decoration: none;
+  color: white;
+  font-size: 14px;
+}
+
+.movie-thumbnail {
+  margin-right: 8px;
   font-weight: bold;
 }
 
-.movie-link:hover {
-  text-decoration: underline;
+.movie-recommendation:hover {
+  background: #4caf50;
+}
+
+/* ✅ Error Messages */
+.error-message {
+  color: #ff4c4c;
+  background: #2a2a2a;
+  padding: 10px;
+  border-radius: 5px;
+}
+.movie-details-container {
+  width: 90%;
+  max-width: 800px;
+  margin: 20px auto;
+  background: #222;
+  padding: 20px;
+  border-radius: 10px;
+  color: white;
+}
+
+.movie-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.movie-poster-large {
+  width: 150px;
+  border-radius: 8px;
+}
+
+.movie-text {
+  flex: 1;
+}
+
+.review-section {
+  background: #292929;
+  padding: 10px;
+  margin-top: 15px;
+  border-radius: 8px;
+}
+
+.recommended-movies-section {
+  margin-top: 20px;
+}
+
+.recommended-movies {
+  display: flex;
+  gap: 10px;
+}
+
+.movie-recommendation {
+  background: #333;
+  padding: 8px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: white;
+}
+
+.movie-thumbnail {
+  font-weight: bold;
 }
