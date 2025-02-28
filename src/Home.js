@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
+// ✅ Define API Base URL from .env
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+console.log("Backend API URL:", API_BASE_URL); // ✅ Debugging Step
+
 function Home() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
@@ -18,9 +23,12 @@ function Home() {
   // ✅ Fetch movies based on type & page
   useEffect(() => {
     setError(null);
+    console.log("Fetching movies from:", `${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`); // ✅ Debugging
+
     axios
-      .get(`${process.env.REACT_APP_API_URL}/movies?type=${movieType}&page=${currentPage}`)
+      .get(`${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`)
       .then((response) => {
+        console.log("Fetched movies:", response.data); // ✅ Debugging
         setMovies(response.data.results);
         setTotalPages(response.data.total_pages);
       })
@@ -38,9 +46,12 @@ function Home() {
     setLoading(true);
     setModalOpen(true);
 
+    console.log(`Fetching AI summary for movie ID: ${movie.id}`); // ✅ Debugging
+
     axios
-      .get(`${process.env.REACT_APP_API_URL}/movies/${movie.id}/ai-summary`)
+      .get(`${API_BASE_URL}/movies/${movie.id}/ai-summary`)
       .then((response) => {
+        console.log("AI Summary Response:", response.data); // ✅ Debugging
         setAiSummary(response.data);
       })
       .catch((error) => {
@@ -107,14 +118,14 @@ function Home() {
                 <div className="no-poster">No Image Available</div>
               )}
               <h3>
-                {movie.title} <br /><h5>Release Date: {formattedDate}</h5>
+                {movie.title} <br />
+                <h5>Release Date: {formattedDate}</h5>
               </h3>
               <button onClick={() => fetchAiSummary(movie)}>Get AI Summary</button>
             </div>
           );
         })}
       </div>
-
 
       {/* ✅ Pagination */}
       <div className="pagination">
@@ -140,50 +151,13 @@ function Home() {
               <p className="loading-message">🔄 Fetching AI summary...</p>
             ) : aiSummary ? (
               <>
-                {/* ✅ Director, Genre, and Mood Tags */}
                 <p><strong>🎬 Directed by:</strong> {aiSummary.director}</p>
                 <p><strong>📌 Genre:</strong> {aiSummary.genre}</p>
                 <p><strong>🎭 Mood Tags:</strong> {aiSummary.mood_tags.join(", ")}</p>
 
-                {/* ✅ Top Review */}
-                <p><strong>👍 Top Review by {aiSummary.top_review_author}:</strong></p>
-                <p>{aiSummary.top_review.length > 200 && !showFullReview.top 
-                    ? aiSummary.top_review.slice(0, 200) + "..." 
-                    : aiSummary.top_review}
-                </p>
-                {aiSummary.top_review.length > 200 && (
-                  <button onClick={() => setShowFullReview({ ...showFullReview, top: !showFullReview.top })}>
-                    {showFullReview.top ? "See Less" : "See More"}
-                  </button>
-                )}
-                <p>
-                  <a href={aiSummary.top_review_url} target="_blank" rel="noopener noreferrer">
-                    Read full review
-                  </a>
-                </p>
-
-                {/* ✅ Bottom Review */}
-                <p><strong>👎 Bottom Review by {aiSummary.bottom_review_author}:</strong></p>
-                <p>{aiSummary.bottom_review.length > 200 && !showFullReview.bottom 
-                    ? aiSummary.bottom_review.slice(0, 200) + "..." 
-                    : aiSummary.bottom_review}
-                </p>
-                {aiSummary.bottom_review.length > 200 && (
-                  <button onClick={() => setShowFullReview({ ...showFullReview, bottom: !showFullReview.bottom })}>
-                    {showFullReview.bottom ? "See Less" : "See More"}
-                  </button>
-                )}
-                <p>
-                  <a href={aiSummary.bottom_review_url} target="_blank" rel="noopener noreferrer">
-                    Read full review
-                  </a>
-                </p>
-
-                {/* ✅ AI Summary (ReelBot's Thoughts) */}
                 <h3>🤖 ReelBot's Thoughts:</h3>
                 <p>{aiSummary.summary}</p>
 
-                {/* ✅ Recommended Movies Section */}
                 {aiSummary.recommendations && (
                   <div>
                     <h3>🎞️ Recommended if you liked:</h3>
