@@ -301,3 +301,23 @@ body {
 .movie-thumbnail {
   font-weight: bold;
 }
+
+.home_btn{
+    color: #fff;
+    background-color: #4caf50;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 18px;
+    padding-left: 15px;
+    padding-right: 15px;
+    max-width: 55px;
+}
+.home_btn:hover{
+  background-color: #fff;
+  color: #4caf50;
+}
+.home_btn:visited{
+  color: #fff;
+}

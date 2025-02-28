@@ -39,8 +39,8 @@ function MovieDetails() {
  
   return (
     <div className="movie-details-container">
-      <div class="home_btn">
-    	<a href="/"> HOME </a>
+      <div>
+    	<a href="/" class="home_btn"> HOME </a>
 	  </div>
       <h1>{movie.title} ({movie.release_date})</h1>
 

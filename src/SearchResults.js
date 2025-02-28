@@ -48,9 +48,8 @@ function SearchResults() {
 
       {error && <p className="error-message">{error}</p>}
 
+            <a href="/" class="home_btn"> HOME </a>
       <div className="movie-list">
-            <a href="/"> HOME </a>
-    </div>
         {Array.isArray(movies) && movies.length > 0 ? (
           movies.map((movie) => (
             <div key={movie.id} className="movie-card">
@@ -72,6 +71,7 @@ function SearchResults() {
         ) : (
           !loading && <p>No results found.</p>
         )}
+      </div>
       </div>
   );
 }
