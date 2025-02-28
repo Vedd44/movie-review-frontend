@@ -5,7 +5,7 @@ import "./App.css";
 // ✅ Define API Base URL from .env
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-console.log("Backend API URL:", API_BASE_URL); // ✅ Debugging Step
+console.log("Backend API URL:", API_BASE_URL); // ✅ Debugging
 
 function Home() {
   const [query, setQuery] = useState("");
@@ -15,28 +15,34 @@ function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [movieType, setMovieType] = useState("latest");
+  const [movieType, setMovieType] = useState("latest"); // Default to "Latest"
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showFullReview, setShowFullReview] = useState({ top: false, bottom: false });
 
-  // ✅ Fetch movies based on type & page
-  useEffect(() => {
-    setError(null);
-    console.log("Fetching movies from:", `${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`); // ✅ Debugging
+// ✅ Fetch movies based on type & page
+useEffect(() => {
+  setError(null);
+  console.log("Fetching movies from:", `${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`); // ✅ Debugging
 
-    axios
-      .get(`${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`)
-      .then((response) => {
-        console.log("Fetched movies:", response.data); // ✅ Debugging
-        setMovies(response.data.results);
-        setTotalPages(response.data.total_pages);
-      })
-      .catch((error) => {
-        console.error(`Error fetching ${movieType} movies:`, error);
-        setError(`Failed to fetch ${movieType} movies.`);
-      });
-  }, [movieType, currentPage]);
+  axios
+    .get(`${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`)
+    .then((response) => {
+      console.log("Fetched movies:", response.data.results); // ✅ Debugging
+
+      // ✅ Sort movies by release date (newest first)
+      const sortedMovies = response.data.results.sort((a, b) => 
+        new Date(b.release_date) - new Date(a.release_date)
+      );
+
+      setMovies(sortedMovies);
+      setTotalPages(response.data.total_pages);
+    })
+    .catch((error) => {
+      console.error(`Error fetching ${movieType} movies:`, error);
+      setError(`Failed to fetch ${movieType} movies.`);
+    });
+}, [movieType, currentPage]);
 
   // ✅ Fetch AI summary
   const fetchAiSummary = (movie) => {
@@ -90,9 +96,14 @@ function Home() {
         <button className={movieType === "popular" ? "active" : ""} onClick={() => setMovieType("popular")}>
           Popular
         </button>
+        <button className={movieType === "upcoming" ? "active" : ""} onClick={() => setMovieType("upcoming")}>
+          Coming Soon
+        </button>
       </div>
 
-      <h2>{movieType === "latest" ? "Latest Movies" : "Popular Movies"}</h2>
+      <h2>
+        {movieType === "latest" ? "Latest Movies" : movieType === "popular" ? "Popular Movies" : "Coming Soon"}
+      </h2>
 
       {error && <p className="error-message">{error}</p>}
 
