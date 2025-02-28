@@ -19,7 +19,7 @@ function Home() {
   useEffect(() => {
     setError(null);
     axios
-      .get(`${process.env.REACT_APP_API_URL}movies?type=${movieType}&page=${currentPage}`)
+      .get(`${process.env.REACT_APP_API_URL}/movies?type=${movieType}&page=${currentPage}`)
       .then((response) => {
         setMovies(response.data.results);
         setTotalPages(response.data.total_pages);
