@@ -259,6 +259,12 @@ body {
   gap: 20px;
 }
 
+@media only screen and (max-width: 500px) {
+  .movie-info{
+    display: block;
+  }
+}
+
 .movie-poster-large {
   width: 150px;
   border-radius: 8px;
