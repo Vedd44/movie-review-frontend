@@ -48,19 +48,27 @@ const MOOD_FILTERS = [
 const REELBOT_CAPABILITIES = [
   {
     title: "Quick Take",
-    description: "Get the tone, viewer fit, and a spoiler-light read in seconds.",
+    description: "Start with a spoiler-light read on tone, audience fit, and whether the movie feels like your kind of watch.",
+  },
+  {
+    title: "Watch Fit",
+    description: "Get a fast viewer-oriented read on attention level, emotional weight, pace, and the best viewing setup.",
+  },
+  {
+    title: "Viewer Q&A",
+    description: "Ask things like Is it scary?, Is it slow?, Best mood for this?, or Good date-night watch?",
   },
   {
     title: "Why Watch It",
-    description: "Get a practical case for whether the runtime is worth it.",
+    description: "Get a sharper case for whether the runtime and creative payoff are worth your time.",
   },
   {
-    title: "Spoiler Synopsis",
-    description: "Read the full story if you want the insight without the watch.",
+    title: "Spoiler Tools",
+    description: "Unlock the full spoiler synopsis, ending breakdown, themes, and what people tend to debate.",
   },
   {
     title: "Similar Picks",
-    description: "Use ReelBot to find stronger next-watch matches with reasoning.",
+    description: "Go beyond TMDB adjacency with ReelBot-curated next watches and one-line reasoning.",
   },
 ];
 
@@ -93,11 +101,7 @@ function Home() {
     axios
       .get(`${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`)
       .then((response) => {
-        const sortedMovies = response.data.results.sort(
-          (a, b) => new Date(b.release_date) - new Date(a.release_date)
-        );
-
-        setMovies(sortedMovies);
+        setMovies(response.data.results || []);
         setTotalPages(response.data.total_pages);
       })
       .catch((requestError) => {
@@ -154,7 +158,7 @@ function Home() {
   return (
     <div className="browse-page">
       <div className="container browse-shell">
-        <section className="browse-hero browse-hero--compact">
+        <section className="browse-hero browse-hero--compact browse-hero--with-search">
           <div className="browse-copy">
             <h1 className="browse-title browse-title--brand">ReelBot</h1>
             <div className="browse-powered">Powered by TMDB & OpenAI</div>
@@ -166,7 +170,7 @@ function Home() {
               <button type="button" className="reelbot-inline-button" onClick={() => setShowCapabilities(true)}>
                 What ReelBot can do
               </button>
-              <span className="browse-hero-note">Quick takes, spoiler synopses, and smarter next-watch picks.</span>
+              <span className="browse-hero-note">Quick takes, viewer Q&A, spoiler tools, and smarter next-watch picks.</span>
             </div>
           </div>
 

@@ -1,24 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
 
 function SearchResults() {
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
   const [movies, setMovies] = useState([]);
-  const [query, setQuery] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlParams.get("q");
-    setQuery(searchQuery || "");
-
     if (!searchQuery) {
       setError("No search query provided.");
+      setMovies([]);
       setLoading(false);
       return;
     }
+
+    setLoading(true);
+    setError(null);
 
     axios
       .get(`${process.env.REACT_APP_API_URL}/search?query=${encodeURIComponent(searchQuery)}`)
@@ -34,15 +35,15 @@ function SearchResults() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [searchQuery]);
 
   return (
     <div className="browse-page">
       <div className="container browse-shell">
-        <section className="browse-hero browse-hero--compact">
+        <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
             <div className="browse-kicker">ReelBot Search</div>
-            <h1 className="browse-title">Results for “{query || "your search"}”</h1>
+            <h1 className="browse-title">Results for “{searchQuery || "your search"}”</h1>
             <p className="browse-subtitle">
               TMDB-powered results up front. Open any movie when you want ReelBot to step in.
             </p>
