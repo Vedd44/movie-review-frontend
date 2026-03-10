@@ -3976,3 +3976,126 @@ body {
     align-items: flex-start;
   }
 }
+
+
+@media only screen and (max-width: 640px) {
+  .site-header.has-search .site-header-inner {
+    gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .site-header.has-search .site-header-actions {
+    gap: 8px;
+  }
+
+  .site-header.has-search .site-nav {
+    gap: 6px;
+    padding-bottom: 0;
+  }
+
+  .site-header.has-search .site-nav-link {
+    padding: 9px 12px;
+    font-size: 0.95rem;
+  }
+
+  .site-header.has-search .site-header-search input,
+  .site-header.has-search .site-header-search button {
+    min-height: 42px;
+  }
+
+  .browse-page {
+    padding-top: 14px;
+    padding-bottom: 72px;
+  }
+
+  .browse-hero {
+    gap: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .browse-title {
+    font-size: clamp(1.65rem, 7vw, 2.15rem);
+  }
+
+  .browse-subtitle,
+  .browse-subtitle--hero {
+    margin-top: 10px;
+    font-size: 0.94rem;
+    line-height: 1.58;
+  }
+
+  .browse-kicker,
+  .browse-powered {
+    margin-bottom: 8px;
+  }
+
+  .browse-hero--compact {
+    gap: 14px;
+  }
+
+  .browse-tabs {
+    margin-bottom: 14px;
+  }
+
+  .browse-page .movie-list {
+    gap: 12px;
+  }
+
+  .movie-poster {
+    border-radius: 12px;
+  }
+
+  .results-count,
+  .results-count--context {
+    font-size: 0.82rem;
+  }
+}
+
+@media only screen and (max-width: 560px) {
+  .floating-filter-link {
+    display: none;
+  }
+
+  .browse-page {
+    padding-bottom: 40px;
+  }
+
+  .section-header .mood-rail-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media only screen and (max-width: 420px) {
+  .site-header.has-search .site-brand-copy {
+    gap: 2px;
+  }
+
+  .site-header.has-search .site-brand-title {
+    font-size: 1rem;
+  }
+
+  .site-header.has-search .site-brand-subtitle {
+    font-size: 0.76rem;
+  }
+
+  .browse-hero {
+    padding: 14px;
+  }
+
+  .browse-title {
+    font-size: 1.55rem;
+  }
+
+  .browse-subtitle,
+  .browse-subtitle--hero {
+    font-size: 0.9rem;
+  }
+
+  .site-header.has-search .site-nav-link {
+    padding: 8px 10px;
+    font-size: 0.92rem;
+  }
+}

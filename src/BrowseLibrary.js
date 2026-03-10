@@ -395,7 +395,12 @@ function BrowseLibrary() {
               {selectedGenreLabel} • {selectedMoodConfig.label} • {PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length"}
             </p>
           </div>
-          <div className="results-count">{filteredMovies.length} titles</div>
+          <div className="mood-rail-actions">
+            <a href="#library-filters" className="browse-library-link browse-library-link--header">
+              Back to filters
+            </a>
+            <div className="results-count">{filteredMovies.length} titles</div>
+          </div>
         </div>
 
         {loading && (
