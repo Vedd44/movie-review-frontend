@@ -199,7 +199,7 @@ function Home() {
         <section className="browse-hero browse-hero--compact browse-hero--with-search">
           <div className="browse-copy">
             <h1 className="browse-title browse-title--brand">ReelBot</h1>
-            <div className="browse-powered">Powered by TMDB &amp; OpenAI</div>
+            <div className="browse-powered">Built with TMDB &amp; OpenAI</div>
             <p className="browse-subtitle browse-subtitle--hero">
               Find something worth watching faster. Search when you know the title, browse the current feed when you want range, or let ReelBot narrow the night down when you&apos;re stuck.
             </p>

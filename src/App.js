@@ -6,7 +6,7 @@ import SearchResults from "./SearchResults";
 import BrowseLibrary from "./BrowseLibrary";
 import "./App.css";
 
-const SITE_VERSION = "v0.1.0";
+const SITE_VERSION = "v0.2.0";
 
 function HeaderSearch() {
   const location = useLocation();
@@ -100,12 +100,12 @@ function SiteFooter() {
       <div className="site-footer-inner">
         <div className="site-footer-brand">
           <div className="site-footer-title">ReelBot</div>
-          <p className="site-footer-copy">The AI movie companion for faster picks, clearer reads, and better next-watch decisions.</p>
+          <p className="site-footer-copy">Built with TMDB &amp; OpenAI for faster picks, clearer reads, and better next-watch decisions.</p>
         </div>
 
         <div className="site-footer-meta">
           <p className="site-footer-credit">
-            Passion project powered by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a> by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a>.
+            A passion project by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a>, built with <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a>.
           </p>
           <div className="site-footer-links" aria-label="Footer">
             <NavLink to="/?view=latest#movie-grid">Latest</NavLink>

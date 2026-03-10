@@ -2584,7 +2584,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 14px;
+  gap: 12px;
 }
 
 .site-footer a {
@@ -2601,6 +2601,7 @@ body {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
+  order: 1;
 }
 
 .site-footer-links a {
@@ -2616,11 +2617,20 @@ body {
   color: var(--text-primary);
 }
 
+.site-footer-credit {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: rgba(159, 178, 202, 0.74);
+  order: 3;
+}
+
 .site-footer-version {
   font-size: 0.76rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(159, 178, 202, 0.62);
+  order: 2;
 }
 
 .detail-watchfit {
