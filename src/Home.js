@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
 import {
@@ -18,6 +18,7 @@ import {
 } from "./discovery";
 
 function Home() {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialView = searchParams.get("view");
@@ -40,11 +41,36 @@ function Home() {
   const [pickError, setPickError] = useState(null);
   const [pickResult, setPickResult] = useState(null);
 
+  const scrollToSection = (id) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  };
+
   useEffect(() => {
     const view = searchParams.get("view");
     const normalizedView = VALID_VIEWS.has(view) ? view : "latest";
     setMovieType(normalizedView);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!location.hash) {
+      return;
+    }
+
+    const targetId = location.hash.replace("#", "");
+    if (!targetId) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 90);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.hash, loading, movieType]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -92,6 +118,7 @@ function Home() {
   const handleViewChange = (view) => {
     setCurrentPage(1);
     setSearchParams({ view });
+    scrollToSection("movie-grid");
   };
 
   const selectedMoodConfig = useMemo(
@@ -114,25 +141,25 @@ function Home() {
 
   const sectionSubtitle = useMemo(() => {
     if (selectedMood !== "all") {
-      return `A ${selectedMoodConfig.label.toLowerCase()} pass on the current ${getViewLabel(movieType).toLowerCase()} feed. Need more than this page? Open Browse Library.`;
+      return `A ${selectedMoodConfig.label.toLowerCase()} pass on the current ${getViewLabel(movieType).toLowerCase()} feed. Need more range than this page? Open Browse Library.`;
     }
 
     if (movieType === "popular") {
-      return "A broader popularity-led sample. Use Browse Library when you want genre, runtime, and mood control across a bigger catalog.";
+      return "A broader popularity-led sample. Open Browse Library when you want genre, runtime, and mood control across a deeper catalog.";
     }
 
     if (movieType === "upcoming") {
-      return "A current preview of upcoming releases. Use Browse Library when you want to filter the coming-soon pool with more intent.";
+      return "A current preview of what is on deck. Open Browse Library when you want to filter the coming-soon slate with more intent.";
     }
 
-    return "A current sample of what is landing now. Browse the feed for range, or go wider in Browse Library when you want deeper filtering.";
+    return "A current sample of what is landing now. Browse the feed for range, or open Browse Library when you want deeper filtering.";
   }, [movieType, selectedMood, selectedMoodConfig.label]);
 
   const feedCountLabel = selectedMood === "all" ? `${filteredMovies.length} titles` : `${filteredMovies.length} matches on this page`;
-  const pickScopeLabel = pickSource === "library" ? "Whole library" : `This ${getViewLabel(movieType).toLowerCase()} feed`;
   const heroPreviewLabel =
     movieType === "upcoming" ? "Coming soon now" : movieType === "popular" ? "Popular right now" : "In this feed now";
   const browseLibraryPath = `/browse?view=${movieType}${selectedMood !== "all" ? `&mood=${selectedMood}` : ""}`;
+  const browseLibraryResultsPath = `${browseLibraryPath}#library-results`;
 
   const handlePickSubmit = async () => {
     try {
@@ -172,9 +199,9 @@ function Home() {
         <section className="browse-hero browse-hero--compact browse-hero--with-search">
           <div className="browse-copy">
             <h1 className="browse-title browse-title--brand">ReelBot</h1>
-            <div className="browse-powered">Powered by TMDB & OpenAI</div>
+            <div className="browse-powered">Powered by TMDB &amp; OpenAI</div>
             <p className="browse-subtitle browse-subtitle--hero">
-              Find something worth watching faster. Search if you know the title, browse the current feed when you want range, or let ReelBot narrow the night down when you are stuck.
+              Find something worth watching faster. Search when you know the title, browse the current feed when you want range, or let ReelBot narrow the night down when you&apos;re stuck.
             </p>
 
             <div className="browse-hero-actions">
@@ -250,7 +277,6 @@ function Home() {
                 <h2 className="section-title">Pick for Me</h2>
                 <p className="section-subtitle">Choose the vibe, duration, and setup. ReelBot gives you one best-fit pick plus backups.</p>
               </div>
-              <div className="results-count">{pickScopeLabel}</div>
             </div>
 
             <div className="pick-control-group">
@@ -271,7 +297,7 @@ function Home() {
                   <span className="mood-rail-chip-label">Whole library</span>
                 </button>
               </div>
-              <p className="pick-control-note">{pickSource === "library" ? "Searches beyond this page." : "Stays anchored to the current feed."}</p>
+              <p className="pick-control-note">{pickSource === "library" ? "Searches beyond this feed." : "Stays anchored to the current feed."}</p>
             </div>
 
             <div className="pick-control-group">
@@ -319,7 +345,7 @@ function Home() {
                 <input
                   type="text"
                   className="pick-prompt-input"
-                  placeholder="Custom vibe: tense, funny, smart, date-night..."
+                  placeholder="Try: smart sci-fi, a non-serious Jason Statham action movie, tense but rewarding..."
                   value={pickPrompt}
                   onChange={(event) => setPickPrompt(event.target.value)}
                 />
@@ -332,20 +358,20 @@ function Home() {
               </button>
             </div>
 
-            <div className={`pick-result-stage${pickResult?.primary ? " is-live" : ""}`}>
+            <div className={`pick-result-stage${pickResult?.primary ? " is-live" : ""}${!pickResult?.primary && !pickLoading ? " pick-result-stage--empty" : ""}`}>
               {pickError ? <p className="error-message">{pickError}</p> : null}
 
               {!pickError && pickLoading ? (
                 <div className="reelbot-loading-state">
                   <span className="reelbot-loading-dot" aria-hidden="true"></span>
-                  <p className="detail-secondary-text reelbot-placeholder-copy">ReelBot is filtering the catalog and tightening tonight’s best fit...</p>
+                  <p className="detail-secondary-text reelbot-placeholder-copy">ReelBot is filtering the catalog and tightening tonight&apos;s best fit...</p>
                 </div>
               ) : null}
 
               {!pickError && !pickLoading && pickResult?.primary ? (
                 <>
                   <div className="pick-result-copy">
-                    <div className="detail-description-label">Tonight’s best fit</div>
+                    <div className="detail-description-label">Tonight&apos;s best fit</div>
                     <p className="detail-secondary-text">{pickResult.summary}</p>
                   </div>
 
@@ -406,8 +432,8 @@ function Home() {
                   {pickResult?.summary ? <p className="detail-secondary-text pick-soft-fallback">{pickResult.summary}</p> : null}
                   <p className="pick-empty-note detail-secondary-text">
                     {pickSource === "library"
-                      ? "Use Whole library when you want ReelBot to go wider."
-                      : `Use This feed when you want ReelBot to stay inside the current ${getViewLabel(movieType).toLowerCase()} selection.`}
+                      ? "Use Whole library when you want ReelBot to cast a wider net."
+                      : `Stay on This feed when you want the pick to reflect the current ${getViewLabel(movieType).toLowerCase()} selection.`}
                   </p>
                 </div>
               ) : null}
@@ -418,20 +444,20 @@ function Home() {
             <div className="detail-description-label">Browse Library</div>
             <h2 className="browse-library-title">Need more than this feed?</h2>
             <p className="detail-secondary-text browse-library-copy">
-              The homepage stays intentionally tight. Browse Library goes wider with genre, runtime, and mood filters across latest, popular, and coming soon.
+              Browse Library opens up genre, runtime, and mood filters across latest, popular, and coming soon.
             </p>
 
             <div className="browse-library-links">
-              <Link to="/browse?view=popular&genre=878" className="browse-library-link">
+              <Link to="/browse?view=popular&genre=878#library-results" className="browse-library-link">
                 Popular Sci-Fi
               </Link>
-              <Link to="/browse?view=popular&runtime=under_two_hours" className="browse-library-link">
+              <Link to="/browse?view=popular&runtime=under_two_hours#library-results" className="browse-library-link">
                 Under 100 Minutes
               </Link>
-              <Link to="/browse?view=popular&genre=10749&runtime=under_two_hours" className="browse-library-link">
+              <Link to="/browse?view=popular&genre=10749&runtime=under_two_hours#library-results" className="browse-library-link">
                 Date-Night Range
               </Link>
-              <Link to="/browse?view=latest&mood=dark" className="browse-library-link">
+              <Link to="/browse?view=latest&mood=dark#library-results" className="browse-library-link">
                 Latest Dark Picks
               </Link>
             </div>
@@ -440,39 +466,39 @@ function Home() {
               Open full library
             </Link>
           </aside>
-        <section className="mood-rail">
-          <div className="section-header section-header--compact section-header--stacked-mobile">
-            <div>
-              <h2 className="section-title">Filter this feed by mood</h2>
-              <p className="section-subtitle">Use this to refine the poster grid below. It can still inform Pick for Me, but its main job here is shaping the feed.</p>
-            </div>
-            <div className="mood-rail-actions">
-              <span className="results-count results-count--context">Poster grid filter</span>
-              <Link to={browseLibraryPath} className="browse-library-link browse-library-link--header">
-                Open Browse Library
-              </Link>
-            </div>
-          </div>
 
-          <div className="mood-chip-row" role="group" aria-label="Filter movies by mood">
-            {MOOD_FILTERS.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                className={`mood-rail-chip${selectedMood === filter.id ? " is-active" : ""}`}
-                onClick={() => setSelectedMood(filter.id)}
-                title={filter.hint}
-                aria-pressed={selectedMood === filter.id}
-              >
-                <span className="mood-rail-chip-label">{filter.label}</span>
-              </button>
-            ))}
-          </div>
+          <section className="mood-rail">
+            <div className="section-header section-header--compact section-header--stacked-mobile">
+              <div>
+                <h2 className="section-title">Filter this feed by mood</h2>
+                <p className="section-subtitle">Use this to refine the poster grid below. It can still inform Pick for Me, but its main job here is shaping the feed.</p>
+              </div>
+              <div className="mood-rail-actions">
+                <span className="results-count results-count--context">Poster grid filter</span>
+                <Link to={browseLibraryResultsPath} className="browse-library-link browse-library-link--header">
+                  Open Browse Library
+                </Link>
+              </div>
+            </div>
+
+            <div className="mood-chip-row" role="group" aria-label="Filter movies by mood">
+              {MOOD_FILTERS.map((filter) => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  className={`mood-rail-chip${selectedMood === filter.id ? " is-active" : ""}`}
+                  onClick={() => setSelectedMood(filter.id)}
+                  title={filter.hint}
+                  aria-pressed={selectedMood === filter.id}
+                >
+                  <span className="mood-rail-chip-label">{filter.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
         </section>
 
-        </section>
-
-        <div className="section-header section-header--stacked-mobile">
+        <div id="movie-grid" className="section-header section-header--stacked-mobile">
           <div>
             <h2 className="section-title">{heading}</h2>
             <p className="section-subtitle">{sectionSubtitle}</p>
@@ -529,7 +555,7 @@ function Home() {
                 <div className="empty-state feed-empty-state">
                   <span className="status-glyph" aria-hidden="true"></span>
                   <span>Nothing in this page sample fits that lane right now.</span>
-                  <Link to={browseLibraryPath} className="card-link">
+                  <Link to={browseLibraryResultsPath} className="card-link">
                     Open Browse Library
                   </Link>
                 </div>
@@ -541,10 +567,10 @@ function Home() {
                 <div>
                   <div className="detail-description-label">Want more {selectedMoodConfig.label.toLowerCase()} picks?</div>
                   <p className="detail-secondary-text">
-                    This homepage mood pass only filters the current {getViewLabel(movieType).toLowerCase()} feed. Browse Library goes wider when you need more depth.
+                    This homepage mood pass only filters the current {getViewLabel(movieType).toLowerCase()} feed. Browse Library goes wider when you want more depth.
                   </p>
                 </div>
-                <Link to={browseLibraryPath} className="card-link">
+                <Link to={browseLibraryResultsPath} className="card-link">
                   Open Browse Library
                 </Link>
               </div>

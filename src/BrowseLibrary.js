@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
 import {
   API_BASE_URL,
+  DISCOVERY_PROMPTS,
   MOOD_FILTERS,
   PICK_RUNTIME_OPTIONS,
   VALID_VIEWS,
@@ -14,7 +15,10 @@ import {
   getViewLabel,
 } from "./discovery";
 
+const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
+
 function BrowseLibrary() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const normalizedView = VALID_VIEWS.has(searchParams.get("view")) ? searchParams.get("view") : "popular";
   const normalizedMood = MOOD_FILTERS.some((filter) => filter.id === searchParams.get("mood")) ? searchParams.get("mood") : "all";
@@ -30,6 +34,10 @@ function BrowseLibrary() {
   const [genreLoading, setGenreLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
+  const [pickPrompt, setPickPrompt] = useState("");
+  const [pickLoading, setPickLoading] = useState(false);
+  const [pickError, setPickError] = useState(null);
+  const [pickResult, setPickResult] = useState(null);
 
   useEffect(() => {
     setGenreLoading(true);
@@ -46,6 +54,23 @@ function BrowseLibrary() {
         setGenreLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (!location.hash) {
+      return;
+    }
+
+    const targetId = location.hash.replace("#", "");
+    if (!targetId) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 90);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.hash, loading, normalizedGenre, normalizedMood, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
     setLoading(true);
@@ -69,6 +94,11 @@ function BrowseLibrary() {
         setLoading(false);
       });
   }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
+
+  useEffect(() => {
+    setPickError(null);
+    setPickResult(null);
+  }, [normalizedGenre, normalizedMood, normalizedRuntime, normalizedView, pickPrompt]);
 
   const selectedMoodConfig = useMemo(
     () => MOOD_FILTERS.find((filter) => filter.id === normalizedMood) || MOOD_FILTERS[0],
@@ -107,6 +137,39 @@ function BrowseLibrary() {
     setSearchParams(nextParams);
   };
 
+  const handleLibraryPick = async () => {
+    try {
+      setPickLoading(true);
+      setPickError(null);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/reelbot/pick`,
+        {
+          view: normalizedView,
+          mood: normalizedMood,
+          runtime: normalizedRuntime,
+          source: "library",
+          company: "any",
+          prompt: pickPrompt,
+          genre: normalizedGenre,
+          trigger: "user_click",
+        },
+        {
+          headers: {
+            "X-ReelBot-Trigger": "user_click",
+          },
+        }
+      );
+
+      setPickResult(response.data);
+    } catch (requestError) {
+      console.error("Error fetching browse ReelBot pick:", requestError);
+      setPickError("ReelBot could not pull a library pick right now.");
+    } finally {
+      setPickLoading(false);
+    }
+  };
+
   return (
     <div className="browse-page">
       <div className="container browse-shell">
@@ -120,7 +183,7 @@ function BrowseLibrary() {
           </div>
         </section>
 
-        <section className="library-filters-card">
+        <section id="library-filters" className="library-filters-card">
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
               <h2 className="section-title">Browse your way</h2>
@@ -192,7 +255,7 @@ function BrowseLibrary() {
             <div className="filter-group-row">
               <div className="filter-group-head">
                 <div className="detail-description-label">Mood filter</div>
-                <p className="detail-secondary-text">Keep this as the last layer so the library does not become over-filtered too early.</p>
+                <p className="detail-secondary-text">Use mood as the last layer so the library does not get over-filtered too early.</p>
               </div>
               <div className="mood-chip-row">
                 {MOOD_FILTERS.map((filter) => (
@@ -210,7 +273,122 @@ function BrowseLibrary() {
           </div>
         </section>
 
-        <div className="section-header">
+        <section className="pick-for-me-card library-reelbot-card">
+          <div className="section-header section-header--stacked-mobile section-header--compact">
+            <div>
+              <h2 className="section-title">Ask ReelBot</h2>
+              <p className="section-subtitle">Use your current library filters, then add a vibe, actor, or tie-breaker cue when you want ReelBot to narrow it down.</p>
+            </div>
+            <a href="#library-filters" className="browse-library-link browse-library-link--header">
+              Back to filters
+            </a>
+          </div>
+
+          <div className="pick-control-group pick-control-group--prompt">
+            <div className="detail-description-label">Vibe or cue</div>
+            <div className="pick-prompt-suggestions">
+              {LIBRARY_PROMPTS.map((prompt) => (
+                <button key={prompt} type="button" className="mood-rail-chip pick-prompt-chip" onClick={() => setPickPrompt(prompt)}>
+                  {prompt}
+                </button>
+              ))}
+            </div>
+            <div className="pick-prompt-shell">
+              <input
+                type="text"
+                className="pick-prompt-input"
+                placeholder="Try: smart sci-fi under 2 hours, a strong date-night pick, Jason Statham action..."
+                value={pickPrompt}
+                onChange={(event) => setPickPrompt(event.target.value)}
+              />
+            </div>
+            <p className="pick-control-note">ReelBot keeps the current view, genre, runtime, and mood filters in play before it interprets your prompt.</p>
+          </div>
+
+          <div className="pick-for-me-actions">
+            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handleLibraryPick} disabled={pickLoading}>
+              {pickLoading ? "ReelBot is picking..." : "Ask ReelBot"}
+            </button>
+          </div>
+
+          <div className={`pick-result-stage${pickResult?.primary ? " is-live" : ""}${!pickResult?.primary && !pickLoading ? " pick-result-stage--empty" : ""}`}>
+            {pickError ? <p className="error-message">{pickError}</p> : null}
+
+            {!pickError && pickLoading ? (
+              <div className="reelbot-loading-state">
+                <span className="reelbot-loading-dot" aria-hidden="true"></span>
+                <p className="detail-secondary-text reelbot-placeholder-copy">ReelBot is reading the library filters and tightening the best-fit lane...</p>
+              </div>
+            ) : null}
+
+            {!pickError && !pickLoading && pickResult?.primary ? (
+              <>
+                <div className="pick-result-copy">
+                  <div className="detail-description-label">Library match</div>
+                  <p className="detail-secondary-text">{pickResult.summary}</p>
+                </div>
+
+                <article className="pick-primary-card">
+                  <Link to={getMoviePath(pickResult.primary)} className="pick-primary-poster-link">
+                    {pickResult.primary.poster_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w300${pickResult.primary.poster_path}`}
+                        alt={pickResult.primary.title}
+                        className="pick-primary-poster"
+                      />
+                    ) : (
+                      <div className="pick-primary-poster pick-primary-poster--placeholder">No Image</div>
+                    )}
+                  </Link>
+                  <div className="pick-primary-content">
+                    <div className="movie-card-meta">
+                      <span className="movie-card-chip">{getReleaseYear(pickResult.primary.release_date)}</span>
+                      {pickResult.primary.vote_average ? (
+                        <span className="movie-card-chip">TMDB {pickResult.primary.vote_average.toFixed(1)}</span>
+                      ) : null}
+                    </div>
+                    <h3 className="pick-primary-title">
+                      <Link to={getMoviePath(pickResult.primary)} className="movie-title-link">
+                        {pickResult.primary.title}
+                      </Link>
+                    </h3>
+                    <p className="pick-primary-reason">{pickResult.primary.reason}</p>
+                    <p className="pick-primary-overview">{pickResult.primary.overview}</p>
+                    <Link to={getMoviePath(pickResult.primary)} className="card-link">
+                      Open this pick
+                    </Link>
+                  </div>
+                </article>
+
+                {pickResult.alternates?.length ? (
+                  <div className="pick-alternates-grid">
+                    {pickResult.alternates.map((movie) => (
+                      <article key={movie.id} className="pick-alternate-card">
+                        <div className="pick-alternate-head">
+                          <h3 className="pick-alternate-title">
+                            <Link to={getMoviePath(movie)} className="movie-title-link">
+                              {movie.title}
+                            </Link>
+                          </h3>
+                          <span className="movie-card-chip">{movie.vote_average ? `TMDB ${movie.vote_average.toFixed(1)}` : getReleaseYear(movie.release_date)}</span>
+                        </div>
+                        <p className="pick-alternate-reason">{movie.reason}</p>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+
+            {!pickError && !pickLoading && !pickResult?.primary ? (
+              <div className="pick-empty-state-soft">
+                <p className="pick-empty-note detail-secondary-text">Add a vibe if you want, or just ask ReelBot to break the tie using the active library filters.</p>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <div id="library-results" className="section-header section-header--stacked-mobile">
           <div>
             <h2 className="section-title">Library Results</h2>
             <p className="section-subtitle">
@@ -285,6 +463,10 @@ function BrowseLibrary() {
           </button>
         </div>
       </div>
+
+      <a href="#library-filters" className="floating-filter-link">
+        Back to filters
+      </a>
     </div>
   );
 }

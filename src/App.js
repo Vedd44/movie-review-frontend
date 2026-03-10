@@ -56,10 +56,10 @@ function SiteHeader({ hasHeaderSearch }) {
   const currentView = new URLSearchParams(location.search).get("view") || "latest";
 
   const navItems = [
+    { label: "Latest", to: "/?view=latest#movie-grid", isActive: location.pathname === "/" && currentView === "latest" },
+    { label: "Popular", to: "/?view=popular#movie-grid", isActive: location.pathname === "/" && currentView === "popular" },
+    { label: "Coming Soon", to: "/?view=upcoming#movie-grid", isActive: location.pathname === "/" && currentView === "upcoming" },
     { label: "Browse", to: "/browse?view=popular", isActive: location.pathname === "/browse" },
-    { label: "Latest", to: "/?view=latest", isActive: location.pathname === "/" && currentView === "latest" },
-    { label: "Popular", to: "/?view=popular", isActive: location.pathname === "/" && currentView === "popular" },
-    { label: "Coming Soon", to: "/?view=upcoming", isActive: location.pathname === "/" && currentView === "upcoming" },
   ];
 
   return (
@@ -100,7 +100,7 @@ function SiteFooter() {
       <div className="site-footer-inner">
         <div className="site-footer-brand">
           <div className="site-footer-title">ReelBot</div>
-          <p className="site-footer-copy">The AI movie companion for faster picks, sharper reads, and better next-watch decisions.</p>
+          <p className="site-footer-copy">The AI movie companion for faster picks, clearer reads, and better next-watch decisions.</p>
         </div>
 
         <div className="site-footer-meta">
@@ -108,8 +108,8 @@ function SiteFooter() {
             Passion project powered by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a> by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a>.
           </p>
           <div className="site-footer-links" aria-label="Footer">
-            <NavLink to="/?view=latest">Latest</NavLink>
-            <NavLink to="/?view=upcoming">Coming Soon</NavLink>
+            <NavLink to="/?view=latest#movie-grid">Latest</NavLink>
+            <NavLink to="/?view=upcoming#movie-grid">Coming Soon</NavLink>
             <NavLink to="/browse?view=popular">Browse Library</NavLink>
           </div>
           <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
