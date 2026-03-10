@@ -905,8 +905,9 @@ body {
 }
 
 .browse-page .movie-list {
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 230px));
   gap: 22px;
+  justify-content: start;
 }
 
 .browse-page .movie-card {
@@ -2402,8 +2403,9 @@ body {
 
 @media only screen and (max-width: 1024px) {
   .browse-page .movie-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 220px));
     gap: 18px;
+    justify-content: start;
   }
 }
 
