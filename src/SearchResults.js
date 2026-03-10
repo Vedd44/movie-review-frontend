@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import { getMoviePath } from "./discovery";
 
 function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -82,7 +83,7 @@ function SearchResults() {
 
                   return (
                     <article key={movie.id} className="movie-card">
-                      <Link to={`/movies/${movie.id}`} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
+                      <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
                         {movie.poster_path ? (
                           <img
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
@@ -103,13 +104,13 @@ function SearchResults() {
                         </div>
 
                         <h3 className="movie-card-title">
-                          <Link to={`/movies/${movie.id}`} className="movie-title-link">
+                          <Link to={getMoviePath(movie)} className="movie-title-link">
                             {movie.title}
                           </Link>
                         </h3>
                         <p className="movie-card-date">{formattedDate}</p>
 
-                        <Link to={`/movies/${movie.id}`} className="card-link">
+                        <Link to={getMoviePath(movie)} className="card-link">
                           View Details
                         </Link>
                       </div>

@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "ReelBot",
+  "name": "Reelbot: The AI Movie Companion",
   "icons": [
     {
       "src": "favicon.ico",
