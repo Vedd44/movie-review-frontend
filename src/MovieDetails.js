@@ -2,13 +2,17 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import TasteActionBar from "./components/TasteActionBar";
+import useTasteProfile from "./hooks/useTasteProfile";
+import WatchAvailability from "./components/WatchAvailability";
+import TrailerModal from "./components/TrailerModal";
 import { getMoviePath, slugifyMovieTitle } from "./discovery";
 
 const REELBOT_ACTIONS = {
   quick_take: {
     id: "quick_take",
     label: "Quick Take",
-    hint: "Spoiler-light feel, tone, and viewer fit.",
+    hint: "A spoiler-light read on tone, pace, and who it's for.",
     panelTitle: "Quick Take",
     panelKicker: "Start Here",
     featured: true,
@@ -16,21 +20,21 @@ const REELBOT_ACTIONS = {
   is_this_for_me: {
     id: "is_this_for_me",
     label: "Is This For Me?",
-    hint: "Audience fit, mood, and who may want to skip.",
+    hint: "Who it works for, and who may want something else.",
     panelTitle: "Is This For Me?",
     panelKicker: "Audience Fit",
   },
   why_watch: {
     id: "why_watch",
     label: "Why Watch It",
-    hint: "The strongest case for whether this is worth your time.",
+    hint: "The clearest case for why this might be worth your time.",
     panelTitle: "Top 5 Reasons to Watch",
     panelKicker: "Worth Your Time?",
   },
   similar_picks: {
     id: "similar_picks",
     label: "Similar Picks",
-    hint: "Smarter next-watch guidance than a plain adjacency grid.",
+    hint: "Better next-watch ideas than a simple lookalike list.",
     panelTitle: "If You Liked This...",
     panelKicker: "What To Watch Next",
   },
@@ -91,25 +95,25 @@ const REELBOT_ACTIONS = {
 const UPCOMING_ACTION_OVERRIDES = {
   quick_take: {
     label: "First Look",
-    hint: "What the synopsis, talent, and current signals suggest so far.",
+    hint: "What the synopsis, cast, and early details suggest so far.",
     panelTitle: "First Look",
     panelKicker: "Preview Mode",
   },
   is_this_for_me: {
     label: "Who's It For?",
-    hint: "Early audience fit based on the current setup, not post-release certainty.",
+    hint: "Who it seems best for based on what's been shared so far.",
     panelTitle: "Who's It For?",
     panelKicker: "Audience Read",
   },
   why_watch: {
     label: "Why It's on the Radar",
-    hint: "Why this title has attention before it is even out.",
+    hint: "Why people may be excited about it before release.",
     panelTitle: "Why It's on the Radar",
     panelKicker: "Why It's Buzzing",
   },
   similar_picks: {
     label: "While You Wait",
-    hint: "What to watch now if this is already on your radar.",
+    hint: "What to watch now if this is already on your list.",
     panelTitle: "What To Watch While You Wait",
     panelKicker: "While You Wait",
   },
@@ -285,38 +289,38 @@ const buildWatchFit = (movie) => {
   }
 
   return [
-    { label: "Attention", value: attention, note: attentionNote },
-    { label: "Emotional Weight", value: weight, note: weightNote },
-    { label: "Pace", value: pace, note: paceNote },
-    { label: "Best With", value: bestWith, note: bestWithNote },
+    { label: "Attention", value: attention, note: attentionNote, scale: attention === "Easy" ? 32 : attention === "Focused" ? 88 : 58 },
+    { label: "Emotional Weight", value: weight, note: weightNote, scale: weight === "Light" ? 28 : weight === "Heavy" ? 84 : 56 },
+    { label: "Pace", value: pace, note: paceNote, scale: pace === "Patient" ? 34 : pace === "Brisk" ? 82 : 58 },
+    { label: "Best With", value: bestWith, note: bestWithNote, scale: bestWith === "Solo" ? 30 : bestWith === "Pair" ? 52 : bestWith === "Friends" ? 72 : 88 },
   ];
 };
 
 const buildPreviewSnapshot = (movie) => {
   const releaseValue = formatReleaseDate(movie?.release_date);
-  const genrePromise = movie?.genre_names?.length ? movie.genre_names.join(" • ") : "Genre signals are still forming";
+  const genrePromise = movie?.genre_names?.length ? movie.genre_names.join(" • ") : "Genre picture still coming into focus";
   const runtimeValue = movie?.runtime ? `${movie.runtime} min listed` : "Runtime TBA";
 
   return [
     {
       label: "Release",
       value: releaseValue,
-      note: movie?.status ? `Current status: ${movie.status}.` : "Release timing may still move.",
+      note: movie?.status ? `Current status: ${movie.status}.` : "Release timing could still shift.",
     },
     {
       label: "Talent",
-      value: movie?.director ? `${movie.director}` : "Team still emerging",
-      note: movie?.top_cast?.length ? `With ${summarizeList(movie.top_cast, 3)}.` : "Cast details are still limited.",
+      value: movie?.director ? `${movie.director}` : "Team still coming into focus",
+      note: movie?.top_cast?.length ? `With ${summarizeList(movie.top_cast, 3)}.` : "Cast details are still light.",
     },
     {
       label: "Genre Promise",
       value: genrePromise,
-      note: "This is the strongest current clue for what kind of watch it may become.",
+      note: "This is the clearest clue so far about the kind of movie it wants to be.",
     },
     {
       label: "Scale",
       value: runtimeValue,
-      note: "Treat this as preview-stage signal, not a finished-audience verdict.",
+      note: "Treat this as an early read, not a final verdict.",
     },
   ];
 };
@@ -356,6 +360,8 @@ function MovieDetails() {
   const [reelbotError, setReelbotError] = useState(null);
   const [activeReelbotAction, setActiveReelbotAction] = useState(null);
   const [panelPulse, setPanelPulse] = useState(false);
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const { profile, actions: tasteActions } = useTasteProfile();
 
   useEffect(() => {
     const fetchMovieDetails = async () => {
@@ -387,7 +393,16 @@ function MovieDetails() {
     setReelbotError(null);
     setReelbotLoadingAction(null);
     setPanelPulse(false);
+    setIsTrailerOpen(false);
   }, [id]);
+
+  useEffect(() => {
+    if (!movie?.id) {
+      return;
+    }
+
+    tasteActions.addRecentMovie(movie);
+  }, [movie, tasteActions]);
 
   useEffect(
     () => () => {
@@ -436,6 +451,16 @@ function MovieDetails() {
   }, [movie, previewMode]);
 
   const insightCards = useMemo(() => (previewMode ? buildPreviewSnapshot(movie) : buildWatchFit(movie)), [movie, previewMode]);
+  const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
+  const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
+  const hasWatchProviders = useMemo(() => {
+    const availability = movie?.watch_providers;
+    if (!availability) {
+      return false;
+    }
+
+    return [availability.subscription, availability.rent, availability.buy].some((group) => Array.isArray(group) && group.length > 0);
+  }, [movie]);
   const reviewHighlights = movie?.review_highlights || { positive: null, negative: null, count: 0, source: "TMDB user reviews" };
   const showReviewSplit = !previewMode && (reviewHighlights.positive || reviewHighlights.negative);
   const activeReelbotConfig = activeReelbotAction ? actionConfigs[activeReelbotAction] : null;
@@ -584,14 +609,37 @@ function MovieDetails() {
               <p className="detail-description">{movieDescription}</p>
             </div>
 
+            <div className="detail-hero-actions">
+              <div className="detail-hero-inline-row">
+                {movie.trailer?.key ? (
+                  <button type="button" className="detail-trailer-cta" onClick={() => setIsTrailerOpen(true)}>
+                    Watch Trailer
+                  </button>
+                ) : (
+                  <>
+                    <button type="button" className="detail-trailer-cta detail-trailer-cta--placeholder" disabled>
+                      Watch Trailer
+                    </button>
+                    <span className="detail-trailer-note">Trailer not posted yet.</span>
+                  </>
+                )}
+                {hasWatchProviders ? (
+                  <a href="#where-to-watch" className="detail-text-action detail-text-action--hero">
+                    See where to watch
+                  </a>
+                ) : null}
+              </div>
+              <TasteActionBar movie={movie} className="detail-taste-actions" />
+            </div>
+
             <section className="detail-vibe-strip">
               <div className="detail-watchfit-head detail-watchfit-head--compact">
                 <div>
                   <div className="detail-description-label">{previewMode ? "Preview Snapshot" : "Estimated Vibe"}</div>
                   <p className="detail-secondary-text">
                     {previewMode
-                      ? "This title is not out yet, so keep the read grounded in confirmed release info, talent, and the current synopsis."
-                      : "A quick read on how this movie is likely to play once you hit start."}
+                      ? "A quick early read based on the synopsis, cast, and release details so far."
+                      : "ReelBot's quick read on attention, emotional weight, pace, and who this tends to play best with."}
                   </p>
                 </div>
               </div>
@@ -599,7 +647,15 @@ function MovieDetails() {
                 {insightCards.map((item) => (
                   <div key={item.label} className="detail-vibe-item">
                     <div className="detail-vibe-label">{item.label}</div>
-                    <div className="detail-vibe-value">{item.value}</div>
+                    <div className="detail-vibe-value-row">
+                      <div className="detail-vibe-value">{item.value}</div>
+                      {typeof item.scale === "number" ? <span className="detail-vibe-meter-label">Quick read</span> : null}
+                    </div>
+                    {typeof item.scale === "number" ? (
+                      <div className="detail-vibe-scale" aria-hidden="true">
+                        <span className="detail-vibe-scale-fill" style={{ width: `${item.scale}%` }} />
+                      </div>
+                    ) : null}
                     <div className="detail-vibe-note">{item.note}</div>
                   </div>
                 ))}
@@ -611,16 +667,16 @@ function MovieDetails() {
                 <div className="detail-description-label">Ask ReelBot</div>
                 <p className="reelbot-module-copy">
                   {previewMode
-                    ? "Ask for the clearest early read: who it seems for, how big it looks, and what to watch while you wait."
-                    : "Pick a question and ReelBot will give you a quick, practical read without dragging you through the whole plot."}
+                    ? "Ask for a quick early read on who it seems for, how it looks, and what to watch while you wait."
+                    : "Pick a question and ReelBot will give you a short, spoiler-light answer."}
                 </p>
               </div>
 
               {previewMode ? (
                 <div className="reelbot-preview-banner">
-                  <div className="detail-description-label">Preview mode</div>
+                  <div className="detail-description-label">Before release</div>
                   <p className="detail-secondary-text">
-                    Because this movie is still {movie.status ? movie.status.toLowerCase() : "unreleased"}, ReelBot only uses current synopsis, talent, genre, and release signals.
+                    This one is still {movie.status ? movie.status.toLowerCase() : "unreleased"}, so ReelBot is reading from the synopsis, cast, genre, and release details available so far.
                   </p>
                 </div>
               ) : null}
@@ -638,7 +694,7 @@ function MovieDetails() {
                     >
                       <span className="reelbot-primary-action-title">{action.label}</span>
                       <span className="reelbot-primary-action-copy">{action.hint}</span>
-                      <span className="reelbot-primary-action-meta">Tap to ask ReelBot</span>
+                      <span className="reelbot-primary-action-meta">Tap to ask</span>
                     </button>
                   );
                 })}
@@ -656,11 +712,11 @@ function MovieDetails() {
                     <p className="reelbot-panel-caption">
                       {activeReelbotAction
                         ? previewMode
-                          ? "The latest preview read stays pinned here while you compare other pre-release angles."
-                          : "The latest answer stays pinned here while you keep asking sharper follow-ups."
+                          ? "Your latest answer stays here while you compare a few early reads."
+                          : "Your latest answer stays here while you keep digging."
                         : previewMode
-                          ? "Start with First Look if you want the clearest, honest preview read without pretending the movie is already out."
-                          : "Start with Quick Take if you just want the cleanest read on whether this movie fits tonight."}
+                          ? "Start with First Look for the quickest spoiler-free take on what it seems like so far."
+                          : "Start with Quick Take for the fastest read on whether this fits tonight."}
                     </p>
                   </div>
                   {stagedReelbotConfig.warning ? <span className="reelbot-warning-chip">{stagedReelbotConfig.warning}</span> : null}
@@ -670,8 +726,8 @@ function MovieDetails() {
                   <div className="reelbot-empty-state">
                     <p className="detail-secondary-text reelbot-placeholder-copy">
                       {previewMode
-                        ? "Start with First Look for the clearest early read, then jump into audience fit, scale, or while-you-wait picks."
-                        : "Start broad with Quick Take, then use the follow-ups when you want a sharper yes-or-no answer."}
+                        ? "Start with First Look, then jump into audience fit, scale, or what to watch while you wait."
+                        : "Start with Quick Take, then use the follow-ups when you want a sharper yes-or-no answer."}
                     </p>
                     <div className="reelbot-empty-actions">
                       <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction("quick_take")}>
@@ -690,14 +746,14 @@ function MovieDetails() {
                   <div className="reelbot-loading-state">
                     <span className="reelbot-loading-dot" aria-hidden="true"></span>
                     <p className="detail-secondary-text reelbot-placeholder-copy">
-                      {previewMode ? "ReelBot is reading the current release signals..." : "ReelBot is thinking through this angle..."}
+                      {previewMode ? "ReelBot is sizing it up from the early details..." : "ReelBot is putting that answer together..."}
                     </p>
                   </div>
                 ) : null}
 
                 {activeReelbotAction ? (
                   <div className="reelbot-panel-footer">
-                    <span className="reelbot-panel-footer-label">Try next</span>
+                    <span className="reelbot-panel-footer-label">Keep going</span>
                     <div className="reelbot-chip-row reelbot-chip-row--panel reelbot-chip-row--footer">
                       {followUpActionIds.map((actionId) => {
                         const action = actionConfigs[actionId];
@@ -721,7 +777,7 @@ function MovieDetails() {
               <div className="reelbot-secondary-stack">
                 <div className="reelbot-inline-subsection">
                   <div className="detail-description-label">{previewMode ? "Preview Questions" : "Quick Questions"}</div>
-                  <p className="reelbot-subsection-copy">{previewMode ? "Tap any question for a grounded preview read." : "Tap any question for a fast follow-up without leaving the page."}</p>
+                  <p className="reelbot-subsection-copy">{previewMode ? "Tap a question for a quick, spoiler-free preview read." : "Tap a question for a faster follow-up."}</p>
                   <div className="reelbot-chip-row">
                     {viewerQuestionIds.map((actionId) => {
                       const action = actionConfigs[actionId];
@@ -742,8 +798,8 @@ function MovieDetails() {
 
                 {!previewMode ? (
                   <details className="reelbot-spoiler-drawer">
-                    <summary className="reelbot-spoiler-summary">Spoiler Zone — full plot, ending, and themes</summary>
-                    <p className="reelbot-subsection-copy">Open this only if you have seen it already or you actively want the movie unpacked.</p>
+                    <summary className="reelbot-spoiler-summary">Spoiler Mode — plot, ending, and themes</summary>
+                    <p className="reelbot-subsection-copy">Open this only if you want the movie unpacked in full.</p>
                     <div className="reelbot-chip-row reelbot-chip-row--spoilers">
                       {spoilerActionIds.map((actionId) => {
                         const action = actionConfigs[actionId];
@@ -767,12 +823,35 @@ function MovieDetails() {
           </div>
         </section>
 
+        <section className="detail-info-card detail-info-card--compact-facts">
+          <div className="detail-section-head detail-section-head--facts">
+            <div>
+              <h2 className="detail-section-title">At a Glance</h2>
+              <p className="detail-secondary-text">
+                {previewMode
+                  ? "The release details that matter most right now."
+                  : "The details that help you size it up fast."}
+              </p>
+            </div>
+          </div>
+          <div className="detail-compact-facts">
+            {compactFacts.map((fact) => (
+              <div key={fact.label} className="detail-compact-fact">
+                <span className="detail-fact-pill-label">{fact.label}</span>
+                <span className="detail-compact-fact-value">{fact.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" />
+
         {showReviewSplit ? (
           <section className="detail-info-card detail-info-card--split">
             <div className="detail-section-head detail-section-head--facts">
               <div>
                 <h2 className="detail-section-title">The Split</h2>
-                <p className="detail-secondary-text">A quick read on what lands and what bounces off people, using the strongest high/low swing from TMDB user reviews.</p>
+                <p className="detail-secondary-text">A quick look at what viewers praise most — and what turns others off.</p>
               </div>
               {reviewHighlights.count ? <div className="results-count">{reviewHighlights.count} reviews</div> : null}
             </div>
@@ -797,56 +876,36 @@ function MovieDetails() {
           </section>
         ) : null}
 
-        <section className="detail-info-card detail-info-card--compact-facts">
-          <div className="detail-section-head detail-section-head--facts">
-            <div>
-              <h2 className="detail-section-title">Worth Knowing</h2>
-              <p className="detail-secondary-text">
-                {previewMode
-                  ? "Keep this practical: the confirmed release details, team, and scope that actually matter before opening day."
-                  : "The key details that help frame the watch at a glance."}
-              </p>
-            </div>
-          </div>
-          <div className="detail-compact-facts">
-            {compactFacts.map((fact) => (
-              <div key={fact.label} className="detail-compact-fact">
-                <span className="detail-fact-pill-label">{fact.label}</span>
-                <span className="detail-compact-fact-value">{fact.value}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {movie.similar?.length ? (
+        {similarMovies.length ? (
           <section className="detail-info-card">
-            <div className="detail-section-head">
+            <div className="detail-section-head detail-section-head--with-count">
               <div>
-                <h2 className="detail-section-title">{previewMode ? "While You Wait" : "What to Watch Next"}</h2>
+                <h2 className="detail-section-title">{previewMode ? "Watch While You Wait" : "If This Lands, Watch Next"}</h2>
                 <p className="detail-secondary-text">
                   {previewMode
-                    ? "These are the nearby titles to use as touchstones while the real movie is still on the way."
-                    : "TMDB gives the nearby titles. ReelBot gives the smarter, more intentional match when you want more than adjacency."}
+                    ? "Good watch-now options while the real movie is still on the way."
+                    : "If this lands for you, these are good places to go next."}
                 </p>
               </div>
+              <div className="results-count">{similarMovies.length} titles</div>
             </div>
 
             <div className="next-watch-spotlight">
               <div>
-                <div className="detail-description-label">ReelBot route</div>
+                <div className="detail-description-label">Want a more tailored next pick?</div>
                 <p className="detail-secondary-text">
                   {previewMode
-                    ? "Use While You Wait when you want ReelBot to turn hype into an actual watch-now recommendation."
-                    : "Use Similar Picks when you want the tailored why behind the next recommendation, not just a neighboring poster wall."}
+                    ? "Ask ReelBot to find something you can watch now with a similar pull."
+                    : "Ask ReelBot when you want a clearer case for the next pick, not just a row of lookalikes."}
                 </p>
               </div>
               <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("similar_picks")}>
-                {previewMode ? "Ask ReelBot what to watch while you wait" : "Ask ReelBot for smarter matches"}
+                {previewMode ? "Ask ReelBot what to watch while you wait" : "Ask ReelBot for a tailored next pick"}
               </button>
             </div>
 
             <div className="similar-grid">
-              {movie.similar.map((similarMovie) => (
+              {similarMovies.map((similarMovie) => (
                 <Link key={similarMovie.id} to={getMoviePath(similarMovie)} className="similar-card">
                   {similarMovie.poster_path ? (
                     <img
@@ -855,7 +914,7 @@ function MovieDetails() {
                       className="similar-poster"
                     />
                   ) : (
-                    <div className="similar-poster similar-poster-placeholder">No Image</div>
+                    <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>
                   )}
                   <div className="similar-title">{similarMovie.title}</div>
                   <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
@@ -864,6 +923,12 @@ function MovieDetails() {
             </div>
           </section>
         ) : null}
+        <TrailerModal
+          isOpen={isTrailerOpen}
+          video={movie?.trailer}
+          movieTitle={movie?.title}
+          onClose={() => setIsTrailerOpen(false)}
+        />
       </div>
     </div>
   );

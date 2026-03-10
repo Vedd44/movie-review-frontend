@@ -4,6 +4,7 @@ import Home from "./Home";
 import MovieDetails from "./MovieDetails";
 import SearchResults from "./SearchResults";
 import BrowseLibrary from "./BrowseLibrary";
+import MyMovies from "./MyMovies";
 import "./App.css";
 
 const SITE_VERSION = "v0.2";
@@ -54,12 +55,18 @@ function HeaderSearch() {
 function SiteHeader({ hasHeaderSearch }) {
   const location = useLocation();
   const currentView = new URLSearchParams(location.search).get("view") || "latest";
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname, location.search, location.hash]);
 
   const navItems = [
     { label: "Latest", to: "/?view=latest#movie-grid", isActive: location.pathname === "/" && currentView === "latest" },
     { label: "Popular", to: "/?view=popular#movie-grid", isActive: location.pathname === "/" && currentView === "popular" },
     { label: "Coming Soon", to: "/?view=upcoming#movie-grid", isActive: location.pathname === "/" && currentView === "upcoming" },
     { label: "Browse", to: "/browse?view=popular", isActive: location.pathname === "/browse" },
+    { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
   ];
 
   return (
@@ -79,15 +86,30 @@ function SiteHeader({ hasHeaderSearch }) {
         </NavLink>
 
         <div className="site-header-actions">
-          <nav className="site-nav" aria-label="Primary">
-            {navItems.map((item) => (
-              <NavLink key={item.label} to={item.to} className={`site-nav-link${item.isActive ? " is-active" : ""}`}>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <button
+            type="button"
+            className={`site-menu-toggle${mobileMenuOpen ? " is-open" : ""}`}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="site-primary-nav"
+            aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+            onClick={() => setMobileMenuOpen((current) => !current)}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
 
-          <HeaderSearch />
+          <div className={`site-nav-shell${mobileMenuOpen ? " is-open" : ""}`}>
+            <nav id="site-primary-nav" className="site-nav" aria-label="Primary">
+              {navItems.map((item) => (
+                <NavLink key={item.label} to={item.to} className={`site-nav-link${item.isActive ? " is-active" : ""}`}>
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+
+            <HeaderSearch />
+          </div>
         </div>
       </div>
     </header>
@@ -111,6 +133,7 @@ function SiteFooter() {
             <NavLink to="/?view=latest#movie-grid">Latest</NavLink>
             <NavLink to="/?view=upcoming#movie-grid">Coming Soon</NavLink>
             <NavLink to="/browse?view=popular#library-results">Browse Library</NavLink>
+            <NavLink to="/my-movies">My Movies</NavLink>
           </div>
           <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
         </div>
@@ -130,6 +153,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<BrowseLibrary />} />
+          <Route path="/my-movies" element={<MyMovies />} />
           <Route path="/movies/:id/:slug?" element={<MovieDetails />} />
           <Route path="/search" element={<SearchResults />} />
         </Routes>

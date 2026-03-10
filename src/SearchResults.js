@@ -91,7 +91,7 @@ function SearchResults() {
                             className="movie-poster"
                           />
                         ) : (
-                          <div className="no-poster">No Image Available</div>
+                          <div className="no-poster">Poster unavailable</div>
                         )}
                       </Link>
 

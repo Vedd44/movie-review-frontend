@@ -74,11 +74,11 @@ export const REELBOT_CAPABILITIES = [
   },
   {
     title: "Pick for Me",
-    description: "Describe the vibe and ReelBot gives you one best-fit pick plus a couple strong backups.",
+    description: "Share the vibe and ReelBot gives you one best-fit pick plus a few strong backups.",
   },
   {
     title: "Viewer Q&A",
-    description: "Ask practical questions like Is it scary?, Is it slow?, or Is this a good date-night watch?",
+    description: "Ask quick questions like Is it scary?, Is it slow?, or Is this a good date-night watch?",
   },
   {
     title: "Why Watch It",
@@ -86,11 +86,11 @@ export const REELBOT_CAPABILITIES = [
   },
   {
     title: "The Split",
-    description: "See the strongest reasons people are into it and the reasons others bounce off.",
+    description: "See what viewers praise most — and what turns others off.",
   },
   {
     title: "Similar Picks",
-    description: "Get smarter next-watch ideas with short reasoning, not just lookalike titles.",
+    description: "Get better next-watch ideas with short reasoning, not just lookalikes.",
   },
 ];
 
