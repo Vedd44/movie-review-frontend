@@ -345,7 +345,7 @@ function Home() {
                 <input
                   type="text"
                   className="pick-prompt-input"
-                  placeholder="Try: smart sci-fi, a non-serious Jason Statham action movie, tense but rewarding..."
+                  placeholder="Try: smart sci-fi, tense but rewarding, funny with friends..."
                   value={pickPrompt}
                   onChange={(event) => setPickPrompt(event.target.value)}
                 />

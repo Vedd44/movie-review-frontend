@@ -297,7 +297,7 @@ function BrowseLibrary() {
               <input
                 type="text"
                 className="pick-prompt-input"
-                placeholder="Try: smart sci-fi under 2 hours, a strong date-night pick, Jason Statham action..."
+                placeholder="Try: smart sci-fi under 2 hours, a strong date-night pick, dark but rewarding..."
                 value={pickPrompt}
                 onChange={(event) => setPickPrompt(event.target.value)}
               />

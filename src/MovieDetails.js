@@ -203,38 +203,38 @@ const getActionConfigMap = (previewMode) =>
     ])
   );
 
-const getActionGroup = (actionId, previewMode) => {
-  if ((previewMode ? UPCOMING_VIEWER_QUESTION_IDS : RELEASED_VIEWER_QUESTION_IDS).includes(actionId)) {
-    return "viewer";
-  }
-
-  if (!previewMode && RELEASED_SPOILER_ACTION_IDS.includes(actionId)) {
-    return "spoiler";
-  }
-
-  return "core";
-};
-
 const getFollowUpActionIds = (actionId, previewMode) => {
-  const actionGroup = getActionGroup(actionId, previewMode);
-
   if (previewMode) {
-    if (actionGroup === "viewer") {
-      return ["quick_take", "is_this_for_me", "why_watch"];
-    }
+    const previewMap = {
+      quick_take: ["is_this_for_me", "pace_check", "similar_picks"],
+      is_this_for_me: ["why_watch", "best_mood", "date_night"],
+      why_watch: ["similar_picks", "best_mood", "pace_check"],
+      similar_picks: ["quick_take", "is_this_for_me", "best_mood"],
+      scary_check: ["quick_take", "is_this_for_me", "why_watch"],
+      pace_check: ["quick_take", "best_mood", "similar_picks"],
+      best_mood: ["quick_take", "date_night", "similar_picks"],
+      date_night: ["is_this_for_me", "best_mood", "why_watch"],
+    };
 
-    return ["scary_check", "pace_check", "similar_picks"];
+    return previewMap[actionId] || ["quick_take", "is_this_for_me", "similar_picks"];
   }
 
-  if (actionGroup === "viewer") {
-    return ["quick_take", "is_this_for_me", "why_watch"];
-  }
+  const releasedMap = {
+    quick_take: ["is_this_for_me", "best_mood", "similar_picks"],
+    is_this_for_me: ["why_watch", "best_mood", "date_night"],
+    why_watch: ["is_this_for_me", "similar_picks", "pace_check"],
+    similar_picks: ["why_watch", "best_mood", "date_night"],
+    scary_check: ["quick_take", "is_this_for_me", "why_watch"],
+    pace_check: ["quick_take", "best_mood", "similar_picks"],
+    best_mood: ["quick_take", "date_night", "similar_picks"],
+    date_night: ["is_this_for_me", "best_mood", "why_watch"],
+    spoiler_synopsis: ["ending_explained", "themes_and_takeaways", "debate_club"],
+    ending_explained: ["themes_and_takeaways", "debate_club", "spoiler_synopsis"],
+    themes_and_takeaways: ["debate_club", "ending_explained", "spoiler_synopsis"],
+    debate_club: ["themes_and_takeaways", "ending_explained", "spoiler_synopsis"],
+  };
 
-  if (actionGroup === "spoiler") {
-    return ["spoiler_synopsis", "themes_and_takeaways", "debate_club"];
-  }
-
-  return ["scary_check", "best_mood", "similar_picks"];
+  return releasedMap[actionId] || ["is_this_for_me", "best_mood", "similar_picks"];
 };
 
 const buildWatchFit = (movie) => {
@@ -591,7 +591,7 @@ function MovieDetails() {
                   <p className="detail-secondary-text">
                     {previewMode
                       ? "This title is not out yet, so keep the read grounded in confirmed release info, talent, and the current synopsis."
-                      : "Keep this lightweight - it is there to help you read the watch, not overwhelm the page."}
+                      : "A quick read on how this movie is likely to play once you hit start."}
                   </p>
                 </div>
               </div>
@@ -611,8 +611,8 @@ function MovieDetails() {
                 <div className="detail-description-label">Ask ReelBot</div>
                 <p className="reelbot-module-copy">
                   {previewMode
-                    ? "Preview mode keeps the questions honest: audience fit, scale, anticipation, and what to watch while you wait - not fake spoiler certainty."
-                    : "Keep the AI layer decisive: one answer stage, one row of core reads, quick practical follow-ups, and spoiler tools only when you opt in."}
+                    ? "Ask for the clearest early read: who it seems for, how big it looks, and what to watch while you wait."
+                    : "Pick a question and ReelBot will give you a quick, practical read without dragging you through the whole plot."}
                 </p>
               </div>
 
@@ -638,6 +638,7 @@ function MovieDetails() {
                     >
                       <span className="reelbot-primary-action-title">{action.label}</span>
                       <span className="reelbot-primary-action-copy">{action.hint}</span>
+                      <span className="reelbot-primary-action-meta">Tap to ask ReelBot</span>
                     </button>
                   );
                 })}
@@ -669,8 +670,8 @@ function MovieDetails() {
                   <div className="reelbot-empty-state">
                     <p className="detail-secondary-text reelbot-placeholder-copy">
                       {previewMode
-                        ? "Use ReelBot here for early audience-fit questions, scale checks, and while-you-wait recommendations - not spoilers or final verdicts."
-                        : "ReelBot works best when it answers a specific decision. Start broad, then move into quick questions or spoiler tools only if you need them."}
+                        ? "Start with First Look for the clearest early read, then jump into audience fit, scale, or while-you-wait picks."
+                        : "Start broad with Quick Take, then use the follow-ups when you want a sharper yes-or-no answer."}
                     </p>
                     <div className="reelbot-empty-actions">
                       <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction("quick_take")}>
@@ -696,7 +697,7 @@ function MovieDetails() {
 
                 {activeReelbotAction ? (
                   <div className="reelbot-panel-footer">
-                    <span className="reelbot-panel-footer-label">Keep going</span>
+                    <span className="reelbot-panel-footer-label">Try next</span>
                     <div className="reelbot-chip-row reelbot-chip-row--panel reelbot-chip-row--footer">
                       {followUpActionIds.map((actionId) => {
                         const action = actionConfigs[actionId];
@@ -720,6 +721,7 @@ function MovieDetails() {
               <div className="reelbot-secondary-stack">
                 <div className="reelbot-inline-subsection">
                   <div className="detail-description-label">{previewMode ? "Preview Questions" : "Quick Questions"}</div>
+                  <p className="reelbot-subsection-copy">{previewMode ? "Tap any question for a grounded preview read." : "Tap any question for a fast follow-up without leaving the page."}</p>
                   <div className="reelbot-chip-row">
                     {viewerQuestionIds.map((actionId) => {
                       const action = actionConfigs[actionId];
@@ -740,8 +742,8 @@ function MovieDetails() {
 
                 {!previewMode ? (
                   <details className="reelbot-spoiler-drawer">
-                    <summary className="reelbot-spoiler-summary">Open spoiler tools</summary>
-                    <p className="reelbot-subsection-copy">Only open this when you want the plot, the ending, or the post-watch arguments.</p>
+                    <summary className="reelbot-spoiler-summary">Spoiler Zone — full plot, ending, and themes</summary>
+                    <p className="reelbot-subsection-copy">Open this only if you have seen it already or you actively want the movie unpacked.</p>
                     <div className="reelbot-chip-row reelbot-chip-row--spoilers">
                       {spoilerActionIds.map((actionId) => {
                         const action = actionConfigs[actionId];
@@ -802,7 +804,7 @@ function MovieDetails() {
               <p className="detail-secondary-text">
                 {previewMode
                   ? "Keep this practical: the confirmed release details, team, and scope that actually matter before opening day."
-                  : "Keep this compact. It should add context, not make the page feel heavier than the movie decision itself."}
+                  : "The key details that help frame the watch at a glance."}
               </p>
             </div>
           </div>
