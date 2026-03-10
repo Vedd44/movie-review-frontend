@@ -149,7 +149,7 @@ function Home() {
     }
 
     if (movieType === "upcoming") {
-      return "A current preview of what is on deck. Open Browse Library when you want to filter the coming-soon slate with more intent.";
+      return "A sharper look at what's coming soon. Open Browse Library when you want to filter the upcoming slate with more intent.";
     }
 
     return "A current sample of what is landing now. Browse the feed for range, or open Browse Library when you want deeper filtering.";
