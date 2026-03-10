@@ -110,7 +110,7 @@ function SiteFooter() {
           <div className="site-footer-links" aria-label="Footer">
             <NavLink to="/?view=latest#movie-grid">Latest</NavLink>
             <NavLink to="/?view=upcoming#movie-grid">Coming Soon</NavLink>
-            <NavLink to="/browse?view=popular">Browse Library</NavLink>
+            <NavLink to="/browse?view=popular#library-results">Browse Library</NavLink>
           </div>
           <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
         </div>

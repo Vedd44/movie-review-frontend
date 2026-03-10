@@ -137,7 +137,7 @@ function Home() {
   }, [filteredMovies, movies]);
 
   const heading =
-    movieType === "upcoming" ? "Coming Soon Feed" : movieType === "popular" ? "Popular Picks" : "Latest Movies";
+    movieType === "upcoming" ? "Coming Soon" : movieType === "popular" ? "Popular Picks" : "Latest Movies";
 
   const sectionSubtitle = useMemo(() => {
     if (selectedMood !== "all") {
