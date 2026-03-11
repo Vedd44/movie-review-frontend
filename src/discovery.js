@@ -1,12 +1,12 @@
 export const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 export const VIEW_OPTIONS = [
-  { id: "latest", label: "Latest" },
+  { id: "latest", label: "Now Playing" },
   { id: "popular", label: "Popular" },
   { id: "upcoming", label: "Coming Soon" },
 ];
 
-export const VALID_VIEWS = new Set(VIEW_OPTIONS.map((option) => option.id));
+export const VALID_VIEWS = new Set([...VIEW_OPTIONS.map((option) => option.id), "now_playing"]);
 
 export const MOOD_FILTERS = [
   {
@@ -94,7 +94,13 @@ export const REELBOT_CAPABILITIES = [
   },
 ];
 
-export const getViewLabel = (view) => VIEW_OPTIONS.find((option) => option.id === view)?.label || "Latest";
+export const getViewLabel = (view) => {
+  if (view === "now_playing") {
+    return "Now Playing";
+  }
+
+  return VIEW_OPTIONS.find((option) => option.id === view)?.label || "Now Playing";
+};
 
 export const getReleaseYear = (releaseDate) => (releaseDate ? new Date(releaseDate).getFullYear() : "TBA");
 

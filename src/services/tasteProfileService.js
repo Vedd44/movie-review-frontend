@@ -3,12 +3,13 @@ export const TASTE_PROFILE_UPDATED_EVENT = "reelbot:taste-profile-updated";
 export const SAVED_MOVIE_BUCKETS = ["watchlist", "seen", "hidden", "recent"];
 
 const DEFAULT_PROFILE = {
-  version: 2,
+  version: 3,
   watchlist: [],
   seen: [],
   skipped: [],
   likedVibes: [],
   recentMovies: [],
+  recentRecommendations: [],
   pickHistory: [],
   lastPickPreferences: null,
 };
@@ -64,14 +65,18 @@ const normalizePickHistory = (pickHistory = []) =>
     .filter((entry) => entry.movie_ids.length > 0)
     .slice(0, 18);
 
+const normalizeRecentRecommendations = (recentRecommendations = []) =>
+  dedupeById(Array.isArray(recentRecommendations) ? recentRecommendations : []).slice(0, 30);
+
 const migrateProfile = (profile = {}) => ({
   ...DEFAULT_PROFILE,
   ...profile,
-  version: 2,
+  version: 3,
   watchlist: dedupeById(Array.isArray(profile.watchlist) ? profile.watchlist : []),
   seen: dedupeById(Array.isArray(profile.seen) ? profile.seen : []),
   skipped: dedupeById(Array.isArray(profile.skipped) ? profile.skipped : []),
   recentMovies: dedupeById(Array.isArray(profile.recentMovies) ? profile.recentMovies : []).slice(0, 18),
+  recentRecommendations: normalizeRecentRecommendations(profile.recentRecommendations),
   likedVibes: normalizeLikedVibes(profile.likedVibes),
   pickHistory: normalizePickHistory(profile.pickHistory),
   lastPickPreferences: profile.lastPickPreferences || null,
@@ -214,6 +219,7 @@ const recordPickResult = (profile, preferences, payload) => {
     payload?.primary?.id,
     ...((payload?.alternates || []).map((movie) => movie?.id)),
   ]);
+  const recommendedMovies = [payload?.primary, ...((payload?.alternates || []).filter(Boolean))].filter((movie) => movie?.id);
 
   if (!movieIds.length) {
     return profile;
@@ -245,9 +251,16 @@ const recordPickResult = (profile, preferences, payload) => {
     }),
   ].slice(0, 18);
 
+  const recommendationTimestamp = new Date().toISOString();
+  const nextRecommendations = recommendedMovies.reduce(
+    (items, movie) => upsertMovieEntry(items, movie, { recommended_at: recommendationTimestamp }, 30),
+    Array.isArray(profile.recentRecommendations) ? profile.recentRecommendations : []
+  );
+
   return {
     ...profile,
     pickHistory: nextHistory,
+    recentRecommendations: nextRecommendations,
   };
 };
 
@@ -262,9 +275,21 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
     }
   });
 
+  (safeProfile.seen || []).forEach((movie) => {
+    if (movie?.id) {
+      excludedIds.add(movie.id);
+    }
+  });
+
+  (safeProfile.recentRecommendations || []).slice(0, 24).forEach((movie) => {
+    if (movie?.id) {
+      excludedIds.add(movie.id);
+    }
+  });
+
   (safeProfile.pickHistory || [])
     .filter((entry) => entry.signature === signature)
-    .slice(0, 3)
+    .slice(0, 4)
     .forEach((entry) => {
       (entry.movie_ids || []).forEach((movieId) => excludedIds.add(movieId));
     });

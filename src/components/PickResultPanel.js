@@ -34,9 +34,15 @@ function PickResultPanel({
 
       {!error && !loading && primaryMovie ? (
         <>
-          <RecommendationRationale rationale={rationale} summary={summary} />
+          <div className="pick-result-header">
+            <div>
+              <div className="detail-description-label">{rationale?.title || "ReelBot recommendation"}</div>
+              <h3 className="pick-result-title">{rationale?.heading || "Best Match for Tonight"}</h3>
+            </div>
+            {rationale?.confidenceLabel ? <div className="recommendation-confidence-pill pick-result-confidence">{rationale.confidenceLabel}</div> : null}
+          </div>
 
-          <article className="pick-primary-card">
+          <article className="pick-primary-card pick-primary-card--hero">
             <Link to={getMoviePath(primaryMovie)} className="pick-primary-poster-link">
               {primaryMovie.poster_path ? (
                 <img
@@ -52,6 +58,7 @@ function PickResultPanel({
               <div className="detail-description-label pick-primary-kicker">Main pick</div>
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
+                {primaryMovie.runtime ? <span className="movie-card-chip">{primaryMovie.runtime} min</span> : null}
                 {primaryMovie.vote_average ? <span className="movie-card-chip">TMDB {primaryMovie.vote_average.toFixed(1)}</span> : null}
               </div>
               <h3 className="pick-primary-title">
@@ -59,23 +66,30 @@ function PickResultPanel({
                   {primaryMovie.title}
                 </Link>
               </h3>
-              <p className="pick-primary-reason">{primaryMovie.reason}</p>
+              <p className="pick-primary-hook">{primaryMovie.reason}</p>
               <p className="pick-primary-overview">{primaryMovie.overview}</p>
-              <div className="pick-primary-actions">
-                <div className="pick-primary-action-row">
-                  <Link to={getMoviePath(primaryMovie)} className="card-link">
-                    Open this pick
-                  </Link>
-                  {onRefreshChoices ? (
-                    <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
-                      {refreshLabel}
-                    </button>
-                  ) : null}
-                </div>
-                <TasteActionBar movie={primaryMovie} vibeLabel={vibeLabel} compact className="pick-taste-actions" />
-              </div>
             </div>
           </article>
+
+          <RecommendationRationale rationale={rationale} summary={summary} />
+
+          <div className="pick-result-actions-block">
+            <div className="detail-description-label">Actions</div>
+            <p className="detail-secondary-text pick-result-actions-copy">Save it, mark it seen, or ask ReelBot for another lane without losing the main pick.</p>
+            <div className="pick-primary-actions">
+              <div className="pick-primary-action-row">
+                <Link to={getMoviePath(primaryMovie)} className="card-link">
+                  View Details
+                </Link>
+                {onRefreshChoices ? (
+                  <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
+                    {refreshLabel}
+                  </button>
+                ) : null}
+              </div>
+              <TasteActionBar movie={primaryMovie} vibeLabel={vibeLabel} compact className="pick-taste-actions" />
+            </div>
+          </div>
 
           {backupMovies.length ? (
             <section className="pick-backups-block">
@@ -102,6 +116,7 @@ function PickResultPanel({
                       )}
                     </Link>
                     <div className="pick-alternate-body">
+                      <div className="detail-description-label pick-alternate-kicker">Backup option</div>
                       <div className="pick-alternate-head">
                         <div>
                           <h3 className="pick-alternate-title">
@@ -111,6 +126,7 @@ function PickResultPanel({
                           </h3>
                           <div className="pick-alternate-meta">
                             <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
+                            {movie.runtime ? <span className="movie-card-chip">{movie.runtime} min</span> : null}
                             {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
                           </div>
                         </div>

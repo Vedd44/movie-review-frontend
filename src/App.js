@@ -62,7 +62,7 @@ function SiteHeader({ hasHeaderSearch }) {
   }, [location.pathname, location.search, location.hash]);
 
   const navItems = [
-    { label: "Latest", to: "/?view=latest#movie-grid", isActive: location.pathname === "/" && currentView === "latest" },
+    { label: "Now Playing", to: "/?view=latest#movie-grid", isActive: location.pathname === "/" && (currentView === "latest" || currentView === "now_playing") },
     { label: "Popular", to: "/?view=popular#movie-grid", isActive: location.pathname === "/" && currentView === "popular" },
     { label: "Coming Soon", to: "/?view=upcoming#movie-grid", isActive: location.pathname === "/" && currentView === "upcoming" },
     { label: "Browse", to: "/browse?view=popular", isActive: location.pathname === "/browse" },
@@ -130,7 +130,7 @@ function SiteFooter() {
             A passion project by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a>, built with <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a>.
           </p>
           <div className="site-footer-links" aria-label="Footer">
-            <NavLink to="/?view=latest#movie-grid">Latest</NavLink>
+            <NavLink to="/?view=latest#movie-grid">Now Playing</NavLink>
             <NavLink to="/?view=upcoming#movie-grid">Coming Soon</NavLink>
             <NavLink to="/browse?view=popular#library-results">Browse Library</NavLink>
             <NavLink to="/my-movies">My Movies</NavLink>
