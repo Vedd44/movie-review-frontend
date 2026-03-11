@@ -3164,6 +3164,17 @@ body {
   gap: 10px;
 }
 
+.pick-control-group--prompt {
+  width: 100%;
+  margin-top: 28px;
+  align-items: stretch;
+}
+
+.pick-control-group--prompt .detail-description-label,
+.pick-control-group--prompt .prompt-composer-copy {
+  text-align: left;
+}
+
 .pick-control-group + .pick-control-group {
   margin-top: 24px;
 }
@@ -3173,6 +3184,7 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   margin: 4px 0 0;
+  justify-content: flex-start;
 }
 
 .pick-prompt-chip {
@@ -3195,8 +3207,8 @@ body {
 }
 
 .prompt-composer-copy {
-  margin-top: 8px;
-  max-width: 58ch;
+  margin: 2px 0 2px;
+  max-width: 62ch;
   line-height: 1.7;
 }
 
@@ -4252,6 +4264,7 @@ body {
 
 .pick-prompt-shell {
   margin-top: 10px;
+  width: 100%;
   padding: 2px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
