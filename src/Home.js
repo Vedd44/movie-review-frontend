@@ -676,7 +676,7 @@ function Home() {
               ) : (
                 <div className="empty-state feed-empty-state">
                   <span className="status-glyph" aria-hidden="true"></span>
-                  <span>Nothing in this feed matches that mood right now.</span>
+                  <span>{selectedMood === "all" ? "Nothing is showing in this feed right now." : "Nothing in this feed matches that mood right now."}</span>
                   <Link to={browseLibraryResultsPath} className="card-link">
                     Open Browse Library
                   </Link>

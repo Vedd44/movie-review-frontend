@@ -1158,10 +1158,15 @@ body {
 }
 
 .site-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
   color: var(--text-secondary);
   padding: 10px 14px;
   border-radius: 999px;
+  white-space: nowrap;
+  flex: 0 0 auto;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -2993,8 +2998,16 @@ body {
     gap: 14px;
   }
 
+  .site-header.has-search .site-header-inner {
+    gap: 10px;
+  }
+
   .site-header-actions {
     gap: 10px;
+  }
+
+  .site-header.has-search .site-nav {
+    gap: 6px;
   }
 
   .site-nav-link {
@@ -3005,6 +3018,11 @@ body {
   .site-header-search {
     flex-basis: 272px;
     min-width: 200px;
+  }
+
+  .site-header.has-search .site-header-search {
+    flex-basis: 236px;
+    min-width: 170px;
   }
 }
 
