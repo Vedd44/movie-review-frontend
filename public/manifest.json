@@ -1,6 +1,6 @@
 {
   "short_name": "ReelBot",
-  "name": "Reelbot: The AI Movie Companion",
+  "name": "ReelBot: The AI Movie Companion",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#08101a",
+  "background_color": "#08101a"
 }
