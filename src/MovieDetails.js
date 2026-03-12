@@ -380,134 +380,6 @@ const getTimeCommitment = (runtime) => {
   return "Epic";
 };
 
-const buildDecisionHelper = (movie, previewMode) => {
-  if (!movie) {
-    return [];
-  }
-
-  const genres = Array.isArray(movie.genre_names) ? movie.genre_names : [];
-  const genreSet = new Set(genres);
-  const runtime = Number(movie.runtime || 0);
-  const score = Number(movie.rating || movie.vote_average || 0);
-  const timeCommitment = getTimeCommitment(runtime);
-  const overview = String(movie.overview || movie.description || "").toLowerCase();
-  const vibeCards = buildWatchFit(movie);
-  const vibeMap = new Map(vibeCards.map((item) => [item.label, item.value]));
-  const attention = vibeMap.get("Attention") || "Moderate";
-  const weight = vibeMap.get("Emotional Weight") || "Balanced";
-  const pace = vibeMap.get("Pace") || "Steady";
-  const bestWith = vibeMap.get("Best With") || "Solo";
-  const hasCue = (...patterns) => patterns.some((pattern) => pattern.test(overview));
-
-  const toneBullet = (() => {
-    if (hasCue(/heist|robbery|stolen|thief|con job|criminal plan/)) {
-      return "A heist-driven story with clear tension";
-    }
-    if (hasCue(/investigat|detective|missing|disappear|case|clue|murder/)) {
-      return "An investigation-driven story with real forward pull";
-    }
-    if (hasCue(/revenge|avenge|hunt down|payback|retaliat/)) {
-      return "A revenge-driven story with a darker edge";
-    }
-    if (hasCue(/surviv|escape|stranded|trapped|disaster|rescue/)) {
-      return "A survival-focused watch with constant pressure";
-    }
-    if (hasCue(/family|marriage|relationship|couple|mother|father|daughter|son/)) {
-      return weight === "Heavy" ? "A relationship-heavy story with emotional weight" : "A character-led story built around relationships";
-    }
-    if (genreSet.has("Crime") && genreSet.has("Thriller")) {
-      return "A tense, character-driven crime story";
-    }
-    if (genreSet.has("Crime") && genreSet.has("Drama")) {
-      return "A serious crime drama with real weight";
-    }
-    if (genreSet.has("Thriller") || genreSet.has("Mystery")) {
-      return "A tense watch with a darker edge";
-    }
-    if (genreSet.has("Action") && genreSet.has("Adventure")) {
-      return "An action-forward watch with clear momentum";
-    }
-    if (genreSet.has("Sci-Fi") || genreSet.has("Fantasy")) {
-      return "A genre watch with a bigger world to sink into";
-    }
-    if (genreSet.has("Comedy")) {
-      return "A lighter watch with an easy comic lane";
-    }
-    if (genreSet.has("Animation") || genreSet.has("Family")) {
-      return "An accessible watch with broad genre appeal";
-    }
-    if (genreSet.has("Romance")) {
-      return "A character-led story with emotional pull";
-    }
-    if (genreSet.has("Drama")) {
-      return weight === "Heavy" ? "A slow-burn character story with emotional weight" : "A character-driven drama with a steady pull";
-    }
-
-    return genres.length >= 2
-      ? `A ${genres.slice(0, 2).join("-").toLowerCase()} watch with a clear tone`
-      : previewMode
-        ? "A watch defined more by tone than instant spectacle"
-        : "A watch with a clear tone and genre identity";
-  })();
-
-  const paceBullet = (() => {
-    if (hasCue(/chase|run|race|mission|escape|manhunt|pursuit/)) {
-      return "Built around movement and clear momentum";
-    }
-    if (hasCue(/secret|cover-up|conspiracy|hidden|double life|twist/)) {
-      return "Plot turns and reveals reward close attention";
-    }
-    if (hasCue(/grief|loss|mourning|reckon|memory|past/)) {
-      return "A more patient watch shaped by emotion and fallout";
-    }
-    if (pace === "Brisk" && timeCommitment === "Short") {
-      return "Fast pacing with a low time commitment";
-    }
-    if (pace === "Brisk") {
-      return "Fast pacing and clean forward momentum";
-    }
-    if (pace === "Patient" && attention === "Focused") {
-      return "Deliberate pacing that rewards attention";
-    }
-    if (pace === "Patient") {
-      return "A more patient watch that takes its time";
-    }
-    if (timeCommitment === "Epic" || timeCommitment === "Long") {
-      return `A ${timeCommitment.toLowerCase()} watch that asks for real buy-in`;
-    }
-    if (attention === "Easy") {
-      return "Easy to follow without feeling disposable";
-    }
-
-    return `A ${timeCommitment.toLowerCase()} watch with steady pacing`;
-  })();
-
-  const fitBullet = (() => {
-    if (bestWith === "Group" || bestWith === "Friends") {
-      return "Best when you want something easy to watch with other people";
-    }
-    if (bestWith === "Pair") {
-      return "A good fit when you want something to watch one-on-one";
-    }
-    if (score >= 7.8) {
-      return "Strong audience response makes it an easier yes";
-    }
-    if (weight === "Heavy") {
-      return "More immersive than casual, with real emotional weight";
-    }
-    if (attention === "Focused") {
-      return "Best when you want to pay attention, not half-watch";
-    }
-    if (previewMode) {
-      return "Best if the premise already sounds like your lane";
-    }
-
-    return "A solid pick when you want something with a clear genre lane";
-  })();
-
-  return [toneBullet, paceBullet, fitBullet].filter(Boolean).slice(0, 3);
-};
-
 const formatReviewMeta = (review, source = "TMDB user reviews") => {
   if (!review) {
     return source;
@@ -683,7 +555,6 @@ function MovieDetails() {
   const insightCards = useMemo(() => (previewMode ? buildPreviewSnapshot(movie) : buildWatchFit(movie)), [movie, previewMode]);
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
-  const decisionHelperBullets = useMemo(() => buildDecisionHelper(movie, previewMode), [movie, previewMode]);
   const nextWatchReasonLabels = previewMode
     ? ["Watch-now parallel", "Broader alternative", "Stranger side path", "Bigger swing"]
     : ["Similar tone", "Safer next pick", "Stranger follow-up", "More action-forward"] ;
@@ -946,15 +817,6 @@ function MovieDetails() {
                   Why Watch It
                 </button>
               </div>
-            </div>
-
-            <div className="detail-decision-helper">
-              <div className="detail-description-label">Best if you want</div>
-              <ul className="detail-decision-list">
-                {decisionHelperBullets.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
             </div>
 
             <div className="detail-hero-actions">

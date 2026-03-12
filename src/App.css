@@ -1382,14 +1382,10 @@ body {
   max-width: 70ch;
 }
 
-.detail-reelbot-cta-block,
-.detail-decision-helper {
-  margin-top: 14px;
-  max-width: 66ch;
-}
 
-.detail-decision-helper {
+.detail-reelbot-cta-block {
   margin-top: 18px;
+  max-width: 66ch;
 }
 
 .detail-reelbot-cta-copy {
@@ -1405,16 +1401,6 @@ body {
   margin-top: 14px;
 }
 
-.detail-decision-list {
-  margin: 10px 0 0;
-  padding-left: 18px;
-  color: var(--text-primary);
-  line-height: 1.7;
-}
-
-.detail-decision-list li + li {
-  margin-top: 4px;
-}
 
 .detail-description {
   color: #d7e3ef;
