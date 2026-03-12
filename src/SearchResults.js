@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
-import { getMoviePath } from "./discovery";
+import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
+import { rankSearchResults } from "./movieSignals";
+import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 
 function SearchResults() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
-  const [movies, setMovies] = useState([]);
+  const [searchPayload, setSearchPayload] = useState({ results: [], top_match: null, related_results: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!searchQuery) {
       setError("No search query provided.");
-      setMovies([]);
+      setSearchPayload({ results: [], top_match: null, related_results: [] });
       setLoading(false);
       return;
     }
@@ -23,20 +25,70 @@ function SearchResults() {
     setError(null);
 
     axios
-      .get(`${process.env.REACT_APP_API_URL}/search?query=${encodeURIComponent(searchQuery)}`)
+      .get(`${API_BASE_URL}/search?query=${encodeURIComponent(searchQuery)}`)
       .then((response) => {
-        setMovies(response.data.results || []);
+        setSearchPayload({
+          results: response.data.results || [],
+          top_match: response.data.top_match || null,
+          related_results: response.data.related_results || [],
+        });
         setError(null);
       })
       .catch((requestError) => {
         console.error("❌ Error fetching search results:", requestError);
         setError("Failed to fetch search results.");
-        setMovies([]);
+        setSearchPayload({ results: [], top_match: null, related_results: [] });
       })
       .finally(() => {
         setLoading(false);
       });
   }, [searchQuery]);
+
+  const rankedMovies = useMemo(
+    () => (searchPayload.results?.length ? searchPayload.results : rankSearchResults(searchQuery, [])),
+    [searchPayload.results, searchQuery]
+  );
+
+  const topMatch = searchPayload.top_match || rankedMovies[0] || null;
+  const relatedMovies = useMemo(
+    () => (searchPayload.related_results?.length
+      ? searchPayload.related_results.slice(0, 24)
+      : rankedMovies.slice(topMatch ? 1 : 0, 25)),
+    [rankedMovies, searchPayload.related_results, topMatch]
+  );
+
+  const visibleResults = useMemo(
+    () => (topMatch ? [topMatch, ...relatedMovies] : relatedMovies),
+    [relatedMovies, topMatch]
+  );
+
+  const searchStructuredData = useMemo(
+    () => [
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Search", path: `/search?q=${encodeURIComponent(searchQuery)}` },
+      ]),
+      visibleResults.length
+        ? buildItemListJsonLd(
+            visibleResults.slice(0, 12).map((movie) => ({
+              name: movie.title,
+              path: getMoviePath(movie),
+            }))
+          )
+        : null,
+    ].filter(Boolean),
+    [searchQuery, visibleResults]
+  );
+
+  usePageMetadata({
+    title: searchQuery ? `Search Results for "${searchQuery}" | ReelBot` : "Search | ReelBot",
+    description: searchQuery
+      ? `TMDB-powered movie search results for "${searchQuery}", with ReelBot-ready detail pages and next-watch help.`
+      : "TMDB-powered movie search results, with ReelBot-ready detail pages and next-watch help.",
+    path: searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : "/search",
+    robots: "noindex,follow",
+    structuredData: searchStructuredData,
+  });
 
   return (
     <div className="browse-page">
@@ -45,43 +97,86 @@ function SearchResults() {
           <div className="browse-copy">
             <div className="browse-kicker">ReelBot Search</div>
             <h1 className="browse-title">Results for “{searchQuery || "your search"}”</h1>
-            <p className="browse-subtitle">
-              TMDB-powered results up front. Open any movie when you want ReelBot to step in.
-            </p>
+            <p className="browse-subtitle">We surface the movie you probably meant first, then keep nearby matches close by.</p>
           </div>
         </section>
 
         {loading && (
           <div className="loading-message">
             <span className="status-glyph" aria-hidden="true"></span>
-            <span>Loading results...</span>
+            <span>Searching movies...</span>
           </div>
         )}
         {error && <p className="error-message">{error}</p>}
 
         {!loading && !error && (
           <>
-            <div className="section-header">
+            <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
-                <h2 className="section-title">Matching Movies</h2>
-                <p className="section-subtitle">TMDB search results, ready for deeper ReelBot exploration.</p>
+                <div className="detail-description-label">Search results</div>
+                <h2 className="section-title">{topMatch ? "Top Match" : "Matching Movies"}</h2>
+                <p className="section-subtitle">
+                  {topMatch
+                    ? "This is the clearest match based on title, relevance, and overall quality."
+                    : "We could not find a strong match for that search just yet."}
+                </p>
               </div>
-              <div className="results-count">{movies.length} matches</div>
+              <div className="results-count">{visibleResults.length} results</div>
             </div>
 
-            <div className="movie-list">
-              {Array.isArray(movies) && movies.length > 0 ? (
-                movies.map((movie) => {
-                  const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "TBA";
-                  const formattedDate = movie.release_date
-                    ? new Date(movie.release_date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "Release date unavailable";
+            {topMatch ? (
+              <article className="search-top-match-card">
+                <Link to={getMoviePath(topMatch)} className="search-top-match-poster-link" aria-label={`Open ${topMatch.title}`}>
+                  {topMatch.poster_path ? (
+                    <img
+                      src={`https://image.tmdb.org/t/p/w300${topMatch.poster_path}`}
+                      alt={topMatch.title}
+                      className="search-top-match-poster"
+                    />
+                  ) : (
+                    <div className="search-top-match-poster search-top-match-poster--placeholder">Poster unavailable</div>
+                  )}
+                </Link>
 
-                  return (
+                <div className="search-top-match-content">
+                  <div className="detail-description-label">Best Match</div>
+                  <h3 className="search-top-match-title">
+                    <Link to={getMoviePath(topMatch)} className="movie-title-link">
+                      {topMatch.title}
+                    </Link>
+                  </h3>
+                  <div className="movie-card-meta">
+                    <span className="movie-card-chip">{getReleaseYear(topMatch.release_date)}</span>
+                    {topMatch.vote_average ? <span className="movie-card-chip">TMDB {topMatch.vote_average.toFixed(1)}</span> : null}
+                    <span className="movie-card-chip movie-card-chip--accent">Top Match</span>
+                  </div>
+                  <p className="search-top-match-summary">
+                    {topMatch.exact_match
+                      ? "Exact title match with the clearest overall fit in these results."
+                      : "The clearest title match with the strongest overall quality and relevance."}
+                  </p>
+                  <p className="detail-secondary-text search-top-match-date">{formatMovieDate(topMatch.release_date)}</p>
+                  <div className="search-top-match-actions">
+                    <Link to={getMoviePath(topMatch)} className="card-link">
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ) : null}
+
+            {relatedMovies.length ? (
+              <section className="search-related-section">
+                <div className="section-header section-header--compact section-header--stacked-mobile">
+                  <div>
+                    <div className="detail-description-label">Related titles</div>
+                    <h3 className="section-title">Other likely matches</h3>
+                    <p className="section-subtitle">Nearby title matches and stronger alternates, with weak results pushed down.</p>
+                  </div>
+                </div>
+
+                <div className="movie-list">
+                  {relatedMovies.map((movie) => (
                     <article key={movie.id} className="movie-card">
                       <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
                         {movie.poster_path ? (
@@ -97,10 +192,8 @@ function SearchResults() {
 
                       <div className="movie-card-content">
                         <div className="movie-card-meta">
-                          <span className="movie-card-chip">{releaseYear}</span>
-                          {movie.vote_average ? (
-                            <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span>
-                          ) : null}
+                          <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
+                          {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
                         </div>
 
                         <h3 className="movie-card-title">
@@ -108,22 +201,24 @@ function SearchResults() {
                             {movie.title}
                           </Link>
                         </h3>
-                        <p className="movie-card-date">{formattedDate}</p>
+                        <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
 
                         <Link to={getMoviePath(movie)} className="card-link">
                           View Details
                         </Link>
                       </div>
                     </article>
-                  );
-                })
-              ) : (
-                <div className="empty-state">
-                  <span className="status-glyph" aria-hidden="true"></span>
-                  <span>No results found.</span>
+                  ))}
                 </div>
-              )}
-            </div>
+              </section>
+            ) : null}
+
+            {!topMatch && !relatedMovies.length ? (
+              <div className="empty-state">
+                <span className="status-glyph" aria-hidden="true"></span>
+                <span>No strong results found. Try a fuller title or browse what&apos;s trending instead.</span>
+              </div>
+            ) : null}
           </>
         )}
       </div>

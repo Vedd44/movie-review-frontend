@@ -54,7 +54,7 @@ function TrailerModal({ isOpen, video, movieTitle, onClose }) {
           <div>
             <div className="detail-description-label">Trailer</div>
             <h2 className="trailer-modal-title">{video?.name || `Watch the trailer for ${movieTitle || "this movie"}`}</h2>
-            <p className="detail-secondary-text trailer-modal-copy">A quick look before you decide whether this is tonight&apos;s pick.</p>
+            <p className="detail-secondary-text trailer-modal-copy">A quick look before you decide whether this is your kind of watch.</p>
           </div>
           <button type="button" className="trailer-modal-close" onClick={onClose} aria-label="Close trailer">
             Close

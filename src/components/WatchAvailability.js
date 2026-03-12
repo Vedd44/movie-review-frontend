@@ -2,25 +2,48 @@ import React from "react";
 
 const GROUP_LABELS = {
   subscription: "Included with subscription",
-  rent: "Available to rent",
-  buy: "Available to buy",
+  transactional: "Rent or Buy",
 };
 
-const getProviderGroups = (availability) =>
-  ["subscription", "rent", "buy"]
-    .map((group) => ({
-      id: group,
-      label: GROUP_LABELS[group],
-      providers: Array.isArray(availability?.[group]) ? availability[group] : [],
-    }))
-    .filter((group) => group.providers.length);
+const mergeProviders = (...groups) => {
+  const seen = new Map();
+
+  groups.flat().forEach((provider) => {
+    if (!provider?.id || seen.has(provider.id)) {
+      return;
+    }
+
+    seen.set(provider.id, provider);
+  });
+
+  return Array.from(seen.values());
+};
+
+const getProviderGroups = (availability) => {
+  const subscription = Array.isArray(availability?.subscription) ? availability.subscription : [];
+  const rent = Array.isArray(availability?.rent) ? availability.rent : [];
+  const buy = Array.isArray(availability?.buy) ? availability.buy : [];
+
+  return [
+    {
+      id: "subscription",
+      label: GROUP_LABELS.subscription,
+      providers: subscription,
+    },
+    {
+      id: "transactional",
+      label: GROUP_LABELS.transactional,
+      providers: mergeProviders(rent, buy),
+    },
+  ].filter((group) => group.providers.length);
+};
 
 function WatchAvailability({ availability, sectionId }) {
   const providerGroups = getProviderGroups(availability);
   const hasProviders = providerGroups.length > 0;
 
   return (
-    <section id={sectionId} className="detail-info-card detail-info-card--providers">
+    <section id={sectionId} className="detail-info-card detail-info-card--providers detail-anchor-target">
       <div className="detail-section-head detail-section-head--with-count">
         <div>
           <h2 className="detail-section-title">Where to Watch</h2>
@@ -63,9 +86,9 @@ function WatchAvailability({ availability, sectionId }) {
         </div>
       ) : (
         <div className="provider-placeholder">
-          <div className="detail-description-label">Streaming info is not posted yet</div>
+          <div className="detail-description-label">Streaming availability is not listed yet.</div>
           <p className="detail-secondary-text">
-            When provider data is available, you will see subscription, rental, and purchase options here.
+            When providers add this movie, you'll see rental, purchase, and subscription options here.
           </p>
         </div>
       )}

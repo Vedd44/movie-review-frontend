@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import useTasteProfile from "../hooks/useTasteProfile";
 
-function TasteActionBar({ movie, vibeLabel = "", compact = false, className = "" }) {
+function TasteActionBar({ movie, vibeLabel = "", compact = false, className = "", showVibeAction = true }) {
   const { actions, getMovieState } = useTasteProfile();
   const [feedback, setFeedback] = useState("");
   const tasteState = getMovieState(movie?.id, vibeLabel);
@@ -18,9 +18,9 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
 
   const feedbackMap = useMemo(
     () => ({
-      watchlist: tasteState.inWatchlist ? "Removed from Watchlist" : "Saved to Watchlist",
-      seen: tasteState.seen ? "Removed from Seen" : "Marked as Seen",
-      hidden: tasteState.skipped ? "Removed from Hidden" : "Hidden from picks",
+      watchlist: tasteState.inWatchlist ? "Removed from Watchlist" : "Saved",
+      seen: tasteState.seen ? "Removed from Seen" : "Marked seen",
+      hidden: tasteState.skipped ? "Removed skip" : "Skipped for future picks",
       vibe: tasteState.likedVibe ? "Removed saved vibe" : "Saved this vibe",
     }),
     [tasteState.inWatchlist, tasteState.likedVibe, tasteState.seen, tasteState.skipped]
@@ -42,23 +42,23 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
         className={`taste-action-button${tasteState.inWatchlist ? " is-active" : ""}`}
         onClick={() => handleAction("watchlist", () => actions.toggleWatchlist(movie))}
       >
-        {tasteState.inWatchlist ? "In Watchlist" : "Save to Watchlist"}
+        {tasteState.inWatchlist ? "Saved" : "Save"}
       </button>
       <button
         type="button"
         className={`taste-action-button${tasteState.seen ? " is-active" : ""}`}
         onClick={() => handleAction("seen", () => actions.toggleSeen(movie))}
       >
-        {tasteState.seen ? "Seen" : "Mark Seen"}
+        {tasteState.seen ? "Seen" : "Seen"}
       </button>
       <button
         type="button"
         className={`taste-action-button${tasteState.skipped ? " is-active" : ""}`}
         onClick={() => handleAction("hidden", () => actions.toggleSkipped(movie))}
       >
-        {tasteState.skipped ? "Hidden" : "Not for Me"}
+        {tasteState.skipped ? "Skipped" : "Skip"}
       </button>
-      {vibeLabel ? (
+      {showVibeAction && vibeLabel ? (
         <button
           type="button"
           className={`taste-action-button${tasteState.likedVibe ? " is-active" : ""}`}

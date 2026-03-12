@@ -1,19 +1,28 @@
 import React from "react";
 
-function RecommendationRationale({ rationale, summary }) {
-  if (!rationale) {
+function RecommendationRationale({ rationale, collapsible = false }) {
+  if (!rationale?.whyRecommended?.length) {
     return null;
   }
 
-  return (
-    <section className="recommendation-rationale">
-      {summary ? (
-        <div className="recommendation-rationale-summary-block">
-          <div className="detail-description-label">{rationale.assistantLabel || "ReelBot's take"}</div>
-          <p className="detail-secondary-text recommendation-rationale-copy">{summary}</p>
+  if (!collapsible) {
+    return (
+      <section className="recommendation-rationale">
+        <div className="recommendation-rationale-list-block">
+          <div className="detail-description-label">{rationale.whyTitle || "Why this works"}</div>
+          <ul className="recommendation-rationale-list">
+            {rationale.whyRecommended.slice(0, 2).map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
         </div>
-      ) : null}
+      </section>
+    );
+  }
 
+  return (
+    <details className="recommendation-rationale recommendation-rationale--collapsible">
+      <summary className="recommendation-rationale-toggle">Why this one?</summary>
       <div className="recommendation-rationale-list-block">
         <div className="detail-description-label">{rationale.whyTitle || "Why this works"}</div>
         <ul className="recommendation-rationale-list">
@@ -22,30 +31,7 @@ function RecommendationRationale({ rationale, summary }) {
           ))}
         </ul>
       </div>
-
-      <div className="recommendation-support-block">
-        <div className="recommendation-confidence-block">
-          <div className="recommendation-confidence-row">
-            <span className="recommendation-confidence-label">{rationale.scoreLabel || "Match score"}</span>
-            <span className="recommendation-confidence-value">{rationale.confidenceScore}%</span>
-          </div>
-          <div className="recommendation-confidence-track" aria-hidden="true">
-            <span className="recommendation-confidence-fill" style={{ width: `${rationale.confidenceScore}%` }} />
-          </div>
-        </div>
-
-        <div className="recommendation-criteria-block" aria-label="Selected criteria">
-          <div className="detail-description-label">{rationale.criteriaTitle || "Based on"}</div>
-          <div className="recommendation-criteria-row">
-            {rationale.criteria.map((item) => (
-              <span key={item.key} className="recommendation-criteria-chip">
-                {item.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
+    </details>
   );
 }
 

@@ -1,6 +1,6 @@
 import React from "react";
 
-function ReelbotPromptComposer({ label, helperText = "", suggestions = [], value, onChange, placeholder }) {
+function ReelbotPromptComposer({ label, helperText = "", suggestions = [], value, onChange, placeholder, errorText = "" }) {
   return (
     <div className="pick-control-group pick-control-group--prompt">
       <div className="detail-description-label">{label}</div>
@@ -17,12 +17,19 @@ function ReelbotPromptComposer({ label, helperText = "", suggestions = [], value
       <div className="pick-prompt-shell">
         <input
           type="text"
-          className="pick-prompt-input"
+          className={`pick-prompt-input${errorText ? " is-invalid" : ""}`}
           placeholder={placeholder}
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          aria-invalid={errorText ? "true" : "false"}
+          aria-describedby={errorText ? "pick-prompt-validation" : undefined}
         />
       </div>
+      {errorText ? (
+        <p id="pick-prompt-validation" className="pick-prompt-validation" role="alert">
+          {errorText}
+        </p>
+      ) : null}
     </div>
   );
 }

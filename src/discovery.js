@@ -2,11 +2,24 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 export const VIEW_OPTIONS = [
   { id: "latest", label: "Now Playing" },
-  { id: "popular", label: "Popular" },
+  { id: "popular", label: "Trending" },
   { id: "upcoming", label: "Coming Soon" },
 ];
 
 export const VALID_VIEWS = new Set([...VIEW_OPTIONS.map((option) => option.id), "now_playing"]);
+
+export const FEED_PATHS = {
+  latest: "/now-playing",
+  now_playing: "/now-playing",
+  popular: "/trending",
+  upcoming: "/coming-soon",
+};
+
+export const FEED_VIEW_BY_PATH = {
+  "/now-playing": "latest",
+  "/trending": "popular",
+  "/coming-soon": "upcoming",
+};
 
 export const MOOD_FILTERS = [
   {
@@ -62,6 +75,15 @@ export const PICK_COMPANY_OPTIONS = [
 
 export const DISCOVERY_PROMPTS = [
   "Something tense but not miserable",
+  "Smart sci-fi",
+  "Easy watch comedy",
+  "Visually stunning movie",
+  "Great movie for a lazy Sunday",
+  "Clever mystery",
+  "Short thriller",
+  "Fun group movie",
+  "Emotional but not heavy",
+  "Something weird but accessible",
   "An easy date-night watch",
   "Smart and twisty with real payoff",
   "Funny and good with friends",
@@ -93,6 +115,12 @@ export const REELBOT_CAPABILITIES = [
     description: "Get better next-watch ideas with short reasoning, not just lookalikes.",
   },
 ];
+
+export const normalizeView = (view) => (view === "now_playing" ? "latest" : VALID_VIEWS.has(view) ? view : "latest");
+
+export const getFeedPath = (view = "latest") => FEED_PATHS[normalizeView(view)] || FEED_PATHS.latest;
+
+export const getViewFromPath = (pathname = "/") => FEED_VIEW_BY_PATH[pathname] || null;
 
 export const getViewLabel = (view) => {
   if (view === "now_playing") {

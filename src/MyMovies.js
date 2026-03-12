@@ -4,35 +4,36 @@ import "./App.css";
 import TasteActionBar from "./components/TasteActionBar";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
+import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 
 const TAB_CONFIG = [
   {
     id: "watchlist",
-    label: "Watchlist",
-    emptyTitle: "Your Watchlist is still open",
-    emptyCopy: "Save a movie from any card or detail page and it will show up here.",
-    description: "Movies you want to keep in the mix for a future night.",
+    label: "Saved",
+    emptyTitle: "Nothing saved yet",
+    emptyCopy: "Save keeps a movie around for later so ReelBot can leave it in your mix.",
+    description: "Saved means keep this around for a future night.",
   },
   {
     id: "seen",
     label: "Seen",
     emptyTitle: "Nothing marked Seen yet",
-    emptyCopy: "When you finish something, mark it Seen so your list stays honest.",
-    description: "Titles you have already crossed off.",
+    emptyCopy: "Seen tells ReelBot you already watched it, so it can stay out of future picks.",
+    description: "Seen means you watched it and ReelBot should stop resurfacing it.",
   },
   {
     id: "hidden",
     label: "Hidden",
     emptyTitle: "Nothing hidden yet",
-    emptyCopy: "Use Not for Me when you want a title to stay out of the way for future picks.",
-    description: "Titles ReelBot should keep out of future picks for this browser.",
+    emptyCopy: "Hidden tells ReelBot not to show it again in this browser.",
+    description: "Hidden means don’t show this again in future picks.",
   },
   {
     id: "recent",
     label: "Recent",
-    emptyTitle: "No recent views yet",
-    emptyCopy: "Open a movie detail page and it will show up here for quick backtracking.",
-    description: "Quick access to the last movies you opened.",
+    emptyTitle: "No recent visits yet",
+    emptyCopy: "Open a movie page and it will show up here for quick backtracking.",
+    description: "Recent gives you a fast way back to the movies you were just checking.",
   },
 ];
 
@@ -60,11 +61,57 @@ const getSavedMetaLabel = (tabId, movie) => {
 
 function MyMovies() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { getSavedMoviesForBucket, savedCounts } = useTasteProfile();
+  const { profile, getSavedMoviesForBucket, savedCounts } = useTasteProfile();
   const activeTab = TAB_CONFIG.some((tab) => tab.id === searchParams.get("tab")) ? searchParams.get("tab") : "watchlist";
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) || TAB_CONFIG[0];
 
   const savedMovies = useMemo(() => getSavedMoviesForBucket(activeTab), [activeTab, getSavedMoviesForBucket]);
+
+  const tasteSummary = useMemo(() => {
+    const allMovies = [
+      ...(profile.watchlist || []),
+      ...(profile.seen || []),
+      ...(profile.skipped || []),
+    ];
+    const genreCounts = new Map();
+    allMovies.forEach((movie) => {
+      (movie.genre_names || []).forEach((genre) => {
+        genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
+      });
+    });
+
+    const topGenres = Array.from(genreCounts.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 3)
+      .map(([genre]) => genre);
+
+    const vibeLabels = (profile.likedVibes || []).map((item) => item.label).filter(Boolean).slice(0, 2);
+    const lastPick = profile.lastPickPreferences || {};
+    const runtimeLabel = lastPick.runtime === "under_two_hours"
+      ? "90–120 min picks"
+      : lastPick.runtime === "over_two_hours"
+        ? "Longer sit-down watches"
+        : "";
+
+    return [
+      ...topGenres,
+      ...vibeLabels,
+      runtimeLabel,
+    ].filter(Boolean).slice(0, 5);
+  }, [profile]);
+
+  usePageMetadata({
+    title: "My Movies | ReelBot",
+    description: "Your saved ReelBot picks, seen titles, and hidden movies in this browser.",
+    path: "/my-movies",
+    robots: "noindex,follow",
+    structuredData: [
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "My Movies", path: "/my-movies" },
+      ]),
+    ],
+  });
 
   return (
     <div className="browse-page">
@@ -72,18 +119,35 @@ function MyMovies() {
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
             <div className="browse-kicker">My Movies</div>
-            <h1 className="browse-title">Your saved ReelBot picks</h1>
+            <h1 className="browse-title">Your ReelBot memory</h1>
             <p className="browse-subtitle browse-subtitle--hero">
-              Everything here is saved locally in this browser. Mark something for later, track what you have seen, or hide titles you do not want ReelBot surfacing again.
+              Save movies for later, mark what you have seen, and hide what you do not want ReelBot to surface again.
             </p>
           </div>
         </section>
 
+        {tasteSummary.length ? (
+          <section className="detail-info-card my-movies-taste-card">
+            <div className="section-header section-header--stacked-mobile section-header--compact">
+              <div>
+                <div className="detail-description-label">Your taste so far</div>
+                <h2 className="section-title">What ReelBot is learning</h2>
+                <p className="section-subtitle">A quick read from your saved, seen, hidden, and vibe interactions on this browser.</p>
+              </div>
+            </div>
+            <div className="taste-learning-chips">
+              {tasteSummary.map((item) => (
+                <span key={item} className="pick-summary-chip">{item}</span>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         <section className="saved-movies-shell detail-info-card">
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
-              <h2 className="section-title">Your movie memory</h2>
-              <p className="section-subtitle">Marking a title Seen removes it from Watchlist. Hiding a title keeps it out of future ReelBot picks on this browser.</p>
+              <h2 className="section-title">Your movie lists</h2>
+              <p className="section-subtitle">Save = keep for later. Seen = remove from future picks. Hidden = don’t show again.</p>
             </div>
             <div className="saved-movies-count-row">
               <span className="results-count results-count--context">{savedCounts.watchlist} saved</span>
@@ -160,6 +224,10 @@ function MyMovies() {
               <div>
                 <strong>{activeTabConfig.emptyTitle}</strong>
                 <p>{activeTabConfig.emptyCopy}</p>
+                <div className="saved-empty-actions">
+                  <Link to="/browse" className="card-link">Browse Movies</Link>
+                  <Link to="/#pick-for-me" className="reelbot-inline-button">Get a Pick</Link>
+                </div>
               </div>
             </div>
           )}

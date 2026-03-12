@@ -1,0 +1,29 @@
+# ReelBot
+
+ReelBot is an AI movie recommendation companion built to help people decide what to watch faster.
+
+Main pages:
+- / — homepage with vibe-based movie picking
+- /now-playing — movies in theaters now
+- /trending — trending movie feed
+- /coming-soon — upcoming movie releases
+- /browse — browse by genre, mood, runtime, and release state
+- /movies/:id/:slug — movie detail pages with AI guidance and where-to-watch info
+- /how-reelbot-works — explains the product and recommendation flow
+
+What ReelBot does:
+- AI movie picks based on vibe prompts
+- spoiler-light quick takes
+- viewer split summaries
+- next-watch recommendations
+- TMDB-powered movie discovery with AI ranking
+
+How it works:
+- TMDB provides movie metadata, feeds, posters, and release information
+- ReelBot filters weak low-signal titles
+- OpenAI helps rank strong candidate movies and explain why a movie fits
+- save / seen / skip interactions shape future picks in the browser
+
+Primary data sources:
+- TMDB
+- OpenAI

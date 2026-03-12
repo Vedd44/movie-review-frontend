@@ -19,8 +19,28 @@ import {
   getReleaseYear,
   getViewLabel,
 } from "./discovery";
+import { passesSignalFloor } from "./movieSignals";
+import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 
 const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
+
+const getMovieGenreNames = (movie, genreLookup) =>
+  (Array.isArray(movie?.genre_ids) ? movie.genre_ids : [])
+    .map((genreId) => genreLookup.get(String(genreId)))
+    .filter(Boolean);
+
+const getMovieVibeTags = (movie, genreLookup) => {
+  const tags = [];
+  const genreNames = getMovieGenreNames(movie, genreLookup);
+  const runtime = Number(movie?.runtime || 0);
+
+  if (runtime && runtime <= 105) tags.push("Easy watch");
+  if (runtime >= 145 || genreNames.includes("Drama") || genreNames.includes("History")) tags.push("Slow burn");
+  if (genreNames.some((name) => ["Thriller", "Horror", "Action", "Crime"].includes(name))) tags.push("Intense");
+  if (genreNames.some((name) => ["Drama", "Romance", "Music", "Animation"].includes(name))) tags.push("Emotional");
+
+  return tags.slice(0, 2);
+};
 
 function BrowseLibrary() {
   const location = useLocation();
@@ -115,15 +135,24 @@ function BrowseLibrary() {
     () => genres.find((genre) => String(genre.id) === normalizedGenre)?.name || "All genres",
     [genres, normalizedGenre]
   );
+  const genreLookup = useMemo(() => new Map(genres.map((genre) => [String(genre.id), genre.name])), [genres]);
 
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
 
   const filteredMovies = useMemo(
-    () => movies.filter((movie) => !hiddenMovieIds.has(movie.id) && selectedMoodConfig.predicate(movie)),
-    [hiddenMovieIds, movies, selectedMoodConfig]
+    () => movies.filter(
+      (movie) =>
+        !hiddenMovieIds.has(movie.id)
+        && selectedMoodConfig.predicate(movie)
+        && passesSignalFloor(movie, { sourceType: normalizedView, allowReleaseSource: true, threshold: 10 })
+    ),
+    [hiddenMovieIds, movies, normalizedView, selectedMoodConfig]
   );
 
-  const libraryRationale = useMemo(() => buildRecommendationRationale({ pickResult, activePick: pickResult?.primary }), [pickResult]);
+  const libraryRationale = useMemo(
+    () => buildRecommendationRationale({ pickResult, activePick: pickResult?.primary, profile }),
+    [pickResult, profile]
+  );
   const libraryVibeLabel = useMemo(() => pickPrompt.trim() || selectedMoodConfig.label, [pickPrompt, selectedMoodConfig.label]);
 
   const updateFilters = (updates) => {
@@ -148,6 +177,25 @@ function BrowseLibrary() {
     setSearchParams(nextParams);
   };
 
+  const handleRemoveFilter = (filterId) => {
+    if (filterId === "view") {
+      updateFilters({ view: "popular" });
+      return;
+    }
+
+    if (filterId === "genre") {
+      updateFilters({ genre: "all" });
+      return;
+    }
+
+    if (filterId === "runtime") {
+      updateFilters({ runtime: "any" });
+      return;
+    }
+
+    updateFilters({ mood: "all" });
+  };
+
   const requestLibraryPick = async (options = {}) => {
     const nextPreferences = {
       view: normalizedView,
@@ -164,19 +212,14 @@ function BrowseLibrary() {
       setPickError(null);
       tasteActions.savePickPreferences(nextPreferences);
 
-      const requestPayload = {
-        ...nextPreferences,
-        excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
-        trigger: "user_click",
-      };
-
-      if (options.refreshKey) {
-        requestPayload.refresh_key = options.refreshKey;
-      }
-
       const response = await axios.post(
         `${API_BASE_URL}/reelbot/pick`,
-        requestPayload,
+        {
+          ...nextPreferences,
+          excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
+          refresh_key: options.refreshKey,
+          trigger: "user_click",
+        },
         {
           headers: {
             "X-ReelBot-Trigger": "user_click",
@@ -186,25 +229,58 @@ function BrowseLibrary() {
 
       setPickResult(response.data);
       tasteActions.recordPickResult(nextPreferences, response.data);
+      document.getElementById("library-reelbot-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (requestError) {
-      console.error("Error fetching browse ReelBot pick:", requestError);
-      setPickError("ReelBot could not pull a library pick right now.");
+      console.error("Error fetching library ReelBot pick:", requestError);
+      setPickError("ReelBot could not narrow the library right now.");
     } finally {
       setPickLoading(false);
     }
   };
 
   const handleLibraryPick = async () => {
-    await requestLibraryPick();
+    await requestLibraryPick({ refreshKey: `browse-pick-${Date.now()}` });
   };
 
   const handleRefreshLibraryPick = async () => {
     const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id))].filter(Boolean);
-    await requestLibraryPick({
-      extraExcludedIds: currentDeckIds,
-      refreshKey: Date.now(),
-    });
+    await requestLibraryPick({ extraExcludedIds: currentDeckIds, refreshKey: `browse-refresh-${Date.now()}` });
   };
+
+  const activeFilterChips = useMemo(
+    () => [
+      { id: "view", label: getViewLabel(normalizedView) },
+      { id: "genre", label: selectedGenreLabel },
+      { id: "runtime", label: PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length" },
+      { id: "mood", label: selectedMoodConfig.label },
+    ],
+    [normalizedRuntime, normalizedView, selectedGenreLabel, selectedMoodConfig.label]
+  );
+
+  const browseStructuredData = useMemo(
+    () => [
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Browse", path: "/browse" },
+      ]),
+      filteredMovies.length
+        ? buildItemListJsonLd(
+            filteredMovies.slice(0, 12).map((movie) => ({
+              name: movie.title,
+              path: getMoviePath(movie),
+            }))
+          )
+        : null,
+    ].filter(Boolean),
+    [filteredMovies]
+  );
+
+  usePageMetadata({
+    title: "Browse Movies by Genre, Mood, and Runtime | ReelBot",
+    description: "Browse movies by genre, mood, runtime, and release state, then let ReelBot narrow the options.",
+    path: "/browse",
+    structuredData: browseStructuredData,
+  });
 
   return (
     <div className="browse-page">
@@ -212,9 +288,9 @@ function BrowseLibrary() {
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
             <div className="browse-kicker">Browse Library</div>
-            <h1 className="browse-title">Browse the full library</h1>
+            <h1 className="browse-title">Browse Movies</h1>
             <p className="browse-subtitle browse-subtitle--hero">
-              Set the lane with filters, then let ReelBot break the tie when you want one confident pick instead of a wall of options.
+              Start broad, then narrow by genre, runtime, mood, or source.
             </p>
           </div>
         </section>
@@ -222,30 +298,36 @@ function BrowseLibrary() {
         <section id="library-filters" className="library-filters-card">
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
-              <h2 className="section-title">Browse your way</h2>
-              <p className="section-subtitle">Start broad, then narrow the lane when you want ReelBot working with a more intentional setup.</p>
+              <div className="detail-description-label">Browse controls</div>
+              <h2 className="section-title">Filter the lineup</h2>
+              <p className="section-subtitle">Filter by source, genre, runtime, and mood without losing the poster-first feel.</p>
             </div>
-            <div className="results-count">{getViewLabel(normalizedView)}</div>
-          </div>
-
-          <div className="tabs browse-tabs browse-tabs--library">
-            {VIEW_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={normalizedView === option.id ? "active" : ""}
-                onClick={() => updateFilters({ view: option.id })}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+                      </div>
 
           <div className="filter-group-stack">
             <div className="filter-group-row">
               <div className="filter-group-head">
+                <div className="detail-description-label">Source</div>
+                <p className="detail-secondary-text">Choose a feed to start browsing.</p>
+              </div>
+              <div className="tabs browse-tabs browse-tabs--library">
+                {VIEW_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={normalizedView === option.id ? "active" : ""}
+                    onClick={() => updateFilters({ view: option.id })}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group-row">
+              <div className="filter-group-head">
                 <div className="detail-description-label">Genre</div>
-                <p className="detail-secondary-text">Start broad, then narrow to the kind of movie you want.</p>
+                <p className="detail-secondary-text">Start broad, then narrow into a stronger lane.</p>
               </div>
               <div className="mood-chip-row">
                 <button
@@ -290,8 +372,8 @@ function BrowseLibrary() {
 
             <div className="filter-group-row">
               <div className="filter-group-head">
-                <div className="detail-description-label">Mood filter</div>
-                <p className="detail-secondary-text">Use mood last when you want to sharpen the results without shrinking them too quickly.</p>
+                <div className="detail-description-label">Mood</div>
+                <p className="detail-secondary-text">Tilt the grid toward the tone you want right now.</p>
               </div>
               <div className="mood-chip-row">
                 {MOOD_FILTERS.map((filter) => (
@@ -309,57 +391,69 @@ function BrowseLibrary() {
           </div>
         </section>
 
-        <section className="pick-for-me-card library-reelbot-card">
-          <div className="section-header section-header--stacked-mobile section-header--compact">
-            <div>
-              <h2 className="section-title">Ask ReelBot</h2>
-              <p className="section-subtitle">Keep your filters, then add a vibe, actor, or reference title when you want ReelBot to make the call instead of you.</p>
-              <ReelbotSignatureStrip className="reelbot-signature-strip--panel" />
+        <div className="browse-filter-summary-bar">
+          <div className="detail-description-label">Active filters</div>
+          <div className="browse-filter-summary-chips">
+            {activeFilterChips.map((chip) => (
+              <button key={chip.id} type="button" className="pick-summary-chip pick-summary-chip--dismissable" onClick={() => handleRemoveFilter(chip.id)} aria-label={`Remove ${chip.label}`}>
+                <span>{chip.label}</span>
+                <span className="pick-summary-chip-x" aria-hidden="true">×</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <details className="pick-for-me-card library-reelbot-card library-reelbot-card--collapsed" open={Boolean(pickResult?.primary || pickError || pickLoading)}>
+          <summary className="library-reelbot-summary"><span>Let ReelBot choose from these filters</span><span className="library-reelbot-summary-cta">Ask ReelBot →</span></summary>
+          <div className="library-reelbot-body">
+            <div className="section-header section-header--stacked-mobile section-header--compact">
+              <div>
+                <h2 className="section-title">Let ReelBot choose</h2>
+                <p className="section-subtitle">Keep the filters you already set, add a vibe if you want, and let ReelBot make the call.</p>
+                <ReelbotSignatureStrip className="reelbot-signature-strip--panel" />
+              </div>
             </div>
-            <a href="#library-filters" className="browse-library-link browse-library-link--header">
-              Back to filters
-            </a>
+
+            <ReelbotPromptComposer
+              label="Add a vibe"
+              helperText="Optional: add a vibe if you want to sharpen the pick."
+              suggestions={LIBRARY_PROMPTS.slice(0, 4)}
+              value={pickPrompt}
+              onChange={setPickPrompt}
+              placeholder="Try: smart sci-fi under 2 hours, dark but rewarding, or a strong date-night pick"
+            />
+
+            <div className="pick-for-me-actions">
+              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handleLibraryPick} disabled={pickLoading}>
+                {pickLoading ? "ReelBot is picking..." : "Ask ReelBot"}
+              </button>
+            </div>
+
+            <div id="library-reelbot-result">
+              <PickResultPanel
+                loading={pickLoading}
+                error={pickError}
+                rationale={libraryRationale}
+                summary={libraryRationale?.summaryLine || pickResult?.summary}
+                primaryMovie={pickResult?.primary}
+                backupMovies={pickResult?.alternates || []}
+                vibeLabel={libraryVibeLabel}
+                loadingCopy="Ranking the best match from your filtered library..."
+                emptyCopy="Let ReelBot choose from these filters, or add a vibe to steer the pick."
+                refreshLabel="Swap Pick"
+                backupTitle="Other good options tonight"
+                onRefreshChoices={pickResult?.primary ? handleRefreshLibraryPick : undefined}
+                refreshDisabled={pickLoading}
+              />
+            </div>
           </div>
-
-          <ReelbotPromptComposer
-            label="Describe what you're after"
-            helperText="ReelBot uses your filters and your prompt together."
-            suggestions={LIBRARY_PROMPTS}
-            value={pickPrompt}
-            onChange={setPickPrompt}
-            placeholder="Try: smart sci-fi under 2 hours, a strong date-night pick, dark but rewarding..."
-          />
-
-          <div className="pick-for-me-actions">
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handleLibraryPick} disabled={pickLoading}>
-              {pickLoading ? "ReelBot is picking..." : "Ask ReelBot"}
-            </button>
-          </div>
-
-          <PickResultPanel
-            loading={pickLoading}
-            error={pickError}
-            rationale={libraryRationale}
-            summary={pickResult?.summary}
-            primaryMovie={pickResult?.primary}
-            backupMovies={pickResult?.alternates || []}
-            vibeLabel={libraryVibeLabel}
-            loadingCopy="ReelBot is narrowing the library to the best fit..."
-            emptyCopy="Add a vibe if you want, or let ReelBot choose from the filters you already set."
-            refreshLabel="Show new options"
-            backupTitle="A few strong backups for the same setup"
-            backupCopy="Strong alternates if the first option is close, but not quite the call you want to make."
-            onRefreshChoices={pickResult?.primary ? handleRefreshLibraryPick : undefined}
-            refreshDisabled={pickLoading}
-          />
-        </section>
+        </details>
 
         <div id="library-results" className="section-header section-header--stacked-mobile">
           <div>
+            <div className="detail-description-label">Browse results</div>
             <h2 className="section-title">Library Results</h2>
-            <p className="section-subtitle">
-              {selectedGenreLabel} • {selectedMoodConfig.label} • {PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length"}
-            </p>
+            <p className="section-subtitle">{selectedGenreLabel} • {selectedMoodConfig.label} • {PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length"}</p>
           </div>
           <div className="mood-rail-actions">
             <a href="#library-filters" className="browse-library-link browse-library-link--header">
@@ -380,19 +474,50 @@ function BrowseLibrary() {
         {!loading && !error && (
           <div className="movie-list">
             {filteredMovies.length > 0 ? (
-              filteredMovies.map((movie) => (
-                <article key={movie.id} className="movie-card">
-                  <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
-                    {movie.poster_path ? (
-                      <img
-                        src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                        alt={movie.title}
-                        className="movie-poster"
-                      />
-                    ) : (
-                      <div className="no-poster">Poster unavailable</div>
-                    )}
-                  </Link>
+              filteredMovies.map((movie) => {
+                const genreNames = getMovieGenreNames(movie, genreLookup);
+                const vibeTags = getMovieVibeTags(movie, genreLookup);
+                return (
+                <article
+                  key={movie.id}
+                  className="movie-card movie-card--browse"
+                >
+                  <div className="movie-poster-shell">
+                    <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
+                      {movie.poster_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                          alt={movie.title}
+                          className="movie-poster"
+                        />
+                      ) : (
+                        <div className="no-poster">Poster unavailable</div>
+                      )}
+                    </Link>
+                    <div className="movie-hover-preview">
+                      <div className="movie-hover-preview-head">
+                        <div className="movie-hover-title">{movie.title}</div>
+                        <div className="movie-hover-meta">
+                          <span>{getReleaseYear(movie.release_date)}</span>
+                          <span>{movie.runtime ? `${movie.runtime} min` : "Runtime TBA"}</span>
+                          {movie.vote_average ? <span>TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                        </div>
+                      </div>
+                      {genreNames.length ? <div className="movie-hover-genres">{genreNames.slice(0, 3).join(" • ")}</div> : null}
+                      {vibeTags.length ? (
+                        <div className="movie-hover-tags">
+                          {vibeTags.map((tag) => (
+                            <span key={tag} className="movie-hover-tag">{tag}</span>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="movie-hover-actions">
+                        <Link to={getMoviePath(movie)} className="card-link movie-hover-link">
+                          View Details
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="movie-card-content">
                     <div className="movie-card-meta">
@@ -412,7 +537,7 @@ function BrowseLibrary() {
                     </Link>
                   </div>
                 </article>
-              ))
+              );})
             ) : (
               <div className="empty-state">
                 <span className="status-glyph" aria-hidden="true"></span>

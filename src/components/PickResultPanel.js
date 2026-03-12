@@ -15,11 +15,11 @@ function PickResultPanel({
   vibeLabel = "",
   loadingCopy,
   emptyCopy,
-  refreshLabel = "Show new options",
-  backupTitle = "Backup picks if the first one doesn’t land",
-  backupCopy = "A few strong backups for the same setup.",
+  refreshLabel = "Swap Pick",
+  backupTitle = "Other good options",
   onRefreshChoices,
   refreshDisabled = false,
+  showExpandedReasoning = false,
 }) {
   return (
     <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
@@ -34,10 +34,11 @@ function PickResultPanel({
 
       {!error && !loading && primaryMovie ? (
         <>
+          {rationale?.contextAnchor ? <p className="pick-context-anchor">{rationale.contextAnchor}</p> : null}
+
           <div className="pick-result-header">
             <div>
-              <div className="detail-description-label">{rationale?.title || "ReelBot recommendation"}</div>
-              <h3 className="pick-result-title">{rationale?.heading || "Best Match for Tonight"}</h3>
+              <h3 className="pick-result-title">{rationale?.heading || "ReelBot’s Pick"}</h3>
             </div>
             {rationale?.confidenceLabel ? <div className="recommendation-confidence-pill pick-result-confidence">{rationale.confidenceLabel}</div> : null}
           </div>
@@ -55,84 +56,74 @@ function PickResultPanel({
               )}
             </Link>
             <div className="pick-primary-content">
-              <div className="detail-description-label pick-primary-kicker">Main pick</div>
-              <div className="movie-card-meta">
-                <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
-                {primaryMovie.runtime ? <span className="movie-card-chip">{primaryMovie.runtime} min</span> : null}
-                {primaryMovie.vote_average ? <span className="movie-card-chip">TMDB {primaryMovie.vote_average.toFixed(1)}</span> : null}
-              </div>
               <h3 className="pick-primary-title">
                 <Link to={getMoviePath(primaryMovie)} className="movie-title-link">
                   {primaryMovie.title}
                 </Link>
               </h3>
-              <p className="pick-primary-hook">{primaryMovie.reason}</p>
-              <p className="pick-primary-overview">{primaryMovie.overview}</p>
+              <div className="movie-card-meta">
+                <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
+                {primaryMovie.runtime ? <span className="movie-card-chip">{primaryMovie.runtime} min</span> : null}
+                {primaryMovie.vote_average ? <span className="movie-card-chip">TMDB {primaryMovie.vote_average.toFixed(1)}</span> : null}
+                {rationale?.fitLabel ? <span className="movie-card-chip movie-card-chip--accent">{rationale.fitLabel}</span> : null}
+              </div>
+              {summary ? <p className="pick-result-summary detail-secondary-text">{summary}</p> : null}
+              <div className="pick-rationale-divider" aria-hidden="true"></div>
+              <RecommendationRationale rationale={rationale} collapsible={!showExpandedReasoning} />
+
+              <div className="pick-result-actions-block">
+                <div className="pick-primary-actions">
+                  <div className="pick-primary-action-row pick-primary-action-row--primary">
+                    <Link to={getMoviePath(primaryMovie)} className="card-link pick-primary-detail-link">
+                      View Details
+                    </Link>
+                    {onRefreshChoices ? (
+                      <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
+                        {refreshLabel}
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="pick-personal-actions-block">
+                    <div className="pick-personal-actions-label">Your actions</div>
+                    <TasteActionBar movie={primaryMovie} vibeLabel={vibeLabel} compact className="pick-taste-actions" showVibeAction={false} />
+                  </div>
+                  {rationale?.tasteCue ? <p className="pick-taste-cue detail-secondary-text">{rationale.tasteCue}</p> : null}
+                </div>
+              </div>
             </div>
           </article>
-
-          <RecommendationRationale rationale={rationale} summary={summary} />
-
-          <div className="pick-result-actions-block">
-            <div className="detail-description-label">Actions</div>
-            <p className="detail-secondary-text pick-result-actions-copy">Save it, mark it seen, or ask ReelBot for another lane without losing the main pick.</p>
-            <div className="pick-primary-actions">
-              <div className="pick-primary-action-row">
-                <Link to={getMoviePath(primaryMovie)} className="card-link">
-                  View Details
-                </Link>
-                {onRefreshChoices ? (
-                  <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
-                    {refreshLabel}
-                  </button>
-                ) : null}
-              </div>
-              <TasteActionBar movie={primaryMovie} vibeLabel={vibeLabel} compact className="pick-taste-actions" />
-            </div>
-          </div>
 
           {backupMovies.length ? (
             <section className="pick-backups-block">
               <div className="pick-backups-head">
                 <div>
-                  <div className="detail-description-label">Backup Picks</div>
                   <h3 className="pick-backups-title">{backupTitle}</h3>
-                  <p className="detail-secondary-text">{backupCopy}</p>
+                  <p className="section-subtitle pick-backups-copy">Not feeling the first pick? Here are a few strong alternatives.</p>
                 </div>
               </div>
 
-              <div className="pick-alternates-grid">
+              <div className="pick-backup-strip">
                 {backupMovies.map((movie) => (
-                  <article key={movie.id} className="pick-alternate-card">
-                    <Link to={getMoviePath(movie)} className="pick-alternate-poster-link" aria-label={`Open ${movie.title}`}>
+                  <article key={movie.id} className="pick-backup-card">
+                    <Link to={getMoviePath(movie)} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`}>
                       {movie.poster_path ? (
                         <img
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                           alt={movie.title}
-                          className="pick-alternate-poster"
+                          className="pick-backup-poster"
                         />
                       ) : (
-                        <div className="pick-alternate-poster pick-alternate-poster--placeholder">Poster unavailable</div>
+                        <div className="pick-backup-poster pick-backup-poster--placeholder">Poster unavailable</div>
                       )}
                     </Link>
-                    <div className="pick-alternate-body">
-                      <div className="detail-description-label pick-alternate-kicker">Backup option</div>
-                      <div className="pick-alternate-head">
-                        <div>
-                          <h3 className="pick-alternate-title">
-                            <Link to={getMoviePath(movie)} className="movie-title-link">
-                              {movie.title}
-                            </Link>
-                          </h3>
-                          <div className="pick-alternate-meta">
-                            <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-                            {movie.runtime ? <span className="movie-card-chip">{movie.runtime} min</span> : null}
-                            {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
-                          </div>
-                        </div>
-                      </div>
-                      <p className="pick-alternate-reason">{movie.reason}</p>
-                      <TasteActionBar movie={movie} vibeLabel={vibeLabel} compact className="pick-taste-actions" />
+                    <div className="pick-backup-meta">
+                      {movie.backupRole ? <div className="pick-backup-role">{movie.backupRole}</div> : null}
+                      <h4 className="pick-backup-title">
+                        <Link to={getMoviePath(movie)} className="movie-title-link">
+                          {movie.title}
+                        </Link>
+                      </h4>
+                      <p className="pick-backup-year">{getReleaseYear(movie.release_date)}</p>
                     </div>
                   </article>
                 ))}
@@ -142,11 +133,7 @@ function PickResultPanel({
         </>
       ) : null}
 
-      {!error && !loading && !primaryMovie ? (
-        <div className="pick-empty-state-soft">
-          <p className="pick-empty-note detail-secondary-text">{emptyCopy}</p>
-        </div>
-      ) : null}
+      {!error && !loading && !primaryMovie ? <p className="detail-secondary-text pick-result-copy">{emptyCopy}</p> : null}
     </div>
   );
 }
