@@ -1388,6 +1388,10 @@ body {
   max-width: 66ch;
 }
 
+.detail-decision-helper {
+  margin-top: 18px;
+}
+
 .detail-reelbot-cta-copy {
   margin: 6px 0 0;
   color: var(--text-primary);
