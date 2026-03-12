@@ -73,21 +73,28 @@ export const PICK_COMPANY_OPTIONS = [
   { id: "friends", label: "With friends" },
 ];
 
-export const DISCOVERY_PROMPTS = [
-  "Something tense but not miserable",
-  "Smart sci-fi",
-  "Easy watch comedy",
-  "Visually stunning movie",
-  "Great movie for a lazy Sunday",
-  "Clever mystery",
-  "Short thriller",
-  "Fun group movie",
-  "Emotional but not heavy",
-  "Something weird but accessible",
-  "An easy date-night watch",
-  "Smart and twisty with real payoff",
-  "Funny and good with friends",
+export const DISCOVERY_PROMPT_SETS = [
+  [
+    "Short thriller",
+    "Visually stunning movie",
+    "Emotional but not too heavy",
+    "Easy date-night watch",
+  ],
+  [
+    "Something under 2 hours",
+    "A smart sci-fi",
+    "Great acting",
+    "A dark mystery",
+  ],
+  [
+    "Something weird but accessible",
+    "A fun adventure",
+    "A comfort movie",
+    "A tense crime drama",
+  ],
 ];
+
+export const DISCOVERY_PROMPTS = DISCOVERY_PROMPT_SETS.flat();
 
 export const REELBOT_CAPABILITIES = [
   {

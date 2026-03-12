@@ -3273,6 +3273,13 @@ body {
   min-height: 40px;
 }
 
+.pick-prompt-chip.is-active {
+  border-color: rgba(242, 197, 86, 0.3);
+  background: rgba(242, 197, 86, 0.08);
+  color: #fff1c2;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
 .pick-prompt-input {
   width: 100%;
   min-height: 42px;

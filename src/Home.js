@@ -4,7 +4,7 @@ import axios from "axios";
 import "./App.css";
 import {
   API_BASE_URL,
-  DISCOVERY_PROMPTS,
+  DISCOVERY_PROMPT_SETS,
   MOOD_FILTERS,
   REELBOT_CAPABILITIES,
   VIEW_OPTIONS,
@@ -73,6 +73,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [selectedMood, setSelectedMood] = useState("all");
   const [showCapabilities, setShowCapabilities] = useState(false);
   const [pickPrompt, setPickPrompt] = useState("");
+  const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickValidation, setPickValidation] = useState("");
@@ -100,7 +101,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     return () => mediaQuery.removeListener(handleChange);
   }, []);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  const [visiblePromptSuggestions] = useState(() => shuffleArray(DISCOVERY_PROMPTS).slice(0, 4));
+  const [visiblePromptSuggestions] = useState(() => {
+    const randomizedSets = shuffleArray(DISCOVERY_PROMPT_SETS);
+    return randomizedSets[0] || [];
+  });
   const { profile, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
 
   const scrollToSection = (id) => {
@@ -515,9 +519,20 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           <ReelbotPromptComposer
             label="Tell ReelBot the vibe"
             suggestions={visiblePromptSuggestions}
+            activeSuggestion={activePromptSuggestion}
             value={pickPrompt}
-            onChange={(value) => {
+            onSuggestionSelect={(value) => {
               setPickPrompt(value);
+              setActivePromptSuggestion(value);
+              if (pickValidation) {
+                setPickValidation("");
+              }
+            }}
+            onInputChange={(value) => {
+              setPickPrompt(value);
+              if (activePromptSuggestion && value.trim() !== activePromptSuggestion) {
+                setActivePromptSuggestion("");
+              }
               if (pickValidation) {
                 setPickValidation("");
               }

@@ -1,6 +1,38 @@
-import React from "react";
+import React, { useRef } from "react";
 
-function ReelbotPromptComposer({ label, helperText = "", suggestions = [], value, onChange, placeholder, errorText = "" }) {
+function ReelbotPromptComposer({
+  label,
+  helperText = "",
+  suggestions = [],
+  activeSuggestion = "",
+  value,
+  onSuggestionSelect,
+  onInputChange,
+  placeholder,
+  errorText = "",
+}) {
+  const inputRef = useRef(null);
+  const inputShellRef = useRef(null);
+
+  const handleSuggestionClick = (prompt) => {
+    onSuggestionSelect?.(prompt);
+
+    window.requestAnimationFrame(() => {
+      if (window.matchMedia("(max-width: 720px)").matches) {
+        inputShellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const nextLength = prompt.length;
+        inputRef.current.setSelectionRange(nextLength, nextLength);
+      }
+    });
+  };
+
+  const handleInputChange = (event) => {
+    onInputChange?.(event.target.value);
+  };
   return (
     <div className="pick-control-group pick-control-group--prompt">
       <div className="detail-description-label">{label}</div>
@@ -8,19 +40,25 @@ function ReelbotPromptComposer({ label, helperText = "", suggestions = [], value
       {suggestions.length ? (
         <div className="pick-prompt-suggestions">
           {suggestions.map((prompt) => (
-            <button key={prompt} type="button" className="mood-rail-chip pick-prompt-chip" onClick={() => onChange(prompt)}>
+            <button
+              key={prompt}
+              type="button"
+              className={`mood-rail-chip pick-prompt-chip${activeSuggestion === prompt ? " is-active" : ""}`}
+              onClick={() => handleSuggestionClick(prompt)}
+            >
               {prompt}
             </button>
           ))}
         </div>
       ) : null}
-      <div className="pick-prompt-shell">
+      <div ref={inputShellRef} className="pick-prompt-shell">
         <input
           type="text"
           className={`pick-prompt-input${errorText ? " is-invalid" : ""}`}
           placeholder={placeholder}
+          ref={inputRef}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={handleInputChange}
           aria-invalid={errorText ? "true" : "false"}
           aria-describedby={errorText ? "pick-prompt-validation" : undefined}
         />
