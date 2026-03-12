@@ -1040,7 +1040,7 @@ function MovieDetails() {
                 <div className="reelbot-preview-banner">
                   <div className="detail-description-label">Before release</div>
                   <p className="detail-secondary-text">
-                    This one is still {movie.status ? movie.status.toLowerCase() : "unreleased"}, so ReelBot is reading from the synopsis, cast, genre, and release details available so far.
+                    ReelBot is working from the synopsis, cast, genre, and release details available so far, so treat this as an early read rather than a finished-view verdict.
                   </p>
                 </div>
               ) : null}
