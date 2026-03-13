@@ -208,6 +208,14 @@ const getConfidenceLabel = (score) => {
   return "Worth a Look";
 };
 
+const getConfidenceStars = (score) => {
+  if (score >= 91) return "★★★★★";
+  if (score >= 84) return "★★★★☆";
+  if (score >= 76) return "★★★☆☆";
+  if (score >= 69) return "★★☆☆☆";
+  return "★☆☆☆☆";
+};
+
 const getContextAnchor = (preferences = {}, surpriseMode = false) => {
   if (surpriseMode) {
     return "A curated wildcard when you want ReelBot to surprise you.";
@@ -284,6 +292,7 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
       whyTitle: pickResult.rationale.whyTitle || "Why ReelBot picked this",
       confidenceScore,
       confidenceLabel: getConfidenceLabel(confidenceScore),
+      confidenceStars: getConfidenceStars(confidenceScore),
       summaryLine: pickResult.rationale.summaryLine || getOverviewSummary(activePick),
       fitLabel: `${confidenceScore}% Match`,
       tasteCue: getTasteCue(profile),
@@ -330,6 +339,7 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
     whyTitle: "Why ReelBot picked this",
     confidenceScore,
     confidenceLabel: getConfidenceLabel(confidenceScore),
+    confidenceStars: getConfidenceStars(confidenceScore),
     summaryLine: getOverviewSummary(activePick),
     fitLabel: `${confidenceScore}% Match`,
     tasteCue: getTasteCue(profile),

@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import ProviderBadgeRow from "./components/ProviderBadgeRow";
 import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
 import { rankSearchResults } from "./movieSignals";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
+import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
 
 function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -61,6 +63,7 @@ function SearchResults() {
     () => (topMatch ? [topMatch, ...relatedMovies] : relatedMovies),
     [relatedMovies, topMatch]
   );
+  const providerMap = useWatchProviderBadges(visibleResults.map((movie) => movie.id));
 
   const searchStructuredData = useMemo(
     () => [
@@ -195,6 +198,7 @@ function SearchResults() {
                           <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
                           {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
                         </div>
+                        <ProviderBadgeRow badges={providerMap[movie.id]?.provider_badges} compact />
 
                         <h3 className="movie-card-title">
                           <Link to={getMoviePath(movie)} className="movie-title-link">
@@ -203,9 +207,19 @@ function SearchResults() {
                         </h3>
                         <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
 
-                        <Link to={getMoviePath(movie)} className="card-link">
-                          View Details
-                        </Link>
+                        <div className="movie-card-actions-row">
+                          <Link to={getMoviePath(movie)} className="card-link">
+                            View Details
+                          </Link>
+                          <Link
+                            to={getMoviePath(movie)}
+                            state={{ reelbotAction: "is_this_for_me", fromCard: true }}
+                            className="movie-card-ask-reelbot"
+                          >
+                            Ask ReelBot
+                            <span className="movie-card-ask-copy">Is this for me?</span>
+                          </Link>
+                        </div>
                       </div>
                     </article>
                   ))}

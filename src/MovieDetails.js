@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
 import TasteActionBar from "./components/TasteActionBar";
 import useTasteProfile from "./hooks/useTasteProfile";
 import WatchAvailability from "./components/WatchAvailability";
+import ProviderBadgeRow from "./components/ProviderBadgeRow";
 import TrailerModal from "./components/TrailerModal";
 import ReelbotStructuredContent from "./components/ReelbotStructuredContent";
+import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
 import { getMoviePath, slugifyMovieTitle } from "./discovery";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl } from "./siteConfig";
@@ -390,6 +392,58 @@ const getTimeCommitment = (runtime) => {
   return "Epic";
 };
 
+const getCommitmentLabel = (timeCommitment) => {
+  if (timeCommitment === "Short") return "Easy watch";
+  if (timeCommitment === "Medium") return "Moderate watch";
+  if (timeCommitment === "Long") return "Long watch";
+  if (timeCommitment === "Epic") return "Big commitment";
+  return "TBA";
+};
+
+const buildWhyReelbotBullets = (movie, previewMode = false) => {
+  if (!movie) {
+    return [];
+  }
+
+  const genres = movie.genre_names || [];
+  const bullets = [];
+
+  if (previewMode) {
+    bullets.push("The cast, genre mix, and premise already give it a distinct lane.");
+    bullets.push(movie.director ? `The director signal gives the movie a clearer identity than a generic preview.` : "The early materials suggest a more specific tone than a generic studio preview.");
+    bullets.push("Best treated as an early-read prospect rather than a guaranteed opening-night lock.");
+    return bullets;
+  }
+
+  if (includesAnyGenre(genres, ["Thriller", "Mystery", "Crime"])) {
+    bullets.push("Strong tension and momentum make it easier to commit to than a flatter drama.");
+  }
+
+  if (includesAnyGenre(genres, ["Drama", "History", "War"])) {
+    bullets.push("It plays best when you want something serious, immersive, and a little more demanding.");
+  }
+
+  if (includesAnyGenre(genres, ["Comedy", "Romance", "Animation", "Family"])) {
+    bullets.push("The tone stays accessible enough for a lower-friction watch.");
+  }
+
+  if (includesAnyGenre(genres, ["Sci-Fi", "Fantasy"])) {
+    bullets.push("The world-building gives it more personality than a safe background-watch pick.");
+  }
+
+  if (Number(movie.runtime || 0) >= 145) {
+    bullets.push("It rewards patience more than casual half-attention viewing.");
+  } else if (Number(movie.runtime || 0) > 0) {
+    bullets.push("The runtime is manageable enough to feel like a realistic tonight pick.");
+  }
+
+  if (Number(movie.rating || 0) >= 7.3 && Number(movie.vote_count || 0) >= 100) {
+    bullets.push("Audience response is strong enough to make this a safer recommendation than a pure wildcard.");
+  }
+
+  return bullets.slice(0, 3);
+};
+
 const formatReviewMeta = (review, source = "TMDB user reviews") => {
   if (!review) {
     return source;
@@ -419,6 +473,7 @@ function MovieDetails() {
   const heroRef = useRef(null);
   const reelbotPanelRef = useRef(null);
   const reelbotPulseTimeoutRef = useRef(null);
+  const autoOpenedReelbotActionRef = useRef(false);
   const [movie, setMovie] = useState(null);
   const [reelbotResults, setReelbotResults] = useState({});
   const [loading, setLoading] = useState(true);
@@ -565,9 +620,45 @@ function MovieDetails() {
   const insightCards = useMemo(() => (previewMode ? buildPreviewSnapshot(movie) : buildWatchFit(movie)), [movie, previewMode]);
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
+  const similarProviderMap = useWatchProviderBadges(similarMovies.map((similarMovie) => similarMovie.id));
   const nextWatchReasonLabels = previewMode
     ? ["Watch-now parallel", "Broader alternative", "Stranger side path", "Bigger swing"]
-    : ["Similar tone", "Safer next pick", "Stranger follow-up", "More action-forward"] ;
+    : ["Similar tone", "Safer next pick", "Stranger follow-up", "More action-forward"];
+  const fitSnapshotItems = useMemo(() => {
+    const paceCard = insightCards.find((item) => item.label === "Pace");
+    const weightCard = insightCards.find((item) => item.label === "Emotional Weight");
+    const bestWithCard = insightCards.find((item) => item.label === "Best With");
+
+    if (previewMode) {
+      return [
+        { label: "Release", value: formatReleaseDate(movie?.release_date) },
+        { label: "Commitment", value: getCommitmentLabel(timeCommitment) },
+        { label: "Scale", value: insightCards.find((item) => item.label === "Scale")?.value || "TBA" },
+        { label: "Best With", value: "Plan ahead" },
+      ];
+    }
+
+    return [
+      { label: "Runtime", value: movie?.runtime ? `${movie.runtime} min` : "TBA" },
+      { label: "Commitment", value: getCommitmentLabel(timeCommitment) },
+      { label: "Pacing", value: paceCard?.value || "Steady" },
+      { label: "Emotional Weight", value: weightCard?.value || "Balanced" },
+      { label: "Best With", value: bestWithCard?.value || "Solo" },
+    ];
+  }, [insightCards, movie, previewMode, timeCommitment]);
+  const whyReelbotBullets = useMemo(() => {
+    const whyWatchReasons = reelbotResults.why_watch?.structured_content?.reasons;
+    if (Array.isArray(whyWatchReasons) && whyWatchReasons.length) {
+      return whyWatchReasons.map((item) => item.detail).filter(Boolean).slice(0, 3);
+    }
+
+    const bestIfBullets = reelbotResults.best_if_you_want?.structured_content?.bullets;
+    if (Array.isArray(bestIfBullets) && bestIfBullets.length) {
+      return bestIfBullets.slice(0, 3);
+    }
+
+    return buildWhyReelbotBullets(movie, previewMode);
+  }, [movie, previewMode, reelbotResults]);
 
   const detailStructuredData = useMemo(() => {
     if (!movie) {
@@ -654,7 +745,7 @@ function MovieDetails() {
     featured: false,
   };
 
-  const scrollToReelbotPanel = () => {
+  const scrollToReelbotPanel = useCallback(() => {
     const panel = reelbotPanelRef.current;
 
     if (!panel) {
@@ -665,7 +756,7 @@ function MovieDetails() {
     const targetTop = Math.max(panelTop - PANEL_SCROLL_OFFSET, 0);
 
     window.scrollTo({ top: targetTop, behavior: "smooth" });
-  };
+  }, []);
 
 
   const handleJumpLink = (targetId, event) => {
@@ -690,7 +781,7 @@ function MovieDetails() {
     window.scrollTo({ top: Math.max(targetTop - DETAIL_ANCHOR_OFFSET, 0), behavior: "smooth" });
   };
 
-  const pulseReelbotPanel = () => {
+  const pulseReelbotPanel = useCallback(() => {
     setPanelPulse(false);
 
     if (reelbotPulseTimeoutRef.current) {
@@ -703,9 +794,9 @@ function MovieDetails() {
         setPanelPulse(false);
       }, 1800);
     });
-  };
+  }, []);
 
-  const handleReelbotAction = async (actionId) => {
+  const handleReelbotAction = useCallback(async (actionId) => {
     setActiveReelbotAction(actionId);
     setReelbotError(null);
 
@@ -740,7 +831,20 @@ function MovieDetails() {
     } finally {
       setReelbotLoadingAction(null);
     }
-  };
+  }, [id, pulseReelbotPanel, reelbotResults, scrollToReelbotPanel]);
+
+  // The detail page should auto-open a requested ReelBot action exactly once when arriving from a card CTA.
+  useEffect(() => {
+    const requestedAction = location.state?.reelbotAction;
+
+    if (!movie?.id || !requestedAction || autoOpenedReelbotActionRef.current) {
+      return;
+    }
+
+    autoOpenedReelbotActionRef.current = true;
+    handleReelbotAction(requestedAction);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [handleReelbotAction, location.pathname, location.state, movie, navigate]);
 
   if (loading) {
     return (
@@ -1076,6 +1180,28 @@ function MovieDetails() {
           </div>
         </section>
 
+        <div className="detail-decision-grid">
+          <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movieId={movie.id} />
+
+          <section className="detail-info-card detail-info-card--fit-snapshot">
+            <div className="detail-section-head detail-section-head--facts">
+              <div>
+                <div className="detail-description-label">Movie Fit Snapshot</div>
+                <h2 className="detail-section-title">Decide Faster</h2>
+                <p className="detail-secondary-text">A quick read on runtime, pacing, emotional weight, and what kind of watch this asks for.</p>
+              </div>
+            </div>
+            <div className="detail-fit-snapshot-grid">
+              {fitSnapshotItems.map((item) => (
+                <div key={item.label} className="detail-fit-snapshot-item">
+                  <span className="detail-fact-pill-label">{item.label}</span>
+                  <span className="detail-fit-snapshot-value">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
         <section className="detail-info-card detail-info-card--compact-facts">
           <div className="detail-section-head detail-section-head--facts">
             <div>
@@ -1097,7 +1223,20 @@ function MovieDetails() {
           </div>
         </section>
 
-        <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" />
+        <section className="detail-info-card detail-info-card--why-reelbot">
+          <div className="detail-section-head detail-section-head--facts">
+            <div>
+              <div className="detail-description-label">Why ReelBot recommends this</div>
+              <h2 className="detail-section-title">Why This Is Worth Your Time</h2>
+              <p className="detail-secondary-text">Short, decision-first reasons instead of generic praise.</p>
+            </div>
+          </div>
+          <ul className="detail-why-reelbot-list">
+            {whyReelbotBullets.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        </section>
 
         {showReviewSplit ? (
           <section className="detail-info-card detail-info-card--split">
@@ -1172,6 +1311,7 @@ function MovieDetails() {
                   <div className="similar-reason-label">{nextWatchReasonLabels[index % nextWatchReasonLabels.length]}</div>
                   <div className="similar-title">{similarMovie.title}</div>
                   <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
+                  <ProviderBadgeRow badges={similarProviderMap[similarMovie.id]?.provider_badges} compact />
                 </Link>
               ))}
             </div>

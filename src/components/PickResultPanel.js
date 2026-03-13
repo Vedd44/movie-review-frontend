@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import RecommendationRationale from "./RecommendationRationale";
 import TasteActionBar from "./TasteActionBar";
+import ProviderBadgeRow from "./ProviderBadgeRow";
+import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getReleaseYear } from "../discovery";
 
 function PickResultPanel({
@@ -21,6 +23,11 @@ function PickResultPanel({
   refreshDisabled = false,
   showExpandedReasoning = false,
 }) {
+  const providerMap = useWatchProviderBadges(
+    useMemo(() => [primaryMovie?.id, ...backupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, backupMovies])
+  );
+  const confidenceStars = rationale?.confidenceStars || "★★★★☆";
+
   return (
     <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
       {error ? <p className="error-message">{error}</p> : null}
@@ -39,8 +46,18 @@ function PickResultPanel({
           <div className="pick-result-header">
             <div>
               <h3 className="pick-result-title">{rationale?.heading || "ReelBot’s Pick"}</h3>
+              {rationale?.confidenceLabel ? (
+                <div className="pick-result-confidence-stack">
+                  <div className="recommendation-confidence-pill pick-result-confidence">{rationale.confidenceLabel}</div>
+                  <div className="pick-result-confidence-detail">
+                    <span className="pick-result-confidence-text">ReelBot Confidence</span>
+                    <span className="pick-result-confidence-stars" aria-label={`Confidence ${rationale.confidenceLabel}`}>
+                      {confidenceStars}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </div>
-            {rationale?.confidenceLabel ? <div className="recommendation-confidence-pill pick-result-confidence">{rationale.confidenceLabel}</div> : null}
           </div>
 
           <article className="pick-primary-card pick-primary-card--hero">
@@ -67,6 +84,7 @@ function PickResultPanel({
                 {primaryMovie.vote_average ? <span className="movie-card-chip">TMDB {primaryMovie.vote_average.toFixed(1)}</span> : null}
                 {rationale?.fitLabel ? <span className="movie-card-chip movie-card-chip--accent">{rationale.fitLabel}</span> : null}
               </div>
+              <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
               {summary ? <p className="pick-result-summary detail-secondary-text">{summary}</p> : null}
               <div className="pick-rationale-divider" aria-hidden="true"></div>
               <RecommendationRationale rationale={rationale} collapsible={!showExpandedReasoning} />
@@ -98,7 +116,7 @@ function PickResultPanel({
               <div className="pick-backups-head">
                 <div>
                   <h3 className="pick-backups-title">{backupTitle}</h3>
-                  <p className="section-subtitle pick-backups-copy">Not feeling the first pick? Here are a few strong alternatives.</p>
+                  <p className="section-subtitle pick-backups-copy">ReelBot keeps these in the same lane, but each one gives you a different angle.</p>
                 </div>
               </div>
 
@@ -123,7 +141,9 @@ function PickResultPanel({
                           {movie.title}
                         </Link>
                       </h4>
-                      <p className="pick-backup-year">{getReleaseYear(movie.release_date)}</p>
+                      <div className="pick-backup-year">{getReleaseYear(movie.release_date)}</div>
+                      <ProviderBadgeRow badges={providerMap[movie.id]?.provider_badges} compact />
+                      {movie.reason ? <p className="pick-backup-reason detail-secondary-text">{movie.reason}</p> : null}
                     </div>
                   </article>
                 ))}
@@ -133,7 +153,9 @@ function PickResultPanel({
         </>
       ) : null}
 
-      {!error && !loading && !primaryMovie ? <p className="detail-secondary-text pick-result-copy">{emptyCopy}</p> : null}
+      {!error && !loading && !primaryMovie ? (
+        <div className="pick-result-copy detail-secondary-text">{emptyCopy}</div>
+      ) : null}
     </div>
   );
 }
