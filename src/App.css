@@ -455,7 +455,7 @@ body {
 }
 
 .detail-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: calc(100% - 32px);
   max-width: 1180px;
   margin: 0 auto;
   background: transparent;
@@ -7955,8 +7955,8 @@ body {
 }
 
 .home-page .pick-for-me-card--primary {
-  padding: 30px 30px 28px;
-  margin-bottom: 26px;
+  padding: 30px 30px 32px;
+  margin-bottom: 30px;
 }
 
 .home-page .pick-for-me-card--primary .section-header {
@@ -7994,12 +7994,14 @@ body {
 }
 
 .home-page .pick-for-me-actions {
-  margin-top: 18px;
+  margin-top: 22px;
   gap: 12px;
+  align-items: center;
 }
 
 .home-page .pick-for-me-actions .reelbot-inline-button--solid {
   min-width: 156px;
+  margin-right: 2px;
 }
 
 .home-page .pick-for-me-actions .reelbot-inline-button--secondary {
@@ -8092,7 +8094,7 @@ body {
   }
 
   .home-page .pick-for-me-card--primary {
-    padding: 24px 22px;
+    padding: 24px 22px 26px;
   }
 
   .home-page .home-poster-grid {
@@ -8416,7 +8418,7 @@ body {
 
 
 .movie-details-page .detail-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: calc(100% - 32px);
   max-width: 1180px;
 }
 
