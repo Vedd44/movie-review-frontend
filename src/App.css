@@ -6233,6 +6233,11 @@ body {
   gap: 12px;
 }
 
+.search-top-match-actions .card-link {
+  width: 100%;
+  justify-content: center;
+}
+
 .search-top-match-ask {
   align-items: flex-start;
   padding: 0.95rem 1rem;
