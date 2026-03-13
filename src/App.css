@@ -5020,6 +5020,12 @@ body {
   color: #fff1c2;
 }
 
+.detail-text-action--disabled {
+  opacity: 0.68;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .detail-vibe-grid {
   gap: 16px;
   margin-top: 18px;
@@ -8002,10 +8008,14 @@ body {
 .home-page .pick-for-me-actions .reelbot-inline-button--solid {
   min-width: 156px;
   margin-right: 2px;
+  justify-content: center;
+  text-align: center;
 }
 
 .home-page .pick-for-me-actions .reelbot-inline-button--secondary {
   min-width: 132px;
+  justify-content: center;
+  text-align: center;
 }
 
 .home-page .pick-result-section,

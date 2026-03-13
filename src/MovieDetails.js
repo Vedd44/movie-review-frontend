@@ -923,13 +923,16 @@ function MovieDetails() {
 
             <div className="detail-hero-actions">
               <div className="detail-hero-inline-row detail-hero-inline-row--primary">
+                <button type="button" className="detail-trailer-cta" onClick={(event) => handleJumpLink("ask-reelbot", event)}>
+                  Is This Worth Watching?
+                </button>
                 {movie.trailer?.key ? (
-                  <button type="button" className="detail-trailer-cta" onClick={() => setIsTrailerOpen(true)}>
+                  <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => setIsTrailerOpen(true)}>
                     Watch Trailer
                   </button>
                 ) : (
                   <>
-                    <button type="button" className="detail-trailer-cta detail-trailer-cta--placeholder" disabled>
+                    <button type="button" className="detail-text-action detail-text-action--hero detail-text-action--disabled" disabled>
                       Watch Trailer
                     </button>
                     <span className="detail-trailer-note">Trailer not posted yet.</span>
