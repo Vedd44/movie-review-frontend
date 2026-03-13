@@ -6248,22 +6248,87 @@ body {
 
 .search-result-card {
   height: 100%;
+  border-radius: 22px;
+  border-color: rgba(129, 155, 190, 0.12);
+  background: linear-gradient(180deg, rgba(10, 18, 30, 0.98), rgba(7, 13, 22, 0.92));
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
+}
+
+.search-result-card:hover {
+  border-color: rgba(242, 197, 86, 0.18);
 }
 
 .search-result-card .movie-card-content {
   display: flex;
   flex-direction: column;
   height: 100%;
+  gap: 10px;
+  padding: 18px;
+}
+
+.search-result-card .movie-card-meta {
+  margin-bottom: 0;
+}
+
+.search-result-card .provider-badge-row {
+  min-height: 28px;
+}
+
+.search-result-card .movie-card-title {
+  font-size: 1.18rem;
+  line-height: 1.3;
+}
+
+.search-result-card .movie-card-date {
+  margin: 0;
 }
 
 .search-result-overview {
   min-height: auto;
   margin-bottom: 0;
+  color: rgba(244, 239, 226, 0.68);
+  font-size: 0.9rem;
+  line-height: 1.62;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
-.search-result-card .movie-card-actions-row {
+.search-result-actions {
   margin-top: auto;
   padding-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.search-result-actions .card-link {
+  width: 100%;
+  justify-content: center;
+}
+
+.search-result-ask {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.22rem;
+  min-height: 54px;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  opacity: 1;
+}
+
+.search-result-ask:hover,
+.search-result-ask:focus-visible {
+  border-color: rgba(242, 197, 86, 0.26);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.search-result-ask .movie-card-ask-copy {
+  color: rgba(244, 239, 226, 0.58);
 }
 
 .search-related-section {

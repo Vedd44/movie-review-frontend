@@ -256,14 +256,14 @@ function SearchResults() {
                         <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
                         {movie.overview ? <p className="movie-card-overview search-result-overview">{movie.overview}</p> : null}
 
-                        <div className="movie-card-actions-row">
+                        <div className="movie-card-actions-row search-result-actions">
                           <Link to={getMoviePath(movie)} className="card-link">
                             View Details
                           </Link>
                           <Link
                             to={getMoviePath(movie)}
                             state={{ reelbotAction: "is_this_for_me", fromCard: true }}
-                            className="movie-card-ask-reelbot"
+                            className="movie-card-ask-reelbot search-result-ask"
                           >
                             Ask ReelBot
                             <span className="movie-card-ask-copy">Is this for me?</span>
