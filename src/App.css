@@ -6090,15 +6090,61 @@ body {
   width: 100%;
 }
 
+.search-results-page .browse-shell {
+  gap: 24px;
+}
+
+.search-results-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.9fr);
+  gap: 24px;
+  align-items: end;
+}
+
+.search-results-hero-copy {
+  max-width: 62ch;
+}
+
+.search-results-toolbar {
+  display: grid;
+  gap: 14px;
+  justify-items: end;
+}
+
+.search-results-form {
+  width: 100%;
+  max-width: 460px;
+  padding: 10px;
+  border-radius: 22px;
+  border: 1px solid rgba(129, 155, 190, 0.16);
+  background: linear-gradient(180deg, rgba(8, 14, 24, 0.92), rgba(10, 18, 30, 0.84));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.search-results-form input {
+  min-height: 50px;
+}
+
+.search-results-form button {
+  min-width: 150px;
+}
+
+.search-results-section-head {
+  margin-top: 2px;
+}
+
 .search-top-match-card {
   display: grid;
   grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
-  gap: 20px;
-  padding: 22px;
-  border-radius: 22px;
-  border: 1px solid rgba(242, 197, 86, 0.16);
-  background: linear-gradient(180deg, rgba(12, 19, 31, 0.94), rgba(8, 13, 22, 0.86));
-  margin-bottom: 24px;
+  gap: 28px;
+  padding: 26px;
+  border-radius: 26px;
+  border: 1px solid rgba(242, 197, 86, 0.2);
+  background:
+    radial-gradient(circle at top right, rgba(242, 197, 86, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(12, 19, 31, 0.97), rgba(8, 13, 22, 0.9));
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.22);
+  margin-bottom: 28px;
 }
 
 .search-top-match-poster-link,
@@ -6112,7 +6158,7 @@ body {
 .search-top-match-poster--placeholder {
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: 18px;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -6123,18 +6169,144 @@ body {
   color: var(--text-secondary);
 }
 
-.search-top-match-title {
-  margin: 10px 0 10px;
-  font-size: 1.6rem;
+.search-top-match-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+  gap: 24px;
+  align-items: start;
 }
 
-.search-top-match-summary,
+.search-top-match-main {
+  min-width: 0;
+}
+
+.search-top-match-title {
+  margin: 10px 0 12px;
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  line-height: 1.05;
+}
+
+.search-top-match-summary {
+  margin: 14px 0 0;
+  color: rgba(244, 239, 226, 0.9);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.search-top-match-overview {
+  margin: 14px 0 0;
+  color: rgba(244, 239, 226, 0.66);
+  font-size: 0.94rem;
+  line-height: 1.72;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.search-top-match-aside {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(129, 155, 190, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.search-top-match-fact-label {
+  color: #f6d57a;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .search-top-match-date {
-  margin: 10px 0 0;
+  margin: -6px 0 0;
+  font-size: 0.98rem;
+}
+
+.search-top-match-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.search-top-match-ask {
+  align-items: flex-start;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.search-related-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+  gap: 22px;
+}
+
+.search-result-card {
+  height: 100%;
+}
+
+.search-result-card .movie-card-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.search-result-overview {
+  min-height: auto;
+  margin-bottom: 0;
+}
+
+.search-result-card .movie-card-actions-row {
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 .search-related-section {
   margin-top: 10px;
+}
+
+@media (max-width: 980px) {
+  .search-results-hero {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .search-results-toolbar {
+    justify-items: stretch;
+  }
+
+  .search-results-form {
+    max-width: none;
+  }
+
+  .search-top-match-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .search-top-match-card {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 18px;
+  }
+
+  .search-top-match-poster-link {
+    max-width: 220px;
+  }
+
+  .search-top-match-aside {
+    padding: 16px;
+  }
+
+  .search-results-form button {
+    width: 100%;
+  }
 }
 
 .saved-empty-actions {

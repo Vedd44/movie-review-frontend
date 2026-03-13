@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
 import ProviderBadgeRow from "./components/ProviderBadgeRow";
@@ -9,11 +9,17 @@ import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./s
 import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
 
 function SearchResults() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
+  const [draftQuery, setDraftQuery] = useState(searchQuery);
   const [searchPayload, setSearchPayload] = useState({ results: [], top_match: null, related_results: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setDraftQuery(searchQuery);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (!searchQuery) {
@@ -64,6 +70,18 @@ function SearchResults() {
     [relatedMovies, topMatch]
   );
   const providerMap = useWatchProviderBadges(visibleResults.map((movie) => movie.id));
+  const resultCountLabel = `${visibleResults.length} ${visibleResults.length === 1 ? "result" : "results"}`;
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const nextQuery = draftQuery.trim();
+
+    if (!nextQuery) {
+      return;
+    }
+
+    navigate(`/search?q=${encodeURIComponent(nextQuery)}`);
+  };
 
   const searchStructuredData = useMemo(
     () => [
@@ -94,13 +112,27 @@ function SearchResults() {
   });
 
   return (
-    <div className="browse-page">
+    <div className="browse-page search-results-page">
       <div className="container browse-shell">
-        <section className="browse-hero browse-hero--compact browse-hero--solo">
-          <div className="browse-copy">
+        <section className="browse-hero browse-hero--compact browse-hero--solo search-results-hero">
+          <div className="browse-copy search-results-hero-copy">
             <div className="browse-kicker">ReelBot Search</div>
             <h1 className="browse-title">Results for “{searchQuery || "your search"}”</h1>
-            <p className="browse-subtitle">We surface the movie you probably meant first, then keep nearby matches close by.</p>
+            <p className="browse-subtitle">We surface the clearest match first, then keep the strongest nearby titles within easy reach.</p>
+          </div>
+
+          <div className="search-results-toolbar">
+            <form onSubmit={handleSearchSubmit} className="search-bar search-results-form">
+              <input
+                type="text"
+                value={draftQuery}
+                onChange={(event) => setDraftQuery(event.target.value)}
+                placeholder="Search by title, franchise, actor, or director"
+                aria-label="Search movies"
+              />
+              <button type="submit">Search Again</button>
+            </form>
+            {!loading && !error ? <div className="results-count results-count--context">{resultCountLabel}</div> : null}
           </div>
         </section>
 
@@ -114,7 +146,7 @@ function SearchResults() {
 
         {!loading && !error && (
           <>
-            <div className="section-header section-header--stacked-mobile section-header--compact">
+            <div className="section-header section-header--stacked-mobile section-header--compact search-results-section-head">
               <div>
                 <div className="detail-description-label">Search results</div>
                 <h2 className="section-title">{topMatch ? "Top Match" : "Matching Movies"}</h2>
@@ -124,7 +156,7 @@ function SearchResults() {
                     : "We could not find a strong match for that search just yet."}
                 </p>
               </div>
-              <div className="results-count">{visibleResults.length} results</div>
+              <div className="results-count">{resultCountLabel}</div>
             </div>
 
             {topMatch ? (
@@ -142,28 +174,44 @@ function SearchResults() {
                 </Link>
 
                 <div className="search-top-match-content">
-                  <div className="detail-description-label">Best Match</div>
-                  <h3 className="search-top-match-title">
-                    <Link to={getMoviePath(topMatch)} className="movie-title-link">
-                      {topMatch.title}
-                    </Link>
-                  </h3>
-                  <div className="movie-card-meta">
-                    <span className="movie-card-chip">{getReleaseYear(topMatch.release_date)}</span>
-                    {topMatch.vote_average ? <span className="movie-card-chip">TMDB {topMatch.vote_average.toFixed(1)}</span> : null}
-                    <span className="movie-card-chip movie-card-chip--accent">Top Match</span>
+                  <div className="search-top-match-main">
+                    <div className="detail-description-label">Best Match</div>
+                    <h3 className="search-top-match-title">
+                      <Link to={getMoviePath(topMatch)} className="movie-title-link">
+                        {topMatch.title}
+                      </Link>
+                    </h3>
+                    <div className="movie-card-meta">
+                      <span className="movie-card-chip">{getReleaseYear(topMatch.release_date)}</span>
+                      {topMatch.vote_average ? <span className="movie-card-chip">TMDB {topMatch.vote_average.toFixed(1)}</span> : null}
+                      <span className="movie-card-chip movie-card-chip--accent">{topMatch.exact_match ? "Exact Match" : "Best Fit"}</span>
+                    </div>
+                    <p className="search-top-match-summary">
+                      {topMatch.exact_match
+                        ? "Exact title match with the clearest overall fit in these results."
+                        : "The clearest title match with the strongest overall quality and relevance."}
+                    </p>
+                    {topMatch.overview ? <p className="search-top-match-overview">{topMatch.overview}</p> : null}
+                    <ProviderBadgeRow badges={providerMap[topMatch.id]?.provider_badges} compact />
                   </div>
-                  <p className="search-top-match-summary">
-                    {topMatch.exact_match
-                      ? "Exact title match with the clearest overall fit in these results."
-                      : "The clearest title match with the strongest overall quality and relevance."}
-                  </p>
-                  <p className="detail-secondary-text search-top-match-date">{formatMovieDate(topMatch.release_date)}</p>
-                  <div className="search-top-match-actions">
-                    <Link to={getMoviePath(topMatch)} className="card-link">
-                      View Details
-                    </Link>
-                  </div>
+
+                  <aside className="search-top-match-aside">
+                    <div className="search-top-match-fact-label">Release</div>
+                    <p className="detail-secondary-text search-top-match-date">{formatMovieDate(topMatch.release_date)}</p>
+                    <div className="search-top-match-actions">
+                      <Link to={getMoviePath(topMatch)} className="card-link">
+                        View Details
+                      </Link>
+                      <Link
+                        to={getMoviePath(topMatch)}
+                        state={{ reelbotAction: "is_this_for_me", fromCard: true }}
+                        className="movie-card-ask-reelbot search-top-match-ask"
+                      >
+                        Ask ReelBot
+                        <span className="movie-card-ask-copy">Is this for me?</span>
+                      </Link>
+                    </div>
+                  </aside>
                 </div>
               </article>
             ) : null}
@@ -178,9 +226,9 @@ function SearchResults() {
                   </div>
                 </div>
 
-                <div className="movie-list">
+                <div className="movie-list search-related-grid">
                   {relatedMovies.map((movie) => (
-                    <article key={movie.id} className="movie-card">
+                    <article key={movie.id} className="movie-card search-result-card">
                       <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
                         {movie.poster_path ? (
                           <img
@@ -206,6 +254,7 @@ function SearchResults() {
                           </Link>
                         </h3>
                         <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
+                        {movie.overview ? <p className="movie-card-overview search-result-overview">{movie.overview}</p> : null}
 
                         <div className="movie-card-actions-row">
                           <Link to={getMoviePath(movie)} className="card-link">
