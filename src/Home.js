@@ -260,7 +260,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     [pickResult, activePick, profile, lastPickMode]
   );
   const backupPicksWithRoles = useMemo(
-    () => backupPicks.map((movie, index) => ({ ...movie, backupRole: getBackupRoleLabel(movie, index) })),
+    () => backupPicks.map((movie, index) => ({ ...movie, backupRole: movie.backupRole || getBackupRoleLabel(movie, index) })),
     [backupPicks]
   );
 
@@ -347,6 +347,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
         trigger: "user_click",
       };
+
+      if (options.intentSnapshot || pickResult?.resolved_intent) {
+        requestPayload.intent_snapshot = options.intentSnapshot || pickResult?.resolved_intent;
+      }
+
+      if (options.candidatePoolIds || pickResult?.candidate_pool_ids) {
+        requestPayload.candidate_pool_ids = options.candidatePoolIds || pickResult?.candidate_pool_ids;
+      }
 
       if (options.refreshKey) {
         requestPayload.refresh_key = options.refreshKey;

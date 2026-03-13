@@ -219,6 +219,8 @@ function BrowseLibrary() {
           excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
           refresh_key: options.refreshKey,
           trigger: "user_click",
+          intent_snapshot: options.intentSnapshot || pickResult?.resolved_intent,
+          candidate_pool_ids: options.candidatePoolIds || pickResult?.candidate_pool_ids,
         },
         {
           headers: {

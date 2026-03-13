@@ -6,6 +6,7 @@ import TasteActionBar from "./components/TasteActionBar";
 import useTasteProfile from "./hooks/useTasteProfile";
 import WatchAvailability from "./components/WatchAvailability";
 import TrailerModal from "./components/TrailerModal";
+import ReelbotStructuredContent from "./components/ReelbotStructuredContent";
 import { getMoviePath, slugifyMovieTitle } from "./discovery";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl } from "./siteConfig";
@@ -30,14 +31,21 @@ const REELBOT_ACTIONS = {
     id: "why_watch",
     label: "Why Watch It",
     hint: "The clearest case for why this might be worth your time.",
-    panelTitle: "Top 5 Reasons to Watch",
+    panelTitle: "Why Watch It",
     panelKicker: "Worth Your Time?",
+  },
+  best_if_you_want: {
+    id: "best_if_you_want",
+    label: "Best If You Want",
+    hint: "Fast decision bullets for tone, pacing, and commitment.",
+    panelTitle: "Best If You Want",
+    panelKicker: "Decision Helper",
   },
   similar_picks: {
     id: "similar_picks",
-    label: "Similar Picks",
-    hint: "Better next-watch ideas than a simple lookalike list.",
-    panelTitle: "If You Liked This...",
+    label: "Next Watch",
+    hint: "Role-aware nearby picks instead of generic lookalikes.",
+    panelTitle: "Next Watch Options",
     panelKicker: "What To Watch Next",
   },
   scary_check: {
@@ -141,8 +149,8 @@ const UPCOMING_ACTION_OVERRIDES = {
   },
 };
 
-const RELEASED_PRIMARY_ACTION_IDS = ["quick_take", "is_this_for_me", "why_watch", "similar_picks"];
-const UPCOMING_PRIMARY_ACTION_IDS = ["quick_take", "is_this_for_me", "why_watch", "similar_picks"];
+const RELEASED_PRIMARY_ACTION_IDS = ["quick_take", "is_this_for_me", "why_watch", "best_if_you_want", "similar_picks"];
+const UPCOMING_PRIMARY_ACTION_IDS = ["quick_take", "is_this_for_me", "why_watch", "best_if_you_want", "similar_picks"];
 const RELEASED_VIEWER_QUESTION_IDS = ["scary_check", "pace_check", "best_mood", "date_night"];
 const UPCOMING_VIEWER_QUESTION_IDS = ["scary_check", "pace_check", "best_mood", "date_night"];
 const RELEASED_SPOILER_ACTION_IDS = ["spoiler_synopsis", "ending_explained", "themes_and_takeaways", "debate_club"];
@@ -243,10 +251,11 @@ const getActionConfigMap = (previewMode) =>
 const getFollowUpActionIds = (actionId, previewMode) => {
   if (previewMode) {
     const previewMap = {
-      quick_take: ["is_this_for_me", "pace_check", "similar_picks"],
-      is_this_for_me: ["why_watch", "best_mood", "date_night"],
-      why_watch: ["similar_picks", "best_mood", "pace_check"],
-      similar_picks: ["quick_take", "is_this_for_me", "best_mood"],
+      quick_take: ["is_this_for_me", "best_if_you_want", "similar_picks"],
+      is_this_for_me: ["why_watch", "best_if_you_want", "date_night"],
+      why_watch: ["best_if_you_want", "similar_picks", "pace_check"],
+      best_if_you_want: ["quick_take", "why_watch", "similar_picks"],
+      similar_picks: ["quick_take", "is_this_for_me", "best_if_you_want"],
       scary_check: ["quick_take", "is_this_for_me", "why_watch"],
       pace_check: ["quick_take", "best_mood", "similar_picks"],
       best_mood: ["quick_take", "date_night", "similar_picks"],
@@ -257,10 +266,11 @@ const getFollowUpActionIds = (actionId, previewMode) => {
   }
 
   const releasedMap = {
-    quick_take: ["is_this_for_me", "best_mood", "similar_picks"],
-    is_this_for_me: ["why_watch", "best_mood", "date_night"],
-    why_watch: ["is_this_for_me", "similar_picks", "pace_check"],
-    similar_picks: ["why_watch", "best_mood", "date_night"],
+    quick_take: ["is_this_for_me", "best_if_you_want", "similar_picks"],
+    is_this_for_me: ["why_watch", "best_if_you_want", "date_night"],
+    why_watch: ["is_this_for_me", "best_if_you_want", "similar_picks"],
+    best_if_you_want: ["quick_take", "why_watch", "similar_picks"],
+    similar_picks: ["why_watch", "best_if_you_want", "date_night"],
     scary_check: ["quick_take", "is_this_for_me", "why_watch"],
     pace_check: ["quick_take", "best_mood", "similar_picks"],
     best_mood: ["quick_take", "date_night", "similar_picks"],
@@ -1030,7 +1040,7 @@ function MovieDetails() {
                 ) : reelbotError ? (
                   <p className="error-message">{reelbotError}</p>
                 ) : activeReelbotResult ? (
-                  <div className={`reelbot-body${activeReelbotAction === "similar_picks" ? " reelbot-body--recommendations" : ""}`} dangerouslySetInnerHTML={{ __html: activeReelbotResult.content || "" }} />
+                  <ReelbotStructuredContent action={activeReelbotAction} result={activeReelbotResult} />
                 ) : reelbotLoadingAction === activeReelbotAction ? (
                   <div className="reelbot-loading-state">
                     <span className="reelbot-loading-dot" aria-hidden="true"></span>

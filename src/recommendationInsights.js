@@ -229,6 +229,10 @@ const getContextAnchor = (preferences = {}, surpriseMode = false) => {
 const getTasteCue = () => "ReelBot learns from the movies you save, skip, or mark as seen.";
 
 export const getBackupRoleLabel = (movie, index = 0) => {
+  if (movie?.backupRole) {
+    return movie.backupRole;
+  }
+
   const voteAverage = Number(movie?.vote_average || 0);
   const voteCount = Number(movie?.vote_count || 0);
   const signalScore = Number(movie?.signal_score || 0);
@@ -263,6 +267,28 @@ export const getBackupRoleLabel = (movie, index = 0) => {
 export const buildRecommendationRationale = ({ pickResult, activePick, profile, surpriseMode = false }) => {
   if (!pickResult?.primary || !activePick) {
     return null;
+  }
+
+  if (pickResult?.rationale) {
+    let confidenceScore = Number(pickResult.match_score || activePick.match_score || 0);
+    if (!confidenceScore) {
+      confidenceScore = 78;
+    }
+
+    confidenceScore = clamp(confidenceScore, 68, 97);
+
+    return {
+      title: "Your Pick",
+      heading: pickResult.rationale.heading || "ReelBot’s Pick",
+      contextAnchor: pickResult.rationale.contextAnchor || getContextAnchor(pickResult.resolved_preferences || {}, surpriseMode),
+      whyTitle: pickResult.rationale.whyTitle || "Why ReelBot picked this",
+      confidenceScore,
+      confidenceLabel: getConfidenceLabel(confidenceScore),
+      summaryLine: pickResult.rationale.summaryLine || getOverviewSummary(activePick),
+      fitLabel: `${confidenceScore}% Match`,
+      tasteCue: getTasteCue(profile),
+      whyRecommended: Array.isArray(pickResult.rationale.whyRecommended) ? pickResult.rationale.whyRecommended.slice(0, 3) : [],
+    };
   }
 
   const preferences = {
