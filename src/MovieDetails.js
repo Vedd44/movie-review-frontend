@@ -156,6 +156,7 @@ const UPCOMING_VIEWER_QUESTION_IDS = ["scary_check", "pace_check", "best_mood", 
 const RELEASED_SPOILER_ACTION_IDS = ["spoiler_synopsis", "ending_explained", "themes_and_takeaways", "debate_club"];
 const PANEL_SCROLL_OFFSET = 112;
 const DETAIL_ANCHOR_OFFSET = 110;
+const DEFAULT_REELBOT_ERROR = "ReelBot hit a snag on that answer. Please try again.";
 
 const summarizeList = (items = [], limit = 3) => {
 
@@ -566,6 +567,7 @@ function MovieDetails() {
   const primaryActionIds = useMemo(() => (previewMode ? UPCOMING_PRIMARY_ACTION_IDS : RELEASED_PRIMARY_ACTION_IDS), [previewMode]);
   const viewerQuestionIds = useMemo(() => (previewMode ? UPCOMING_VIEWER_QUESTION_IDS : RELEASED_VIEWER_QUESTION_IDS), [previewMode]);
   const spoilerActionIds = useMemo(() => (previewMode ? [] : RELEASED_SPOILER_ACTION_IDS), [previewMode]);
+  const spoilerActionSet = useMemo(() => new Set(spoilerActionIds), [spoilerActionIds]);
 
   const metaItems = useMemo(() => {
     if (!movie) {
@@ -705,13 +707,6 @@ function MovieDetails() {
   });
 
   useEffect(() => {
-    if (!spoilerModeEnabled || !activeReelbotAction || !spoilerActionIds.includes(activeReelbotAction)) {
-      return;
-    }
-
-    setActiveReelbotAction(null);
-  }, [activeReelbotAction, spoilerActionIds, spoilerModeEnabled]);
-  useEffect(() => {
     if (!movie?.id) {
       return;
     }
@@ -735,13 +730,16 @@ function MovieDetails() {
   const activeReelbotConfig = activeReelbotAction ? actionConfigs[activeReelbotAction] : null;
   const activeReelbotResult = activeReelbotAction ? reelbotResults[activeReelbotAction] : null;
   const followUpActionIds = activeReelbotAction
-    ? getFollowUpActionIds(activeReelbotAction, previewMode).filter((actionId) => actionId !== activeReelbotAction)
+    ? getFollowUpActionIds(activeReelbotAction, previewMode).filter(
+        (actionId) => actionId !== activeReelbotAction && (spoilerModeEnabled || !spoilerActionSet.has(actionId))
+      )
     : [];
   const stagedReelbotConfig = activeReelbotConfig || {
     panelTitle: previewMode ? "ReelBot Preview" : "ReelBot Response",
     panelKicker: previewMode ? "Waiting for your pick" : "Waiting for your pick",
     featured: false,
   };
+  const isActiveReelbotLoading = Boolean(activeReelbotAction && reelbotLoadingAction === activeReelbotAction);
 
   const scrollToReelbotPanel = useCallback(() => {
     const panel = reelbotPanelRef.current;
@@ -794,7 +792,33 @@ function MovieDetails() {
     });
   }, []);
 
+  const buildReelbotRequestPayload = useCallback((actionId) => {
+    const spoilerActionSelected = spoilerActionSet.has(actionId);
+
+    return {
+      movie_id: Number(id),
+      action: actionId,
+      trigger: "user_click",
+      spoiler_mode: spoilerActionSelected,
+      prompt_template: previewMode ? "detail_preview" : spoilerActionSelected ? "detail_spoiler" : "detail_standard",
+      use_case: actionId,
+    };
+  }, [id, previewMode, spoilerActionSet]);
+
   const handleReelbotAction = useCallback(async (actionId) => {
+    const action = actionConfigs[actionId];
+    const spoilerActionSelected = spoilerActionSet.has(actionId);
+
+    if (!action) {
+      return;
+    }
+
+    if (spoilerActionSelected && !spoilerModeEnabled) {
+      setReelbotError("Turn Spoiler Mode on to unlock spoiler answers.");
+      scrollToReelbotPanel();
+      return;
+    }
+
     setActiveReelbotAction(actionId);
     setReelbotError(null);
 
@@ -811,10 +835,7 @@ function MovieDetails() {
       setReelbotLoadingAction(actionId);
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/movies/${id}/reelbot`,
-        {
-          action: actionId,
-          trigger: "user_click",
-        },
+        buildReelbotRequestPayload(actionId),
         {
           headers: {
             "X-ReelBot-Trigger": "user_click",
@@ -825,11 +846,12 @@ function MovieDetails() {
       setReelbotResults((previous) => ({ ...previous, [actionId]: response.data }));
     } catch (requestError) {
       console.error("Error fetching ReelBot insight:", requestError);
-      setReelbotError("Failed to load that ReelBot insight.");
+      const nextError = requestError.response?.data?.error?.message || requestError.response?.data?.error || requestError.response?.data?.message || DEFAULT_REELBOT_ERROR;
+      setReelbotError(typeof nextError === "string" ? nextError : DEFAULT_REELBOT_ERROR);
     } finally {
-      setReelbotLoadingAction(null);
+      setReelbotLoadingAction((currentValue) => (currentValue === actionId ? null : currentValue));
     }
-  }, [id, pulseReelbotPanel, reelbotResults, scrollToReelbotPanel]);
+  }, [actionConfigs, buildReelbotRequestPayload, id, pulseReelbotPanel, reelbotResults, scrollToReelbotPanel, spoilerActionSet, spoilerModeEnabled]);
 
   // The detail page should auto-open a requested ReelBot action exactly once when arriving from a card CTA.
   useEffect(() => {
@@ -1090,6 +1112,8 @@ function MovieDetails() {
                           className={`reelbot-question-chip${activeReelbotAction === action.id ? " is-active" : ""}`}
                           onClick={() => handleReelbotAction(action.id)}
                           disabled={reelbotLoadingAction === action.id}
+                          aria-pressed={activeReelbotAction === action.id}
+                          aria-controls="reelbot-response"
                         >
                           {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
                         </button>
@@ -1128,6 +1152,8 @@ function MovieDetails() {
                               className={`reelbot-question-chip reelbot-question-chip--spoiler${activeReelbotAction === action.id ? " is-active" : ""}`}
                               onClick={() => handleReelbotAction(action.id)}
                               disabled={reelbotLoadingAction === action.id}
+                              aria-pressed={activeReelbotAction === action.id}
+                              aria-controls="reelbot-response"
                             >
                               {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
                             </button>
@@ -1140,9 +1166,11 @@ function MovieDetails() {
               </div>
 
               <div
+                id="reelbot-response"
                 ref={reelbotPanelRef}
                 className={`reelbot-panel reelbot-panel--stage detail-anchor-target${stagedReelbotConfig.featured ? " is-primary" : ""}${activeReelbotAction ? " is-live" : " is-empty"}${panelPulse ? " is-pulsing" : ""}`}
                 aria-live="polite"
+                aria-busy={isActiveReelbotLoading}
               >
                 <div className="reelbot-panel-top">
                   <div className="reelbot-panel-top-copy">
@@ -1178,10 +1206,19 @@ function MovieDetails() {
                     </div>
                   </div>
                 ) : reelbotError ? (
-                  <p className="error-message">{reelbotError}</p>
+                  <div className="reelbot-empty-state" role="status">
+                    <p className="error-message">{reelbotError}</p>
+                    {activeReelbotAction ? (
+                      <div className="reelbot-empty-actions">
+                        <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction(activeReelbotAction)}>
+                          Try again
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 ) : activeReelbotResult ? (
                   <ReelbotStructuredContent action={activeReelbotAction} result={activeReelbotResult} />
-                ) : reelbotLoadingAction === activeReelbotAction ? (
+                ) : isActiveReelbotLoading ? (
                   <div className="reelbot-loading-state">
                     <span className="reelbot-loading-dot" aria-hidden="true"></span>
                     <p className="detail-secondary-text reelbot-placeholder-copy">
@@ -1203,6 +1240,8 @@ function MovieDetails() {
                             className={`reelbot-question-chip reelbot-question-chip--panel${!previewMode && spoilerActionIds.includes(action.id) ? " reelbot-question-chip--spoiler" : ""}`}
                             onClick={() => handleReelbotAction(action.id)}
                             disabled={reelbotLoadingAction === action.id}
+                            aria-pressed={activeReelbotAction === action.id}
+                            aria-controls="reelbot-response"
                           >
                             {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
                           </button>
