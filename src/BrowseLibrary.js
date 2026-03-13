@@ -2,12 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
-import ProviderBadgeRow from "./components/ProviderBadgeRow";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import ReelbotSignatureStrip from "./components/ReelbotSignatureStrip";
 import useTasteProfile from "./hooks/useTasteProfile";
-import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
 import { buildRecommendationRationale } from "./recommendationInsights";
 import {
   API_BASE_URL,
@@ -150,7 +148,6 @@ function BrowseLibrary() {
     ),
     [hiddenMovieIds, movies, normalizedView, selectedMoodConfig]
   );
-  const providerMap = useWatchProviderBadges(filteredMovies.map((movie) => movie.id));
 
   const libraryRationale = useMemo(
     () => buildRecommendationRationale({ pickResult, activePick: pickResult?.primary, profile }),
@@ -537,7 +534,6 @@ function BrowseLibrary() {
                       <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
                       {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
                     </div>
-                    <ProviderBadgeRow badges={providerMap[movie.id]?.provider_badges} compact />
 
                     <h3 className="movie-card-title">
                       <Link to={getMoviePath(movie)} className="movie-title-link">
