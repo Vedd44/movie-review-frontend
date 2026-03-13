@@ -435,23 +435,16 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     );
   };
 
-  const handleHeroSearch = async (event) => {
+  const handleHeroSearch = (event) => {
     event.preventDefault();
-    if (!query.trim()) {
+    const nextQuery = query.trim();
+
+    if (!nextQuery) {
       scrollToSection("pick-for-me");
       return;
     }
 
-    await submitPick(
-      {
-        prompt: query.trim(),
-        source: "library",
-      },
-      {
-        scrollToResults: true,
-        refreshKey: `hero-search-${Date.now()}`,
-      }
-    );
+    navigate(`/search?q=${encodeURIComponent(nextQuery)}`);
   };
 
   return (
