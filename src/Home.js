@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
-import ProviderBadgeRow from "./components/ProviderBadgeRow";
 import {
   API_BASE_URL,
   DISCOVERY_PROMPT_SETS,
@@ -18,7 +17,6 @@ import {
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import useTasteProfile from "./hooks/useTasteProfile";
-import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
 import { buildRecommendationRationale, getBackupRoleLabel } from "./recommendationInsights";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl, DEFAULT_SOCIAL_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "./siteConfig";
@@ -226,7 +224,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     () => visibleMovies.filter((movie) => selectedMoodConfig.predicate(movie)),
     [selectedMoodConfig, visibleMovies]
   );
-  const providerMap = useWatchProviderBadges(filteredMovies.map((movie) => movie.id));
 
   const heroPreviewMovies = useMemo(() => {
     const source = filteredMovies.length ? filteredMovies : visibleMovies;
@@ -327,9 +324,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           structuredData: homeStructuredData,
         }
       : {
-          title: "ReelBot — The AI Movie Companion",
+          title: "ReelBot — AI Movie Picker | Find What to Watch Tonight",
           description:
-            "ReelBot helps you decide what to watch faster with AI-powered movie picks, spoiler-light quick takes, review splits, and smarter next-watch recommendations.",
+            "Find what to watch tonight with ReelBot — an AI-powered movie picker that delivers fast recommendations, spoiler-light insights, and smarter next-watch suggestions.",
           path: "/",
           image: DEFAULT_SOCIAL_IMAGE,
           structuredData: homeStructuredData,
@@ -466,9 +463,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             <h1 className="browse-title browse-title--brand">What should I watch tonight?</h1>
             <div className="browse-powered">Fast feeds. Better picks. Less second-guessing.</div>
             <p className="browse-subtitle browse-subtitle--hero">
-              Tell ReelBot the vibe when you want a fast, confident pick,
-              <span className="browse-subtitle-break">then browse if you want to widen the search.</span>
+              Tell ReelBot the vibe and get a fast, confident pick.
+              <span className="browse-subtitle-break">Browse if you want to widen the search.</span>
             </p>
+            <div className="hero-trust-signal">Powered by TMDB data and AI recommendations.</div>
 
             <div className="browse-hero-actions">
               <a href="#pick-for-me" className="reelbot-inline-button reelbot-inline-button--solid">
@@ -516,6 +514,19 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                 </div>
               </div>
             ) : null}
+          </div>
+        </section>
+
+        <section className="seo-intro-section" aria-labelledby="seo-intro-title">
+          <div className="seo-intro-copy">
+            <div className="detail-description-label">AI Movie Picker</div>
+            <h2 id="seo-intro-title" className="section-title">AI movie recommendations that are easier to understand</h2>
+            <p className="section-subtitle">
+              ReelBot helps you decide what to watch tonight using AI-powered movie recommendations, quick movie insights, and smart next-watch suggestions.
+            </p>
+            <p className="detail-secondary-text">
+              Browse movies currently playing, explore popular films, or ask ReelBot for a personalized recommendation based on mood, genre, actor, or runtime.
+            </p>
           </div>
         </section>
 
@@ -569,7 +580,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               <p className="section-subtitle">
                 {activePick
                   ? "A strong first pick, with a few nearby alternatives."
-                  : "Your pick will show up here with a strong first option and a few nearby alternatives."}
+                  : "Tell ReelBot the vibe and it will line up a confident first pick and a few nearby alternatives."}
               </p>
             </div>
           </div>
@@ -583,7 +594,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             backupMovies={backupPicksWithRoles}
             vibeLabel={pickVibeLabel}
             loadingCopy={PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
-            emptyCopy="Tell ReelBot the vibe and it will line up a confident first pick with a few nearby options."
+            emptyCopy="Tell ReelBot the vibe and it will line up a confident first pick and a few nearby alternatives."
             refreshLabel="Swap Pick"
             backupTitle="Other good options"
             onRefreshChoices={pickResult?.primary ? handleRefreshPick : undefined}
@@ -632,7 +643,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                 </div>
 
                 <Link to="/browse" className="card-link browse-library-cta">
-                  Open Browse Library
+                  Browse Movies
                 </Link>
               </aside>
             </div>
@@ -700,7 +711,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                         <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
                         {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
                       </div>
-                      <ProviderBadgeRow badges={providerMap[movie.id]?.provider_badges} compact />
 
                       <h3 className="movie-card-title">
                         <Link to={getMoviePath(movie)} className="movie-title-link">
@@ -730,7 +740,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                   <span className="status-glyph" aria-hidden="true"></span>
                   <span>{selectedMood === "all" ? "Nothing is landing in this feed right now." : "Nothing in this feed fits that mood right now."}</span>
                   <Link to={browseLibraryResultsPath} className="card-link">
-                    Open Browse Library
+                    Browse Movies
                   </Link>
                 </div>
               )}
@@ -745,7 +755,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                   </p>
                 </div>
                 <Link to={browseLibraryResultsPath} className="card-link">
-                  Open Browse Library
+                  Browse Movies
                 </Link>
               </div>
             ) : null}

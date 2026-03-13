@@ -9,7 +9,7 @@ import HowReelbotWorks from "./HowReelbotWorks";
 import { getFeedPath } from "./discovery";
 import "./App.css";
 
-const SITE_VERSION = "v0.2";
+const SITE_VERSION = "v0.3";
 
 function HeaderSearch() {
   const location = useLocation();
@@ -142,6 +142,7 @@ function SiteFooter() {
         <div className="site-footer-brand">
           <div className="site-footer-title">ReelBot</div>
           <p className="site-footer-copy">Powered by TMDB &amp; OpenAI for faster picks, clearer reads, and better next-watch decisions.</p>
+          <p className="site-footer-microcopy">ReelBot helps you find what to watch faster.</p>
         </div>
 
         <div className="site-footer-meta">

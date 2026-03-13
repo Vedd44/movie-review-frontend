@@ -75,14 +75,14 @@ export const PICK_COMPANY_OPTIONS = [
 
 export const DISCOVERY_PROMPT_SETS = [
   [
-    "Short thriller",
-    "Visually stunning movie",
-    "Emotional but not too heavy",
-    "Easy date-night watch",
+    "Fun date-night movie",
+    "Something tense but not depressing",
+    "Smart sci-fi",
+    "Easy watch comedy",
   ],
   [
+    "A visually stunning movie",
     "Something under 2 hours",
-    "A smart sci-fi",
     "Great acting",
     "A dark mystery",
   ],
@@ -90,7 +90,7 @@ export const DISCOVERY_PROMPT_SETS = [
     "Something weird but accessible",
     "A fun adventure",
     "A comfort movie",
-    "A tense crime drama",
+    "Emotionally heavy drama",
   ],
 ];
 

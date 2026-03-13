@@ -699,10 +699,11 @@ function MovieDetails() {
   }, [movie, movieDescription, previewMode]);
 
   usePageMetadata({
-    title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""} — AI Movie Guide and Where to Watch | ReelBot` : "Movie Details | ReelBot",
-    description: movie ? `See ReelBot’s quick read on ${movie.title}, including vibe, audience fit, streaming availability, and what to watch next.` : "Movie details on ReelBot.",
+    title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""} — Should You Watch It? | ReelBot` : "Movie Details | ReelBot",
+    description: movie ? `Is ${movie.title} worth watching? See the ReelBot verdict, movie tone analysis, streaming options, and similar movies.` : "Movie details on ReelBot.",
     path: movie ? getMoviePath(movie) : "/",
     type: "video.movie",
+    image: movie?.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : undefined,
     structuredData: detailStructuredData,
   });
 
@@ -868,6 +869,12 @@ function MovieDetails() {
       <div className="movie-details-container detail-shell">
         <nav className="detail-topbar" aria-label="Breadcrumb">
           <div className="detail-breadcrumb">
+            <Link to="/" className="detail-breadcrumb-link">
+              Home
+            </Link>
+            <span className="detail-breadcrumb-separator" aria-hidden="true">
+              /
+            </span>
             <Link to={previewMode ? "/coming-soon" : "/now-playing"} className="detail-breadcrumb-link">
               Browse
             </Link>
@@ -1181,7 +1188,7 @@ function MovieDetails() {
         </section>
 
         <div className="detail-decision-grid">
-          <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movieId={movie.id} />
+          <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movie={movie} />
 
           <section className="detail-info-card detail-info-card--fit-snapshot">
             <div className="detail-section-head detail-section-head--facts">

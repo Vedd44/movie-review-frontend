@@ -88,7 +88,7 @@ function SearchResults() {
     description: searchQuery
       ? `TMDB-powered movie search results for "${searchQuery}", with ReelBot-ready detail pages and next-watch help.`
       : "TMDB-powered movie search results, with ReelBot-ready detail pages and next-watch help.",
-    path: searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : "/search",
+    path: "/search",
     robots: "noindex,follow",
     structuredData: searchStructuredData,
   });

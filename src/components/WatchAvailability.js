@@ -1,5 +1,5 @@
 import React from "react";
-import { buildProviderLink, getProviderCtaLabel } from "../streamingLinks";
+import { buildProviderLink, getProviderActionLabel, getProviderCtaLabel } from "../streamingLinks";
 
 const GROUP_LABELS = {
   subscription: "Included with subscription",
@@ -39,77 +39,100 @@ const getProviderGroups = (availability) => {
   ].filter((group) => group.providers.length);
 };
 
-function WatchAvailability({ availability, sectionId, movieId }) {
+function WatchAvailability({ availability, sectionId, movie }) {
   const providerGroups = getProviderGroups(availability);
-  const primaryProvider = providerGroups[0]?.providers?.[0] || null;
-  const primaryHref = primaryProvider ? buildProviderLink({ movieId, provider: primaryProvider, availability }) : availability?.link || "#";
   const hasProviders = providerGroups.length > 0;
+  const primaryProvider = providerGroups[0]?.providers?.[0] || null;
+  const primaryHref = primaryProvider ? buildProviderLink({ movie, provider: primaryProvider, region: availability?.region }) : null;
 
   return (
     <section id={sectionId} className="detail-info-card detail-info-card--providers detail-info-card--watch-now detail-anchor-target">
-      <div className="detail-section-head detail-section-head--with-count">
+      <div className="detail-section-head detail-section-head--with-count watch-now-head">
         <div>
           <div className="detail-description-label">Watch now</div>
           <h2 className="detail-section-title">Where to Watch</h2>
           <p className="detail-secondary-text">
             {hasProviders
               ? `Streaming and rental options for ${availability.region || "your region"}.`
-              : "Streaming and rental options will show up here when they are available."}
+              : "Streaming and rental options are not listed yet for this title."}
           </p>
         </div>
-        {availability?.region ? <div className="results-count">{availability.region}</div> : null}
+
+        <div className="watch-now-head-actions">
+          {availability?.region ? <div className="results-count">{availability.region}</div> : null}
+          {primaryProvider && primaryHref ? (
+            <a
+              href={primaryHref}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="detail-text-action watch-now-primary-cta"
+              aria-label={getProviderCtaLabel(primaryProvider)}
+            >
+              {getProviderCtaLabel(primaryProvider)}
+              <span className="watch-now-external-glyph" aria-hidden="true">↗</span>
+            </a>
+          ) : null}
+        </div>
       </div>
 
       {hasProviders ? (
         <div className="watch-now-layout">
-          <div className="watch-now-provider-grid">
-            {providerGroups.map((group) => (
-              <div key={group.id} className="provider-group provider-group--watch-now">
-                <div className="detail-description-label">{group.label}</div>
-                <div className="provider-chip-row provider-chip-row--cta">
-                  {group.providers.map((provider) => {
-                    const href = buildProviderLink({ movieId, provider, availability });
-                    return (
-                      <a
-                        key={`${group.id}-${provider.id}`}
-                        href={href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="provider-chip provider-chip--cta"
-                        aria-label={getProviderCtaLabel(provider)}
-                      >
-                        {provider.logo_path ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
-                            alt={provider.name}
-                            className="provider-chip-logo"
-                          />
-                        ) : null}
-                        <span className="provider-chip-name">{provider.name}</span>
-                        <span className="provider-chip-cta-copy">{getProviderCtaLabel(provider)}</span>
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+          {providerGroups.map((group) => (
+            <div key={group.id} className="watch-now-group">
+              <div className="watch-now-group-label">{group.label}</div>
+              <div className="watch-now-provider-grid watch-now-provider-grid--grouped">
+                {group.providers.map((provider) => {
+                  const href = buildProviderLink({ movie, provider, region: availability?.region });
+                  const content = (
+                    <>
+                      <div className="provider-chip-top">
+                        <div className="provider-chip-brand">
+                          {provider.logo_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                              alt={provider.name}
+                              className="provider-chip-logo"
+                            />
+                          ) : null}
+                          <span className="provider-chip-name">{provider.name}</span>
+                        </div>
+                        {href ? <span className="watch-now-external-glyph" aria-hidden="true">↗</span> : null}
+                      </div>
+                      <span className="provider-chip-action">{getProviderCtaLabel(provider)}</span>
+                      <span className="provider-chip-cta-copy">{getProviderActionLabel(provider)} instantly in a new tab.</span>
+                    </>
+                  );
 
-          {primaryProvider ? (
-            <div className="watch-now-primary-cta-wrap">
-              <a href={primaryHref} target="_blank" rel="noreferrer" className="detail-trailer-cta watch-now-primary-cta">
-                {getProviderCtaLabel(primaryProvider)}
-              </a>
-              <p className="detail-secondary-text watch-now-primary-note">Provider links are ready for affiliate tags without changing the UI.</p>
+                  if (!href) {
+                    return (
+                      <div key={`${group.id}-${provider.id}`} className="provider-chip provider-chip--cta provider-chip--disabled" aria-label={`${provider.name} link unavailable`}>
+                        {content}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <a
+                      key={`${group.id}-${provider.id}`}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      className="provider-chip provider-chip--cta"
+                      aria-label={getProviderCtaLabel(provider)}
+                    >
+                      {content}
+                    </a>
+                  );
+                })}
+              </div>
             </div>
-          ) : null}
+          ))}
+
+          <p className="detail-secondary-text watch-now-footnote">Links open in a new tab. Availability can change by region.</p>
         </div>
       ) : (
-        <div className="provider-placeholder">
-          <div className="detail-description-label">Streaming availability is not listed yet.</div>
-          <p className="detail-secondary-text">
-            When providers add this movie, you&apos;ll see rental, purchase, and subscription options here.
-          </p>
+        <div className="provider-placeholder provider-placeholder--clean">
+          <p className="detail-secondary-text">Streaming and rental options are not listed yet for this title.</p>
         </div>
       )}
     </section>

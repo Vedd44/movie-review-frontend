@@ -7269,3 +7269,225 @@ body {
     align-items: flex-start;
   }
 }
+
+.provider-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.provider-badge-row--compact {
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.provider-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.28rem 0.52rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(244, 239, 226, 0.72);
+  font-size: 0.72rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.provider-badge-pill--link:hover,
+.provider-badge-pill--link:focus-visible {
+  border-color: rgba(246, 213, 122, 0.32);
+  color: rgba(244, 239, 226, 0.9);
+}
+
+.provider-badge-logo {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.provider-badge-name {
+  white-space: nowrap;
+}
+
+.watch-now-head {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.watch-now-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.watch-now-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.watch-now-group {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.watch-now-group-label {
+  color: rgba(244, 239, 226, 0.68);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.watch-now-provider-grid--grouped {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.65rem;
+}
+
+.provider-chip--cta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 84px;
+  padding: 0.8rem 0.9rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.035);
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.provider-chip--cta:hover,
+.provider-chip--cta:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(246, 213, 122, 0.34);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.provider-chip--disabled {
+  opacity: 0.62;
+}
+
+.provider-chip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.provider-chip-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.provider-chip-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.provider-chip-name {
+  color: #f4efe2;
+  font-size: 0.93rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.provider-chip-action {
+  color: #f4efe2;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.provider-chip-cta-copy {
+  color: rgba(244, 239, 226, 0.56);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.watch-now-primary-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.watch-now-external-glyph {
+  color: rgba(246, 213, 122, 0.86);
+  font-size: 0.86rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.watch-now-footnote {
+  margin: 0.15rem 0 0;
+  color: rgba(244, 239, 226, 0.54);
+  font-size: 0.74rem;
+}
+
+.provider-placeholder--clean {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+}
+
+.provider-placeholder--clean .detail-secondary-text {
+  margin: 0;
+}
+
+.similar-card .provider-badge-row,
+.pick-backup-card .provider-badge-row,
+.pick-primary-card .provider-badge-row,
+.movie-card .provider-badge-row {
+  opacity: 0.92;
+}
+
+@media (max-width: 720px) {
+  .watch-now-head-actions {
+    justify-content: flex-start;
+  }
+
+  .watch-now-provider-grid--grouped {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.hero-trust-signal {
+  margin-top: 0.8rem;
+  color: rgba(244, 239, 226, 0.58);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.site-footer-microcopy {
+  margin: 0.4rem 0 0;
+  color: rgba(244, 239, 226, 0.62);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+
+.seo-intro-section {
+  margin: 0 0 36px;
+  padding: 22px 0 6px;
+}
+
+.seo-intro-copy {
+  max-width: 72ch;
+}
+
+.seo-intro-copy .section-title {
+  margin-bottom: 10px;
+}

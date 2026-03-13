@@ -1,16 +1,4 @@
 User-agent: *
 Allow: /
 
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: GPTBot
-Allow: /
-
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-Sitemap: https://reelbot.app/sitemap.xml
+Sitemap: https://reelbot.movie/sitemap.xml

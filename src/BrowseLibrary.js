@@ -281,8 +281,8 @@ function BrowseLibrary() {
   );
 
   usePageMetadata({
-    title: "Browse Movies by Genre, Mood, and Runtime | ReelBot",
-    description: "Browse movies by genre, mood, runtime, and release state, then let ReelBot narrow the options.",
+    title: "Browse Movies | ReelBot Movie Discovery",
+    description: "Browse movies currently playing, trending, and upcoming, then let ReelBot narrow the options with smarter AI movie discovery.",
     path: "/browse",
     structuredData: browseStructuredData,
   });

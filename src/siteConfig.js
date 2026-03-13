@@ -1,19 +1,15 @@
 export const SITE_NAME = "ReelBot";
 export const SITE_TAGLINE = "The AI movie companion";
-export const SITE_DESCRIPTION = "ReelBot helps you decide what to watch faster with AI-powered movie picks, spoiler-light quick takes, review splits, and smarter next-watch recommendations.";
+export const SITE_DESCRIPTION = "Find what to watch tonight with ReelBot — an AI-powered movie picker that delivers fast recommendations, spoiler-light insights, and smarter next-watch suggestions.";
 export const DEFAULT_SOCIAL_IMAGE = "/logo512.png";
+const CANONICAL_SITE_ORIGIN = (process.env.REACT_APP_SITE_URL?.trim() || "https://reelbot.movie").replace(/\/$/, "");
 
 export const getSiteOrigin = () => {
-  const envUrl = process.env.REACT_APP_SITE_URL?.trim();
-  if (envUrl) {
-    return envUrl.replace(/\/$/, "");
-  }
-
-  if (typeof window !== "undefined" && window.location?.origin) {
+  if (typeof window !== "undefined" && /localhost|127\.0\.0\.1/.test(window.location?.origin || "")) {
     return window.location.origin.replace(/\/$/, "");
   }
 
-  return "https://reelbot.app";
+  return CANONICAL_SITE_ORIGIN;
 };
 
 export const buildAbsoluteUrl = (path = "/") => {

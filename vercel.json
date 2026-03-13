@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://movie-review-backend-zevb.onrender.com/sitemap.xml"
+    }
+  ]
+}
