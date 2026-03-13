@@ -5,10 +5,8 @@ import "./App.css";
 import TasteActionBar from "./components/TasteActionBar";
 import useTasteProfile from "./hooks/useTasteProfile";
 import WatchAvailability from "./components/WatchAvailability";
-import ProviderBadgeRow from "./components/ProviderBadgeRow";
 import TrailerModal from "./components/TrailerModal";
 import ReelbotStructuredContent from "./components/ReelbotStructuredContent";
-import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
 import { getMoviePath, slugifyMovieTitle } from "./discovery";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl } from "./siteConfig";
@@ -620,7 +618,6 @@ function MovieDetails() {
   const insightCards = useMemo(() => (previewMode ? buildPreviewSnapshot(movie) : buildWatchFit(movie)), [movie, previewMode]);
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
-  const similarProviderMap = useWatchProviderBadges(similarMovies.map((similarMovie) => similarMovie.id));
   const nextWatchReasonLabels = previewMode
     ? ["Watch-now parallel", "Broader alternative", "Stranger side path", "Bigger swing"]
     : ["Similar tone", "Safer next pick", "Stranger follow-up", "More action-forward"];
@@ -924,22 +921,6 @@ function MovieDetails() {
               <p className="detail-description">{movieDescription}</p>
             </div>
 
-            <div className="detail-reelbot-cta-block">
-              <div className="detail-description-label">Ask ReelBot about this movie</div>
-              <p className="detail-reelbot-cta-copy">Quick takes, spoiler-safe explanations, and next-watch suggestions.</p>
-              <div className="detail-reelbot-cta-actions">
-                <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => handleReelbotAction("quick_take")}>
-                  Quick Take
-                </button>
-                <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => handleReelbotAction("is_this_for_me")}>
-                  Is This For Me?
-                </button>
-                <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => handleReelbotAction("why_watch")}>
-                  Why Watch It
-                </button>
-              </div>
-            </div>
-
             <div className="detail-hero-actions">
               <div className="detail-hero-inline-row detail-hero-inline-row--primary">
                 {movie.trailer?.key ? (
@@ -965,7 +946,31 @@ function MovieDetails() {
               </div>
             </div>
 
-            <div className="detail-jump-links-wrap">
+          </div>
+        </section>
+
+        <section className="detail-info-card detail-shortcuts-card">
+          <div className="detail-section-head detail-section-head--facts">
+            <div>
+              <div className="detail-description-label">Ask ReelBot shortcuts</div>
+              <h2 className="detail-section-title">Start with a quick read</h2>
+              <p className="detail-secondary-text">Quick takes, spoiler-safe explanations, and next-watch suggestions without digging through the full module first.</p>
+            </div>
+          </div>
+          <div className="detail-reelbot-cta-actions detail-reelbot-cta-actions--standalone">
+            <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("quick_take")}>
+              Quick Take
+            </button>
+            <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("is_this_for_me")}>
+              Is This For Me?
+            </button>
+            <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("why_watch")}>
+              Why Watch It
+            </button>
+          </div>
+        </section>
+
+                    <div className="detail-jump-links-wrap">
               <p className="detail-jump-links-copy">Use ReelBot, spoilers, streaming, or next-watch shortcuts without hunting through the page.</p>
               <div className="detail-jump-links" role="navigation" aria-label="Jump to detail sections">
                 {getJumpLinks(movie).map((link) => (
@@ -976,35 +981,56 @@ function MovieDetails() {
               </div>
             </div>
 
-            <section className="detail-vibe-strip detail-anchor-target">
-              <div className="detail-watchfit-head detail-watchfit-head--compact">
-                <div>
-                  <div className="detail-description-label">{previewMode ? "Preview Snapshot" : "Estimated Vibe"}</div>
-                  <p className="detail-secondary-text">
-                    {previewMode
-                      ? "A quick early read based on the synopsis, cast, and release details so far."
-                      : "ReelBot's quick read on attention, emotional weight, pace, and who this tends to play best with."}
-                  </p>
-                </div>
+        <div className="detail-summary-grid">
+          <section className="detail-vibe-strip detail-info-card detail-anchor-target">
+            <div className="detail-watchfit-head detail-watchfit-head--compact">
+              <div>
+                <div className="detail-description-label">{previewMode ? "Preview Snapshot" : "Snapshot Cards"}</div>
+                <h2 className="detail-section-title">Tone, pace, and audience fit</h2>
+                <p className="detail-secondary-text">
+                  {previewMode
+                    ? "A quick early read based on the synopsis, cast, and release details so far."
+                    : "ReelBot's quick read on attention, emotional weight, pace, and who this tends to play best with."}
+                </p>
               </div>
-              <div className="detail-vibe-grid">
-                {insightCards.map((item) => (
-                  <div key={item.label} className="detail-vibe-item">
-                    <div className="detail-vibe-label">{item.label}</div>
-                    <div className="detail-vibe-value-row">
-                      <div className="detail-vibe-value">{item.value}</div>
-                      {typeof item.scale === "number" ? <span className="detail-vibe-meter-label">Quick read</span> : null}
-                    </div>
-                    {typeof item.scale === "number" ? (
-                      <div className="detail-vibe-scale" aria-hidden="true">
-                        <span className="detail-vibe-scale-fill" style={{ width: `${item.scale}%` }} />
-                      </div>
-                    ) : null}
-                    <div className="detail-vibe-note">{item.note}</div>
+            </div>
+            <div className="detail-vibe-grid">
+              {insightCards.map((item) => (
+                <div key={item.label} className="detail-vibe-item">
+                  <div className="detail-vibe-label">{item.label}</div>
+                  <div className="detail-vibe-value-row">
+                    <div className="detail-vibe-value">{item.value}</div>
+                    {typeof item.scale === "number" ? <span className="detail-vibe-meter-label">Quick read</span> : null}
                   </div>
-                ))}
+                  {typeof item.scale === "number" ? (
+                    <div className="detail-vibe-scale" aria-hidden="true">
+                      <span className="detail-vibe-scale-fill" style={{ width: `${item.scale}%` }} />
+                    </div>
+                  ) : null}
+                  <div className="detail-vibe-note">{item.note}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="detail-info-card detail-info-card--fit-snapshot">
+            <div className="detail-section-head detail-section-head--facts">
+              <div>
+                <div className="detail-description-label">Movie Fit Snapshot</div>
+                <h2 className="detail-section-title">Decide Faster</h2>
+                <p className="detail-secondary-text">A quick read on runtime, pacing, emotional weight, and what kind of watch this asks for.</p>
               </div>
-            </section>
+            </div>
+            <div className="detail-fit-snapshot-grid">
+              {fitSnapshotItems.map((item) => (
+                <div key={item.label} className="detail-fit-snapshot-item">
+                  <span className="detail-fact-pill-label">{item.label}</span>
+                  <span className="detail-fit-snapshot-value">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
 
             <section id="ask-reelbot" className="reelbot-module reelbot-module--streamlined detail-anchor-target">
               <div className="detail-section-head reelbot-module-head">
@@ -1184,30 +1210,9 @@ function MovieDetails() {
                 ) : null}
               </div>
             </section>
-          </div>
-        </section>
 
-        <div className="detail-decision-grid">
-          <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movie={movie} />
 
-          <section className="detail-info-card detail-info-card--fit-snapshot">
-            <div className="detail-section-head detail-section-head--facts">
-              <div>
-                <div className="detail-description-label">Movie Fit Snapshot</div>
-                <h2 className="detail-section-title">Decide Faster</h2>
-                <p className="detail-secondary-text">A quick read on runtime, pacing, emotional weight, and what kind of watch this asks for.</p>
-              </div>
-            </div>
-            <div className="detail-fit-snapshot-grid">
-              {fitSnapshotItems.map((item) => (
-                <div key={item.label} className="detail-fit-snapshot-item">
-                  <span className="detail-fact-pill-label">{item.label}</span>
-                  <span className="detail-fit-snapshot-value">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+        <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movie={movie} />
 
         <section className="detail-info-card detail-info-card--compact-facts">
           <div className="detail-section-head detail-section-head--facts">
@@ -1318,7 +1323,6 @@ function MovieDetails() {
                   <div className="similar-reason-label">{nextWatchReasonLabels[index % nextWatchReasonLabels.length]}</div>
                   <div className="similar-title">{similarMovie.title}</div>
                   <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
-                  <ProviderBadgeRow badges={similarProviderMap[similarMovie.id]?.provider_badges} compact />
                 </Link>
               ))}
             </div>

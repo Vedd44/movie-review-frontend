@@ -455,8 +455,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   return (
-    <div className="browse-page">
-      <div className="container browse-shell">
+    <div className="browse-page home-page">
+      <div className="container browse-shell home-shell">
         <section className="browse-hero browse-hero--compact browse-hero--with-search">
           <div className="browse-copy">
             <div className="browse-kicker">ReelBot</div>
@@ -517,19 +517,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           </div>
         </section>
 
-        <section className="seo-intro-section" aria-labelledby="seo-intro-title">
-          <div className="seo-intro-copy">
-            <div className="detail-description-label">AI Movie Picker</div>
-            <h2 id="seo-intro-title" className="section-title">AI movie recommendations that are easier to understand</h2>
-            <p className="section-subtitle">
-              ReelBot helps you decide what to watch tonight using AI-powered movie recommendations, quick movie insights, and smart next-watch suggestions.
-            </p>
-            <p className="detail-secondary-text">
-              Browse movies currently playing, explore popular films, or ask ReelBot for a personalized recommendation based on mood, genre, actor, or runtime.
-            </p>
-          </div>
-        </section>
-
         <section id="pick-for-me" className="pick-for-me-card pick-for-me-card--primary">
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
@@ -539,7 +526,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           </div>
 
           <ReelbotPromptComposer
-            label="Tell ReelBot the vibe"
             suggestions={visiblePromptSuggestions}
             activeSuggestion={activePromptSuggestion}
             value={pickPrompt}
@@ -693,8 +679,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             <div className="movie-list home-poster-grid">
               {filteredMovies.length > 0 ? (
                 filteredMovies.map((movie) => (
-                  <article key={movie.id} className="movie-card">
-                    <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
+                  <article key={movie.id} className="movie-card home-movie-card">
+                    <Link to={getMoviePath(movie)} className="home-movie-card-link" aria-label={`Open ${movie.title}`}>
                       {movie.poster_path ? (
                         <img
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
@@ -704,35 +690,17 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                       ) : (
                         <div className="no-poster">Poster unavailable</div>
                       )}
+
+                      <div className="movie-card-content">
+                        <div className="movie-card-meta">
+                          <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
+                          {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                        </div>
+
+                        <h3 className="movie-card-title">{movie.title}</h3>
+                        <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
+                      </div>
                     </Link>
-
-                    <div className="movie-card-content">
-                      <div className="movie-card-meta">
-                        <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-                        {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
-                      </div>
-
-                      <h3 className="movie-card-title">
-                        <Link to={getMoviePath(movie)} className="movie-title-link">
-                          {movie.title}
-                        </Link>
-                      </h3>
-                      <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
-
-                      <div className="movie-card-actions-row">
-                        <Link to={getMoviePath(movie)} className="card-link">
-                          View Details
-                        </Link>
-                        <Link
-                          to={getMoviePath(movie)}
-                          state={{ reelbotAction: "is_this_for_me", fromCard: true }}
-                          className="movie-card-ask-reelbot"
-                        >
-                          Ask ReelBot
-                          <span className="movie-card-ask-copy">Is this for me?</span>
-                        </Link>
-                      </div>
-                    </div>
                   </article>
                 ))
               ) : (

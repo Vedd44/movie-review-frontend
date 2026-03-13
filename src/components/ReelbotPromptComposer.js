@@ -35,7 +35,7 @@ function ReelbotPromptComposer({
   };
   return (
     <div className="pick-control-group pick-control-group--prompt">
-      <div className="detail-description-label">{label}</div>
+      {label ? <div className="detail-description-label">{label}</div> : null}
       {helperText ? <p className="prompt-composer-copy detail-secondary-text">{helperText}</p> : null}
       {suggestions.length ? (
         <div className="pick-prompt-suggestions">
