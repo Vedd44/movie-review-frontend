@@ -2843,6 +2843,12 @@ body {
   border-color: rgba(242, 197, 86, 0.24);
 }
 
+.reelbot-question-chip:focus-visible {
+  outline: none;
+  border-color: rgba(242, 197, 86, 0.28);
+  box-shadow: 0 0 0 3px rgba(242, 197, 86, 0.12);
+}
+
 .reelbot-question-chip:disabled {
   opacity: 0.72;
   cursor: wait;
@@ -3955,6 +3961,26 @@ body {
   border: 1px solid rgba(129, 155, 190, 0.12);
   background: linear-gradient(180deg, rgba(10, 17, 29, 0.9), rgba(7, 13, 22, 0.82));
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.16);
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-decision-card::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(242, 197, 86, 0.88), rgba(242, 197, 86, 0.18) 55%, rgba(242, 197, 86, 0));
+}
+
+.detail-decision-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255, 241, 194, 0.04);
 }
 
 .detail-decision-head {
@@ -3966,17 +3992,17 @@ body {
 
 .detail-decision-title {
   margin: 0;
-  color: #f7f2e6;
+  color: #fbf5e8;
   font-size: clamp(1.6rem, 3vw, 2.3rem);
   line-height: 1.08;
   letter-spacing: -0.03em;
 }
 
 .detail-decision-summary {
-  margin: 10px 0 0;
-  color: #d6e1ec;
+  margin: 12px 0 0;
+  color: #dbe6f2;
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.7;
   max-width: 44ch;
 }
 
@@ -3984,21 +4010,26 @@ body {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 20px;
+  margin-top: 26px;
 }
 
 .detail-vibe-item--compact {
   min-height: 0;
   padding: 16px;
+  background: linear-gradient(180deg, rgba(11, 18, 29, 0.92), rgba(8, 14, 24, 0.86));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .detail-vibe-item--compact .detail-vibe-label {
   margin-bottom: 10px;
+  color: rgba(154, 174, 198, 0.84);
 }
 
 .detail-vibe-item--compact .detail-vibe-value {
   margin-bottom: 0;
-  font-size: 1.02rem;
+  font-size: 1.04rem;
+  color: #f4efe2;
 }
 
 .reelbot-module--streamlined {
@@ -4008,6 +4039,18 @@ body {
   border: 1px solid rgba(129, 155, 190, 0.12);
   background: linear-gradient(180deg, rgba(9, 16, 28, 0.88), rgba(7, 13, 22, 0.8));
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.16);
+  position: relative;
+  overflow: hidden;
+}
+
+.reelbot-module--streamlined::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(125, 183, 255, 0.14), rgba(242, 197, 86, 0.32), rgba(125, 183, 255, 0.06));
 }
 
 .reelbot-primary-row {
@@ -4030,18 +4073,27 @@ body {
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
-  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .reelbot-primary-action:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(242, 197, 86, 0.24);
+  transform: translateY(-2px);
+  border-color: rgba(242, 197, 86, 0.26);
+  background: linear-gradient(180deg, rgba(11, 19, 31, 0.94), rgba(8, 15, 24, 0.9));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.reelbot-primary-action:focus-visible {
+  outline: none;
+  border-color: rgba(242, 197, 86, 0.34);
+  box-shadow: 0 0 0 3px rgba(242, 197, 86, 0.14), 0 14px 28px rgba(0, 0, 0, 0.16);
 }
 
 .reelbot-primary-action.is-active,
 .reelbot-primary-action.is-featured {
   background: linear-gradient(135deg, rgba(28, 24, 10, 0.92), rgba(8, 18, 31, 0.96));
   border-color: rgba(242, 197, 86, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 241, 194, 0.04), 0 12px 28px rgba(0, 0, 0, 0.16);
 }
 
 .reelbot-primary-action-title {
@@ -4066,7 +4118,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 2px 0 18px;
+  margin: 4px 0 18px;
 }
 
 .reelbot-secondary-action {
@@ -4082,13 +4134,20 @@ body {
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .reelbot-secondary-action:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: rgba(129, 155, 190, 0.28);
   background: rgba(10, 18, 30, 0.88);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+}
+
+.reelbot-secondary-action:focus-visible {
+  outline: none;
+  border-color: rgba(242, 197, 86, 0.28);
+  box-shadow: 0 0 0 3px rgba(242, 197, 86, 0.12), 0 10px 22px rgba(0, 0, 0, 0.14);
 }
 
 .reelbot-secondary-action.is-active {
@@ -4135,6 +4194,20 @@ body {
 .detail-info-card--compact-facts {
   background: linear-gradient(180deg, rgba(9, 17, 28, 0.88), rgba(7, 13, 22, 0.82));
   border: 1px solid rgba(129, 155, 190, 0.1);
+}
+
+.detail-info-card--utility {
+  background: linear-gradient(180deg, rgba(9, 16, 27, 0.9), rgba(7, 13, 22, 0.84));
+  border-color: rgba(129, 155, 190, 0.08);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.14);
+}
+
+.detail-info-card--utility .detail-section-title {
+  color: #eef4fa;
+}
+
+.detail-info-card--utility .detail-description-label {
+  color: rgba(201, 213, 229, 0.72);
 }
 
 .review-split-grid {
@@ -7102,6 +7175,13 @@ body {
   padding: 20px;
   border: 1px solid rgba(242, 197, 86, 0.14);
   background: linear-gradient(180deg, rgba(10, 16, 27, 0.82), rgba(8, 13, 22, 0.76));
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.reelbot-spoiler-panel.is-enabled {
+  border-color: rgba(242, 197, 86, 0.22);
+  background: linear-gradient(180deg, rgba(18, 19, 22, 0.86), rgba(9, 14, 24, 0.8));
+  box-shadow: inset 0 1px 0 rgba(255, 241, 194, 0.03);
 }
 
 .reelbot-spoiler-toggle-row {
@@ -7109,6 +7189,35 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
+}
+
+.reelbot-spoiler-copy {
+  min-width: 0;
+}
+
+.reelbot-spoiler-state-line {
+  margin: 2px 0 10px;
+}
+
+.reelbot-spoiler-state-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(129, 155, 190, 0.18);
+  background: rgba(9, 15, 25, 0.64);
+  color: rgba(220, 231, 243, 0.84);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reelbot-spoiler-state-pill.is-enabled {
+  border-color: rgba(242, 197, 86, 0.26);
+  background: rgba(242, 197, 86, 0.1);
+  color: #f6df9d;
 }
 
 .reelbot-spoiler-toggle {
@@ -7121,6 +7230,15 @@ body {
   border-radius: 999px;
   border: 1px solid rgba(242, 197, 86, 0.18);
   background: rgba(9, 15, 25, 0.82);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.reelbot-spoiler-toggle:hover,
+.reelbot-spoiler-toggle:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(242, 197, 86, 0.28);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
 }
 
 .reelbot-spoiler-toggle-track {
@@ -7550,18 +7668,50 @@ body {
 
 .detail-info-card--why-reelbot {
   margin-top: 1.2rem;
+  position: relative;
+  padding-top: 22px;
+}
+
+.detail-info-card--why-reelbot::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(242, 197, 86, 0.28), rgba(242, 197, 86, 0.08) 45%, rgba(242, 197, 86, 0));
+}
+
+.detail-info-card--why-reelbot .detail-section-title {
+  color: #f3f6fa;
+  font-size: 1.22rem;
 }
 
 .detail-why-reelbot-list {
   margin: 0;
-  padding-left: 1.2rem;
+  padding-left: 0;
   display: grid;
   gap: 0.7rem;
   color: rgba(244, 239, 226, 0.88);
+  list-style: none;
 }
 
-.detail-why-reelbot-list li::marker {
-  color: #f6d57a;
+.detail-why-reelbot-list li {
+  position: relative;
+  padding-left: 1.15rem;
+  line-height: 1.7;
+}
+
+.detail-why-reelbot-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.72rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(242, 197, 86, 0.96), rgba(242, 197, 86, 0.46));
+  box-shadow: 0 0 10px rgba(242, 197, 86, 0.16);
 }
 
 .similar-card .provider-badge-row {
@@ -8632,6 +8782,10 @@ body {
 
 .reelbot-secondary-actions {
   margin-bottom: 20px;
+}
+
+.reelbot-spoiler-panel {
+  margin-bottom: 18px;
 }
 
 .reelbot-question-chip,

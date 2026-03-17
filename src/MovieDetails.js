@@ -461,6 +461,14 @@ function MovieDetails() {
   const secondaryActionIds = useMemo(() => (previewMode ? UPCOMING_SECONDARY_ACTION_IDS : RELEASED_SECONDARY_ACTION_IDS), [previewMode]);
   const spoilerActionIds = useMemo(() => (previewMode ? [] : RELEASED_SPOILER_ACTION_IDS), [previewMode]);
   const spoilerActionSet = useMemo(() => new Set(spoilerActionIds), [spoilerActionIds]);
+  const nonSpoilerSecondaryActionIds = useMemo(
+    () => secondaryActionIds.filter((actionId) => !spoilerActionSet.has(actionId)),
+    [secondaryActionIds, spoilerActionSet]
+  );
+  const spoilerShortcutIds = useMemo(
+    () => spoilerActionIds.filter((actionId) => actionConfigs[actionId]),
+    [actionConfigs, spoilerActionIds]
+  );
 
   const metaItems = useMemo(() => {
     if (!movie) {
@@ -923,11 +931,11 @@ function MovieDetails() {
               </div>
 
               <div className="reelbot-secondary-actions">
-                {secondaryActionIds.map((actionId) => {
+                {nonSpoilerSecondaryActionIds.map((actionId) => {
                   const action = actionConfigs[actionId];
                   const isActive = activeReelbotAction === action.id;
                   const isLoading = reelbotLoadingAction === action.id;
-                  const buttonLabel = action.id === "spoiler_synopsis" ? "Spoilers" : "What to Watch Next";
+                  const buttonLabel = action.id === "similar_picks" ? "What to Watch Next" : action.label;
 
                   return (
                     <button
@@ -944,6 +952,60 @@ function MovieDetails() {
                   );
                 })}
               </div>
+
+              {!previewMode ? (
+                <div className={`reelbot-spoiler-panel${spoilerModeEnabled ? " is-enabled" : ""}`}>
+                  <div className="reelbot-spoiler-toggle-row">
+                    <div className="reelbot-spoiler-copy">
+                      <div className="detail-description-label">Spoiler Mode</div>
+                      <div className="reelbot-spoiler-state-line">
+                        <span className={`reelbot-spoiler-state-pill${spoilerModeEnabled ? " is-enabled" : ""}`}>
+                          Spoiler Mode: {spoilerModeEnabled ? "On" : "Off"}
+                        </span>
+                      </div>
+                      <p className="detail-secondary-text">
+                        {spoilerModeEnabled
+                          ? "Full-spoiler answers are unlocked below, including synopsis, ending, themes, and debate points."
+                          : "Spoiler answers stay locked until you turn this on intentionally."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={`reelbot-spoiler-toggle${spoilerModeEnabled ? " is-enabled" : ""}`}
+                      onClick={() => setSpoilerModeEnabled((currentValue) => !currentValue)}
+                      aria-pressed={spoilerModeEnabled}
+                      aria-label={`Turn spoiler mode ${spoilerModeEnabled ? "off" : "on"}`}
+                    >
+                      <span className="reelbot-spoiler-toggle-track" aria-hidden="true">
+                        <span className="reelbot-spoiler-toggle-thumb"></span>
+                      </span>
+                    </button>
+                  </div>
+
+                  {spoilerModeEnabled ? (
+                    <div className="reelbot-chip-row">
+                      {spoilerShortcutIds.map((actionId) => {
+                        const action = actionConfigs[actionId];
+                        const isLoading = reelbotLoadingAction === action.id;
+
+                        return (
+                          <button
+                            key={action.id}
+                            type="button"
+                            className={`reelbot-question-chip reelbot-question-chip--panel reelbot-question-chip--spoiler${activeReelbotAction === action.id ? " is-active" : ""}`}
+                            onClick={() => handleReelbotAction(action.id)}
+                            disabled={isLoading}
+                            aria-pressed={activeReelbotAction === action.id}
+                            aria-controls="reelbot-response"
+                          >
+                            {isLoading ? "Thinking..." : action.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div
                 id="reelbot-response"
@@ -1036,7 +1098,7 @@ function MovieDetails() {
 
         <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movie={movie} />
 
-        <section className="detail-info-card detail-info-card--compact-facts">
+        <section className="detail-info-card detail-info-card--utility detail-info-card--compact-facts">
           <div className="detail-section-head detail-section-head--facts">
             <div>
               <h2 className="detail-section-title">At a Glance</h2>

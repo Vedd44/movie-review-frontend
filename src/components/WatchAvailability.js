@@ -46,7 +46,7 @@ function WatchAvailability({ availability, sectionId, movie }) {
   const primaryHref = primaryProvider ? buildProviderLink({ movie, provider: primaryProvider, region: availability?.region }) : null;
 
   return (
-    <section id={sectionId} className="detail-info-card detail-info-card--providers detail-info-card--watch-now detail-anchor-target">
+    <section id={sectionId} className="detail-info-card detail-info-card--utility detail-info-card--providers detail-info-card--watch-now detail-anchor-target">
       <div className="detail-section-head detail-section-head--with-count watch-now-head">
         <div>
           <div className="detail-description-label">Watch now</div>
