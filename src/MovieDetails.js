@@ -336,71 +336,6 @@ const buildWhyReelbotBullets = (movie, previewMode = false) => {
   return bullets.slice(0, 3);
 };
 
-const getNextWatchDescriptor = (movie = {}, previewMode = false) => {
-  const genres = Array.isArray(movie.genre_names) ? movie.genre_names : [];
-
-  if (previewMode) {
-    return "watch-now option";
-  }
-
-  if (includesAnyGenre(genres, ["Horror", "Thriller", "Crime"])) {
-    return "darker";
-  }
-
-  if (includesAnyGenre(genres, ["Sci-Fi", "Fantasy", "Mystery"])) {
-    return "stranger";
-  }
-
-  if (includesAnyGenre(genres, ["Comedy", "Romance", "Family", "Animation"])) {
-    return "lighter";
-  }
-
-  if (includesAnyGenre(genres, ["Action", "Adventure"])) {
-    return "bigger";
-  }
-
-  if (includesAnyGenre(genres, ["Drama", "History", "War"])) {
-    return "heavier";
-  }
-
-  return "nearby";
-};
-
-const buildNextWatchExplanation = (movie = {}, previewMode = false) => {
-  const genres = Array.isArray(movie.genre_names) ? movie.genre_names : [];
-  const runtime = Number(movie.runtime || 0);
-
-  if (previewMode) {
-    return "A current watch with a similar lane while you wait for the new release.";
-  }
-
-  if (includesAnyGenre(genres, ["Comedy", "Romance", "Family", "Animation"])) {
-    return "Keeps the watch easy and inviting without losing personality.";
-  }
-
-  if (includesAnyGenre(genres, ["Thriller", "Mystery", "Crime"])) {
-    return "Leans into tension and momentum if you want something sharper next.";
-  }
-
-  if (includesAnyGenre(genres, ["Sci-Fi", "Fantasy"])) {
-    return "Brings a more imaginative angle without drifting too far from the vibe.";
-  }
-
-  if (includesAnyGenre(genres, ["Action", "Adventure"])) {
-    return "Pushes the energy up if you want the next pick to feel bigger.";
-  }
-
-  if (runtime > 0 && runtime <= 110) {
-    return "An easy follow-up when you want something strong without a huge commitment.";
-  }
-
-  if (includesAnyGenre(genres, ["Drama", "History", "War"])) {
-    return "More character-forward if you want to stay in a richer, heavier lane.";
-  }
-
-  return "A clean next step if you want to stay close to this movie's general lane.";
-};
-
 const formatReviewMeta = (review, source = "TMDB user reviews") => {
   if (!review) {
     return source;
@@ -1256,8 +1191,8 @@ function MovieDetails() {
                 <h2 className="detail-section-title">{previewMode ? "Watch While You Wait" : "What to Watch Next"}</h2>
                 <p className="detail-secondary-text">
                   {previewMode
-                    ? `Because you liked ${movie.title}, here are a few good watch-now options while you wait.`
-                    : `Because you liked ${movie.title}, here are a few strong next directions to try.`}
+                    ? "Good watch-now options while the real movie is still on the way."
+                    : "Picked for similar tone, energy, or audience appeal — not just title adjacency."}
                 </p>
               </div>
               <div className="results-count">{similarMovies.length} titles</div>
@@ -1280,29 +1215,18 @@ function MovieDetails() {
             <div className="similar-grid">
               {similarMovies.map((similarMovie, index) => (
                 <Link key={similarMovie.id} to={getMoviePath(similarMovie)} className="similar-card">
-                  <div className="similar-card-poster-wrap">
-                    {similarMovie.poster_path ? (
-                      <img
-                        src={`https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`}
-                        alt={similarMovie.title}
-                        className="similar-poster"
-                      />
-                    ) : (
-                      <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>
-                    )}
-                  </div>
-                  <div className="similar-card-copy">
-                    <div className="similar-card-topline">
-                      <div className="similar-reason-label">{nextWatchReasonLabels[index % nextWatchReasonLabels.length]}</div>
-                      <div className="similar-card-affordance">View details</div>
-                    </div>
-                    <div className="similar-title-row">
-                      <div className="similar-title">{similarMovie.title}</div>
-                      <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
-                    </div>
-                    <div className="similar-descriptor">{getNextWatchDescriptor(similarMovie, previewMode)}</div>
-                    <p className="similar-explanation detail-secondary-text">{buildNextWatchExplanation(similarMovie, previewMode)}</p>
-                  </div>
+                  {similarMovie.poster_path ? (
+                    <img
+                      src={`https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`}
+                      alt={similarMovie.title}
+                      className="similar-poster"
+                    />
+                  ) : (
+                    <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>
+                  )}
+                  <div className="similar-reason-label">{nextWatchReasonLabels[index % nextWatchReasonLabels.length]}</div>
+                  <div className="similar-title">{similarMovie.title}</div>
+                  <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
                 </Link>
               ))}
             </div>
