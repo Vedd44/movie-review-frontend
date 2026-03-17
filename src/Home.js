@@ -74,6 +74,10 @@ const HOMEPAGE_PROMPT_POOL = [
 const HOMEPAGE_PROMPT_COUNT = 4;
 const PROMPT_ROTATION_MS = 12000;
 const MIN_CURATED_FEED_SIZE = 8;
+const HOMEPAGE_DESKTOP_COLUMNS = 5;
+const HOMEPAGE_DESKTOP_ROWS = 3;
+const HOMEPAGE_DESKTOP_TARGET_COUNT = HOMEPAGE_DESKTOP_COLUMNS * HOMEPAGE_DESKTOP_ROWS;
+const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
 
 const FEED_METADATA = {
   latest: {
@@ -114,6 +118,19 @@ const pickPromptSuggestions = (pool, count, excludedItems = []) => {
   return shuffleArray(workingPool).slice(0, count);
 };
 
+const dedupeMoviesById = (items = []) => {
+  const seenIds = new Set();
+
+  return items.filter((item) => {
+    if (!item?.id || seenIds.has(item.id)) {
+      return false;
+    }
+
+    seenIds.add(item.id);
+    return true;
+  });
+};
+
 const getDaysSinceRelease = (releaseDate) => {
   if (!releaseDate) {
     return Number.POSITIVE_INFINITY;
@@ -127,6 +144,22 @@ const getDaysSinceRelease = (releaseDate) => {
   return Math.floor((Date.now() - parsedDate.getTime()) / (1000 * 60 * 60 * 24));
 };
 
+const isRecentRelease = (releaseDate, days = 45) => {
+  const daysSinceRelease = getDaysSinceRelease(releaseDate);
+  return Number.isFinite(daysSinceRelease) && daysSinceRelease >= 0 && daysSinceRelease <= days;
+};
+
+const trimMoviesToFullRows = (items = [], columns = HOMEPAGE_DESKTOP_COLUMNS, maxCount = HOMEPAGE_DESKTOP_TARGET_COUNT) => {
+  const cappedItems = items.slice(0, maxCount);
+  const fullRowCount = Math.floor(cappedItems.length / columns) * columns;
+
+  if (fullRowCount >= columns) {
+    return cappedItems.slice(0, fullRowCount);
+  }
+
+  return cappedItems.slice(0, Math.min(cappedItems.length, columns));
+};
+
 const passesFeedQualityCheck = (movie, view) => {
   if (!movie?.poster_path) {
     return false;
@@ -135,20 +168,30 @@ const passesFeedQualityCheck = (movie, view) => {
   const voteCount = Number(movie.vote_count || 0);
   const voteAverage = Number(movie.vote_average || 0);
   const popularity = Number(movie.popularity || 0);
+  const daysSinceRelease = getDaysSinceRelease(movie.release_date);
+  const sourceType = movie.source_type || movie.homepage_feed_source || view;
 
   if (view === "upcoming") {
     return popularity >= 8 || getDaysSinceRelease(movie.release_date) <= 45;
   }
 
-  if (voteCount >= 25 && voteAverage > 0 && voteAverage < 5.5) {
+  if (voteCount >= 25 && voteAverage > 0 && voteAverage < 5.8) {
     return false;
   }
 
-  if (voteCount < 18 && popularity < 18) {
+  if (voteCount < 18 && popularity < 24) {
     return false;
   }
 
-  if (view === "latest" && voteCount < 40 && popularity < 26) {
+  if (view === "latest" && voteCount < 35 && popularity < 28) {
+    return false;
+  }
+
+  if (sourceType === "popular" && daysSinceRelease > HOMEPAGE_MAX_RELEASE_WINDOW_DAYS && popularity < 82 && voteCount < 260) {
+    return false;
+  }
+
+  if (daysSinceRelease > 120 && voteAverage > 0 && voteAverage < 6.4 && popularity < 44) {
     return false;
   }
 
@@ -160,29 +203,43 @@ const getFeedCurationScore = (movie, view) => {
   const voteAverage = Number(movie.vote_average || 0);
   const popularity = Number(movie.popularity || 0);
   const daysSinceRelease = getDaysSinceRelease(movie.release_date);
-  const recencyBoost = Number.isFinite(daysSinceRelease) ? Math.max(0, 50 - Math.min(daysSinceRelease, 50)) : 0;
-  const engagementScore = Math.min(voteCount, 1200) / 20;
-  const ratingScore = voteAverage > 0 ? voteAverage * 9 : 0;
-  const popularityScore = Math.min(popularity, 140);
+  const sourceType = movie.source_type || movie.homepage_feed_source || view;
+  const ratingScore = voteAverage > 0 ? voteAverage * 11 : 0;
+  const popularityScore = Math.min(popularity, 160) * 0.82;
+  const engagementScore = Math.min(voteCount, 2400) / 24;
   const posterBoost = movie.poster_path ? 12 : 0;
-  const latestBoost = view === "latest" ? recencyBoost : 0;
-  const popularBoost = view === "popular" ? popularityScore * 0.25 : 0;
+  const nowPlayingBoost = sourceType === "now_playing" ? 24 : 0;
+  const trendingBoost = sourceType === "popular" ? 16 : 0;
+  const recognizabilityBoost =
+    voteCount >= 1200 ? 16 : voteCount >= 450 ? 11 : voteCount >= 180 ? 6 : popularity >= 75 ? 5 : 0;
+  const releaseWindowBoost =
+    !Number.isFinite(daysSinceRelease)
+      ? 0
+      : daysSinceRelease <= 30
+        ? 34
+        : daysSinceRelease <= 60
+          ? 24
+          : daysSinceRelease <= 120
+            ? 16
+            : daysSinceRelease <= HOMEPAGE_MAX_RELEASE_WINDOW_DAYS
+              ? 6
+              : -8;
 
-  return posterBoost + ratingScore + engagementScore + popularityScore + latestBoost + popularBoost;
+  return posterBoost + ratingScore + popularityScore + engagementScore + nowPlayingBoost + trendingBoost + recognizabilityBoost + releaseWindowBoost;
 };
 
 const getHomepageCardLabel = (movie, view) => {
   const voteCount = Number(movie.vote_count || 0);
   const voteAverage = Number(movie.vote_average || 0);
   const popularity = Number(movie.popularity || 0);
-  const daysSinceRelease = getDaysSinceRelease(movie.release_date);
+  const sourceType = movie.source_type || movie.homepage_feed_source || view;
 
-  if (view === "popular" || popularity >= 90) {
-    return "Trending";
+  if (sourceType === "now_playing" && isRecentRelease(movie.release_date, 35)) {
+    return "New Release";
   }
 
-  if (daysSinceRelease <= 30) {
-    return "New Release";
+  if (sourceType === "popular" || popularity >= 90) {
+    return "Trending";
   }
 
   if (voteCount >= 500 || (voteCount >= 180 && popularity >= 55)) {
@@ -218,6 +275,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [lastPickMode, setLastPickMode] = useState("prompt");
   const [visiblePromptSuggestions, setVisiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
+  const [isDesktopHomepageGrid, setIsDesktopHomepageGrid] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 861px)").matches;
+  });
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 560px)").matches;
@@ -230,6 +291,23 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     const handleChange = (event) => setIsCompactHeroPreview(event.matches);
 
     setIsCompactHeroPreview(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia("(min-width: 861px)");
+    const handleChange = (event) => setIsDesktopHomepageGrid(event.matches);
+
+    setIsDesktopHomepageGrid(mediaQuery.matches);
 
     if (typeof mediaQuery.addEventListener === "function") {
       mediaQuery.addEventListener("change", handleChange);
@@ -315,19 +393,37 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     setLoading(true);
     setError(null);
 
-    axios
-      .get(`${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}`)
-      .then((response) => {
+    const fetchFeed = async () => {
+      try {
+        if (movieType === "latest") {
+          const [latestResponse, trendingResponse] = await Promise.all([
+            axios.get(`${API_BASE_URL}/movies?type=latest&page=${currentPage}&fill=1`),
+            axios.get(`${API_BASE_URL}/movies?type=popular&page=${currentPage}&fill=1`),
+          ]);
+
+          const latestResults = latestResponse.data?.results || [];
+          const trendingResults = (trendingResponse.data?.results || []).map((movie) => ({
+            ...movie,
+            homepage_feed_source: movie.source_type || "popular",
+          }));
+
+          setMovies(dedupeMoviesById([...latestResults, ...trendingResults]));
+          setTotalPages(Math.max(latestResponse.data?.total_pages || 1, trendingResponse.data?.total_pages || 1));
+          return;
+        }
+
+        const response = await axios.get(`${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}&fill=1`);
         setMovies(response.data.results || []);
         setTotalPages(response.data.total_pages || 1);
-      })
-      .catch((requestError) => {
+      } catch (requestError) {
         console.error(`Error fetching ${movieType} movies:`, requestError);
         setError(`Failed to fetch ${movieType} movies.`);
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchFeed();
   }, [currentPage, movieType]);
 
   useEffect(() => {
@@ -411,10 +507,22 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     [curatedMovies, selectedMoodConfig]
   );
 
+  const displayedMovies = useMemo(() => {
+    if (!filteredMovies.length) {
+      return [];
+    }
+
+    if (isDesktopHomepageGrid) {
+      return trimMoviesToFullRows(filteredMovies, HOMEPAGE_DESKTOP_COLUMNS, HOMEPAGE_DESKTOP_TARGET_COUNT);
+    }
+
+    return filteredMovies.slice(0, HOMEPAGE_DESKTOP_TARGET_COUNT);
+  }, [filteredMovies, isDesktopHomepageGrid]);
+
   const heroPreviewMovies = useMemo(() => {
-    const source = filteredMovies.length ? filteredMovies : curatedMovies;
+    const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
     return source.slice(0, isCompactHeroPreview ? 4 : 3);
-  }, [curatedMovies, filteredMovies, isCompactHeroPreview]);
+  }, [curatedMovies, displayedMovies, filteredMovies, isCompactHeroPreview]);
 
   const viewLabel = getViewLabel(movieType);
   const heading = FEED_METADATA[movieType]?.heading || getViewLabel(movieType);
@@ -435,7 +543,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     return "What’s currently in theaters.";
   }, [movieType, selectedMood, selectedMoodConfig.label, viewLabel]);
 
-  const feedCountLabel = selectedMood === "all" ? `${filteredMovies.length} titles` : `${filteredMovies.length} matches on this page`;
+  const feedCountLabel = selectedMood === "all" ? `${displayedMovies.length} curated titles` : `${displayedMovies.length} curated matches`;
   const heroPreviewLabel = movieType === "upcoming" ? "Coming soon" : movieType === "popular" ? "Trending this week" : "Now playing";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
@@ -457,9 +565,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           { name: "Home", path: "/" },
           { name: heading, path: FEED_METADATA[movieType]?.path || "/now-playing" },
         ]),
-        filteredMovies.length
+        displayedMovies.length
           ? buildItemListJsonLd(
-              filteredMovies.slice(0, 12).map((movie) => ({
+              displayedMovies.slice(0, 12).map((movie) => ({
                 name: movie.title,
                 path: getMoviePath(movie),
               }))
@@ -499,7 +607,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       },
       buildBreadcrumbJsonLd([{ name: "Home", path: "/" }]),
     ];
-  }, [filteredMovies, heading, isFeedRoute, movieType]);
+  }, [displayedMovies, heading, isFeedRoute, movieType]);
 
   usePageMetadata(
     isFeedRoute
@@ -863,8 +971,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         {!loading && !error && (
           <>
             <div className="movie-list home-poster-grid">
-              {filteredMovies.length > 0 ? (
-                filteredMovies.map((movie) => (
+              {displayedMovies.length > 0 ? (
+                displayedMovies.map((movie) => (
                   <article key={movie.id} className="movie-card home-movie-card">
                     <Link to={getMoviePath(movie)} className="home-movie-card-link" aria-label={`Open ${movie.title}`}>
                       <div className="home-movie-card-poster-shell">
@@ -904,7 +1012,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               )}
             </div>
 
-            {selectedMood !== "all" && filteredMovies.length > 0 && filteredMovies.length < 8 ? (
+            {selectedMood !== "all" && displayedMovies.length > 0 && displayedMovies.length < 8 ? (
               <div className="feed-followup-card">
                 <div>
                   <div className="detail-description-label">Want more {selectedMoodConfig.label.toLowerCase()} picks?</div>
