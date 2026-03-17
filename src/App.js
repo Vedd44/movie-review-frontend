@@ -11,7 +11,7 @@ import "./App.css";
 
 const SITE_VERSION = "v0.3";
 
-function HeaderSearch() {
+function HeaderSearch({ showOnHome = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const currentQuery = new URLSearchParams(location.search).get("q") || "";
@@ -26,7 +26,7 @@ function HeaderSearch() {
     setQuery("");
   }, [currentQuery, location.pathname]);
 
-  if (location.pathname === "/") {
+  if (location.pathname === "/" && !showOnHome) {
     return null;
   }
 
@@ -128,7 +128,7 @@ function SiteHeader({ hasHeaderSearch }) {
           <nav id="site-mobile-nav" className="site-nav site-nav--mobile" aria-label="Mobile primary">
             {renderNavLinks()}
           </nav>
-          {hasHeaderSearch ? <HeaderSearch /> : null}
+          {hasHeaderSearch || location.pathname === "/" ? <HeaderSearch showOnHome={location.pathname === "/"} /> : null}
         </div>
       </div>
     </header>

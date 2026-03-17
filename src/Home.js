@@ -450,7 +450,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   return (
     <div className="browse-page home-page">
       <div className="container browse-shell home-shell">
-        <section className="browse-hero browse-hero--compact browse-hero--with-search">
+        <section className={`browse-hero browse-hero--compact ${isCompactHeroPreview ? "browse-hero--solo" : "browse-hero--with-search"}`}>
           <div className="browse-copy">
             <div className="browse-kicker">ReelBot</div>
             <h1 className="browse-title browse-title--brand">What should I watch tonight?</h1>
@@ -471,43 +471,45 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             </div>
           </div>
 
-          <div className="browse-hero-aside">
-            <form onSubmit={handleHeroSearch} className="search-bar search-bar--hero">
-              <input
-                type="text"
-                placeholder="Try a title, actor, or vibe..."
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-              <button type="submit">Search</button>
-            </form>
+          {!isCompactHeroPreview ? (
+            <div className="browse-hero-aside">
+              <form onSubmit={handleHeroSearch} className="search-bar search-bar--hero">
+                <input
+                  type="text"
+                  placeholder="Try a title, actor, or vibe..."
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <button type="submit">Search</button>
+              </form>
 
-            {heroPreviewMovies.length ? (
-              <div className="hero-preview-card">
-                <div className="hero-preview-head">
-                  <div className="detail-description-label">{heroPreviewLabel}</div>
-                  <span className="results-count results-count--context">{heroPreviewMovies.length} picks</span>
-                </div>
+              {heroPreviewMovies.length ? (
+                <div className="hero-preview-card">
+                  <div className="hero-preview-head">
+                    <div className="detail-description-label">{heroPreviewLabel}</div>
+                    <span className="results-count results-count--context">{heroPreviewMovies.length} picks</span>
+                  </div>
 
-                <div className="hero-preview-grid">
-                  {heroPreviewMovies.map((movie) => (
-                    <Link key={movie.id} to={getMoviePath(movie)} className="hero-preview-item" aria-label={`Open ${movie.title}`}>
-                      {movie.poster_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                          alt={movie.title}
-                          className="hero-preview-poster"
-                        />
-                      ) : (
-                        <div className="hero-preview-poster hero-preview-poster--placeholder">Poster unavailable</div>
-                      )}
-                      <span className="hero-preview-title">{movie.title}</span>
-                    </Link>
-                  ))}
+                  <div className="hero-preview-grid">
+                    {heroPreviewMovies.map((movie) => (
+                      <Link key={movie.id} to={getMoviePath(movie)} className="hero-preview-item" aria-label={`Open ${movie.title}`}>
+                        {movie.poster_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                            alt={movie.title}
+                            className="hero-preview-poster"
+                          />
+                        ) : (
+                          <div className="hero-preview-poster hero-preview-poster--placeholder">Poster unavailable</div>
+                        )}
+                        <span className="hero-preview-title">{movie.title}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          ) : null}
         </section>
 
         <section id="pick-for-me" className="pick-for-me-card pick-for-me-card--primary">
