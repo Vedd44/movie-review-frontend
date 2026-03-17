@@ -1027,20 +1027,14 @@ function MovieDetails() {
                     </div>
                     {stagedReelbotConfig.warning ? <span className="reelbot-warning-chip">{stagedReelbotConfig.warning}</span> : null}
                   </div>
-                ) : (
-                  <p className="reelbot-panel-caption reelbot-panel-caption--standalone">
-                    {previewMode
-                      ? "Start with First Look for the quickest spoiler-free read on what it seems like so far."
-                      : "Start with Quick Take for the fastest read on whether this fits what you want."}
-                  </p>
-                )}
+                ) : null}
 
                 {!activeReelbotAction ? (
                   <div className="reelbot-empty-state">
                     <p className="detail-secondary-text reelbot-placeholder-copy">
                       {previewMode
                         ? "Start with First Look, then jump into audience fit, scale, or what to watch while you wait."
-                        : "Start with Quick Take, then follow up if you want a clearer yes-or-no."}
+                        : "Start with Quick Take. Follow up if you want a clearer yes-or-no."}
                     </p>
                     <div className="reelbot-empty-actions">
                       <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction("quick_take")}>

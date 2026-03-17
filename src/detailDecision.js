@@ -189,8 +189,8 @@ const buildContextualVerdict = (intent = {}, attributes = {}) => {
 
   if (comparison.score >= 4) {
     return {
-      title: "Fits exactly what you asked for",
-      supportingLine: `${attributes.tone}, ${attributes.commitment}-commitment ${attributes.bestWith.toLowerCase()} watch that lines up with your current vibe`,
+      title: "Right in line with your vibe",
+      supportingLine: "Light, easy watch that fits your current vibe.",
     };
   }
 

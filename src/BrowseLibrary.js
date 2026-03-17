@@ -513,17 +513,13 @@ function BrowseLibrary() {
                           ))}
                         </div>
                       ) : null}
-                      <div className="movie-hover-actions movie-hover-actions--stacked">
-                        <Link to={getMoviePath(movie)} className="card-link movie-hover-link">
-                          View Details
-                        </Link>
+                      <div className="movie-hover-actions">
                         <Link
                           to={getMoviePath(movie)}
                           state={{ reelbotAction: "is_this_for_me", fromCard: true }}
                           className="movie-card-ask-reelbot movie-card-ask-reelbot--overlay"
                         >
                           Ask ReelBot
-                          <span className="movie-card-ask-copy">Is this for me?</span>
                         </Link>
                       </div>
                     </div>
@@ -545,14 +541,6 @@ function BrowseLibrary() {
                     <div className="movie-card-actions-row">
                       <Link to={getMoviePath(movie)} className="card-link">
                         View Details
-                      </Link>
-                      <Link
-                        to={getMoviePath(movie)}
-                        state={{ reelbotAction: "is_this_for_me", fromCard: true }}
-                        className="movie-card-ask-reelbot"
-                      >
-                        Ask ReelBot
-                        <span className="movie-card-ask-copy">Is this for me?</span>
                       </Link>
                     </div>
                   </div>
