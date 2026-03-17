@@ -171,7 +171,7 @@ export const getProviderBadgeList = (availability, limit = 2) => getPrimaryProvi
 
 export const getProviderActionLabel = (provider) => PROVIDER_ACTION_LABELS[provider?.access_type] || "Watch";
 
-export const getProviderCtaLabel = (provider) => `${getProviderActionLabel(provider)} on ${provider?.name || "provider"}`;
+export const getProviderCtaLabel = (provider) => `Open on ${provider?.name || "provider"}`;
 
 export const getStreamingLink = (movie, provider, region = "US") => {
   const providerKey = getProviderKey(provider);

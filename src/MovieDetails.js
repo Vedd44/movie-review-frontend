@@ -1014,29 +1014,33 @@ function MovieDetails() {
                 aria-live="polite"
                 aria-busy={isActiveReelbotLoading}
               >
-                <div className="reelbot-panel-top">
-                  <div className="reelbot-panel-top-copy">
-                    <div className="reelbot-panel-kicker">{stagedReelbotConfig.panelKicker || "ReelBot Insight"}</div>
-                    <div className="reelbot-panel-header">{stagedReelbotConfig.panelTitle}</div>
-                    <p className="reelbot-panel-caption">
-                      {activeReelbotAction
-                        ? previewMode
+                {activeReelbotAction ? (
+                  <div className="reelbot-panel-top">
+                    <div className="reelbot-panel-top-copy">
+                      <div className="reelbot-panel-kicker">{stagedReelbotConfig.panelKicker || "ReelBot"}</div>
+                      <div className="reelbot-panel-header">{stagedReelbotConfig.panelTitle}</div>
+                      <p className="reelbot-panel-caption">
+                        {previewMode
                           ? "Your latest answer stays here while you compare a few early reads."
-                          : "Your latest answer stays here while you keep comparing angles."
-                        : previewMode
-                          ? "Start with First Look for the quickest spoiler-free read on what it seems like so far."
-                          : "Start with Quick Take for the fastest read on whether this fits what you want."}
-                    </p>
+                          : "Your latest answer stays here while you keep comparing angles."}
+                      </p>
+                    </div>
+                    {stagedReelbotConfig.warning ? <span className="reelbot-warning-chip">{stagedReelbotConfig.warning}</span> : null}
                   </div>
-                  {stagedReelbotConfig.warning ? <span className="reelbot-warning-chip">{stagedReelbotConfig.warning}</span> : null}
-                </div>
+                ) : (
+                  <p className="reelbot-panel-caption reelbot-panel-caption--standalone">
+                    {previewMode
+                      ? "Start with First Look for the quickest spoiler-free read on what it seems like so far."
+                      : "Start with Quick Take for the fastest read on whether this fits what you want."}
+                  </p>
+                )}
 
                 {!activeReelbotAction ? (
                   <div className="reelbot-empty-state">
                     <p className="detail-secondary-text reelbot-placeholder-copy">
                       {previewMode
                         ? "Start with First Look, then jump into audience fit, scale, or what to watch while you wait."
-                        : "Start with Quick Take, then use the follow-ups when you want a sharper yes-or-no answer."}
+                        : "Start with Quick Take, then follow up if you want a clearer yes-or-no."}
                     </p>
                     <div className="reelbot-empty-actions">
                       <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction("quick_take")}>

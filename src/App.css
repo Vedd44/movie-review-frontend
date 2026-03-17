@@ -1776,6 +1776,10 @@ body {
   max-width: 60ch;
 }
 
+.reelbot-panel-caption--standalone {
+  margin: 0 0 18px;
+}
+
 .reelbot-warning-chip {
   display: inline-flex;
   align-items: center;

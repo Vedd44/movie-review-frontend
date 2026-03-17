@@ -1,5 +1,5 @@
 import React from "react";
-import { buildProviderLink, getProviderActionLabel, getProviderCtaLabel } from "../streamingLinks";
+import { buildProviderLink, getProviderCtaLabel } from "../streamingLinks";
 
 const GROUP_LABELS = {
   subscription: "Included with subscription",
@@ -40,10 +40,20 @@ const getProviderGroups = (availability) => {
 };
 
 function WatchAvailability({ availability, sectionId, movie }) {
-  const providerGroups = getProviderGroups(availability);
+  const providerGroups = getProviderGroups(availability)
+    .map((group) => ({
+      ...group,
+      providers: group.providers
+        .map((provider) => ({
+          ...provider,
+          href: buildProviderLink({ movie, provider, region: availability?.region }),
+        }))
+        .filter((provider) => provider.href),
+    }))
+    .filter((group) => group.providers.length);
   const hasProviders = providerGroups.length > 0;
   const primaryProvider = providerGroups[0]?.providers?.[0] || null;
-  const primaryHref = primaryProvider ? buildProviderLink({ movie, provider: primaryProvider, region: availability?.region }) : null;
+  const primaryHref = primaryProvider?.href || null;
 
   return (
     <section id={sectionId} className="detail-info-card detail-info-card--utility detail-info-card--providers detail-info-card--watch-now detail-anchor-target">
@@ -82,7 +92,6 @@ function WatchAvailability({ availability, sectionId, movie }) {
               <div className="watch-now-group-label">{group.label}</div>
               <div className="watch-now-provider-grid watch-now-provider-grid--grouped">
                 {group.providers.map((provider) => {
-                  const href = buildProviderLink({ movie, provider, region: availability?.region });
                   const content = (
                     <>
                       <div className="provider-chip-top">
@@ -96,25 +105,17 @@ function WatchAvailability({ availability, sectionId, movie }) {
                           ) : null}
                           <span className="provider-chip-name">{provider.name}</span>
                         </div>
-                        {href ? <span className="watch-now-external-glyph" aria-hidden="true">↗</span> : null}
+                        <span className="watch-now-external-glyph" aria-hidden="true">↗</span>
                       </div>
                       <span className="provider-chip-action">{getProviderCtaLabel(provider)}</span>
-                      <span className="provider-chip-cta-copy">{getProviderActionLabel(provider)} instantly in a new tab.</span>
+                      <span className="provider-chip-cta-copy">Watch now</span>
                     </>
                   );
-
-                  if (!href) {
-                    return (
-                      <div key={`${group.id}-${provider.id}`} className="provider-chip provider-chip--cta provider-chip--disabled" aria-label={`${provider.name} link unavailable`}>
-                        {content}
-                      </div>
-                    );
-                  }
 
                   return (
                     <a
                       key={`${group.id}-${provider.id}`}
-                      href={href}
+                      href={provider.href}
                       target="_blank"
                       rel="noopener noreferrer sponsored"
                       className="provider-chip provider-chip--cta"
