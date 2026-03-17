@@ -1845,6 +1845,117 @@ body {
   color: #fff1c2;
 }
 
+.reelbot-next-watch-list {
+  display: grid;
+  gap: 12px;
+}
+
+.reelbot-next-watch-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(129, 155, 190, 0.1);
+  background: rgba(11, 18, 29, 0.62);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.reelbot-next-watch-card.is-clickable:hover,
+.reelbot-next-watch-card.is-clickable:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(242, 197, 86, 0.2);
+  background: rgba(13, 21, 34, 0.9);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.reelbot-next-watch-poster-shell {
+  width: 72px;
+}
+
+.reelbot-next-watch-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #182436;
+}
+
+.reelbot-next-watch-poster--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #97a7bb;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.reelbot-next-watch-copy {
+  min-width: 0;
+}
+
+.reelbot-next-watch-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reelbot-next-watch-role {
+  color: #f5e2ac;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reelbot-next-watch-affordance {
+  color: rgba(241, 221, 176, 0.76);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.reelbot-next-watch-card.is-clickable:hover .reelbot-next-watch-affordance,
+.reelbot-next-watch-card.is-clickable:focus-visible .reelbot-next-watch-affordance {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reelbot-next-watch-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.reelbot-next-watch-title {
+  color: #edf4fb;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.reelbot-next-watch-year {
+  color: #89a0ba;
+  font-size: 0.84rem;
+  flex: 0 0 auto;
+}
+
+.reelbot-next-watch-reason {
+  margin: 6px 0 0;
+  color: #c1d0df;
+  line-height: 1.55;
+}
+
 @media only screen and (max-width: 860px) {
   .detail-poster-column {
     justify-content: flex-start;
@@ -1852,6 +1963,15 @@ body {
 
   .reelbot-action-grid {
     grid-template-columns: 1fr;
+  }
+
+  .reelbot-next-watch-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .reelbot-next-watch-poster-shell {
+    width: 64px;
   }
 }
 

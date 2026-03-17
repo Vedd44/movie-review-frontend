@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { getMoviePath, getReleaseYear } from "../discovery";
 
 function ReelbotStructuredContent({ action, result }) {
   const content = result?.structured_content;
@@ -46,15 +48,44 @@ function ReelbotStructuredContent({ action, result }) {
       return (
         <div className="reelbot-body reelbot-body--recommendations">
           <p>{content.intro}</p>
-          <ul>
-            {(content.picks || []).map((item) => (
-              <li key={`${item.title}-${item.role_label}`}>
-                <strong>{item.title}</strong>
-                <br />
-                <em>{item.role_label}</em> — {item.reason}
-              </li>
-            ))}
-          </ul>
+          <div className="reelbot-next-watch-list">
+            {(content.picks || []).map((item) => {
+              const hasMovieLink = Boolean(item.id);
+              const Wrapper = hasMovieLink ? Link : "div";
+              const wrapperProps = hasMovieLink ? { to: getMoviePath({ id: item.id, title: item.title }) } : {};
+
+              return (
+                <Wrapper
+                  key={`${item.id || item.title}-${item.role_label}`}
+                  className={`reelbot-next-watch-card${hasMovieLink ? " is-clickable" : ""}`}
+                  {...wrapperProps}
+                >
+                  <div className="reelbot-next-watch-poster-shell">
+                    {item.poster_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
+                        alt={item.title}
+                        className="reelbot-next-watch-poster"
+                      />
+                    ) : (
+                      <div className="reelbot-next-watch-poster reelbot-next-watch-poster--placeholder">Poster unavailable</div>
+                    )}
+                  </div>
+                  <div className="reelbot-next-watch-copy">
+                    <div className="reelbot-next-watch-topline">
+                      <div className="reelbot-next-watch-role">{item.role_label}</div>
+                      {hasMovieLink ? <div className="reelbot-next-watch-affordance">View details</div> : null}
+                    </div>
+                    <div className="reelbot-next-watch-title-row">
+                      <div className="reelbot-next-watch-title">{item.title}</div>
+                      {item.release_date ? <div className="reelbot-next-watch-year">{getReleaseYear(item.release_date)}</div> : null}
+                    </div>
+                    <p className="reelbot-next-watch-reason">{item.reason}</p>
+                  </div>
+                </Wrapper>
+              );
+            })}
+          </div>
         </div>
       );
     case "scary_check":
