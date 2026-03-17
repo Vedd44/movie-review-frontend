@@ -5831,6 +5831,10 @@ body {
   box-shadow: 0 24px 54px rgba(0, 0, 0, 0.2);
 }
 
+.pick-primary-content > .pick-result-confidence-detail--inline {
+  margin: 6px 0 10px;
+}
+
 .pick-primary-hook {
   margin: 0;
   color: #fff1c2;
@@ -5841,7 +5845,7 @@ body {
 
 .recommendation-rationale {
   margin-top: 0;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   padding: 18px 20px;
   border-radius: 18px;
   border: 1px solid rgba(129, 155, 190, 0.12);
@@ -5850,9 +5854,12 @@ body {
 }
 
 .recommendation-rationale-title {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: #fff1c2;
-  font-size: 1.02rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   line-height: 1.2;
 }
 
@@ -7638,20 +7645,17 @@ body {
   gap: 0.7rem;
 }
 
-.pick-result-confidence-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.45rem;
-}
-
 .pick-result-confidence-detail {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
   color: rgba(244, 239, 226, 0.74);
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+.pick-result-confidence-detail--inline {
+  justify-content: flex-start;
 }
 
 .pick-result-confidence-stars {

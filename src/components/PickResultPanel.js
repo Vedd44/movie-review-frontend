@@ -45,23 +45,6 @@ function PickResultPanel({
 
       {!error && !loading && primaryMovie ? (
         <>
-          <div className="pick-result-header">
-            <div>
-              <h3 className="pick-result-title">{rationale?.heading || "ReelBot’s Pick"}</h3>
-              {rationale?.confidenceLabel ? (
-                <div className="pick-result-confidence-stack">
-                  <div className="recommendation-confidence-pill pick-result-confidence">{rationale.confidenceLabel}</div>
-                  <div className="pick-result-confidence-detail">
-                    <span className="pick-result-confidence-text">ReelBot Confidence</span>
-                    <span className="pick-result-confidence-stars" aria-label={`Confidence ${rationale.confidenceLabel}`}>
-                      {confidenceStars}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-
           <article className="pick-primary-card pick-primary-card--hero">
             <Link to={getMoviePath(primaryMovie)} className="pick-primary-poster-link">
               {primaryMovie.poster_path ? (
@@ -80,11 +63,18 @@ function PickResultPanel({
                   {primaryMovie.title}
                 </Link>
               </h3>
+              {rationale?.confidenceLabel ? (
+                <div className="pick-result-confidence-detail pick-result-confidence-detail--inline">
+                  <span className="pick-result-confidence-text">Confidence</span>
+                  <span className="pick-result-confidence-stars" aria-label={`Confidence ${rationale.confidenceLabel}`}>
+                    {confidenceStars}
+                  </span>
+                </div>
+              ) : null}
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
                 {primaryMovie.runtime ? <span className="movie-card-chip">{primaryMovie.runtime} min</span> : null}
                 {primaryMovie.vote_average ? <span className="movie-card-chip">TMDB {primaryMovie.vote_average.toFixed(1)}</span> : null}
-                {rationale?.fitLabel ? <span className="movie-card-chip movie-card-chip--accent">{rationale.fitLabel}</span> : null}
               </div>
               <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
               <RecommendationRationale rationale={rationale} collapsible={!showExpandedReasoning} />
