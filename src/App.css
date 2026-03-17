@@ -3392,6 +3392,21 @@ body {
   margin-bottom: 14px;
 }
 
+.pick-empty-state--result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 148px;
+  justify-content: center;
+}
+
+.pick-empty-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.18rem;
+  line-height: 1.25;
+}
+
 .recommendation-rationale {
   margin-bottom: 22px;
   padding: 20px 20px 22px;
@@ -8605,6 +8620,39 @@ body {
   text-decoration: none;
 }
 
+.home-page .home-movie-card-poster-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-page .home-movie-card-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(242, 197, 86, 0.16);
+  background: rgba(8, 14, 24, 0.78);
+  color: #f4e2af;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
+}
+
+.home-page .home-movie-card-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(7, 12, 20, 0.08) 0%, rgba(7, 12, 20, 0) 32%, rgba(7, 12, 20, 0.16) 62%, rgba(7, 12, 20, 0.44) 100%);
+}
+
 .home-page .home-movie-card-link:focus-visible {
   outline: 2px solid rgba(242, 197, 86, 0.72);
   outline-offset: -2px;
@@ -8614,6 +8662,12 @@ body {
 .home-page .home-movie-card .no-poster {
   width: 100%;
   border-radius: 0;
+  transition: transform 200ms ease;
+}
+
+.home-page .home-movie-card:hover .movie-poster,
+.home-page .home-movie-card:focus-within .movie-poster {
+  transform: scale(1.03);
 }
 
 .home-page .home-movie-card .movie-card-content {

@@ -16,6 +16,7 @@ function PickResultPanel({
   backupMovies = [],
   vibeLabel = "",
   loadingCopy,
+  emptyTitle,
   emptyCopy,
   refreshLabel = "Swap Pick",
   backupTitle = "Similar picks, different vibes",
@@ -155,7 +156,10 @@ function PickResultPanel({
       ) : null}
 
       {!error && !loading && !primaryMovie ? (
-        <div className="pick-result-copy detail-secondary-text">{emptyCopy}</div>
+        <div className="pick-empty-state pick-empty-state--result">
+          {emptyTitle ? <h3 className="pick-empty-title">{emptyTitle}</h3> : null}
+          <p className="pick-result-copy detail-secondary-text">{emptyCopy}</p>
+        </div>
       ) : null}
     </div>
   );

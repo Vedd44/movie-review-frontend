@@ -4,7 +4,6 @@ import axios from "axios";
 import "./App.css";
 import {
   API_BASE_URL,
-  DISCOVERY_PROMPT_SETS,
   MOOD_FILTERS,
   REELBOT_CAPABILITIES,
   VIEW_OPTIONS,
@@ -27,12 +26,61 @@ const PICK_LOADING_MESSAGES = [
   "Ranking the best match…",
 ];
 
+const HOMEPAGE_PROMPT_POOL = [
+  "Something visually stunning but not slow",
+  "Dark but not depressing",
+  "Feel-good but not cheesy",
+  "Smart but still easy to follow",
+  "Fast-paced but not exhausting",
+  "Movie to watch while half-paying attention",
+  "Something for a Sunday afternoon",
+  "Late night, don't want to think too hard",
+  "Background movie that still holds up",
+  "Good to watch with parents",
+  "Something everyone will agree on",
+  "Easy watch with friends",
+  "Under 90 minutes",
+  "Something newer but not mainstream",
+  "Critically good but not heavy",
+  "A movie that makes you think after it ends",
+  "Something you probably haven't seen but should",
+  "A comfort rewatch that always works",
+  "A movie that starts slow but pays off",
+  "A tense thriller that isn't bleak",
+  "Funny without feeling dumb",
+  "Big emotions, still easy to get into",
+  "A stylish action movie with actual story",
+  "A rainy-night movie",
+  "Something cozy but not sleepy",
+  "One of those 'how have I never seen this?' movies",
+  "A movie with great chemistry",
+  "Something gripping from the first 10 minutes",
+  "A crowd-pleaser that still feels smart",
+  "Great soundtrack, great mood",
+  "Something twisty but not confusing",
+  "A low-stress movie night pick",
+  "A sharp thriller under two hours",
+  "Easy sci-fi that still feels clever",
+  "A great first-watch with someone",
+  "Something heartfelt without wrecking me",
+  "A movie that feels bigger than it is",
+  "Lighter than a drama, smarter than a comedy",
+  "A comfort movie for a rough day",
+  "Something adventurous but not too loud",
+  "An underrated movie with real payoff",
+  "Visually rich and easy to sink into",
+];
+
+const HOMEPAGE_PROMPT_COUNT = 4;
+const PROMPT_ROTATION_MS = 12000;
+const MIN_CURATED_FEED_SIZE = 8;
+
 const FEED_METADATA = {
   latest: {
     title: "Now Playing Movies | ReelBot",
     description: "See what’s in theaters now, then let ReelBot help narrow the best pick.",
     path: "/now-playing",
-    heading: "Now Playing",
+    heading: "Now Playing & Trending",
   },
   popular: {
     title: "Trending Movies | ReelBot",
@@ -59,6 +107,95 @@ const shuffleArray = (items = []) => {
   return nextItems;
 };
 
+const pickPromptSuggestions = (pool, count, excludedItems = []) => {
+  const excludedSet = new Set(excludedItems);
+  const availableItems = pool.filter((item) => !excludedSet.has(item));
+  const workingPool = availableItems.length >= count ? availableItems : pool;
+  return shuffleArray(workingPool).slice(0, count);
+};
+
+const getDaysSinceRelease = (releaseDate) => {
+  if (!releaseDate) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const parsedDate = new Date(releaseDate);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return Math.floor((Date.now() - parsedDate.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+const passesFeedQualityCheck = (movie, view) => {
+  if (!movie?.poster_path) {
+    return false;
+  }
+
+  const voteCount = Number(movie.vote_count || 0);
+  const voteAverage = Number(movie.vote_average || 0);
+  const popularity = Number(movie.popularity || 0);
+
+  if (view === "upcoming") {
+    return popularity >= 8 || getDaysSinceRelease(movie.release_date) <= 45;
+  }
+
+  if (voteCount >= 25 && voteAverage > 0 && voteAverage < 5.5) {
+    return false;
+  }
+
+  if (voteCount < 18 && popularity < 18) {
+    return false;
+  }
+
+  if (view === "latest" && voteCount < 40 && popularity < 26) {
+    return false;
+  }
+
+  return true;
+};
+
+const getFeedCurationScore = (movie, view) => {
+  const voteCount = Number(movie.vote_count || 0);
+  const voteAverage = Number(movie.vote_average || 0);
+  const popularity = Number(movie.popularity || 0);
+  const daysSinceRelease = getDaysSinceRelease(movie.release_date);
+  const recencyBoost = Number.isFinite(daysSinceRelease) ? Math.max(0, 50 - Math.min(daysSinceRelease, 50)) : 0;
+  const engagementScore = Math.min(voteCount, 1200) / 20;
+  const ratingScore = voteAverage > 0 ? voteAverage * 9 : 0;
+  const popularityScore = Math.min(popularity, 140);
+  const posterBoost = movie.poster_path ? 12 : 0;
+  const latestBoost = view === "latest" ? recencyBoost : 0;
+  const popularBoost = view === "popular" ? popularityScore * 0.25 : 0;
+
+  return posterBoost + ratingScore + engagementScore + popularityScore + latestBoost + popularBoost;
+};
+
+const getHomepageCardLabel = (movie, view) => {
+  const voteCount = Number(movie.vote_count || 0);
+  const voteAverage = Number(movie.vote_average || 0);
+  const popularity = Number(movie.popularity || 0);
+  const daysSinceRelease = getDaysSinceRelease(movie.release_date);
+
+  if (view === "popular" || popularity >= 90) {
+    return "Trending";
+  }
+
+  if (daysSinceRelease <= 30) {
+    return "New Release";
+  }
+
+  if (voteCount >= 500 || (voteCount >= 180 && popularity >= 55)) {
+    return "Popular Now";
+  }
+
+  if (voteAverage >= 7.1 && voteCount >= 80) {
+    return "Worth a Look";
+  }
+
+  return "Worth a Look";
+};
+
 function Home({ routeView = "latest", isFeedRoute = false }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -79,6 +216,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [pickValidation, setPickValidation] = useState("");
   const [pickResult, setPickResult] = useState(null);
   const [lastPickMode, setLastPickMode] = useState("prompt");
+  const [visiblePromptSuggestions, setVisiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -102,10 +240,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     return () => mediaQuery.removeListener(handleChange);
   }, []);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  const [visiblePromptSuggestions] = useState(() => {
-    const randomizedSets = shuffleArray(DISCOVERY_PROMPT_SETS);
-    return randomizedSets[0] || [];
-  });
   const { profile, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
 
   const getStickyOffset = () => (window.matchMedia("(max-width: 720px)").matches ? 88 : 112);
@@ -214,8 +348,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   useEffect(() => {
     setPickError(null);
     setPickValidation("");
+  }, [pickPrompt]);
+
+  useEffect(() => {
+    setPickError(null);
+    setPickValidation("");
     setPickResult(null);
-  }, [movieType, pickPrompt]);
+    setActivePromptSuggestion("");
+  }, [movieType]);
 
   useEffect(() => {
     if (!pickLoading) {
@@ -229,6 +369,18 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
     return () => window.clearInterval(intervalId);
   }, [pickLoading]);
+
+  useEffect(() => {
+    if (pickPrompt.trim() || activePromptSuggestion || pickLoading) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setVisiblePromptSuggestions((currentSuggestions) => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT, currentSuggestions));
+    }, PROMPT_ROTATION_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [activePromptSuggestion, pickLoading, pickPrompt]);
 
   const handleViewChange = (view) => {
     setCurrentPage(1);
@@ -247,16 +399,22 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const visibleMovies = useMemo(() => movies.filter((movie) => !hiddenMovieIds.has(movie.id)), [hiddenMovieIds, movies]);
+  const curatedMovies = useMemo(() => {
+    const qualityFiltered = visibleMovies.filter((movie) => passesFeedQualityCheck(movie, movieType));
+    const fallbackPool = qualityFiltered.length >= Math.min(MIN_CURATED_FEED_SIZE, visibleMovies.length) ? qualityFiltered : visibleMovies;
+
+    return [...fallbackPool].sort((leftMovie, rightMovie) => getFeedCurationScore(rightMovie, movieType) - getFeedCurationScore(leftMovie, movieType));
+  }, [movieType, visibleMovies]);
 
   const filteredMovies = useMemo(
-    () => visibleMovies.filter((movie) => selectedMoodConfig.predicate(movie)),
-    [selectedMoodConfig, visibleMovies]
+    () => curatedMovies.filter((movie) => selectedMoodConfig.predicate(movie)),
+    [curatedMovies, selectedMoodConfig]
   );
 
   const heroPreviewMovies = useMemo(() => {
-    const source = filteredMovies.length ? filteredMovies : visibleMovies;
+    const source = filteredMovies.length ? filteredMovies : curatedMovies;
     return source.slice(0, isCompactHeroPreview ? 4 : 3);
-  }, [filteredMovies, isCompactHeroPreview, visibleMovies]);
+  }, [curatedMovies, filteredMovies, isCompactHeroPreview]);
 
   const viewLabel = getViewLabel(movieType);
   const heading = FEED_METADATA[movieType]?.heading || getViewLabel(movieType);
@@ -593,7 +751,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               <p className="section-subtitle">
                 {activePick
                   ? "A strong first pick, with a few nearby alternatives."
-                  : "Tell ReelBot the vibe and it will line up a confident first pick and a few nearby alternatives."}
+                  : "ReelBot keeps your latest pick here once you give it a vibe."}
               </p>
             </div>
           </div>
@@ -607,7 +765,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             backupMovies={backupPicksWithRoles}
             vibeLabel={pickVibeLabel}
             loadingCopy={PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
-            emptyCopy="Tell ReelBot the vibe and it will line up a confident first pick and a few nearby alternatives."
+            emptyTitle="Your pick will appear here"
+            emptyCopy="Start with a vibe and ReelBot will line up a confident first option and a few nearby alternatives."
             refreshLabel="Swap Pick"
             backupTitle="Similar picks, different vibes"
             onRefreshChoices={pickResult?.primary ? handleRefreshPick : undefined}
@@ -708,15 +867,19 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                 filteredMovies.map((movie) => (
                   <article key={movie.id} className="movie-card home-movie-card">
                     <Link to={getMoviePath(movie)} className="home-movie-card-link" aria-label={`Open ${movie.title}`}>
-                      {movie.poster_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                          alt={movie.title}
-                          className="movie-poster"
-                        />
-                      ) : (
-                        <div className="no-poster">Poster unavailable</div>
-                      )}
+                      <div className="home-movie-card-poster-shell">
+                        <span className="home-movie-card-label">{getHomepageCardLabel(movie, movieType)}</span>
+                        {movie.poster_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                            alt={movie.title}
+                            className="movie-poster"
+                          />
+                        ) : (
+                          <div className="no-poster">Poster unavailable</div>
+                        )}
+                        <span className="home-movie-card-overlay" aria-hidden="true"></span>
+                      </div>
 
                       <div className="movie-card-content">
                         <div className="movie-card-meta">
