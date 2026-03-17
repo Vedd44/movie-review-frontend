@@ -1749,7 +1749,7 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .reelbot-panel-kicker {
@@ -1762,14 +1762,15 @@ body {
 }
 
 .reelbot-panel-header {
-  font-size: 1.28rem;
-  line-height: 1.2;
+  font-size: 1.34rem;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
   margin-bottom: 0;
 }
 
 .reelbot-panel-caption {
-  margin: 12px 0 0;
-  color: #b6c8db;
+  margin: 14px 0 0;
+  color: #c1d0df;
   font-size: 0.96rem;
   line-height: 1.7;
   max-width: 60ch;
@@ -2476,10 +2477,13 @@ body {
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .detail-text-action:hover {
+  transform: translateY(-1px);
   border-color: rgba(242, 197, 86, 0.34);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
 }
 
 @media only screen and (max-width: 1024px) {
@@ -2638,6 +2642,7 @@ body {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
   padding: 24px 28px;
+  box-sizing: border-box;
   border-radius: 24px;
   border: 1px solid rgba(129, 155, 190, 0.12);
   background: linear-gradient(180deg, rgba(7, 12, 20, 0.82), rgba(7, 12, 20, 0.68));
@@ -2683,6 +2688,7 @@ body {
   justify-content: flex-end;
   gap: 10px;
   order: 1;
+  min-width: 0;
 }
 
 .site-footer-links a {
@@ -2691,6 +2697,9 @@ body {
   border: 1px solid rgba(129, 155, 190, 0.12);
   background: rgba(9, 18, 31, 0.76);
   color: var(--text-primary);
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
 
 .site-footer-links a:hover {
@@ -2841,6 +2850,8 @@ body {
 .reelbot-question-chip:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: rgba(242, 197, 86, 0.24);
+  background: rgba(10, 18, 30, 0.92);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
 }
 
 .reelbot-question-chip:focus-visible {
@@ -2873,11 +2884,23 @@ body {
 
 .reelbot-panel--stage {
   margin-top: 0;
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(180deg, rgba(7, 13, 22, 0.88), rgba(6, 11, 19, 0.82));
   border-color: rgba(129, 155, 190, 0.12);
   box-shadow: 0 22px 48px rgba(0, 0, 0, 0.22);
   min-height: 320px;
   scroll-margin-top: 104px;
+}
+
+.reelbot-panel--stage::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(242, 197, 86, 0.22), rgba(125, 183, 255, 0.16), rgba(242, 197, 86, 0));
 }
 
 .reelbot-panel--stage.is-empty {
@@ -2888,6 +2911,8 @@ body {
 .reelbot-panel--stage.is-live {
   border-color: rgba(242, 197, 86, 0.24);
   background: linear-gradient(180deg, rgba(12, 19, 31, 0.96), rgba(7, 13, 22, 0.88));
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.24);
+  animation: reelbotResponseEnter 220ms ease;
 }
 
 .reelbot-panel--stage.is-pulsing {
@@ -2903,13 +2928,14 @@ body {
   padding: 18px;
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  animation: reelbotResponseContentEnter 180ms ease;
 }
 
 .reelbot-empty-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
 .reelbot-empty-cta,
@@ -2917,7 +2943,7 @@ body {
   border-radius: 999px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .reelbot-empty-cta {
@@ -2938,6 +2964,7 @@ body {
 .reelbot-empty-cta:hover,
 .reelbot-empty-link:hover {
   transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
 }
 
 .reelbot-stage-toolbar {
@@ -2971,7 +2998,8 @@ body {
   align-items: center;
   gap: 12px;
   min-height: 140px;
-  padding: 10px 2px;
+  padding: 14px 2px;
+  animation: reelbotResponseContentEnter 180ms ease;
 }
 
 .reelbot-loading-dot {
@@ -2985,12 +3013,13 @@ body {
 }
 
 .reelbot-panel-footer {
-  margin-top: 18px;
-  padding-top: 16px;
+  margin-top: 22px;
+  padding-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  animation: reelbotResponseContentEnter 180ms ease;
 }
 
 @keyframes reelbotPanelPulse {
@@ -3004,6 +3033,30 @@ body {
 
   100% {
     box-shadow: 0 22px 48px rgba(0, 0, 0, 0.22);
+  }
+}
+
+@keyframes reelbotResponseEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reelbotResponseContentEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -3628,12 +3681,15 @@ body {
   font-size: 0.92rem;
   font-weight: 700;
   text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .detail-trailer-cta:hover,
 .detail-trailer-cta:focus-visible {
+  transform: translateY(-1px);
   border-color: rgba(242, 197, 86, 0.34);
   color: #fff1c2;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
 }
 
 .detail-trailer-cta--placeholder {
@@ -3934,7 +3990,7 @@ body {
 }
 
 .detail-vibe-label {
-  color: #89a0ba;
+  color: #97adc7;
   font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -4023,7 +4079,7 @@ body {
 
 .detail-vibe-item--compact .detail-vibe-label {
   margin-bottom: 10px;
-  color: rgba(154, 174, 198, 0.84);
+  color: rgba(171, 188, 208, 0.9);
 }
 
 .detail-vibe-item--compact .detail-vibe-value {
@@ -7173,15 +7229,26 @@ body {
 .reelbot-spoiler-panel {
   border-radius: 20px;
   padding: 20px;
-  border: 1px solid rgba(242, 197, 86, 0.14);
-  background: linear-gradient(180deg, rgba(10, 16, 27, 0.82), rgba(8, 13, 22, 0.76));
+  position: relative;
+  border: 1px solid rgba(242, 197, 86, 0.18);
+  background: linear-gradient(180deg, rgba(12, 18, 29, 0.88), rgba(8, 13, 22, 0.78));
   transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
+.reelbot-spoiler-panel::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(242, 197, 86, 0.34), rgba(242, 197, 86, 0.08) 55%, rgba(242, 197, 86, 0));
+}
+
 .reelbot-spoiler-panel.is-enabled {
-  border-color: rgba(242, 197, 86, 0.22);
-  background: linear-gradient(180deg, rgba(18, 19, 22, 0.86), rgba(9, 14, 24, 0.8));
-  box-shadow: inset 0 1px 0 rgba(255, 241, 194, 0.03);
+  border-color: rgba(242, 197, 86, 0.28);
+  background: linear-gradient(180deg, rgba(22, 20, 16, 0.9), rgba(10, 15, 25, 0.82));
+  box-shadow: inset 0 1px 0 rgba(255, 241, 194, 0.04), 0 16px 34px rgba(0, 0, 0, 0.14);
 }
 
 .reelbot-spoiler-toggle-row {
@@ -7196,7 +7263,7 @@ body {
 }
 
 .reelbot-spoiler-state-line {
-  margin: 2px 0 10px;
+  margin: 4px 0 10px;
 }
 
 .reelbot-spoiler-state-pill {
@@ -7205,9 +7272,9 @@ body {
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid rgba(129, 155, 190, 0.18);
-  background: rgba(9, 15, 25, 0.64);
-  color: rgba(220, 231, 243, 0.84);
+  border: 1px solid rgba(129, 155, 190, 0.22);
+  background: rgba(11, 18, 29, 0.72);
+  color: rgba(231, 239, 248, 0.92);
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -7215,9 +7282,14 @@ body {
 }
 
 .reelbot-spoiler-state-pill.is-enabled {
-  border-color: rgba(242, 197, 86, 0.26);
-  background: rgba(242, 197, 86, 0.1);
+  border-color: rgba(242, 197, 86, 0.3);
+  background: rgba(242, 197, 86, 0.12);
   color: #f6df9d;
+  box-shadow: 0 0 0 1px rgba(242, 197, 86, 0.06);
+}
+
+.reelbot-spoiler-copy .detail-description-label {
+  color: #f1ddb0;
 }
 
 .reelbot-spoiler-toggle {
@@ -7264,6 +7336,12 @@ body {
 
 .reelbot-spoiler-toggle.is-enabled .reelbot-spoiler-toggle-track {
   background: rgba(242, 197, 86, 0.5);
+}
+
+.reelbot-spoiler-toggle.is-enabled {
+  border-color: rgba(242, 197, 86, 0.3);
+  background: rgba(24, 20, 11, 0.86);
+  box-shadow: 0 0 0 1px rgba(242, 197, 86, 0.06), 0 12px 24px rgba(0, 0, 0, 0.16);
 }
 
 .reelbot-spoiler-toggle.is-enabled .reelbot-spoiler-toggle-thumb {
@@ -8785,7 +8863,7 @@ body {
 }
 
 .reelbot-spoiler-panel {
-  margin-bottom: 18px;
+  margin-bottom: 28px;
 }
 
 .reelbot-question-chip,
@@ -8795,6 +8873,7 @@ body {
 }
 
 #where-to-watch {
+  margin-top: 28px;
   padding: 24px;
 }
 

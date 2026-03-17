@@ -858,7 +858,7 @@ function MovieDetails() {
                 )}
                 {hasWatchProviders ? (
                   <button type="button" className="detail-text-action detail-text-action--hero" onClick={(event) => handleJumpLink("where-to-watch", event)}>
-                    See where to watch
+                    See Where to Watch
                   </button>
                 ) : null}
               </div>
