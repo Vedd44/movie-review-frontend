@@ -46,7 +46,7 @@ function WatchAvailability({ availability, sectionId, movie }) {
       providers: group.providers
         .map((provider) => ({
           ...provider,
-          href: buildProviderLink({ movie, provider, region: availability?.region }),
+          href: buildProviderLink({ movie, provider, region: availability?.region, availabilityLink: availability?.link }),
         }))
         .filter((provider) => provider.href),
     }))

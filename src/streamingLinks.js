@@ -52,6 +52,31 @@ const PROVIDER_NAME_ALIASES = {
   "mgm+": "mgm_plus",
 };
 
+const PROVIDER_SEARCH_CONFIG = {
+  amazon: { includeYear: true, fallbackToAvailability: true },
+  prime_video: { includeYear: true, fallbackToAvailability: true },
+  apple_tv: { includeYear: false, fallbackToAvailability: true },
+  google_play: { includeYear: false, fallbackToAvailability: true },
+  youtube: { includeYear: false, fallbackToAvailability: true },
+  netflix: { includeYear: false, fallbackToAvailability: true },
+  disney_plus: { includeYear: false, fallbackToAvailability: true },
+  hulu: { includeYear: false, fallbackToAvailability: true },
+  max: { includeYear: false, fallbackToAvailability: true },
+  peacock: { includeYear: false, fallbackToAvailability: true },
+  paramount_plus: { includeYear: false, fallbackToAvailability: true },
+  vudu: { includeYear: false, fallbackToAvailability: true },
+  microsoft: { includeYear: true, fallbackToAvailability: true },
+  criterion_channel: { includeYear: false, fallbackToAvailability: true },
+  mubi: { includeYear: false, fallbackToAvailability: true },
+  tubi: { includeYear: false, fallbackToAvailability: true },
+  plex: { includeYear: false, fallbackToAvailability: true },
+  kanopy: { includeYear: false, fallbackToAvailability: true },
+  hoopla: { includeYear: false, fallbackToAvailability: true },
+  amc_plus: { includeYear: false, fallbackToAvailability: true },
+  starz: { includeYear: false, fallbackToAvailability: true },
+  mgm_plus: { includeYear: false, fallbackToAvailability: true },
+};
+
 const slugifyProviderQuery = (value = "") =>
   String(value || "")
     .toLowerCase()
@@ -60,10 +85,22 @@ const slugifyProviderQuery = (value = "") =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const getMovieQueryText = (movie = {}) => {
+const normalizeMovieSearchText = (value = "") =>
+  String(value || "")
+    .replace(/[’']/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getMovieQueryText = (movie = {}, options = {}) => {
   const title = String(movie?.title || "").trim();
   const year = movie?.release_date ? new Date(movie.release_date).getFullYear() : "";
-  return year ? `${title} ${year}` : title;
+  const normalizedTitle = normalizeMovieSearchText(title);
+
+  if (!normalizedTitle) {
+    return "";
+  }
+
+  return options.includeYear && year ? `${normalizedTitle} ${year}` : normalizedTitle;
 };
 
 const buildQueryUrl = (baseUrl, params = {}) => {
@@ -122,28 +159,33 @@ export const getProviderKey = (provider) => {
 };
 
 export const providerLinkBuilders = {
-  amazon: (movie) => buildQueryUrl("https://www.amazon.com/s", { k: getMovieQueryText(movie), i: "instant-video" }),
-  prime_video: (movie) => buildQueryUrl("https://www.amazon.com/s", { k: getMovieQueryText(movie), i: "instant-video" }),
-  apple_tv: (movie) => buildQueryUrl("https://tv.apple.com/search", { term: getMovieQueryText(movie) }),
-  google_play: (movie) => buildQueryUrl("https://play.google.com/store/search", { q: getMovieQueryText(movie), c: "movies" }),
-  youtube: (movie) => buildQueryUrl("https://www.youtube.com/results", { search_query: `${getMovieQueryText(movie)} movie` }),
-  netflix: (movie) => buildQueryUrl("https://www.netflix.com/search", { q: getMovieQueryText(movie) }),
-  disney_plus: (movie) => `https://www.disneyplus.com/search/${encodeURIComponent(getMovieQueryText(movie))}`,
-  hulu: (movie) => buildQueryUrl("https://www.hulu.com/search", { q: getMovieQueryText(movie) }),
-  max: (movie) => buildQueryUrl("https://play.max.com/search", { q: getMovieQueryText(movie) }),
-  peacock: (movie) => buildQueryUrl("https://www.peacocktv.com/search", { q: getMovieQueryText(movie) }),
-  paramount_plus: (movie) => buildQueryUrl("https://www.paramountplus.com/search/", { searchTerm: getMovieQueryText(movie) }),
-  vudu: (movie) => buildQueryUrl("https://www.vudu.com/content/movies/search", { searchString: getMovieQueryText(movie) }),
-  microsoft: (movie) => buildQueryUrl("https://www.microsoft.com/en-us/search/shop/movies", { q: getMovieQueryText(movie) }),
-  criterion_channel: (movie) => buildQueryUrl("https://www.criterionchannel.com/search", { q: getMovieQueryText(movie) }),
-  mubi: (movie) => buildQueryUrl("https://mubi.com/search/films", { query: getMovieQueryText(movie) }),
-  tubi: (movie) => `https://tubitv.com/search/${encodeURIComponent(getMovieQueryText(movie))}`,
-  plex: (movie) => buildQueryUrl("https://watch.plex.tv/search", { q: getMovieQueryText(movie) }),
-  kanopy: (movie) => buildQueryUrl("https://www.kanopy.com/en/search", { q: getMovieQueryText(movie) }),
-  hoopla: (movie) => buildQueryUrl("https://www.hoopladigital.com/search", { q: getMovieQueryText(movie) }),
-  amc_plus: (movie) => buildQueryUrl("https://www.amcplus.com/search", { text: getMovieQueryText(movie) }),
-  starz: (movie) => `https://www.starz.com/us/en/search/${encodeURIComponent(getMovieQueryText(movie))}`,
-  mgm_plus: (movie) => buildQueryUrl("https://www.mgmplus.com/search", { q: getMovieQueryText(movie) }),
+  amazon: (movie, provider, region, options = {}) => buildQueryUrl("https://www.amazon.com/s", { k: getMovieQueryText(movie, options), i: "instant-video" }),
+  prime_video: (movie, provider, region, options = {}) => buildQueryUrl("https://www.amazon.com/s", { k: getMovieQueryText(movie, options), i: "instant-video" }),
+  apple_tv: (movie, provider, region, options = {}) => buildQueryUrl(`https://tv.apple.com/${String(region || "us").toLowerCase()}/search`, { term: getMovieQueryText(movie, options) }),
+  google_play: (movie, provider, region, options = {}) => buildQueryUrl("https://play.google.com/store/search", { q: getMovieQueryText(movie, options), c: "movies" }),
+  youtube: (movie, provider, region, options = {}) => buildQueryUrl("https://www.youtube.com/results", { search_query: `${getMovieQueryText(movie, options)} movie` }),
+  netflix: (movie, provider, region, options = {}) => buildQueryUrl("https://www.netflix.com/search", { q: getMovieQueryText(movie, options) }),
+  disney_plus: (movie, provider, region, options = {}) => `https://www.disneyplus.com/search/${encodeURIComponent(getMovieQueryText(movie, options))}`,
+  hulu: (movie, provider, region, options = {}) => buildQueryUrl("https://www.hulu.com/search", { q: getMovieQueryText(movie, options) }),
+  max: (movie, provider, region, options = {}) => buildQueryUrl("https://play.max.com/search", { q: getMovieQueryText(movie, options) }),
+  peacock: (movie, provider, region, options = {}) => buildQueryUrl("https://www.peacocktv.com/watch/search", { query: getMovieQueryText(movie, options) }),
+  paramount_plus: (movie, provider, region, options = {}) => buildQueryUrl("https://www.paramountplus.com/search/", { searchTerm: getMovieQueryText(movie, options) }),
+  vudu: (movie, provider, region, options = {}) => buildQueryUrl("https://athome.fandango.com/search", { query: getMovieQueryText(movie, options) }),
+  microsoft: (movie, provider, region, options = {}) => buildQueryUrl("https://www.microsoft.com/en-us/search/shop/movies", { q: getMovieQueryText(movie, options) }),
+  criterion_channel: (movie, provider, region, options = {}) => buildQueryUrl("https://www.criterionchannel.com/search", { q: getMovieQueryText(movie, options) }),
+  mubi: (movie, provider, region, options = {}) => buildQueryUrl("https://mubi.com/search/films", { query: getMovieQueryText(movie, options) }),
+  tubi: (movie, provider, region, options = {}) => `https://tubitv.com/search/${encodeURIComponent(getMovieQueryText(movie, options))}`,
+  plex: (movie, provider, region, options = {}) => buildQueryUrl("https://watch.plex.tv/search", { q: getMovieQueryText(movie, options) }),
+  kanopy: (movie, provider, region, options = {}) => buildQueryUrl("https://www.kanopy.com/en/search", { q: getMovieQueryText(movie, options) }),
+  hoopla: (movie, provider, region, options = {}) => buildQueryUrl("https://www.hoopladigital.com/search", { q: getMovieQueryText(movie, options) }),
+  amc_plus: (movie, provider, region, options = {}) => buildQueryUrl("https://www.amcplus.com/search", { text: getMovieQueryText(movie, options) }),
+  starz: (movie, provider, region, options = {}) => `https://www.starz.com/us/en/search/${encodeURIComponent(getMovieQueryText(movie, options))}`,
+  mgm_plus: (movie, provider, region, options = {}) => buildQueryUrl("https://www.mgmplus.com/search", { q: getMovieQueryText(movie, options) }),
+};
+
+const getAvailabilityFallbackLink = (availabilityLink = "") => {
+  const trimmedLink = String(availabilityLink || "").trim();
+  return trimmedLink || null;
 };
 
 export const getPrimaryProviders = (availability) => {
@@ -173,16 +215,32 @@ export const getProviderActionLabel = (provider) => PROVIDER_ACTION_LABELS[provi
 
 export const getProviderCtaLabel = (provider) => `Open on ${provider?.name || "provider"}`;
 
-export const getStreamingLink = (movie, provider, region = "US") => {
+export const getStreamingLink = (movie, provider, region = "US", availabilityLink = "") => {
   const providerKey = getProviderKey(provider);
   const builder = providerKey ? providerLinkBuilders[providerKey] : null;
+  const providerConfig = providerKey ? PROVIDER_SEARCH_CONFIG[providerKey] || {} : {};
+  const fallbackLink = getAvailabilityFallbackLink(availabilityLink);
 
-  if (!builder || !movie?.title) {
-    return null;
+  if (!movie?.title) {
+    return fallbackLink;
   }
 
-  const nextUrl = builder(movie, provider, region);
-  return applyAffiliateTemplate(providerKey, nextUrl);
+  if (!builder) {
+    return fallbackLink;
+  }
+
+  try {
+    const nextUrl = builder(movie, provider, region, { includeYear: providerConfig.includeYear === true });
+    const withAffiliate = applyAffiliateTemplate(providerKey, nextUrl);
+
+    if (withAffiliate) {
+      return withAffiliate;
+    }
+  } catch (error) {
+    console.error(`Failed to build provider link for ${provider?.name || providerKey}:`, error);
+  }
+
+  return providerConfig.fallbackToAvailability !== false ? fallbackLink : null;
 };
 
-export const buildProviderLink = ({ movie, provider, region }) => getStreamingLink(movie, provider, region);
+export const buildProviderLink = ({ movie, provider, region, availabilityLink }) => getStreamingLink(movie, provider, region, availabilityLink);

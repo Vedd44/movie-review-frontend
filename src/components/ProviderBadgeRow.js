@@ -11,7 +11,7 @@ function ProviderBadgeRow({ movie, region = 'US', availability, badges, compact 
   return (
     <div className={`provider-badge-row${compact ? ' provider-badge-row--compact' : ''}`}>
       {providerList.map((provider) => {
-        const href = clickable ? buildProviderLink({ movie, provider, region }) : null;
+        const href = clickable ? buildProviderLink({ movie, provider, region, availabilityLink: availability?.link }) : null;
         const inner = (
           <>
             {provider.logo_path ? (
