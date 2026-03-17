@@ -1,4 +1,5 @@
 const STORAGE_KEY = "reelbot:taste-profile:v1";
+const SESSION_RECOMMENDATION_CONTEXT_KEY = "reelbot:session-recommendations:v1";
 export const TASTE_PROFILE_UPDATED_EVENT = "reelbot:taste-profile-updated";
 export const SAVED_MOVIE_BUCKETS = ["watchlist", "seen", "hidden", "recent"];
 
@@ -16,6 +17,7 @@ const DEFAULT_PROFILE = {
 };
 
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+const canUseSessionStorage = () => typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
 const dedupeById = (items = []) => {
   const seenIds = new Set();
@@ -111,6 +113,33 @@ const load = () => {
     console.error("Failed to load taste profile:", error);
     return { ...DEFAULT_PROFILE };
   }
+};
+
+const loadSessionRecommendationContexts = () => {
+  if (!canUseSessionStorage()) {
+    return {};
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(SESSION_RECOMMENDATION_CONTEXT_KEY);
+    if (!rawValue) {
+      return {};
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === "object" ? parsedValue : {};
+  } catch (error) {
+    console.error("Failed to load session recommendation contexts:", error);
+    return {};
+  }
+};
+
+const saveSessionRecommendationContexts = (contexts) => {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  window.sessionStorage.setItem(SESSION_RECOMMENDATION_CONTEXT_KEY, JSON.stringify(contexts || {}));
 };
 
 const save = (profile) => persist(migrateProfile(profile));
@@ -270,6 +299,21 @@ const recordPickResult = (profile, preferences, payload) => {
     Array.isArray(profile.recentRecommendations) ? profile.recentRecommendations : []
   );
 
+  const existingSessionContexts = loadSessionRecommendationContexts();
+  const nextSessionContexts = { ...existingSessionContexts };
+  recommendedMovies.forEach((movie) => {
+    if (!movie?.id) {
+      return;
+    }
+
+    nextSessionContexts[movie.id] = {
+      prompt,
+      intent: resolvedIntent,
+      saved_at: recommendationTimestamp,
+    };
+  });
+  saveSessionRecommendationContexts(nextSessionContexts);
+
   return {
     ...profile,
     pickHistory: nextHistory,
@@ -283,17 +327,17 @@ const getRecommendationContextForMovie = (profile, movieId) => {
     return null;
   }
 
-  const safeProfile = profile || DEFAULT_PROFILE;
-  const recommendation = (safeProfile.recentRecommendations || []).find((movie) => movie?.id === movieId);
+  const sessionContexts = loadSessionRecommendationContexts();
+  const recommendation = sessionContexts[movieId];
 
-  if (!recommendation) {
+  if (!recommendation?.prompt || !recommendation?.intent) {
     return null;
   }
 
   return {
-    prompt: String(recommendation.source_prompt || "").trim(),
-    intent: recommendation.resolved_intent || safeProfile.lastResolvedIntent || null,
-    saved_at: recommendation.recommended_at || recommendation.saved_at || null,
+    prompt: String(recommendation.prompt || "").trim(),
+    intent: recommendation.intent || null,
+    saved_at: recommendation.saved_at || null,
   };
 };
 

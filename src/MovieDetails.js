@@ -316,17 +316,17 @@ const buildWhyReelbotBullets = (movie, previewMode = false) => {
   }
 
   if (includesAnyGenre(genres, ["Comedy", "Romance", "Animation", "Family"])) {
-    bullets.push("The tone stays accessible enough for a lower-friction watch.");
+    bullets.push("Easy to get into without much effort.");
   }
 
   if (includesAnyGenre(genres, ["Sci-Fi", "Fantasy"])) {
-    bullets.push("The world-building gives it more personality than a safe background-watch pick.");
+    bullets.push("More personality than a typical background watch.");
   }
 
   if (Number(movie.runtime || 0) >= 145) {
     bullets.push("It rewards patience more than casual half-attention viewing.");
   } else if (Number(movie.runtime || 0) > 0) {
-    bullets.push("The runtime is manageable enough to feel like a realistic tonight pick.");
+    bullets.push("A runtime that’s easy to fit in.");
   }
 
   if (Number(movie.rating || 0) >= 7.3 && Number(movie.vote_count || 0) >= 100) {
@@ -620,6 +620,7 @@ function MovieDetails() {
     featured: false,
   };
   const isActiveReelbotLoading = Boolean(activeReelbotAction && reelbotLoadingAction === activeReelbotAction);
+  const hasExpandedReelbotPanel = Boolean(activeReelbotAction || reelbotError || isActiveReelbotLoading);
 
   const scrollToReelbotPanel = useCallback(() => {
     const panel = reelbotPanelRef.current;
@@ -874,8 +875,14 @@ function MovieDetails() {
           <div className="detail-decision-head">
             <div>
               {detailVerdict.label ? <div className="detail-description-label">{detailVerdict.label}</div> : null}
+              {detailVerdict.contextReference ? <div className="detail-decision-context">{detailVerdict.contextReference}</div> : null}
               <h2 className="detail-decision-title">{detailVerdict.title}</h2>
               <p className="detail-decision-summary">{detailVerdict.supportingLine}</p>
+              {detailVerdict.mode === "default" ? (
+                <button type="button" className="detail-text-action detail-decision-cta" onClick={(event) => handleJumpLink("ask-reelbot", event)}>
+                  Ask ReelBot
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -1007,90 +1014,94 @@ function MovieDetails() {
                 </div>
               ) : null}
 
-              <div
-                id="reelbot-response"
-                ref={reelbotPanelRef}
-                className={`reelbot-panel reelbot-panel--stage detail-anchor-target${stagedReelbotConfig.featured ? " is-primary" : ""}${activeReelbotAction ? " is-live" : " is-empty"}${panelPulse ? " is-pulsing" : ""}`}
-                aria-live="polite"
-                aria-busy={isActiveReelbotLoading}
-              >
-                {activeReelbotAction ? (
-                  <div className="reelbot-panel-top">
-                    <div className="reelbot-panel-top-copy">
-                      <div className="reelbot-panel-kicker">{stagedReelbotConfig.panelKicker || "ReelBot"}</div>
-                      <div className="reelbot-panel-header">{stagedReelbotConfig.panelTitle}</div>
-                      <p className="reelbot-panel-caption">
-                        {previewMode
-                          ? "Your latest answer stays here while you compare a few early reads."
-                          : "Your latest answer stays here while you keep comparing angles."}
+              {hasExpandedReelbotPanel ? (
+                <div
+                  id="reelbot-response"
+                  ref={reelbotPanelRef}
+                  className={`reelbot-panel reelbot-panel--stage detail-anchor-target${stagedReelbotConfig.featured ? " is-primary" : ""}${activeReelbotAction ? " is-live" : " is-empty"}${panelPulse ? " is-pulsing" : ""}`}
+                  aria-live="polite"
+                  aria-busy={isActiveReelbotLoading}
+                >
+                  {activeReelbotAction ? (
+                    <div className="reelbot-panel-top">
+                      <div className="reelbot-panel-top-copy">
+                        <div className="reelbot-panel-kicker">{stagedReelbotConfig.panelKicker || "ReelBot"}</div>
+                        <div className="reelbot-panel-header">{stagedReelbotConfig.panelTitle}</div>
+                        <p className="reelbot-panel-caption">
+                          {previewMode
+                            ? "Your latest answer stays here while you compare a few early reads."
+                            : "Your latest answer stays here while you keep comparing angles."}
+                        </p>
+                      </div>
+                      {stagedReelbotConfig.warning ? <span className="reelbot-warning-chip">{stagedReelbotConfig.warning}</span> : null}
+                    </div>
+                  ) : null}
+
+                  {reelbotError ? (
+                    <div className="reelbot-empty-state" role="status">
+                      <p className="error-message">{reelbotError}</p>
+                      {activeReelbotAction ? (
+                        <div className="reelbot-empty-actions">
+                          <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction(activeReelbotAction)}>
+                            Try again
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : activeReelbotResult ? (
+                    <ReelbotStructuredContent action={activeReelbotAction} result={activeReelbotResult} />
+                  ) : isActiveReelbotLoading ? (
+                    <div className="reelbot-loading-state">
+                      <span className="reelbot-loading-dot" aria-hidden="true"></span>
+                      <p className="detail-secondary-text reelbot-placeholder-copy">
+                        {previewMode ? "ReelBot is sizing it up from the early details..." : "ReelBot is putting that answer together..."}
                       </p>
                     </div>
-                    {stagedReelbotConfig.warning ? <span className="reelbot-warning-chip">{stagedReelbotConfig.warning}</span> : null}
-                  </div>
-                ) : null}
+                  ) : null}
 
-                {!activeReelbotAction ? (
-                  <div className="reelbot-empty-state">
-                    <p className="detail-secondary-text reelbot-placeholder-copy">
-                      {previewMode
-                        ? "Start with First Look, then jump into audience fit, scale, or what to watch while you wait."
-                        : "Start with Quick Take. Follow up if you want a clearer yes-or-no."}
-                    </p>
-                    <div className="reelbot-empty-actions">
-                      <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction("quick_take")}>
-                        {actionConfigs.quick_take.label}
-                      </button>
-                      <button type="button" className="reelbot-empty-link" onClick={() => handleReelbotAction("is_this_for_me")}>
-                        {actionConfigs.is_this_for_me.label}
-                      </button>
-                    </div>
-                  </div>
-                ) : reelbotError ? (
-                  <div className="reelbot-empty-state" role="status">
-                    <p className="error-message">{reelbotError}</p>
-                    {activeReelbotAction ? (
-                      <div className="reelbot-empty-actions">
-                        <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction(activeReelbotAction)}>
-                          Try again
-                        </button>
+                  {activeReelbotAction ? (
+                    <div className="reelbot-panel-footer">
+                      <span className="reelbot-panel-footer-label">Keep going</span>
+                      <div className="reelbot-chip-row reelbot-chip-row--panel reelbot-chip-row--footer">
+                        {followUpActionIds.map((actionId) => {
+                          const action = actionConfigs[actionId];
+                          return (
+                            <button
+                              key={action.id}
+                              type="button"
+                              className={`reelbot-question-chip reelbot-question-chip--panel${!previewMode && spoilerActionIds.includes(action.id) ? " reelbot-question-chip--spoiler" : ""}`}
+                              onClick={() => handleReelbotAction(action.id)}
+                              disabled={reelbotLoadingAction === action.id}
+                              aria-pressed={activeReelbotAction === action.id}
+                              aria-controls="reelbot-response"
+                            >
+                              {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
+                            </button>
+                          );
+                        })}
                       </div>
-                    ) : null}
-                  </div>
-                ) : activeReelbotResult ? (
-                  <ReelbotStructuredContent action={activeReelbotAction} result={activeReelbotResult} />
-                ) : isActiveReelbotLoading ? (
-                  <div className="reelbot-loading-state">
-                    <span className="reelbot-loading-dot" aria-hidden="true"></span>
-                    <p className="detail-secondary-text reelbot-placeholder-copy">
-                      {previewMode ? "ReelBot is sizing it up from the early details..." : "ReelBot is putting that answer together..."}
-                    </p>
-                  </div>
-                ) : null}
-
-                {activeReelbotAction ? (
-                  <div className="reelbot-panel-footer">
-                    <span className="reelbot-panel-footer-label">Keep going</span>
-                    <div className="reelbot-chip-row reelbot-chip-row--panel reelbot-chip-row--footer">
-                      {followUpActionIds.map((actionId) => {
-                        const action = actionConfigs[actionId];
-                        return (
-                          <button
-                            key={action.id}
-                            type="button"
-                            className={`reelbot-question-chip reelbot-question-chip--panel${!previewMode && spoilerActionIds.includes(action.id) ? " reelbot-question-chip--spoiler" : ""}`}
-                            onClick={() => handleReelbotAction(action.id)}
-                            disabled={reelbotLoadingAction === action.id}
-                            aria-pressed={activeReelbotAction === action.id}
-                            aria-controls="reelbot-response"
-                          >
-                            {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
-                          </button>
-                        );
-                      })}
                     </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div
+                  id="reelbot-response"
+                  ref={reelbotPanelRef}
+                  className="reelbot-compact-launcher detail-anchor-target"
+                  aria-live="polite"
+                  aria-busy="false"
+                >
+                  <p className="reelbot-compact-launcher-copy">Quick Take or deeper check?</p>
+                  <div className="reelbot-compact-launcher-actions">
+                    <button type="button" className="reelbot-empty-cta" onClick={() => handleReelbotAction("quick_take")}>
+                      {actionConfigs.quick_take.label}
+                    </button>
+                    <button type="button" className="reelbot-empty-link" onClick={() => handleReelbotAction("is_this_for_me")}>
+                      {actionConfigs.is_this_for_me.label}
+                    </button>
                   </div>
-                ) : null}
-              </div>
+                </div>
+              )}
             </section>
 
 
@@ -1122,7 +1133,7 @@ function MovieDetails() {
             <div>
               <div className="detail-description-label">Why ReelBot recommends this</div>
               <h2 className="detail-section-title">Why This Is Worth Your Time</h2>
-              <p className="detail-secondary-text">Short, decision-first reasons instead of generic praise.</p>
+              <p className="detail-secondary-text">Clear reasons this works based on your vibe.</p>
             </div>
           </div>
           <ul className="detail-why-reelbot-list">

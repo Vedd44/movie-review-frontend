@@ -733,6 +733,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     );
   };
 
+  const handleEmptyPickCta = () => {
+    scrollToSection("pick-for-me", { skipIfVisible: true });
+  };
+
   const handleHeroSearch = (event) => {
     event.preventDefault();
     const nextQuery = query.trim();
@@ -855,12 +859,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         <section id="pick-result" ref={pickResultSectionRef} className="pick-result-section" aria-live="polite">
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-              <h2 className="section-title">{activePick ? "Your Pick" : "Your pick lands here"}</h2>
-              <p className="section-subtitle">
-                {activePick
-                  ? "A strong first pick, with a few nearby alternatives."
-                  : "ReelBot keeps your latest pick here once you give it a vibe."}
-              </p>
+              <h2 className="section-title">Your pick</h2>
+              {activePick ? <p className="section-subtitle">A strong first pick, with a few nearby alternatives.</p> : null}
             </div>
           </div>
 
@@ -873,8 +873,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             backupMovies={backupPicksWithRoles}
             vibeLabel={pickVibeLabel}
             loadingCopy={PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
-            emptyTitle="Your pick will appear here"
-            emptyCopy="Start with a vibe and ReelBot will line up a confident first option and a few nearby alternatives."
+            emptyCopy="Nothing here yet. Give ReelBot a vibe and we'll line up your next watch."
+            emptyActionLabel="Get a Pick"
+            onEmptyAction={handleEmptyPickCta}
             refreshLabel="Swap Pick"
             backupTitle="Similar picks, different vibes"
             onRefreshChoices={pickResult?.primary ? handleRefreshPick : undefined}

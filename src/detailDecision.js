@@ -1,6 +1,19 @@
 const includesAnyGenre = (genres = [], values = []) => values.some((value) => genres.includes(value));
 
 const normalizeText = (value = "") => String(value || "").trim().toLowerCase();
+const trimDisplayText = (value = "", maxLength = 40) => {
+  const cleaned = String(value || "").trim().replace(/\s+/g, " ");
+
+  if (!cleaned) {
+    return "";
+  }
+
+  if (cleaned.length <= maxLength) {
+    return cleaned;
+  }
+
+  return `${cleaned.slice(0, maxLength - 1).trim()}…`;
+};
 
 const getPrimaryGenre = (genres = []) => genres[0] || "movies like this";
 
@@ -81,37 +94,6 @@ const deriveMovieAttributes = (movie = {}) => {
     contentSensitivity: getContentSensitivity(genres),
   };
 };
-
-const buildGenericVerdictTitle = (attributes) => {
-  let score = 0;
-
-  if (attributes.attention === "Easy") score += 2;
-  if (attributes.attention === "Medium") score += 1;
-  if (attributes.attention === "High") score -= 2;
-
-  if (attributes.emotionalWeight === "Light") score += 2;
-  if (attributes.emotionalWeight === "Balanced") score += 1;
-  if (attributes.emotionalWeight === "Heavy") score -= 2;
-
-  if (attributes.pace === "Fast" || attributes.pace === "Steady") score += 1;
-  if (attributes.pace === "Slow") score -= 1;
-
-  if (attributes.runtime && attributes.runtime <= 110) score += 2;
-  else if (attributes.runtime && attributes.runtime <= 130) score += 1;
-  else if (attributes.runtime >= 150) score -= 2;
-
-  if (attributes.bestWith === "Family" || attributes.bestWith === "Friends") score += 1;
-  if (attributes.tone === "Light") score += 1;
-  if (attributes.tone === "Intense") score -= 1;
-
-  if (score >= 6) return "Worth your time";
-  if (score >= 4) return "Good casual pick";
-  if (score >= 1) return "Only if you're in the mood";
-  return `Skip unless you love ${attributes.genre.toLowerCase()}`;
-};
-
-const buildGenericSupportingLine = (attributes) =>
-  `${attributes.tone}, ${attributes.commitment}-commitment ${attributes.bestWith.toLowerCase()} watch with ${attributes.pace.toLowerCase()} pacing`;
 
 const compareIntentToMovie = (intent = {}, attributes = {}) => {
   let score = 0;
@@ -216,15 +198,16 @@ const buildDecisionSnapshotItems = (attributes = {}) => ([
 
 const buildDetailVerdict = ({ movie, recommendationContext = null }) => {
   const attributes = deriveMovieAttributes(movie);
-  const genericTitle = buildGenericVerdictTitle(attributes);
-  const genericSupportingLine = buildGenericSupportingLine(attributes);
   const intent = recommendationContext?.intent || null;
   const prompt = normalizeText(recommendationContext?.prompt || "");
+  const promptReference = trimDisplayText(recommendationContext?.prompt || "");
 
-  if (intent && prompt) {
+  if (intent && prompt && promptReference) {
     const contextual = buildContextualVerdict(intent, attributes);
     return {
-      label: "Based on your vibe:",
+      mode: "guided",
+      label: "Based on your vibe",
+      contextReference: `Based on: ${promptReference}`,
       title: contextual.title,
       supportingLine: contextual.supportingLine,
       snapshotItems: buildDecisionSnapshotItems(attributes),
@@ -233,9 +216,11 @@ const buildDetailVerdict = ({ movie, recommendationContext = null }) => {
   }
 
   return {
+    mode: "default",
     label: "",
-    title: genericTitle,
-    supportingLine: genericSupportingLine,
+    contextReference: "",
+    title: "Is this worth watching?",
+    supportingLine: "Get a quick read based on your taste.",
     snapshotItems: buildDecisionSnapshotItems(attributes),
     attributes,
   };

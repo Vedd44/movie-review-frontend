@@ -24,24 +24,6 @@ import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./s
 
 const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
 
-const getMovieGenreNames = (movie, genreLookup) =>
-  (Array.isArray(movie?.genre_ids) ? movie.genre_ids : [])
-    .map((genreId) => genreLookup.get(String(genreId)))
-    .filter(Boolean);
-
-const getMovieVibeTags = (movie, genreLookup) => {
-  const tags = [];
-  const genreNames = getMovieGenreNames(movie, genreLookup);
-  const runtime = Number(movie?.runtime || 0);
-
-  if (runtime && runtime <= 105) tags.push("Easy watch");
-  if (runtime >= 145 || genreNames.includes("Drama") || genreNames.includes("History")) tags.push("Slow burn");
-  if (genreNames.some((name) => ["Thriller", "Horror", "Action", "Crime"].includes(name))) tags.push("Intense");
-  if (genreNames.some((name) => ["Drama", "Romance", "Music", "Animation"].includes(name))) tags.push("Emotional");
-
-  return tags.slice(0, 2);
-};
-
 function BrowseLibrary() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,7 +117,6 @@ function BrowseLibrary() {
     () => genres.find((genre) => String(genre.id) === normalizedGenre)?.name || "All genres",
     [genres, normalizedGenre]
   );
-  const genreLookup = useMemo(() => new Map(genres.map((genre) => [String(genre.id), genre.name])), [genres]);
 
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
 
@@ -477,8 +458,6 @@ function BrowseLibrary() {
           <div className="movie-list">
             {filteredMovies.length > 0 ? (
               filteredMovies.map((movie) => {
-                const genreNames = getMovieGenreNames(movie, genreLookup);
-                const vibeTags = getMovieVibeTags(movie, genreLookup);
                 return (
                 <article
                   key={movie.id}
@@ -497,22 +476,6 @@ function BrowseLibrary() {
                       )}
                     </Link>
                     <div className="movie-hover-preview">
-                      <div className="movie-hover-preview-head">
-                        <div className="movie-hover-title">{movie.title}</div>
-                        <div className="movie-hover-meta">
-                          <span>{getReleaseYear(movie.release_date)}</span>
-                          <span>{movie.runtime ? `${movie.runtime} min` : "Runtime TBA"}</span>
-                          {movie.vote_average ? <span>TMDB {movie.vote_average.toFixed(1)}</span> : null}
-                        </div>
-                      </div>
-                      {genreNames.length ? <div className="movie-hover-genres">{genreNames.slice(0, 3).join(" • ")}</div> : null}
-                      {vibeTags.length ? (
-                        <div className="movie-hover-tags">
-                          {vibeTags.map((tag) => (
-                            <span key={tag} className="movie-hover-tag">{tag}</span>
-                          ))}
-                        </div>
-                      ) : null}
                       <div className="movie-hover-actions">
                         <Link
                           to={getMoviePath(movie)}

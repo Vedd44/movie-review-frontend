@@ -18,6 +18,8 @@ function PickResultPanel({
   loadingCopy,
   emptyTitle,
   emptyCopy,
+  emptyActionLabel,
+  onEmptyAction,
   refreshLabel = "Swap Pick",
   backupTitle = "Similar picks, different vibes",
   onRefreshChoices,
@@ -149,6 +151,13 @@ function PickResultPanel({
         <div className="pick-empty-state pick-empty-state--result">
           {emptyTitle ? <h3 className="pick-empty-title">{emptyTitle}</h3> : null}
           <p className="pick-result-copy detail-secondary-text">{emptyCopy}</p>
+          {onEmptyAction && emptyActionLabel ? (
+            <div className="pick-empty-actions">
+              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={onEmptyAction}>
+                {emptyActionLabel}
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
