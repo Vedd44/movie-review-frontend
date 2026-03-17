@@ -56,8 +56,9 @@ const getContentSensitivity = (genres = []) => ({
 });
 
 const deriveMovieAttributes = (movie = {}) => {
-  const genres = Array.isArray(movie.genre_names) ? movie.genre_names : [];
-  const runtime = Number(movie.runtime || 0);
+  const safeMovie = movie && typeof movie === "object" ? movie : {};
+  const genres = Array.isArray(safeMovie.genre_names) ? safeMovie.genre_names : [];
+  const runtime = Number(safeMovie.runtime || 0);
   const attention = getAttentionLabel(genres, runtime);
   const emotionalWeight = getEmotionalWeightLabel(genres);
   const pace = getPaceLabel(genres, runtime);
