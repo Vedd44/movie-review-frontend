@@ -15,6 +15,16 @@ const trimDisplayText = (value = "", maxLength = 40) => {
   return `${cleaned.slice(0, maxLength - 1).trim()}…`;
 };
 
+const formatPromptReference = (value = "") => {
+  const trimmed = trimDisplayText(value, 48);
+  if (!trimmed) {
+    return "";
+  }
+
+  const normalized = trimmed.replace(/\.$/, "");
+  return normalized.charAt(0).toLowerCase() + normalized.slice(1);
+};
+
 const getPrimaryGenre = (genres = []) => genres[0] || "movies like this";
 
 const getToneLabel = (genres = []) => {
@@ -189,6 +199,16 @@ const buildContextualVerdict = (intent = {}, attributes = {}) => {
   };
 };
 
+const buildExplanationVerdict = (attributes = {}, promptReference = "") => {
+  const framedPrompt = formatPromptReference(promptReference);
+  const promptClause = framedPrompt ? ` for the ${framedPrompt} vibe you asked for` : " for the vibe ReelBot picked around";
+
+  return {
+    title: "Why this fits your vibe",
+    supportingLine: `${attributes.tone}, ${attributes.pace.toLowerCase()} watch with ${attributes.emotionalWeight.toLowerCase()} emotional weight that lines up${promptClause}.`,
+  };
+};
+
 const buildDecisionSnapshotItems = (attributes = {}) => ([
   { label: "Attention", value: attributes.attention },
   { label: "Emotional Weight", value: attributes.emotionalWeight },
@@ -201,6 +221,20 @@ const buildDetailVerdict = ({ movie, recommendationContext = null }) => {
   const intent = recommendationContext?.intent || null;
   const prompt = normalizeText(recommendationContext?.prompt || "");
   const promptReference = trimDisplayText(recommendationContext?.prompt || "");
+  const recommendationSource = String(recommendationContext?.source || "").trim().toLowerCase();
+
+  if (recommendationSource === "reelbot_pick") {
+    const explanation = buildExplanationVerdict(attributes, recommendationContext?.prompt || "");
+    return {
+      mode: "explanation",
+      label: "Based on your vibe",
+      contextReference: promptReference ? `Based on: ${promptReference}` : "",
+      title: explanation.title,
+      supportingLine: explanation.supportingLine,
+      snapshotItems: buildDecisionSnapshotItems(attributes),
+      attributes,
+    };
+  }
 
   if (intent && prompt && promptReference) {
     const contextual = buildContextualVerdict(intent, attributes);

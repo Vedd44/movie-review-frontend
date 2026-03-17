@@ -30,6 +30,7 @@ function PickResultPanel({
     useMemo(() => [primaryMovie?.id, ...backupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, backupMovies])
   );
   const confidenceStars = rationale?.confidenceStars || "★★★★☆";
+  const reelbotPickLinkState = { source: "reelbot_pick" };
 
   return (
     <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
@@ -48,7 +49,7 @@ function PickResultPanel({
       {!error && !loading && primaryMovie ? (
         <>
           <article className="pick-primary-card pick-primary-card--hero">
-            <Link to={getMoviePath(primaryMovie)} className="pick-primary-poster-link">
+            <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="pick-primary-poster-link">
               {primaryMovie.poster_path ? (
                 <img
                   src={`https://image.tmdb.org/t/p/w300${primaryMovie.poster_path}`}
@@ -61,7 +62,7 @@ function PickResultPanel({
             </Link>
             <div className="pick-primary-content">
               <h3 className="pick-primary-title">
-                <Link to={getMoviePath(primaryMovie)} className="movie-title-link">
+                <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="movie-title-link">
                   {primaryMovie.title}
                 </Link>
               </h3>
@@ -84,7 +85,7 @@ function PickResultPanel({
               <div className="pick-result-actions-block">
                 <div className="pick-primary-actions">
                   <div className="pick-primary-action-row pick-primary-action-row--primary">
-                    <Link to={getMoviePath(primaryMovie)} className="card-link pick-primary-detail-link">
+                    <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="card-link pick-primary-detail-link">
                       View Details
                     </Link>
                     {onRefreshChoices ? (
@@ -118,7 +119,7 @@ function PickResultPanel({
 
                   return (
                     <article key={movie.id} className="pick-backup-card">
-                      <Link to={getMoviePath(movie)} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`}>
+                      <Link to={getMoviePath(movie)} state={reelbotPickLinkState} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`}>
                         {movie.poster_path ? (
                           <img
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
@@ -131,7 +132,7 @@ function PickResultPanel({
                       </Link>
                       <div className="pick-backup-meta">
                         <h4 className="pick-backup-title">
-                          <Link to={getMoviePath(movie)} className="movie-title-link">
+                          <Link to={getMoviePath(movie)} state={reelbotPickLinkState} className="movie-title-link">
                             {movie.title}
                           </Link>
                         </h4>

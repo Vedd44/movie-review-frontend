@@ -518,7 +518,18 @@ function MovieDetails() {
     ];
   }, [movie, previewMode, timeCommitment]);
 
-  const recommendationContext = useMemo(() => getRecommendationContextForMovie(movie?.id), [getRecommendationContextForMovie, movie?.id]);
+  const recommendationContext = useMemo(() => {
+    const storedContext = getRecommendationContextForMovie(movie?.id);
+
+    if (location.state?.source === "reelbot_pick") {
+      return {
+        ...(storedContext || {}),
+        source: "reelbot_pick",
+      };
+    }
+
+    return storedContext;
+  }, [getRecommendationContextForMovie, location.state?.source, movie?.id]);
   const detailVerdict = useMemo(() => buildDetailVerdict({ movie, recommendationContext }), [movie, recommendationContext]);
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);

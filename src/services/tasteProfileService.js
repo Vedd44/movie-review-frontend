@@ -309,6 +309,7 @@ const recordPickResult = (profile, preferences, payload) => {
     nextSessionContexts[movie.id] = {
       prompt,
       intent: resolvedIntent,
+      source: "reelbot_pick",
       saved_at: recommendationTimestamp,
     };
   });
@@ -337,6 +338,7 @@ const getRecommendationContextForMovie = (profile, movieId) => {
   return {
     prompt: String(recommendation.prompt || "").trim(),
     intent: recommendation.intent || null,
+    source: recommendation.source || "",
     saved_at: recommendation.saved_at || null,
   };
 };
