@@ -1,37 +1,15 @@
 import React from "react";
 
 function RecommendationRationale({ rationale, collapsible = false }) {
-  if (!rationale?.whyRecommended?.length) {
+  if (!rationale?.decisionSentence) {
     return null;
   }
 
-  if (!collapsible) {
-    return (
-      <section className="recommendation-rationale">
-        <div className="recommendation-rationale-list-block">
-          <div className="detail-description-label">{rationale.whyTitle || "Why this works"}</div>
-          <ul className="recommendation-rationale-list">
-            {rationale.whyRecommended.slice(0, 2).map((reason) => (
-              <li key={reason}>{reason}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <details className="recommendation-rationale recommendation-rationale--collapsible">
-      <summary className="recommendation-rationale-toggle">Why this one?</summary>
-      <div className="recommendation-rationale-list-block">
-        <div className="detail-description-label">{rationale.whyTitle || "Why this works"}</div>
-        <ul className="recommendation-rationale-list">
-          {rationale.whyRecommended.slice(0, 3).map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
-      </div>
-    </details>
+    <section className={`recommendation-rationale${collapsible ? " recommendation-rationale--compact" : ""}`}>
+      {rationale.decisionVerdict ? <h4 className="recommendation-rationale-title">{rationale.decisionVerdict}</h4> : null}
+      <p className="recommendation-rationale-copy">{rationale.decisionSentence}</p>
+    </section>
   );
 }
 

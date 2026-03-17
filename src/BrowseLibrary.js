@@ -436,14 +436,14 @@ function BrowseLibrary() {
                 loading={pickLoading}
                 error={pickError}
                 rationale={libraryRationale}
-                summary={libraryRationale?.summaryLine || pickResult?.summary}
+                summary={null}
                 primaryMovie={pickResult?.primary}
                 backupMovies={pickResult?.alternates || []}
                 vibeLabel={libraryVibeLabel}
                 loadingCopy="Ranking the best match from your filtered library..."
                 emptyCopy="Let ReelBot choose from these filters, or add a vibe to steer the pick."
                 refreshLabel="Swap Pick"
-                backupTitle="Other good options tonight"
+                backupTitle="Similar picks, different vibes"
                 onRefreshChoices={pickResult?.primary ? handleRefreshLibraryPick : undefined}
                 refreshDisabled={pickLoading}
               />

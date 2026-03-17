@@ -3,7 +3,7 @@ export const TASTE_PROFILE_UPDATED_EVENT = "reelbot:taste-profile-updated";
 export const SAVED_MOVIE_BUCKETS = ["watchlist", "seen", "hidden", "recent"];
 
 const DEFAULT_PROFILE = {
-  version: 3,
+  version: 4,
   watchlist: [],
   seen: [],
   skipped: [],
@@ -12,6 +12,7 @@ const DEFAULT_PROFILE = {
   recentRecommendations: [],
   pickHistory: [],
   lastPickPreferences: null,
+  lastResolvedIntent: null,
 };
 
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -71,7 +72,7 @@ const normalizeRecentRecommendations = (recentRecommendations = []) =>
 const migrateProfile = (profile = {}) => ({
   ...DEFAULT_PROFILE,
   ...profile,
-  version: 3,
+  version: 4,
   watchlist: dedupeById(Array.isArray(profile.watchlist) ? profile.watchlist : []),
   seen: dedupeById(Array.isArray(profile.seen) ? profile.seen : []),
   skipped: dedupeById(Array.isArray(profile.skipped) ? profile.skipped : []),
@@ -80,6 +81,7 @@ const migrateProfile = (profile = {}) => ({
   likedVibes: normalizeLikedVibes(profile.likedVibes),
   pickHistory: normalizePickHistory(profile.pickHistory),
   lastPickPreferences: profile.lastPickPreferences || null,
+  lastResolvedIntent: profile.lastResolvedIntent || null,
 });
 
 const persist = (profile) => {
@@ -252,8 +254,19 @@ const recordPickResult = (profile, preferences, payload) => {
   ].slice(0, 18);
 
   const recommendationTimestamp = new Date().toISOString();
+  const prompt = String(preferences.prompt || "").trim();
+  const resolvedIntent = payload?.resolved_intent || null;
   const nextRecommendations = recommendedMovies.reduce(
-    (items, movie) => upsertMovieEntry(items, movie, { recommended_at: recommendationTimestamp }, 30),
+    (items, movie) => upsertMovieEntry(
+      items,
+      movie,
+      {
+        recommended_at: recommendationTimestamp,
+        source_prompt: prompt,
+        resolved_intent: resolvedIntent,
+      },
+      30
+    ),
     Array.isArray(profile.recentRecommendations) ? profile.recentRecommendations : []
   );
 
@@ -261,6 +274,26 @@ const recordPickResult = (profile, preferences, payload) => {
     ...profile,
     pickHistory: nextHistory,
     recentRecommendations: nextRecommendations,
+    lastResolvedIntent: resolvedIntent,
+  };
+};
+
+const getRecommendationContextForMovie = (profile, movieId) => {
+  if (!movieId) {
+    return null;
+  }
+
+  const safeProfile = profile || DEFAULT_PROFILE;
+  const recommendation = (safeProfile.recentRecommendations || []).find((movie) => movie?.id === movieId);
+
+  if (!recommendation) {
+    return null;
+  }
+
+  return {
+    prompt: String(recommendation.source_prompt || "").trim(),
+    intent: recommendation.resolved_intent || safeProfile.lastResolvedIntent || null,
+    saved_at: recommendation.recommended_at || recommendation.saved_at || null,
   };
 };
 
@@ -333,6 +366,7 @@ export const tasteProfileService = {
   addRecentMovie,
   savePickPreferences,
   recordPickResult,
+  getRecommendationContextForMovie,
   getPickExcludedIds,
   getSavedMoviesForBucket,
   getSavedCounts,

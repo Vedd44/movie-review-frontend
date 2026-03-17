@@ -8,6 +8,7 @@ import WatchAvailability from "./components/WatchAvailability";
 import TrailerModal from "./components/TrailerModal";
 import ReelbotStructuredContent from "./components/ReelbotStructuredContent";
 import { getMoviePath, slugifyMovieTitle } from "./discovery";
+import { buildDetailVerdict } from "./detailDecision";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl } from "./siteConfig";
 
@@ -149,10 +150,9 @@ const UPCOMING_ACTION_OVERRIDES = {
   },
 };
 
-const RELEASED_PRIMARY_ACTION_IDS = ["quick_take", "is_this_for_me", "why_watch", "best_if_you_want", "similar_picks"];
-const UPCOMING_PRIMARY_ACTION_IDS = ["quick_take", "is_this_for_me", "why_watch", "best_if_you_want", "similar_picks"];
-const RELEASED_VIEWER_QUESTION_IDS = ["scary_check", "pace_check", "best_mood", "date_night"];
-const UPCOMING_VIEWER_QUESTION_IDS = ["scary_check", "pace_check", "best_mood", "date_night"];
+const DETAIL_PRIMARY_ACTION_IDS = ["quick_take", "is_this_for_me", "why_watch"];
+const RELEASED_SECONDARY_ACTION_IDS = ["spoiler_synopsis", "similar_picks"];
+const UPCOMING_SECONDARY_ACTION_IDS = ["similar_picks"];
 const RELEASED_SPOILER_ACTION_IDS = ["spoiler_synopsis", "ending_explained", "themes_and_takeaways", "debate_club"];
 const PANEL_SCROLL_OFFSET = 112;
 const DETAIL_ANCHOR_OFFSET = 110;
@@ -223,21 +223,6 @@ const formatCurrency = (value) => {
   }).format(amount);
 };
 
-const getJumpLinks = (movie) => {
-  const links = [{ id: "ask-reelbot", label: "Ask ReelBot" }];
-
-  if (!isUpcomingMovie(movie)) {
-    links.push({ id: "spoilers", label: "Spoilers" });
-  }
-
-  if (movie?.watch_providers) {
-    links.push({ id: "where-to-watch", label: "Where to Watch" });
-  }
-
-  links.push({ id: "what-to-watch-next", label: "What to Watch Next" });
-  return links;
-};
-
 const getActionConfigMap = (previewMode) =>
   Object.fromEntries(
     Object.entries(REELBOT_ACTIONS).map(([actionId, action]) => [
@@ -285,90 +270,6 @@ const getFollowUpActionIds = (actionId, previewMode) => {
   return releasedMap[actionId] || ["is_this_for_me", "best_mood", "similar_picks"];
 };
 
-const buildWatchFit = (movie) => {
-  const genres = movie?.genre_names || [];
-  const runtime = movie?.runtime || 0;
-
-  let attention = "Moderate";
-  let attentionNote = "Needs a little focus, but not a huge energy investment.";
-  if (runtime <= 105 || includesAnyGenre(genres, ["Comedy", "Family", "Animation", "Adventure"])) {
-    attention = "Easy";
-    attentionNote = "Simple to drop into without much effort.";
-  } else if (runtime >= 145 || includesAnyGenre(genres, ["Drama", "Mystery", "History", "War"])) {
-    attention = "Focused";
-    attentionNote = "Best when you can lock in and stay with it.";
-  }
-
-  let weight = "Balanced";
-  let weightNote = "Some feeling, but not relentlessly heavy.";
-  if (includesAnyGenre(genres, ["Comedy", "Family", "Animation", "Romance"])) {
-    weight = "Light";
-    weightNote = "Keeps things lighter than a full emotional sink.";
-  } else if (includesAnyGenre(genres, ["Drama", "War", "History", "Crime"])) {
-    weight = "Heavy";
-    weightNote = "Leans more serious or emotionally weighty.";
-  }
-
-  let pace = "Steady";
-  let paceNote = "Moves with control rather than constant spikes.";
-  if (includesAnyGenre(genres, ["Action", "Thriller", "Horror", "Adventure"])) {
-    pace = "Brisk";
-    paceNote = "Keeps momentum up with regular tension or movement.";
-  } else if (runtime >= 150 || includesAnyGenre(genres, ["Drama", "History"])) {
-    pace = "Patient";
-    paceNote = "Takes its time instead of racing to the next beat.";
-  }
-
-  let bestWith = "Solo";
-  let bestWithNote = "Easy to sit with on your own.";
-  if (includesAnyGenre(genres, ["Comedy", "Family", "Animation"])) {
-    bestWith = "Group";
-    bestWithNote = "An easy room-friendly watch.";
-  } else if (includesAnyGenre(genres, ["Romance"])) {
-    bestWith = "Pair";
-    bestWithNote = "Plays better one-on-one than with a loud group.";
-  } else if (includesAnyGenre(genres, ["Horror", "Action"])) {
-    bestWith = "Friends";
-    bestWithNote = "Better when shared reactions are part of the fun.";
-  }
-
-  return [
-    { label: "Attention", value: attention, note: attentionNote, scale: attention === "Easy" ? 32 : attention === "Focused" ? 88 : 58 },
-    { label: "Emotional Weight", value: weight, note: weightNote, scale: weight === "Light" ? 28 : weight === "Heavy" ? 84 : 56 },
-    { label: "Pace", value: pace, note: paceNote, scale: pace === "Patient" ? 34 : pace === "Brisk" ? 82 : 58 },
-    { label: "Best With", value: bestWith, note: bestWithNote, scale: bestWith === "Solo" ? 30 : bestWith === "Pair" ? 52 : bestWith === "Friends" ? 72 : 88 },
-  ];
-};
-
-const buildPreviewSnapshot = (movie) => {
-  const releaseValue = formatReleaseDate(movie?.release_date);
-  const genrePromise = movie?.genre_names?.length ? movie.genre_names.join(" • ") : "Genre picture still coming into focus";
-  const runtimeValue = movie?.runtime ? `${movie.runtime} min listed` : "Runtime TBA";
-
-  return [
-    {
-      label: "Release",
-      value: releaseValue,
-      note: movie?.status ? `Current status: ${movie.status}.` : "Release timing could still shift.",
-    },
-    {
-      label: "Talent",
-      value: movie?.director ? `${movie.director}` : "Team still coming into focus",
-      note: movie?.top_cast?.length ? `With ${summarizeList(movie.top_cast, 3)}.` : "Cast details are still light.",
-    },
-    {
-      label: "Genre Promise",
-      value: genrePromise,
-      note: "This is the clearest clue so far about the kind of movie it wants to be.",
-    },
-    {
-      label: "Scale",
-      value: runtimeValue,
-      note: "Treat this as an early read, not a final verdict.",
-    },
-  ];
-};
-
 const getTimeCommitment = (runtime) => {
   const minutes = Number(runtime || 0);
 
@@ -389,14 +290,6 @@ const getTimeCommitment = (runtime) => {
   }
 
   return "Epic";
-};
-
-const getCommitmentLabel = (timeCommitment) => {
-  if (timeCommitment === "Short") return "Easy watch";
-  if (timeCommitment === "Medium") return "Moderate watch";
-  if (timeCommitment === "Long") return "Long watch";
-  if (timeCommitment === "Epic") return "Big commitment";
-  return "TBA";
 };
 
 const buildWhyReelbotBullets = (movie, previewMode = false) => {
@@ -485,7 +378,7 @@ function MovieDetails() {
   const [spoilerModeEnabled, setSpoilerModeEnabled] = useState(false);
   const [showFloatingReelbotCta, setShowFloatingReelbotCta] = useState(false);
   const [floatingReelbotPulse, setFloatingReelbotPulse] = useState(false);
-  const { profile, actions: tasteActions } = useTasteProfile();
+  const { profile, actions: tasteActions, getRecommendationContextForMovie } = useTasteProfile();
 
   useEffect(() => {
     const fetchMovieDetails = async () => {
@@ -564,8 +457,8 @@ function MovieDetails() {
 
   const previewMode = useMemo(() => isUpcomingMovie(movie), [movie]);
   const actionConfigs = useMemo(() => getActionConfigMap(previewMode), [previewMode]);
-  const primaryActionIds = useMemo(() => (previewMode ? UPCOMING_PRIMARY_ACTION_IDS : RELEASED_PRIMARY_ACTION_IDS), [previewMode]);
-  const viewerQuestionIds = useMemo(() => (previewMode ? UPCOMING_VIEWER_QUESTION_IDS : RELEASED_VIEWER_QUESTION_IDS), [previewMode]);
+  const primaryActionIds = useMemo(() => DETAIL_PRIMARY_ACTION_IDS, []);
+  const secondaryActionIds = useMemo(() => (previewMode ? UPCOMING_SECONDARY_ACTION_IDS : RELEASED_SECONDARY_ACTION_IDS), [previewMode]);
   const spoilerActionIds = useMemo(() => (previewMode ? [] : RELEASED_SPOILER_ACTION_IDS), [previewMode]);
   const spoilerActionSet = useMemo(() => new Set(spoilerActionIds), [spoilerActionIds]);
 
@@ -617,34 +510,13 @@ function MovieDetails() {
     ];
   }, [movie, previewMode, timeCommitment]);
 
-  const insightCards = useMemo(() => (previewMode ? buildPreviewSnapshot(movie) : buildWatchFit(movie)), [movie, previewMode]);
+  const recommendationContext = useMemo(() => getRecommendationContextForMovie(movie?.id), [getRecommendationContextForMovie, movie?.id]);
+  const detailVerdict = useMemo(() => buildDetailVerdict({ movie, recommendationContext }), [movie, recommendationContext]);
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
   const nextWatchReasonLabels = previewMode
     ? ["Watch-now parallel", "Broader alternative", "Stranger side path", "Bigger swing"]
     : ["Similar tone", "Safer next pick", "Stranger follow-up", "More action-forward"];
-  const fitSnapshotItems = useMemo(() => {
-    const paceCard = insightCards.find((item) => item.label === "Pace");
-    const weightCard = insightCards.find((item) => item.label === "Emotional Weight");
-    const bestWithCard = insightCards.find((item) => item.label === "Best With");
-
-    if (previewMode) {
-      return [
-        { label: "Release", value: formatReleaseDate(movie?.release_date) },
-        { label: "Commitment", value: getCommitmentLabel(timeCommitment) },
-        { label: "Scale", value: insightCards.find((item) => item.label === "Scale")?.value || "TBA" },
-        { label: "Best With", value: "Plan ahead" },
-      ];
-    }
-
-    return [
-      { label: "Runtime", value: movie?.runtime ? `${movie.runtime} min` : "TBA" },
-      { label: "Commitment", value: getCommitmentLabel(timeCommitment) },
-      { label: "Pacing", value: paceCard?.value || "Steady" },
-      { label: "Emotional Weight", value: weightCard?.value || "Balanced" },
-      { label: "Best With", value: bestWithCard?.value || "Solo" },
-    ];
-  }, [insightCards, movie, previewMode, timeCommitment]);
   const whyReelbotBullets = useMemo(() => {
     const whyWatchReasons = reelbotResults.why_watch?.structured_content?.reasons;
     if (Array.isArray(whyWatchReasons) && whyWatchReasons.length) {
@@ -802,21 +674,28 @@ function MovieDetails() {
       spoiler_mode: spoilerActionSelected,
       prompt_template: previewMode ? "detail_preview" : spoilerActionSelected ? "detail_spoiler" : "detail_standard",
       use_case: actionId,
+      user_prompt: recommendationContext?.prompt || "",
+      intent_snapshot: recommendationContext?.intent || undefined,
     };
-  }, [id, previewMode, spoilerActionSet]);
+  }, [id, previewMode, recommendationContext, spoilerActionSet]);
 
-  const handleReelbotAction = useCallback(async (actionId) => {
+  const handleReelbotAction = useCallback(async (actionId, options = {}) => {
     const action = actionConfigs[actionId];
     const spoilerActionSelected = spoilerActionSet.has(actionId);
+    const spoilerModeActive = spoilerModeEnabled || options.enableSpoilerMode;
 
     if (!action) {
       return;
     }
 
-    if (spoilerActionSelected && !spoilerModeEnabled) {
+    if (spoilerActionSelected && !spoilerModeActive) {
       setReelbotError("Turn Spoiler Mode on to unlock spoiler answers.");
       scrollToReelbotPanel();
       return;
+    }
+
+    if (spoilerActionSelected && options.enableSpoilerMode && !spoilerModeEnabled) {
+      setSpoilerModeEnabled(true);
     }
 
     setActiveReelbotAction(actionId);
@@ -852,6 +731,15 @@ function MovieDetails() {
       setReelbotLoadingAction((currentValue) => (currentValue === actionId ? null : currentValue));
     }
   }, [actionConfigs, buildReelbotRequestPayload, id, pulseReelbotPanel, reelbotResults, scrollToReelbotPanel, spoilerActionSet, spoilerModeEnabled]);
+
+  const handleSecondaryReelbotAction = useCallback((actionId) => {
+    if (spoilerActionSet.has(actionId)) {
+      handleReelbotAction(actionId, { enableSpoilerMode: true });
+      return;
+    }
+
+    handleReelbotAction(actionId);
+  }, [handleReelbotAction, spoilerActionSet]);
 
   // The detail page should auto-open a requested ReelBot action exactly once when arriving from a card CTA.
   useEffect(() => {
@@ -974,98 +862,34 @@ function MovieDetails() {
           </div>
         </section>
 
-        <section className="detail-info-card detail-shortcuts-card">
-          <div className="detail-section-head detail-section-head--facts">
+        <section className="detail-info-card detail-decision-card detail-anchor-target">
+          <div className="detail-decision-head">
             <div>
-              <div className="detail-description-label">Ask ReelBot shortcuts</div>
-              <h2 className="detail-section-title">Start with a quick read</h2>
-              <p className="detail-secondary-text">Quick takes, spoiler-safe explanations, and next-watch suggestions without digging through the full module first.</p>
+              {detailVerdict.label ? <div className="detail-description-label">{detailVerdict.label}</div> : null}
+              <h2 className="detail-decision-title">{detailVerdict.title}</h2>
+              <p className="detail-decision-summary">{detailVerdict.supportingLine}</p>
             </div>
           </div>
-          <div className="detail-reelbot-cta-actions detail-reelbot-cta-actions--standalone">
-            <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("quick_take")}>
-              Quick Take
-            </button>
-            <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("is_this_for_me")}>
-              Is This For Me?
-            </button>
-            <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("why_watch")}>
-              Why Watch It
-            </button>
+
+          <div className="detail-decision-snapshot-grid" aria-label="Decision snapshot">
+            {detailVerdict.snapshotItems.map((item) => (
+              <div key={item.label} className="detail-vibe-item detail-vibe-item--compact">
+                <div className="detail-vibe-label">{item.label}</div>
+                <div className="detail-vibe-value">{item.value}</div>
+              </div>
+            ))}
           </div>
         </section>
-
-                    <div className="detail-jump-links-wrap">
-              <p className="detail-jump-links-copy">Use ReelBot, spoilers, streaming, or next-watch shortcuts without hunting through the page.</p>
-              <div className="detail-jump-links" role="navigation" aria-label="Jump to detail sections">
-                {getJumpLinks(movie).map((link) => (
-                  <a key={link.id} href={`#${link.id}`} className="detail-jump-link" onClick={(event) => handleJumpLink(link.id, event)}>
-                    {link.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-        <div className="detail-summary-grid">
-          <section className="detail-vibe-strip detail-info-card detail-anchor-target">
-            <div className="detail-watchfit-head detail-watchfit-head--compact">
-              <div>
-                <div className="detail-description-label">{previewMode ? "Preview Snapshot" : "Snapshot Cards"}</div>
-                <h2 className="detail-section-title">Tone, pace, and audience fit</h2>
-                <p className="detail-secondary-text">
-                  {previewMode
-                    ? "A quick early read based on the synopsis, cast, and release details so far."
-                    : "ReelBot's quick read on attention, emotional weight, pace, and who this tends to play best with."}
-                </p>
-              </div>
-            </div>
-            <div className="detail-vibe-grid">
-              {insightCards.map((item) => (
-                <div key={item.label} className="detail-vibe-item">
-                  <div className="detail-vibe-label">{item.label}</div>
-                  <div className="detail-vibe-value-row">
-                    <div className="detail-vibe-value">{item.value}</div>
-                    {typeof item.scale === "number" ? <span className="detail-vibe-meter-label">Quick read</span> : null}
-                  </div>
-                  {typeof item.scale === "number" ? (
-                    <div className="detail-vibe-scale" aria-hidden="true">
-                      <span className="detail-vibe-scale-fill" style={{ width: `${item.scale}%` }} />
-                    </div>
-                  ) : null}
-                  <div className="detail-vibe-note">{item.note}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="detail-info-card detail-info-card--fit-snapshot">
-            <div className="detail-section-head detail-section-head--facts">
-              <div>
-                <div className="detail-description-label">Movie Fit Snapshot</div>
-                <h2 className="detail-section-title">Decide Faster</h2>
-                <p className="detail-secondary-text">A quick read on runtime, pacing, emotional weight, and what kind of watch this asks for.</p>
-              </div>
-            </div>
-            <div className="detail-fit-snapshot-grid">
-              {fitSnapshotItems.map((item) => (
-                <div key={item.label} className="detail-fit-snapshot-item">
-                  <span className="detail-fact-pill-label">{item.label}</span>
-                  <span className="detail-fit-snapshot-value">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
 
             <section id="ask-reelbot" className="reelbot-module reelbot-module--streamlined detail-anchor-target">
               <div className="detail-section-head reelbot-module-head">
                 <div>
                   <div className="detail-description-label">Ask ReelBot</div>
-                  <h2 className="detail-section-title reelbot-module-title">Ask ReelBot About This Movie</h2>
+                  <h2 className="detail-section-title reelbot-module-title">Ask ReelBot</h2>
                   <p className="reelbot-module-copy">
                     {previewMode
                       ? "Ask for a quick early read on who it seems for, how it looks, and what to watch while you wait."
-                      : "Quick takes, spoiler-safe explanations, and smarter next-watch help in one place."}
+                      : "Quick takes, spoiler answers, and next-watch help in one place."}
                   </p>
                 </div>
               </div>
@@ -1098,71 +922,27 @@ function MovieDetails() {
                 })}
               </div>
 
-              <div className="reelbot-secondary-stack">
-                <div className="reelbot-inline-subsection">
-                  <div className="detail-description-label">{previewMode ? "Quick Questions" : "Quick Questions"}</div>
-                  <p className="reelbot-subsection-copy">{previewMode ? "Tap a question for a quick, spoiler-free preview read." : "Use these when you want a faster yes-or-no angle."}</p>
-                  <div className="reelbot-chip-row">
-                    {viewerQuestionIds.map((actionId) => {
-                      const action = actionConfigs[actionId];
-                      return (
-                        <button
-                          key={action.id}
-                          type="button"
-                          className={`reelbot-question-chip${activeReelbotAction === action.id ? " is-active" : ""}`}
-                          onClick={() => handleReelbotAction(action.id)}
-                          disabled={reelbotLoadingAction === action.id}
-                          aria-pressed={activeReelbotAction === action.id}
-                          aria-controls="reelbot-response"
-                        >
-                          {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+              <div className="reelbot-secondary-actions">
+                {secondaryActionIds.map((actionId) => {
+                  const action = actionConfigs[actionId];
+                  const isActive = activeReelbotAction === action.id;
+                  const isLoading = reelbotLoadingAction === action.id;
+                  const buttonLabel = action.id === "spoiler_synopsis" ? "Spoilers" : "What to Watch Next";
 
-                {!previewMode ? (
-                  <section id="spoilers" className={`reelbot-spoiler-panel detail-anchor-target${spoilerModeEnabled ? " is-enabled" : ""}`}>
-                    <div className="reelbot-spoiler-toggle-row">
-                      <div>
-                        <div className="detail-description-label">Spoiler Mode: {spoilerModeEnabled ? "ON" : "OFF"}</div>
-                        <p className="reelbot-subsection-copy">Turn this on if you want plot, ending, and theme answers in full.</p>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={spoilerModeEnabled}
-                        className={`reelbot-spoiler-toggle${spoilerModeEnabled ? " is-enabled" : ""}`}
-                        onClick={() => setSpoilerModeEnabled((currentValue) => !currentValue)}
-                      >
-                        <span className="reelbot-spoiler-toggle-track">
-                          <span className="reelbot-spoiler-toggle-thumb" />
-                        </span>
-                      </button>
-                    </div>
-                    {spoilerModeEnabled ? (
-                      <div className="reelbot-chip-row reelbot-chip-row--spoilers">
-                        {spoilerActionIds.map((actionId) => {
-                          const action = actionConfigs[actionId];
-                          return (
-                            <button
-                              key={action.id}
-                              type="button"
-                              className={`reelbot-question-chip reelbot-question-chip--spoiler${activeReelbotAction === action.id ? " is-active" : ""}`}
-                              onClick={() => handleReelbotAction(action.id)}
-                              disabled={reelbotLoadingAction === action.id}
-                              aria-pressed={activeReelbotAction === action.id}
-                              aria-controls="reelbot-response"
-                            >
-                              {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </section>
-                ) : null}
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      className={`reelbot-secondary-action${isActive ? " is-active" : ""}`}
+                      onClick={() => handleSecondaryReelbotAction(action.id)}
+                      disabled={isLoading}
+                      aria-pressed={isActive}
+                      aria-controls="reelbot-response"
+                    >
+                      {isLoading ? "Thinking..." : buttonLabel}
+                    </button>
+                  );
+                })}
               </div>
 
               <div

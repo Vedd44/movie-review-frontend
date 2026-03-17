@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
@@ -79,6 +79,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [pickValidation, setPickValidation] = useState("");
   const [pickResult, setPickResult] = useState(null);
   const [lastPickMode, setLastPickMode] = useState("prompt");
+  const pickResultSectionRef = useRef(null);
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 560px)").matches;
@@ -107,10 +108,37 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   });
   const { profile, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
 
-  const scrollToSection = (id) => {
+  const getStickyOffset = () => (window.matchMedia("(max-width: 720px)").matches ? 88 : 112);
+
+  const scrollToNode = (node, options = {}) => {
+    if (!node) {
+      return;
+    }
+
+    const currentTop = node.getBoundingClientRect().top;
+    const offset = options.offset ?? getStickyOffset();
+    const destination = Math.max(0, window.scrollY + currentTop - offset);
+    const alreadyVisible = currentTop >= offset - 16 && currentTop <= window.innerHeight * 0.4;
+
+    if (options.skipIfVisible && alreadyVisible) {
+      return;
+    }
+
+    window.scrollTo({ top: destination, behavior: options.behavior || "smooth" });
+  };
+
+  const scrollToSection = (id, options = {}) => {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        scrollToNode(document.getElementById(id), options);
+      });
+    });
+  };
+
+  const scrollToPickResults = (options = {}) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        scrollToNode(pickResultSectionRef.current, options);
       });
     });
   };
@@ -342,6 +370,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       setPickValidation("");
       tasteActions.savePickPreferences(nextPreferences);
 
+      if (options.scrollToResults) {
+        scrollToPickResults();
+      }
+
       const requestPayload = {
         ...nextPreferences,
         excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
@@ -370,7 +402,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       tasteActions.recordPickResult(nextPreferences, response.data);
 
       if (options.scrollToResults) {
-        scrollToSection("pick-result");
+        scrollToPickResults({ skipIfVisible: true });
       }
     } catch (requestError) {
       console.error("Error fetching ReelBot pick:", requestError);
@@ -546,7 +578,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
           <div className="pick-for-me-actions">
             <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handlePickSubmit} disabled={pickLoading}>
-              {pickLoading && lastPickMode === "prompt" ? "Finding a Movie…" : "Find a Movie"}
+              {pickLoading && lastPickMode === "prompt" ? "Getting Your Pick…" : "Get a Pick"}
             </button>
             <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleSurprisePick} disabled={pickLoading}>
               {pickLoading && lastPickMode === "surprise" ? "Surprising You…" : "Surprise Me"}
@@ -554,7 +586,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           </div>
         </section>
 
-        <section id="pick-result" className="pick-result-section" aria-live="polite">
+        <section id="pick-result" ref={pickResultSectionRef} className="pick-result-section" aria-live="polite">
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
               <h2 className="section-title">{activePick ? "Your Pick" : "Your pick lands here"}</h2>
@@ -570,14 +602,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             loading={pickLoading}
             error={pickError}
             rationale={recommendationRationale}
-            summary={recommendationRationale?.summaryLine || pickResult?.summary}
+            summary={null}
             primaryMovie={activePick}
             backupMovies={backupPicksWithRoles}
             vibeLabel={pickVibeLabel}
             loadingCopy={PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
             emptyCopy="Tell ReelBot the vibe and it will line up a confident first pick and a few nearby alternatives."
             refreshLabel="Swap Pick"
-            backupTitle="Other good options"
+            backupTitle="Similar picks, different vibes"
             onRefreshChoices={pickResult?.primary ? handleRefreshPick : undefined}
             refreshDisabled={pickLoading}
             showExpandedReasoning

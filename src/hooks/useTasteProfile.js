@@ -49,6 +49,11 @@ function useTasteProfile() {
     [profile]
   );
 
+  const getRecommendationContextForMovie = useCallback(
+    (movieId) => tasteProfileService.getRecommendationContextForMovie(profile, movieId),
+    [profile]
+  );
+
   const getSavedMoviesForBucket = useCallback(
     (bucket) => tasteProfileService.getSavedMoviesForBucket(profile, bucket),
     [profile]
@@ -61,6 +66,7 @@ function useTasteProfile() {
     actions,
     getMovieState,
     getPickExcludedIds,
+    getRecommendationContextForMovie,
     getSavedMoviesForBucket,
     savedCounts,
   };

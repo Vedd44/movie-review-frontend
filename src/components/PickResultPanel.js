@@ -5,20 +5,20 @@ import TasteActionBar from "./TasteActionBar";
 import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getReleaseYear } from "../discovery";
+import { getBackupCardMeta } from "../recommendationInsights";
 
 function PickResultPanel({
   id,
   loading,
   error,
   rationale,
-  summary,
   primaryMovie,
   backupMovies = [],
   vibeLabel = "",
   loadingCopy,
   emptyCopy,
   refreshLabel = "Swap Pick",
-  backupTitle = "Other good options",
+  backupTitle = "Similar picks, different vibes",
   onRefreshChoices,
   refreshDisabled = false,
   showExpandedReasoning = false,
@@ -35,14 +35,15 @@ function PickResultPanel({
       {!error && loading ? (
         <div className="reelbot-loading-state">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
-          <p className="detail-secondary-text reelbot-placeholder-copy">{loadingCopy}</p>
+          <div className="reelbot-loading-copy">
+            <p className="reelbot-loading-title">ReelBot is thinking…</p>
+            <p className="detail-secondary-text reelbot-placeholder-copy">{loadingCopy}</p>
+          </div>
         </div>
       ) : null}
 
       {!error && !loading && primaryMovie ? (
         <>
-          {rationale?.contextAnchor ? <p className="pick-context-anchor">{rationale.contextAnchor}</p> : null}
-
           <div className="pick-result-header">
             <div>
               <h3 className="pick-result-title">{rationale?.heading || "ReelBot’s Pick"}</h3>
@@ -85,8 +86,6 @@ function PickResultPanel({
                 {rationale?.fitLabel ? <span className="movie-card-chip movie-card-chip--accent">{rationale.fitLabel}</span> : null}
               </div>
               <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
-              {summary ? <p className="pick-result-summary detail-secondary-text">{summary}</p> : null}
-              <div className="pick-rationale-divider" aria-hidden="true"></div>
               <RecommendationRationale rationale={rationale} collapsible={!showExpandedReasoning} />
 
               <div className="pick-result-actions-block">
@@ -116,37 +115,39 @@ function PickResultPanel({
               <div className="pick-backups-head">
                 <div>
                   <h3 className="pick-backups-title">{backupTitle}</h3>
-                  <p className="section-subtitle pick-backups-copy">ReelBot keeps these in the same lane, but each one gives you a different angle.</p>
+                  <p className="pick-backups-eyebrow">Same vibe, different angle</p>
                 </div>
               </div>
 
               <div className="pick-backup-strip">
-                {backupMovies.map((movie) => (
-                  <article key={movie.id} className="pick-backup-card">
-                    <Link to={getMoviePath(movie)} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`}>
-                      {movie.poster_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                          alt={movie.title}
-                          className="pick-backup-poster"
-                        />
-                      ) : (
-                        <div className="pick-backup-poster pick-backup-poster--placeholder">Poster unavailable</div>
-                      )}
-                    </Link>
-                    <div className="pick-backup-meta">
-                      {movie.backupRole ? <div className="pick-backup-role">{movie.backupRole}</div> : null}
-                      <h4 className="pick-backup-title">
-                        <Link to={getMoviePath(movie)} className="movie-title-link">
-                          {movie.title}
-                        </Link>
-                      </h4>
-                      <div className="pick-backup-year">{getReleaseYear(movie.release_date)}</div>
-                      <ProviderBadgeRow badges={providerMap[movie.id]?.provider_badges} compact />
-                      {movie.reason ? <p className="pick-backup-reason detail-secondary-text">{movie.reason}</p> : null}
-                    </div>
-                  </article>
-                ))}
+                {backupMovies.map((movie, index) => {
+                  const backupMeta = getBackupCardMeta(movie, index);
+
+                  return (
+                    <article key={movie.id} className="pick-backup-card">
+                      <Link to={getMoviePath(movie)} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`}>
+                        {movie.poster_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                            alt={movie.title}
+                            className="pick-backup-poster"
+                          />
+                        ) : (
+                          <div className="pick-backup-poster pick-backup-poster--placeholder">Poster unavailable</div>
+                        )}
+                      </Link>
+                      <div className="pick-backup-meta">
+                        <h4 className="pick-backup-title">
+                          <Link to={getMoviePath(movie)} className="movie-title-link">
+                            {movie.title}
+                          </Link>
+                        </h4>
+                        {backupMeta.shortLine ? <p className="pick-backup-reason detail-secondary-text">{backupMeta.shortLine}</p> : null}
+                        {backupMeta.tags.length ? <p className="pick-backup-tags">{backupMeta.tags.join(" • ")}</p> : null}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           ) : null}

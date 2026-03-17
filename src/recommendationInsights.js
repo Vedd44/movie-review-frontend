@@ -11,6 +11,59 @@ const truncateText = (value, maxLength = 140) => {
 
 const normalizeReason = (value = "") => String(value || "").replace(/\s+/g, " ").trim();
 
+const truncateWords = (value = "", maxWords = 12) => {
+  const words = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length <= maxWords) {
+    return words.join(" ");
+  }
+
+  return `${words.slice(0, maxWords).join(" ")}…`;
+};
+
+const ensureSentence = (value = "") => {
+  const text = normalizeReason(value).replace(/\s+([,.;!?])/g, "$1");
+  if (!text) {
+    return "";
+  }
+
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
+
+const HUMAN_COPY_REPLACEMENTS = [
+  { pattern: /\bTMDB metadata\b/gi, replacement: "what this movie is actually like" },
+  { pattern: /\bmetadata\b/gi, replacement: "the movie itself" },
+  { pattern: /\bTMDB genre tags?\b/gi, replacement: "the overall vibe" },
+  { pattern: /\bgenre tags?\b/gi, replacement: "the overall vibe" },
+  { pattern: /\btags?\b/gi, replacement: "details" },
+  { pattern: /\bkeyword cues?\b/gi, replacement: "story cues" },
+  { pattern: /\blane\b/gi, replacement: "vibe" },
+  { pattern: /matching loosely by vibe/gi, replacement: "grabbing something only vaguely similar" },
+  { pattern: /stays closely tied to this request/gi, replacement: "stays close to what you asked for" },
+  { pattern: /interpreted with ReelBot's stricter tone and fit rules/gi, replacement: "read with the right tone and audience in mind" },
+];
+
+const humanizeVisibleCopy = (value = "") => {
+  let text = normalizeReason(value);
+
+  HUMAN_COPY_REPLACEMENTS.forEach(({ pattern, replacement }) => {
+    text = text.replace(pattern, replacement);
+  });
+
+  text = text
+    .replace(/\bThis rose to the top because\b/i, "")
+    .replace(/\bBecause you asked for something\b/i, "")
+    .replace(/\bBecause you asked for\b/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const firstSentence = text.match(/[^.!?]+[.!?]/)?.[0]?.trim() || text;
+  return ensureSentence(firstSentence);
+};
+
 const isPromptEcho = (value = "") =>
   /fits? what you asked|matches? your|your vibe|you asked|because you wanted|for tonight|based on your prompt|based on what you told/i.test(value);
 
@@ -120,6 +173,42 @@ const getOverviewSummary = (movie) => {
   const overview = String(movie?.overview || "").trim();
   const firstSentence = overview.match(/[^.!?]+[.!?]/)?.[0]?.trim();
   return truncateText(firstSentence || "A confident pick with clear tone and enough pull to dive into right away.", 140);
+};
+
+const getFitVerdict = (score) => {
+  if (score >= 88) {
+    return "Great fit";
+  }
+
+  if (score >= 80) {
+    return "Solid pick";
+  }
+
+  if (score >= 72) {
+    return "Could work";
+  }
+
+  return "Not the best match";
+};
+
+const getDecisionFallback = (movie) => {
+  if (hasGenres(movie, ["Comedy", "Animation"])) {
+    return "Easy to settle into, with a lighter tone that never gets too heavy.";
+  }
+
+  if (hasGenres(movie, ["Thriller", "Mystery"])) {
+    return "Keeps things tense and engaging without feeling punishing.";
+  }
+
+  if (hasGenres(movie, ["Action", "Adventure"])) {
+    return "Fast-moving and accessible, with enough momentum to keep you locked in.";
+  }
+
+  if (hasGenres(movie, ["Drama", "Romance", "Music"])) {
+    return "More emotionally grounded, but still easy enough to stay with.";
+  }
+
+  return "A clear, accessible watch that knows exactly what kind of night it suits.";
 };
 
 const getGenreReason = (movie) => {
@@ -272,6 +361,79 @@ export const getBackupRoleLabel = (movie, index = 0) => {
   return "Another angle";
 };
 
+const getBackupShortLine = (movie, index = 0) => {
+  const role = String(movie?.backupRole || getBackupRoleLabel(movie, index)).toLowerCase();
+
+  if (role.includes("safer")) {
+    return "Easier yes if you want something less demanding.";
+  }
+
+  if (role.includes("lighter")) {
+    return "Keeps the mood breezier and easier to slip into.";
+  }
+
+  if (role.includes("darker")) {
+    return "Takes the same vibe in a darker direction.";
+  }
+
+  if (role.includes("wildcard")) {
+    return "A different angle that still fits the mood.";
+  }
+
+  if (role.includes("action")) {
+    return "Leans punchier if you want more movement.";
+  }
+
+  if (role.includes("demanding")) {
+    return "More of a sit-down watch if you're in for it.";
+  }
+
+  return "Close to the same mood with a different flavor.";
+};
+
+export const getBackupCardMeta = (movie, index = 0) => {
+  const tags = [];
+  const role = String(movie?.backupRole || getBackupRoleLabel(movie, index)).toLowerCase();
+
+  if (role.includes("safer")) tags.push("Easier");
+  if (role.includes("lighter")) tags.push("Lighter");
+  if (role.includes("darker")) tags.push("Darker tone");
+  if (role.includes("wildcard")) tags.push("Different angle");
+  if (role.includes("action")) tags.push("More action");
+  if (role.includes("demanding")) tags.push("More demanding");
+
+  if (hasGenres(movie, ["Action", "Adventure"]) && !tags.includes("More action")) {
+    tags.push("More action");
+  }
+
+  if (hasGenres(movie, ["Comedy", "Animation"]) && !tags.includes("Lighter")) {
+    tags.push("Lighter");
+  }
+
+  if (hasGenres(movie, ["Thriller", "Horror", "Crime"]) && !tags.includes("Darker tone")) {
+    tags.push("More intense");
+  }
+
+  if (hasGenres(movie, ["Romance", "Music"]) && !tags.includes("Lighter")) {
+    tags.push("Sweeter");
+  }
+
+  if (hasGenres(movie, ["Family"]) && !tags.includes("Family-friendly")) {
+    tags.push("Family-friendly");
+  }
+
+  if ((movie?.runtime || 0) <= 105) {
+    tags.push("Shorter");
+  } else if ((movie?.runtime || 0) >= 135) {
+    tags.push("Longer sit-down");
+  }
+
+  return {
+    shortLine: truncateWords(getBackupShortLine(movie, index), 12),
+    tags: [...new Set(tags)].slice(0, 2),
+  };
+};
+
 export const buildRecommendationRationale = ({ pickResult, activePick, profile, surpriseMode = false }) => {
   if (!pickResult?.primary || !activePick) {
     return null;
@@ -285,18 +447,22 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
 
     confidenceScore = clamp(confidenceScore, 68, 97);
 
+    const decisionSentence =
+      humanizeVisibleCopy(pickResult.rationale.primary_reason || activePick.reason || pickResult.rationale.summaryLine) || getDecisionFallback(activePick);
+
     return {
       title: "Your Pick",
       heading: pickResult.rationale.heading || "ReelBot’s Pick",
-      contextAnchor: pickResult.rationale.contextAnchor || getContextAnchor(pickResult.resolved_preferences || {}, surpriseMode),
-      whyTitle: pickResult.rationale.whyTitle || "Why ReelBot picked this",
+      contextAnchor: humanizeVisibleCopy(pickResult.rationale.contextAnchor || getContextAnchor(pickResult.resolved_preferences || {}, surpriseMode)),
       confidenceScore,
       confidenceLabel: getConfidenceLabel(confidenceScore),
       confidenceStars: getConfidenceStars(confidenceScore),
-      summaryLine: pickResult.rationale.summaryLine || getOverviewSummary(activePick),
+      summaryLine: humanizeVisibleCopy(pickResult.rationale.summaryLine || getOverviewSummary(activePick)),
       fitLabel: `${confidenceScore}% Match`,
       tasteCue: getTasteCue(profile),
       whyRecommended: Array.isArray(pickResult.rationale.whyRecommended) ? pickResult.rationale.whyRecommended.slice(0, 3) : [],
+      decisionVerdict: getFitVerdict(confidenceScore),
+      decisionSentence,
     };
   }
 
@@ -332,17 +498,20 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
     .filter((reason, index, reasons) => !isPromptEcho(reason) && reasons.indexOf(reason) === index)
     .slice(0, 3);
 
+  const decisionSentence = humanizeVisibleCopy(activePick.reason || whyRecommended[0] || getOverviewSummary(activePick)) || getDecisionFallback(activePick);
+
   return {
     title: "Your Pick",
     heading: "ReelBot’s Pick",
-    contextAnchor: getContextAnchor(preferences, surpriseMode),
-    whyTitle: "Why ReelBot picked this",
+    contextAnchor: humanizeVisibleCopy(getContextAnchor(preferences, surpriseMode)),
     confidenceScore,
     confidenceLabel: getConfidenceLabel(confidenceScore),
     confidenceStars: getConfidenceStars(confidenceScore),
-    summaryLine: getOverviewSummary(activePick),
+    summaryLine: humanizeVisibleCopy(getOverviewSummary(activePick)),
     fitLabel: `${confidenceScore}% Match`,
     tasteCue: getTasteCue(profile),
     whyRecommended,
+    decisionVerdict: getFitVerdict(confidenceScore),
+    decisionSentence,
   };
 };
