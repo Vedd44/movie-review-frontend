@@ -1409,6 +1409,10 @@ body {
   margin-top: 14px;
 }
 
+.detail-reelbot-cta-block--keep-vibe {
+  margin-top: 22px;
+}
+
 
 .detail-description {
   color: #d7e3ef;
@@ -5306,6 +5310,10 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
+}
+
+.pick-session-placeholder {
+  margin-top: 8px;
 }
 
 .pick-backups-block {

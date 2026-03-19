@@ -1,6 +1,6 @@
 const STORAGE_KEY = "reelbot:taste-profile:v1";
 const SESSION_RECOMMENDATION_CONTEXT_KEY = "reelbot:session-recommendations:v1";
-const SESSION_HOME_PICK_STATE_KEY = "reelbot:home-pick-session:v1";
+const SESSION_HOME_PICK_STATE_KEY = "reelbotSession";
 export const TASTE_PROFILE_UPDATED_EVENT = "reelbot:taste-profile-updated";
 export const SAVED_MOVIE_BUCKETS = ["watchlist", "seen", "hidden", "recent"];
 
@@ -144,18 +144,36 @@ const saveSessionRecommendationContexts = (contexts) => {
 };
 
 const loadHomePickSession = () => {
-  if (!canUseSessionStorage()) {
+  if (!canUseStorage()) {
     return null;
   }
 
   try {
-    const rawValue = window.sessionStorage.getItem(SESSION_HOME_PICK_STATE_KEY);
+    const rawValue = window.localStorage.getItem(SESSION_HOME_PICK_STATE_KEY);
     if (!rawValue) {
       return null;
     }
 
     const parsedValue = JSON.parse(rawValue);
-    return parsedValue && typeof parsedValue === "object" ? parsedValue : null;
+    if (!parsedValue || typeof parsedValue !== "object") {
+      return null;
+    }
+
+    const normalizedSession = {
+      originalPrompt: String(parsedValue.originalPrompt || parsedValue.pickPrompt || "").trim(),
+      currentPick: parsedValue.currentPick || parsedValue.pickResult || null,
+      swapHistory: Array.isArray(parsedValue.swapHistory) ? parsedValue.swapHistory.filter((entry) => entry?.primary?.id) : [],
+      swapCount: Number(parsedValue.swapCount || (Array.isArray(parsedValue.swapHistory) ? parsedValue.swapHistory.length : 0)),
+      lastPickMode: parsedValue.lastPickMode === "surprise" ? "surprise" : "prompt",
+      hasExpandedSwapPool: Boolean(parsedValue.hasExpandedSwapPool),
+      saved_at: parsedValue.saved_at || null,
+    };
+
+    if (!normalizedSession.currentPick?.primary && !normalizedSession.swapHistory.length) {
+      return null;
+    }
+
+    return normalizedSession;
   } catch (error) {
     console.error("Failed to load home pick session:", error);
     return null;
@@ -163,30 +181,44 @@ const loadHomePickSession = () => {
 };
 
 const saveHomePickSession = (session) => {
-  if (!canUseSessionStorage()) {
+  if (!canUseStorage()) {
     return;
   }
 
   if (!session) {
-    window.sessionStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
+    window.localStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
     return;
   }
 
-  window.sessionStorage.setItem(
+  const normalizedSession = {
+    originalPrompt: String(session.originalPrompt || session.pickPrompt || "").trim(),
+    currentPick: session.currentPick || session.pickResult || null,
+    swapHistory: Array.isArray(session.swapHistory) ? session.swapHistory.filter((entry) => entry?.primary?.id) : [],
+    swapCount: Number(session.swapCount || 0),
+    lastPickMode: session.lastPickMode === "surprise" ? "surprise" : "prompt",
+    hasExpandedSwapPool: Boolean(session.hasExpandedSwapPool),
+  };
+
+  if (!normalizedSession.currentPick?.primary && !normalizedSession.swapHistory.length) {
+    window.localStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(
     SESSION_HOME_PICK_STATE_KEY,
     JSON.stringify({
-      ...session,
+      ...normalizedSession,
       saved_at: new Date().toISOString(),
     })
   );
 };
 
 const clearHomePickSession = () => {
-  if (!canUseSessionStorage()) {
+  if (!canUseStorage()) {
     return;
   }
 
-  window.sessionStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
+  window.localStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
 };
 
 const save = (profile) => persist(migrateProfile(profile));

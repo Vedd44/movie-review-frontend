@@ -27,6 +27,9 @@ function PickResultPanel({
   recoveryMessage = "",
   onRefineVibe,
   browsePath = "",
+  hasActiveSession = false,
+  showEmptyState = true,
+  showSessionPlaceholder = false,
   showExpandedReasoning = false,
 }) {
   const providerMap = useWatchProviderBadges(
@@ -169,7 +172,19 @@ function PickResultPanel({
         </>
       ) : null}
 
-      {!error && !loading && !primaryMovie ? (
+      {!error && !loading && !primaryMovie && showSessionPlaceholder ? (
+        <div className="reelbot-loading-state pick-session-placeholder" role="status">
+          <span className="reelbot-loading-dot" aria-hidden="true"></span>
+          <div className="reelbot-loading-copy">
+            <p className="reelbot-loading-title">Restoring your pick…</p>
+            <p className="detail-secondary-text reelbot-placeholder-copy">
+              Your active ReelBot session is still here.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {!error && !loading && !primaryMovie && !hasActiveSession && showEmptyState ? (
         <div className="pick-empty-state pick-empty-state--result">
           {emptyTitle ? <h3 className="pick-empty-title">{emptyTitle}</h3> : null}
           <p className="pick-result-copy detail-secondary-text">{emptyCopy}</p>

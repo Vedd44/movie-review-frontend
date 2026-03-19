@@ -45,9 +45,9 @@ const REELBOT_ACTIONS = {
   },
   similar_picks: {
     id: "similar_picks",
-    label: "Next Watch",
+    label: "Keep the vibe going",
     hint: "Role-aware nearby picks instead of generic lookalikes.",
-    panelTitle: "Next Watch Options",
+    panelTitle: "Keep the vibe going",
     panelKicker: "What To Watch Next",
   },
   scary_check: {
@@ -359,6 +359,32 @@ const formatReviewMeta = (review, source = "TMDB user reviews") => {
   return parts.filter(Boolean).join(" • ");
 };
 
+const formatNextWatchRoleLabel = (value = "") => {
+  const normalizedValue = String(value || "").trim().toLowerCase();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  if (normalizedValue.includes("safer")) {
+    return "Safer pick";
+  }
+
+  if (normalizedValue.includes("darker")) {
+    return "Darker pick";
+  }
+
+  if (normalizedValue.includes("wildcard")) {
+    return "Wildcard";
+  }
+
+  if (normalizedValue.includes("similar")) {
+    return "Similar tone";
+  }
+
+  return value;
+};
+
 function MovieDetails() {
   const { id, slug } = useParams();
   const navigate = useNavigate();
@@ -537,8 +563,9 @@ function MovieDetails() {
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
   const nextWatchReasonLabels = previewMode
-    ? ["Watch-now parallel", "Broader alternative", "Stranger side path", "Bigger swing"]
-    : ["Similar tone", "Safer next pick", "Stranger follow-up", "More action-forward"];
+    ? ["Watch-now pick", "Broader pick", "Wildcard"]
+    : ["Similar tone", "Safer pick", "Darker pick", "Wildcard"];
+  const displayedSimilarMovies = useMemo(() => similarMovies.slice(0, 3), [similarMovies]);
   const whyReelbotBullets = useMemo(() => {
     const whyWatchReasons = reelbotResults.why_watch?.structured_content?.reasons;
     if (Array.isArray(whyWatchReasons) && whyWatchReasons.length) {
@@ -677,6 +704,15 @@ function MovieDetails() {
       state: {
         restorePickSession: true,
         scrollToPickResult: true,
+      },
+    });
+  }, [navigate]);
+
+  const handleRefinePick = useCallback(() => {
+    navigate("/#pick-for-me", {
+      state: {
+        restorePickSession: true,
+        focusPickPrompt: true,
       },
     });
   }, [navigate]);
@@ -980,8 +1016,6 @@ function MovieDetails() {
                   const action = actionConfigs[actionId];
                   const isActive = activeReelbotAction === action.id;
                   const isLoading = reelbotLoadingAction === action.id;
-                  const buttonLabel = action.id === "similar_picks" ? "What to Watch Next" : action.label;
-
                   return (
                     <button
                       key={action.id}
@@ -992,7 +1026,7 @@ function MovieDetails() {
                       aria-pressed={isActive}
                       aria-controls="reelbot-response"
                     >
-                      {isLoading ? "Thinking..." : buttonLabel}
+                      {isLoading ? "Thinking..." : action.label}
                     </button>
                   );
                 })}
@@ -1066,9 +1100,11 @@ function MovieDetails() {
                         <div className="reelbot-panel-kicker">{stagedReelbotConfig.panelKicker || "ReelBot"}</div>
                         <div className="reelbot-panel-header">{stagedReelbotConfig.panelTitle}</div>
                         <p className="reelbot-panel-caption">
-                          {previewMode
-                            ? "Your latest answer stays here while you compare a few early reads."
-                            : "Your latest answer stays here while you keep comparing angles."}
+                          {activeReelbotAction === "similar_picks"
+                            ? "Nearby picks that match the same tone and energy."
+                            : previewMode
+                              ? "Your latest answer stays here while you compare a few early reads."
+                              : "Your latest answer stays here while you keep comparing angles."}
                         </p>
                       </div>
                       {stagedReelbotConfig.warning ? <span className="reelbot-warning-chip">{stagedReelbotConfig.warning}</span> : null}
@@ -1211,36 +1247,21 @@ function MovieDetails() {
           </section>
         ) : null}
 
-        {similarMovies.length ? (
+        {displayedSimilarMovies.length ? (
           <section id="what-to-watch-next" className="detail-info-card detail-anchor-target">
-            <div className="detail-section-head detail-section-head--with-count">
+            <div className="detail-section-head">
               <div>
-                <h2 className="detail-section-title">{previewMode ? "Watch While You Wait" : "What to Watch Next"}</h2>
+                <h2 className="detail-section-title">{previewMode ? "Watch while you wait" : "Keep the vibe going"}</h2>
                 <p className="detail-secondary-text">
                   {previewMode
-                    ? "Good watch-now options while the real movie is still on the way."
-                    : "Picked for similar tone, energy, or audience appeal — not just title adjacency."}
+                    ? "Nearby picks that match the same tone and energy."
+                    : "Nearby picks that match the same tone and energy."}
                 </p>
               </div>
-              <div className="results-count">{similarMovies.length} titles</div>
-            </div>
-
-            <div className="next-watch-spotlight">
-              <div>
-                <div className="detail-description-label">Want a smarter next pick?</div>
-                <p className="detail-secondary-text">
-                  {previewMode
-                    ? "Ask ReelBot to recommend what to watch now based on tone, pacing, and audience appeal."
-                    : "Ask ReelBot to recommend what to watch next based on tone, pacing, and audience appeal."}
-                </p>
-              </div>
-              <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("similar_picks")}>
-                {previewMode ? "Find a better fit" : "Get another pick"}
-              </button>
             </div>
 
             <div className="similar-grid">
-              {similarMovies.map((similarMovie, index) => (
+              {displayedSimilarMovies.map((similarMovie, index) => (
                 <Link key={similarMovie.id} to={getMoviePath(similarMovie)} className="similar-card">
                   {similarMovie.poster_path ? (
                     <img
@@ -1251,11 +1272,22 @@ function MovieDetails() {
                   ) : (
                     <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>
                   )}
-                  <div className="similar-reason-label">{nextWatchReasonLabels[index % nextWatchReasonLabels.length]}</div>
+                  <div className="similar-reason-label">{formatNextWatchRoleLabel(nextWatchReasonLabels[index % nextWatchReasonLabels.length])}</div>
                   <div className="similar-title">{similarMovie.title}</div>
                   <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
                 </Link>
               ))}
+            </div>
+
+            <div className="detail-reelbot-cta-block detail-reelbot-cta-block--keep-vibe">
+              <div className="detail-reelbot-cta-actions detail-reelbot-cta-actions--standalone">
+                <button type="button" className="detail-text-action" onClick={handleBackToPick}>
+                  Get another pick
+                </button>
+                <button type="button" className="detail-text-action detail-text-action--hero" onClick={handleRefinePick}>
+                  Refine your vibe
+                </button>
+              </div>
             </div>
           </section>
         ) : null}

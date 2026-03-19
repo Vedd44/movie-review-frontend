@@ -332,6 +332,11 @@ const getHomepageCardLabel = (movie, view) => {
   return "Worth a Look";
 };
 
+const getPickSessionMovieIds = (entry) =>
+  [entry?.primary?.id, ...((entry?.alternates || []).map((movie) => movie?.id))]
+    .filter(Boolean)
+    .map((value) => Number(value));
+
 function Home({ routeView = "latest", isFeedRoute = false }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -352,12 +357,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMood, setSelectedMood] = useState("all");
   const [showCapabilities, setShowCapabilities] = useState(false);
-  const [pickPrompt, setPickPrompt] = useState(() => String(initialPickSession.pickPrompt || ""));
+  const [pickPrompt, setPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
+  const [originalPickPrompt, setOriginalPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickValidation, setPickValidation] = useState("");
-  const [pickResult, setPickResult] = useState(() => initialPickSession.pickResult || null);
+  const [pickResult, setPickResult] = useState(() => initialPickSession.currentPick || null);
+  const [swapHistory, setSwapHistory] = useState(() => (Array.isArray(initialPickSession.swapHistory) ? initialPickSession.swapHistory : []));
   const [lastPickMode, setLastPickMode] = useState(() => (initialPickSession.lastPickMode === "surprise" ? "surprise" : "prompt"));
   const [swapCount, setSwapCount] = useState(() => Number(initialPickSession.swapCount || 0));
   const [hasExpandedSwapPool, setHasExpandedSwapPool] = useState(() => Boolean(initialPickSession.hasExpandedSwapPool));
@@ -424,20 +431,29 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     });
   }, [scrollToNode]);
 
+  const handleRefinePick = useCallback(() => {
+    scrollToSection("pick-for-me", { skipIfVisible: true });
+    window.setTimeout(() => {
+      document.getElementById("pick-prompt-input")?.focus();
+    }, 140);
+  }, [scrollToSection]);
+
   const restoreHomePickSession = () => {
     const storedSession = tasteProfileService.loadHomePickSession();
     if (!storedSession) {
       return false;
     }
 
-    setPickPrompt(String(storedSession.pickPrompt || ""));
-    setPickResult(storedSession.pickResult || null);
+    setPickPrompt(String(storedSession.originalPrompt || ""));
+    setOriginalPickPrompt(String(storedSession.originalPrompt || ""));
+    setPickResult(storedSession.currentPick || null);
+    setSwapHistory(Array.isArray(storedSession.swapHistory) ? storedSession.swapHistory : []);
     setLastPickMode(storedSession.lastPickMode === "surprise" ? "surprise" : "prompt");
     setSwapCount(Number(storedSession.swapCount || 0));
     setHasExpandedSwapPool(Boolean(storedSession.hasExpandedSwapPool));
     setPickError(null);
     setPickValidation("");
-    return Boolean(storedSession.pickResult?.primary);
+    return Boolean(storedSession.currentPick?.primary);
   };
 
   useEffect(() => {
@@ -480,18 +496,23 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   }, [location.hash, loading, movieType, scrollToPickResults, scrollToSection]);
 
   useEffect(() => {
-    if (!location.state?.restorePickSession && !location.state?.scrollToPickResult) {
+    if (!location.state?.restorePickSession && !location.state?.scrollToPickResult && !location.state?.focusPickPrompt) {
       return;
     }
 
     restoreHomePickSession();
     const timeoutId = window.setTimeout(() => {
+      if (location.state?.focusPickPrompt) {
+        handleRefinePick();
+        return;
+      }
+
       scrollToPickResults();
     }, 90);
 
     navigate(`${location.pathname}${location.hash || ""}`, { replace: true, state: {} });
     return () => window.clearTimeout(timeoutId);
-  }, [location.hash, location.pathname, location.state, navigate, scrollToPickResults]);
+  }, [handleRefinePick, location.hash, location.pathname, location.state, navigate, scrollToPickResults]);
 
   useEffect(() => {
     setLoading(true);
@@ -541,9 +562,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   useEffect(() => {
     setPickError(null);
     setPickValidation("");
-    setPickResult(null);
-    setSwapCount(0);
-    setHasExpandedSwapPool(false);
     setPickLoadingMessageOverride("");
     setActivePromptSuggestion("");
   }, [movieType]);
@@ -575,18 +593,18 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   useEffect(() => {
     if (!pickResult?.primary) {
-      tasteProfileService.clearHomePickSession();
       return;
     }
 
     tasteProfileService.saveHomePickSession({
-      pickPrompt,
-      pickResult,
+      originalPrompt: originalPickPrompt,
+      currentPick: pickResult,
+      swapHistory,
       lastPickMode,
       swapCount,
       hasExpandedSwapPool,
     });
-  }, [hasExpandedSwapPool, lastPickMode, pickPrompt, pickResult, swapCount]);
+  }, [hasExpandedSwapPool, lastPickMode, originalPickPrompt, pickResult, swapCount, swapHistory]);
 
   const handleViewChange = (view) => {
     setCurrentPage(1);
@@ -669,6 +687,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     () => backupPicks.map((movie, index) => ({ ...movie, backupRole: movie.backupRole || getBackupRoleLabel(movie, index) })),
     [backupPicks]
   );
+  const swapHistoryExcludedIds = useMemo(
+    () => Array.from(new Set(swapHistory.flatMap((entry) => getPickSessionMovieIds(entry)))),
+    [swapHistory]
+  );
   const persistentExcludedIds = useMemo(
     () =>
       Array.from(
@@ -676,6 +698,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       ),
     [profile.seen, profile.skipped]
   );
+  const hasStoredPickSession = Boolean(tasteProfileService.loadHomePickSession()?.currentPick?.primary);
+  const hasActivePickSession = Boolean(activePick || hasStoredPickSession || swapHistory.length);
   const showSwapRecoveryMessage = Boolean(activePick && hasExpandedSwapPool);
 
   const homeStructuredData = useMemo(() => {
@@ -747,9 +771,11 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         }
   );
 
-  const pickVibeLabel = useMemo(() => pickPrompt.trim(), [pickPrompt]);
+  const pickVibeLabel = useMemo(() => originalPickPrompt.trim() || pickPrompt.trim(), [originalPickPrompt, pickPrompt]);
 
   const requestPick = async (nextPreferences, options = {}) => {
+    const previousPick = pickResult;
+
     try {
       setPickLoading(true);
       setPickLoadingMessageOverride(options.loadingMessage || "");
@@ -786,6 +812,11 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       });
 
       setPickResult(response.data);
+      if (options.isSwap && previousPick?.primary) {
+        setSwapHistory((currentHistory) => [...currentHistory, previousPick].slice(-10));
+      } else {
+        setSwapHistory([]);
+      }
       tasteActions.recordPickResult(nextPreferences, response.data);
 
       if (options.scrollToResults) {
@@ -815,6 +846,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       setPickPrompt(nextPreferences.prompt);
     }
 
+    if (!options.isSwap) {
+      setOriginalPickPrompt(String(nextPreferences.prompt || "").trim());
+    }
+
     await requestPick(nextPreferences, options);
   };
 
@@ -833,9 +868,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     await submitPick(
       {},
       {
+        isSwap: true,
         scrollToResults: true,
-        extraExcludedIds: currentDeckIds,
-        customExcludedIds: shouldExpandSearch ? [...persistentExcludedIds, ...currentDeckIds] : undefined,
+        extraExcludedIds: [...currentDeckIds, ...swapHistoryExcludedIds],
+        customExcludedIds: shouldExpandSearch ? [...persistentExcludedIds, ...currentDeckIds, ...swapHistoryExcludedIds] : undefined,
         disableCandidatePoolReuse: shouldExpandSearch,
         loadingMessage: shouldExpandSearch ? EXPANDED_SWAP_LOADING_MESSAGE : "",
         refreshKey: shouldExpandSearch ? `expanded-${Date.now()}` : Date.now(),
@@ -850,6 +886,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     setLastPickMode("prompt");
+    setOriginalPickPrompt(pickPrompt.trim());
     setSwapCount(0);
     setHasExpandedSwapPool(false);
     await submitPick({}, { scrollToResults: true });
@@ -858,6 +895,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const handleSurprisePick = async () => {
     setPickValidation("");
     setLastPickMode("surprise");
+    setOriginalPickPrompt("");
     setSwapCount(0);
     setHasExpandedSwapPool(false);
     await submitPick(
@@ -874,13 +912,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const handleEmptyPickCta = () => {
     scrollToSection("pick-for-me", { skipIfVisible: true });
-  };
-
-  const handleRefinePick = () => {
-    scrollToSection("pick-for-me", { skipIfVisible: true });
-    window.setTimeout(() => {
-      document.getElementById("pick-prompt-input")?.focus();
-    }, 140);
   };
 
   const handlePromptKeyDown = (event) => {
@@ -905,6 +936,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
     navigate(`/search?q=${encodeURIComponent(nextQuery)}`);
   };
+
+  const shouldShowEmptyPickState = !pickLoading && !activePick && !hasActivePickSession;
+  const shouldShowPickSessionPlaceholder = !pickLoading && !activePick && hasActivePickSession;
 
   return (
     <div className="browse-page home-page">
@@ -1042,6 +1076,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             recoveryMessage={showSwapRecoveryMessage ? SOFT_SWAP_MESSAGE : ""}
             onRefineVibe={showSwapRecoveryMessage ? handleRefinePick : undefined}
             browsePath={showSwapRecoveryMessage ? browseLibraryPath : ""}
+            hasActiveSession={hasActivePickSession}
+            showEmptyState={shouldShowEmptyPickState}
+            showSessionPlaceholder={shouldShowPickSessionPlaceholder}
             showExpandedReasoning
           />
         </section>

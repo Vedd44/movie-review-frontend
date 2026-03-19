@@ -2,6 +2,32 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { getMoviePath, getReleaseYear } from "../discovery";
 
+const formatNextWatchRoleLabel = (value = "") => {
+  const normalizedValue = String(value || "").trim().toLowerCase();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  if (normalizedValue.includes("safer")) {
+    return "Safer pick";
+  }
+
+  if (normalizedValue.includes("darker")) {
+    return "Darker pick";
+  }
+
+  if (normalizedValue.includes("wildcard")) {
+    return "Wildcard";
+  }
+
+  if (normalizedValue.includes("similar")) {
+    return "Similar tone";
+  }
+
+  return value;
+};
+
 function ReelbotStructuredContent({ action, result }) {
   const content = result?.structured_content;
 
@@ -73,7 +99,7 @@ function ReelbotStructuredContent({ action, result }) {
                   </div>
                   <div className="reelbot-next-watch-copy">
                     <div className="reelbot-next-watch-topline">
-                      <div className="reelbot-next-watch-role">{item.role_label}</div>
+                      <div className="reelbot-next-watch-role">{formatNextWatchRoleLabel(item.role_label)}</div>
                       {hasMovieLink ? <div className="reelbot-next-watch-affordance">View details</div> : null}
                     </div>
                     <div className="reelbot-next-watch-title-row">
