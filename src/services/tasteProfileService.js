@@ -169,7 +169,7 @@ const loadHomePickSession = () => {
       saved_at: parsedValue.saved_at || null,
     };
 
-    if (!normalizedSession.currentPick?.primary && !normalizedSession.swapHistory.length) {
+    if (!normalizedSession.originalPrompt && !normalizedSession.currentPick?.primary && !normalizedSession.swapHistory.length) {
       return null;
     }
 
@@ -199,7 +199,7 @@ const saveHomePickSession = (session) => {
     hasExpandedSwapPool: Boolean(session.hasExpandedSwapPool),
   };
 
-  if (!normalizedSession.currentPick?.primary && !normalizedSession.swapHistory.length) {
+  if (!normalizedSession.originalPrompt && !normalizedSession.currentPick?.primary && !normalizedSession.swapHistory.length) {
     window.localStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
     return;
   }

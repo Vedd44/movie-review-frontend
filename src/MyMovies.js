@@ -114,7 +114,7 @@ function MyMovies() {
   });
 
   return (
-    <div className="browse-page">
+    <div className="browse-page my-movies-page">
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
@@ -209,7 +209,7 @@ function MyMovies() {
                     {movie.overview ? <p className="saved-movie-overview">{movie.overview}</p> : null}
 
                     <div className="saved-movie-actions">
-                      <Link to={getMoviePath(movie)} className="card-link">
+                      <Link to={getMoviePath(movie)} className="card-link saved-movie-open-link">
                         Open details
                       </Link>
                       <TasteActionBar movie={movie} compact className="saved-movie-taste-actions" />

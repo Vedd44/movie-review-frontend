@@ -82,6 +82,7 @@ const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
 const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
 const SOFT_SWAP_MESSAGE = "Want more options? Try refining your vibe or browse more movies.";
 const EXPANDED_SWAP_LOADING_MESSAGE = "Expanding the search a bit…";
+const RESTORE_STATUS_TIMEOUT_MS = 1000;
 
 const FEED_METADATA = {
   latest: {
@@ -368,9 +369,11 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [lastPickMode, setLastPickMode] = useState(() => (initialPickSession.lastPickMode === "surprise" ? "surprise" : "prompt"));
   const [swapCount, setSwapCount] = useState(() => Number(initialPickSession.swapCount || 0));
   const [hasExpandedSwapPool, setHasExpandedSwapPool] = useState(() => Boolean(initialPickSession.hasExpandedSwapPool));
+  const [pickStatus, setPickStatus] = useState(() => (initialPickSession.currentPick?.primary ? "restoring" : "idle"));
   const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
   const [visiblePromptSuggestions, setVisiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
+  const restoreStatusTimeoutRef = useRef(null);
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 560px)").matches;
@@ -438,9 +441,26 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }, 140);
   }, [scrollToSection]);
 
+  const clearRestoreTimer = useCallback(() => {
+    if (restoreStatusTimeoutRef.current) {
+      window.clearTimeout(restoreStatusTimeoutRef.current);
+      restoreStatusTimeoutRef.current = null;
+    }
+  }, []);
+
+  const cancelRestoreState = useCallback((nextStatus = "idle") => {
+    clearRestoreTimer();
+    setPickStatus((currentStatus) => (currentStatus === "restoring" ? nextStatus : currentStatus));
+  }, [clearRestoreTimer]);
+
+  const replaceHomePickSession = useCallback((session) => {
+    tasteProfileService.saveHomePickSession(session);
+  }, []);
+
   const restoreHomePickSession = () => {
     const storedSession = tasteProfileService.loadHomePickSession();
     if (!storedSession) {
+      setPickStatus("idle");
       return false;
     }
 
@@ -453,6 +473,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     setHasExpandedSwapPool(Boolean(storedSession.hasExpandedSwapPool));
     setPickError(null);
     setPickValidation("");
+    setPickStatus(storedSession.currentPick?.primary ? "restoring" : "idle");
     return Boolean(storedSession.currentPick?.primary);
   };
 
@@ -513,6 +534,27 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     navigate(`${location.pathname}${location.hash || ""}`, { replace: true, state: {} });
     return () => window.clearTimeout(timeoutId);
   }, [handleRefinePick, location.hash, location.pathname, location.state, navigate, scrollToPickResults]);
+
+  useEffect(
+    () => () => {
+      clearRestoreTimer();
+    },
+    [clearRestoreTimer]
+  );
+
+  useEffect(() => {
+    if (pickStatus !== "restoring") {
+      clearRestoreTimer();
+      return undefined;
+    }
+
+    restoreStatusTimeoutRef.current = window.setTimeout(() => {
+      setPickStatus((currentStatus) => (currentStatus === "restoring" ? (pickResult?.primary ? "ready" : "idle") : currentStatus));
+      restoreStatusTimeoutRef.current = null;
+    }, RESTORE_STATUS_TIMEOUT_MS);
+
+    return clearRestoreTimer;
+  }, [clearRestoreTimer, pickResult, pickStatus]);
 
   useEffect(() => {
     setLoading(true);
@@ -596,7 +638,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       return;
     }
 
-    tasteProfileService.saveHomePickSession({
+    replaceHomePickSession({
       originalPrompt: originalPickPrompt,
       currentPick: pickResult,
       swapHistory,
@@ -604,7 +646,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       swapCount,
       hasExpandedSwapPool,
     });
-  }, [hasExpandedSwapPool, lastPickMode, originalPickPrompt, pickResult, swapCount, swapHistory]);
+  }, [hasExpandedSwapPool, lastPickMode, originalPickPrompt, pickResult, replaceHomePickSession, swapCount, swapHistory]);
 
   const handleViewChange = (view) => {
     setCurrentPage(1);
@@ -698,8 +740,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       ),
     [profile.seen, profile.skipped]
   );
-  const hasStoredPickSession = Boolean(tasteProfileService.loadHomePickSession()?.currentPick?.primary);
-  const hasActivePickSession = Boolean(activePick || hasStoredPickSession || swapHistory.length);
+  const hasActivePickSession = Boolean(activePick || swapHistory.length || originalPickPrompt.trim());
   const showSwapRecoveryMessage = Boolean(activePick && hasExpandedSwapPool);
 
   const homeStructuredData = useMemo(() => {
@@ -778,6 +819,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
     try {
       setPickLoading(true);
+      setPickStatus("loading");
       setPickLoadingMessageOverride(options.loadingMessage || "");
       setPickError(null);
       setPickValidation("");
@@ -812,6 +854,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       });
 
       setPickResult(response.data);
+      setPickStatus("ready");
       if (options.isSwap && previousPick?.primary) {
         setSwapHistory((currentHistory) => [...currentHistory, previousPick].slice(-10));
       } else {
@@ -825,6 +868,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     } catch (requestError) {
       console.error("Error fetching ReelBot pick:", requestError);
       setPickError("ReelBot could not pull a pick right now.");
+      setPickStatus("idle");
     } finally {
       setPickLoading(false);
       setPickLoadingMessageOverride("");
@@ -847,7 +891,23 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     if (!options.isSwap) {
-      setOriginalPickPrompt(String(nextPreferences.prompt || "").trim());
+      const nextPrompt = String(nextPreferences.prompt || "").trim();
+
+      clearRestoreTimer();
+      setPickStatus("loading");
+      setOriginalPickPrompt(nextPrompt);
+      setPickResult(null);
+      setSwapHistory([]);
+      setSwapCount(0);
+      setHasExpandedSwapPool(false);
+      replaceHomePickSession({
+        originalPrompt: nextPrompt,
+        currentPick: null,
+        swapHistory: [],
+        lastPickMode: nextPreferences.source === "library" ? "surprise" : "prompt",
+        swapCount: 0,
+        hasExpandedSwapPool: false,
+      });
     }
 
     await requestPick(nextPreferences, options);
@@ -880,11 +940,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   const handlePickSubmit = async () => {
+    cancelRestoreState(activePick ? "ready" : "idle");
+
     if (!pickPrompt.trim()) {
       setPickValidation("Enter a vibe or choose Surprise Me.");
       return;
     }
 
+    clearRestoreTimer();
     setLastPickMode("prompt");
     setOriginalPickPrompt(pickPrompt.trim());
     setSwapCount(0);
@@ -893,6 +956,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   const handleSurprisePick = async () => {
+    cancelRestoreState("loading");
+    clearRestoreTimer();
     setPickValidation("");
     setLastPickMode("surprise");
     setOriginalPickPrompt("");
@@ -920,6 +985,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     event.preventDefault();
+    cancelRestoreState(activePick ? "ready" : "idle");
     if (!pickLoading) {
       handlePickSubmit();
     }
@@ -937,8 +1003,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     navigate(`/search?q=${encodeURIComponent(nextQuery)}`);
   };
 
-  const shouldShowEmptyPickState = !pickLoading && !activePick && !hasActivePickSession;
-  const shouldShowPickSessionPlaceholder = !pickLoading && !activePick && hasActivePickSession;
+  const shouldShowEmptyPickState = pickStatus === "idle" && !pickLoading && !activePick && !hasActivePickSession;
+  const shouldShowPickSessionPlaceholder = pickStatus === "restoring";
 
   return (
     <div className="browse-page home-page">
@@ -1019,6 +1085,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             activeSuggestion={activePromptSuggestion}
             value={pickPrompt}
             onSuggestionSelect={(value) => {
+              cancelRestoreState(activePick ? "ready" : "idle");
               setPickPrompt(value);
               setActivePromptSuggestion(value);
               if (pickValidation) {
@@ -1026,6 +1093,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               }
             }}
             onInputChange={(value) => {
+              cancelRestoreState(activePick ? "ready" : "idle");
               setPickPrompt(value);
               if (activePromptSuggestion && value.trim() !== activePromptSuggestion) {
                 setActivePromptSuggestion("");

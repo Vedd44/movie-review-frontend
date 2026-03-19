@@ -5633,6 +5633,79 @@ body {
   gap: 12px;
 }
 
+.my-movies-page .saved-movie-actions {
+  width: 100%;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.my-movies-page .saved-movie-open-link {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0;
+  padding: 0 16px;
+  border-radius: 14px;
+  border-color: rgba(242, 197, 86, 0.22);
+  background: linear-gradient(135deg, rgba(34, 28, 11, 0.92), rgba(8, 17, 29, 0.94));
+  color: #f6e0a3;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+.my-movies-page .saved-movie-open-link:hover,
+.my-movies-page .saved-movie-open-link:focus-visible {
+  border-color: rgba(242, 197, 86, 0.34);
+  color: #fff1c2;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.my-movies-page .saved-movie-taste-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(129, 155, 190, 0.12);
+  background: linear-gradient(180deg, rgba(10, 16, 27, 0.84), rgba(7, 13, 22, 0.76));
+}
+
+.my-movies-page .saved-movie-taste-actions .taste-action-button {
+  min-height: 40px;
+  width: 100%;
+  padding: 0 12px;
+  border-radius: 12px;
+  border-color: rgba(129, 155, 190, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: #dbe7f3;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.my-movies-page .saved-movie-taste-actions .taste-action-button:hover:not(:disabled),
+.my-movies-page .saved-movie-taste-actions .taste-action-button:focus-visible {
+  border-color: rgba(242, 197, 86, 0.26);
+  background: rgba(242, 197, 86, 0.08);
+  color: #fff1c2;
+  transform: translateY(-1px);
+}
+
+.my-movies-page .saved-movie-taste-actions .taste-action-button.is-active {
+  border-color: rgba(242, 197, 86, 0.28);
+  background: linear-gradient(135deg, rgba(33, 27, 10, 0.94), rgba(8, 17, 29, 0.96));
+  color: #f6e0a3;
+}
+
+.my-movies-page .saved-movie-taste-actions .taste-action-feedback {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  color: #f5e2ac;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .saved-movie-empty-state {
   align-items: flex-start;
   gap: 14px;
@@ -5824,6 +5897,18 @@ body {
   width: 220px;
 }
 
+.my-movies-page .saved-movie-card {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(129, 155, 190, 0.12);
+  background: linear-gradient(180deg, rgba(9, 15, 25, 0.96), rgba(7, 12, 20, 0.92));
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.18);
+}
+
+.my-movies-page .saved-movie-card-content {
+  gap: 12px;
+}
+
 .saved-movie-card .movie-poster,
 .saved-movie-card .no-poster {
   height: 330px;
@@ -5832,6 +5917,10 @@ body {
 @media only screen and (max-width: 860px) {
   .site-menu-toggle {
     display: inline-flex;
+  }
+
+  .my-movies-page .saved-movie-taste-actions {
+    grid-template-columns: 1fr;
   }
 
   .site-nav-shell {
