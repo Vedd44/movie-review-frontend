@@ -5,9 +5,11 @@ function ReelbotPromptComposer({
   helperText = "",
   suggestions = [],
   activeSuggestion = "",
+  inputId,
   value,
   onSuggestionSelect,
   onInputChange,
+  onKeyDown,
   placeholder,
   errorText = "",
 }) {
@@ -53,12 +55,14 @@ function ReelbotPromptComposer({
       ) : null}
       <div ref={inputShellRef} className="pick-prompt-shell">
         <input
+          id={inputId}
           type="text"
           className={`pick-prompt-input${errorText ? " is-invalid" : ""}`}
           placeholder={placeholder}
           ref={inputRef}
           value={value}
           onChange={handleInputChange}
+          onKeyDown={onKeyDown}
           aria-invalid={errorText ? "true" : "false"}
           aria-describedby={errorText ? "pick-prompt-validation" : undefined}
         />

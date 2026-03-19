@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
@@ -19,6 +19,7 @@ import useTasteProfile from "./hooks/useTasteProfile";
 import { buildRecommendationRationale, getBackupRoleLabel } from "./recommendationInsights";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl, DEFAULT_SOCIAL_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "./siteConfig";
+import { tasteProfileService } from "./services/tasteProfileService";
 
 const PICK_LOADING_MESSAGES = [
   "Scanning the library…",
@@ -78,6 +79,9 @@ const HOMEPAGE_DESKTOP_COLUMNS = 5;
 const HOMEPAGE_BASE_DISPLAY_COUNT = 15;
 const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 20;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
+const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
+const SOFT_SWAP_MESSAGE = "Want more options? Try refining your vibe or browse more movies.";
+const EXPANDED_SWAP_LOADING_MESSAGE = "Expanding the search a bit…";
 
 const FEED_METADATA = {
   latest: {
@@ -331,6 +335,13 @@ const getHomepageCardLabel = (movie, view) => {
 function Home({ routeView = "latest", isFeedRoute = false }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const initialPickSessionRef = useRef(null);
+
+  if (initialPickSessionRef.current === null) {
+    initialPickSessionRef.current = tasteProfileService.loadHomePickSession() || {};
+  }
+
+  const initialPickSession = initialPickSessionRef.current;
 
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
@@ -341,13 +352,16 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMood, setSelectedMood] = useState("all");
   const [showCapabilities, setShowCapabilities] = useState(false);
-  const [pickPrompt, setPickPrompt] = useState("");
+  const [pickPrompt, setPickPrompt] = useState(() => String(initialPickSession.pickPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickValidation, setPickValidation] = useState("");
-  const [pickResult, setPickResult] = useState(null);
-  const [lastPickMode, setLastPickMode] = useState("prompt");
+  const [pickResult, setPickResult] = useState(() => initialPickSession.pickResult || null);
+  const [lastPickMode, setLastPickMode] = useState(() => (initialPickSession.lastPickMode === "surprise" ? "surprise" : "prompt"));
+  const [swapCount, setSwapCount] = useState(() => Number(initialPickSession.swapCount || 0));
+  const [hasExpandedSwapPool, setHasExpandedSwapPool] = useState(() => Boolean(initialPickSession.hasExpandedSwapPool));
+  const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
   const [visiblePromptSuggestions, setVisiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
@@ -375,9 +389,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const { profile, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
 
-  const getStickyOffset = () => (window.matchMedia("(max-width: 720px)").matches ? 88 : 112);
+  const getStickyOffset = useCallback(() => (window.matchMedia("(max-width: 720px)").matches ? 88 : 112), []);
 
-  const scrollToNode = (node, options = {}) => {
+  const scrollToNode = useCallback((node, options = {}) => {
     if (!node) {
       return;
     }
@@ -392,22 +406,38 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     window.scrollTo({ top: destination, behavior: options.behavior || "smooth" });
-  };
+  }, [getStickyOffset]);
 
-  const scrollToSection = (id, options = {}) => {
+  const scrollToSection = useCallback((id, options = {}) => {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         scrollToNode(document.getElementById(id), options);
       });
     });
-  };
+  }, [scrollToNode]);
 
-  const scrollToPickResults = (options = {}) => {
+  const scrollToPickResults = useCallback((options = {}) => {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         scrollToNode(pickResultSectionRef.current, options);
       });
     });
+  }, [scrollToNode]);
+
+  const restoreHomePickSession = () => {
+    const storedSession = tasteProfileService.loadHomePickSession();
+    if (!storedSession) {
+      return false;
+    }
+
+    setPickPrompt(String(storedSession.pickPrompt || ""));
+    setPickResult(storedSession.pickResult || null);
+    setLastPickMode(storedSession.lastPickMode === "surprise" ? "surprise" : "prompt");
+    setSwapCount(Number(storedSession.swapCount || 0));
+    setHasExpandedSwapPool(Boolean(storedSession.hasExpandedSwapPool));
+    setPickError(null);
+    setPickValidation("");
+    return Boolean(storedSession.pickResult?.primary);
   };
 
   useEffect(() => {
@@ -438,11 +468,30 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     const timeoutId = window.setTimeout(() => {
-      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (targetId === "pick-result") {
+        scrollToPickResults();
+        return;
+      }
+
+      scrollToSection(targetId);
     }, 90);
 
     return () => window.clearTimeout(timeoutId);
-  }, [location.hash, loading, movieType]);
+  }, [location.hash, loading, movieType, scrollToPickResults, scrollToSection]);
+
+  useEffect(() => {
+    if (!location.state?.restorePickSession && !location.state?.scrollToPickResult) {
+      return;
+    }
+
+    restoreHomePickSession();
+    const timeoutId = window.setTimeout(() => {
+      scrollToPickResults();
+    }, 90);
+
+    navigate(`${location.pathname}${location.hash || ""}`, { replace: true, state: {} });
+    return () => window.clearTimeout(timeoutId);
+  }, [location.hash, location.pathname, location.state, navigate, scrollToPickResults]);
 
   useEffect(() => {
     setLoading(true);
@@ -493,6 +542,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     setPickError(null);
     setPickValidation("");
     setPickResult(null);
+    setSwapCount(0);
+    setHasExpandedSwapPool(false);
+    setPickLoadingMessageOverride("");
     setActivePromptSuggestion("");
   }, [movieType]);
 
@@ -520,6 +572,21 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
     return () => window.clearInterval(intervalId);
   }, [activePromptSuggestion, pickLoading, pickPrompt]);
+
+  useEffect(() => {
+    if (!pickResult?.primary) {
+      tasteProfileService.clearHomePickSession();
+      return;
+    }
+
+    tasteProfileService.saveHomePickSession({
+      pickPrompt,
+      pickResult,
+      lastPickMode,
+      swapCount,
+      hasExpandedSwapPool,
+    });
+  }, [hasExpandedSwapPool, lastPickMode, pickPrompt, pickResult, swapCount]);
 
   const handleViewChange = (view) => {
     setCurrentPage(1);
@@ -602,6 +669,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     () => backupPicks.map((movie, index) => ({ ...movie, backupRole: movie.backupRole || getBackupRoleLabel(movie, index) })),
     [backupPicks]
   );
+  const persistentExcludedIds = useMemo(
+    () =>
+      Array.from(
+        new Set([...(profile.skipped || []).map((item) => item.id), ...(profile.seen || []).map((item) => item.id)].filter(Boolean))
+      ),
+    [profile.seen, profile.skipped]
+  );
+  const showSwapRecoveryMessage = Boolean(activePick && hasExpandedSwapPool);
 
   const homeStructuredData = useMemo(() => {
     if (isFeedRoute) {
@@ -677,6 +752,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const requestPick = async (nextPreferences, options = {}) => {
     try {
       setPickLoading(true);
+      setPickLoadingMessageOverride(options.loadingMessage || "");
       setPickError(null);
       setPickValidation("");
       tasteActions.savePickPreferences(nextPreferences);
@@ -687,7 +763,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
       const requestPayload = {
         ...nextPreferences,
-        excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
+        excluded_ids: options.customExcludedIds || getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
         trigger: "user_click",
       };
 
@@ -695,7 +771,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         requestPayload.intent_snapshot = options.intentSnapshot || pickResult?.resolved_intent;
       }
 
-      if (options.candidatePoolIds || pickResult?.candidate_pool_ids) {
+      if (!options.disableCandidatePoolReuse && (options.candidatePoolIds || pickResult?.candidate_pool_ids)) {
         requestPayload.candidate_pool_ids = options.candidatePoolIds || pickResult?.candidate_pool_ids;
       }
 
@@ -720,6 +796,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       setPickError("ReelBot could not pull a pick right now.");
     } finally {
       setPickLoading(false);
+      setPickLoadingMessageOverride("");
     }
   };
 
@@ -742,13 +819,26 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   const handleRefreshPick = async () => {
+    if (pickLoading || !pickResult?.primary) {
+      return;
+    }
+
     const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id))].filter(Boolean);
+    const nextSwapCount = swapCount + 1;
+    const shouldExpandSearch = nextSwapCount > SWAP_SOFT_EXHAUSTION_THRESHOLD;
+
+    setSwapCount(nextSwapCount);
+    setHasExpandedSwapPool(shouldExpandSearch);
+
     await submitPick(
       {},
       {
         scrollToResults: true,
         extraExcludedIds: currentDeckIds,
-        refreshKey: Date.now(),
+        customExcludedIds: shouldExpandSearch ? [...persistentExcludedIds, ...currentDeckIds] : undefined,
+        disableCandidatePoolReuse: shouldExpandSearch,
+        loadingMessage: shouldExpandSearch ? EXPANDED_SWAP_LOADING_MESSAGE : "",
+        refreshKey: shouldExpandSearch ? `expanded-${Date.now()}` : Date.now(),
       }
     );
   };
@@ -760,12 +850,16 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     setLastPickMode("prompt");
+    setSwapCount(0);
+    setHasExpandedSwapPool(false);
     await submitPick({}, { scrollToResults: true });
   };
 
   const handleSurprisePick = async () => {
     setPickValidation("");
     setLastPickMode("surprise");
+    setSwapCount(0);
+    setHasExpandedSwapPool(false);
     await submitPick(
       {
         prompt: "",
@@ -780,6 +874,24 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const handleEmptyPickCta = () => {
     scrollToSection("pick-for-me", { skipIfVisible: true });
+  };
+
+  const handleRefinePick = () => {
+    scrollToSection("pick-for-me", { skipIfVisible: true });
+    window.setTimeout(() => {
+      document.getElementById("pick-prompt-input")?.focus();
+    }, 140);
+  };
+
+  const handlePromptKeyDown = (event) => {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    if (!pickLoading) {
+      handlePickSubmit();
+    }
   };
 
   const handleHeroSearch = (event) => {
@@ -868,6 +980,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           </div>
 
           <ReelbotPromptComposer
+            inputId="pick-prompt-input"
             suggestions={visiblePromptSuggestions}
             activeSuggestion={activePromptSuggestion}
             value={pickPrompt}
@@ -887,6 +1000,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                 setPickValidation("");
               }
             }}
+            onKeyDown={handlePromptKeyDown}
             placeholder="fun date night movie, something tense but not depressing, smart sci-fi, easy watch comedy"
             errorText={pickValidation}
           />
@@ -917,7 +1031,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             primaryMovie={activePick}
             backupMovies={backupPicksWithRoles}
             vibeLabel={pickVibeLabel}
-            loadingCopy={PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
+            loadingCopy={pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
             emptyCopy="Nothing here yet. Give ReelBot a vibe and we'll line up your next watch."
             emptyActionLabel="Get a Pick"
             onEmptyAction={handleEmptyPickCta}
@@ -925,6 +1039,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             backupTitle="Similar picks, different vibes"
             onRefreshChoices={pickResult?.primary ? handleRefreshPick : undefined}
             refreshDisabled={pickLoading}
+            recoveryMessage={showSwapRecoveryMessage ? SOFT_SWAP_MESSAGE : ""}
+            onRefineVibe={showSwapRecoveryMessage ? handleRefinePick : undefined}
+            browsePath={showSwapRecoveryMessage ? browseLibraryPath : ""}
             showExpandedReasoning
           />
         </section>

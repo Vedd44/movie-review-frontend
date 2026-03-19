@@ -1,5 +1,6 @@
 const STORAGE_KEY = "reelbot:taste-profile:v1";
 const SESSION_RECOMMENDATION_CONTEXT_KEY = "reelbot:session-recommendations:v1";
+const SESSION_HOME_PICK_STATE_KEY = "reelbot:home-pick-session:v1";
 export const TASTE_PROFILE_UPDATED_EVENT = "reelbot:taste-profile-updated";
 export const SAVED_MOVIE_BUCKETS = ["watchlist", "seen", "hidden", "recent"];
 
@@ -140,6 +141,52 @@ const saveSessionRecommendationContexts = (contexts) => {
   }
 
   window.sessionStorage.setItem(SESSION_RECOMMENDATION_CONTEXT_KEY, JSON.stringify(contexts || {}));
+};
+
+const loadHomePickSession = () => {
+  if (!canUseSessionStorage()) {
+    return null;
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(SESSION_HOME_PICK_STATE_KEY);
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === "object" ? parsedValue : null;
+  } catch (error) {
+    console.error("Failed to load home pick session:", error);
+    return null;
+  }
+};
+
+const saveHomePickSession = (session) => {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  if (!session) {
+    window.sessionStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
+    return;
+  }
+
+  window.sessionStorage.setItem(
+    SESSION_HOME_PICK_STATE_KEY,
+    JSON.stringify({
+      ...session,
+      saved_at: new Date().toISOString(),
+    })
+  );
+};
+
+const clearHomePickSession = () => {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  window.sessionStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
 };
 
 const save = (profile) => persist(migrateProfile(profile));
@@ -404,6 +451,9 @@ export const tasteProfileService = {
   STORAGE_KEY,
   load,
   save,
+  loadHomePickSession,
+  saveHomePickSession,
+  clearHomePickSession,
   getMovieTasteState,
   toggleWatchlist,
   toggleSeen,

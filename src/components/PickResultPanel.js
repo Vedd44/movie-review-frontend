@@ -24,13 +24,16 @@ function PickResultPanel({
   backupTitle = "Similar picks, different vibes",
   onRefreshChoices,
   refreshDisabled = false,
+  recoveryMessage = "",
+  onRefineVibe,
+  browsePath = "",
   showExpandedReasoning = false,
 }) {
   const providerMap = useWatchProviderBadges(
     useMemo(() => [primaryMovie?.id, ...backupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, backupMovies])
   );
   const confidenceStars = rationale?.confidenceStars || "★★★★☆";
-  const reelbotPickLinkState = { source: "reelbot_pick" };
+  const reelbotPickLinkState = { source: "reelbot_pick", restorePickSession: true };
 
   return (
     <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
@@ -103,6 +106,24 @@ function PickResultPanel({
               </div>
             </div>
           </article>
+
+          {recoveryMessage ? (
+            <div className="pick-session-recovery">
+              <p className="pick-session-recovery-copy">{recoveryMessage}</p>
+              <div className="pick-session-recovery-actions">
+                {onRefineVibe ? (
+                  <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefineVibe}>
+                    Refine your vibe
+                  </button>
+                ) : null}
+                {browsePath ? (
+                  <Link to={browsePath} className="reelbot-inline-button">
+                    Browse movies
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           {backupMovies.length ? (
             <section className="pick-backups-block">

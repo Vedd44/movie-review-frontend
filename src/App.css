@@ -464,6 +464,11 @@ body {
 
 .detail-topbar {
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .detail-hero,
@@ -5018,6 +5023,18 @@ body {
   margin-top: 8px;
 }
 
+.reelbot-inline-subsection--recovery {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.reelbot-inline-subsection--recovery .reelbot-subsection-copy {
+  margin: 0;
+}
+
 .reelbot-spoiler-drawer {
   border-color: rgba(242, 197, 86, 0.24);
   background: linear-gradient(180deg, rgba(28, 20, 10, 0.3), rgba(8, 13, 22, 0.84));
@@ -5271,6 +5288,26 @@ body {
   color: #fff1c2;
 }
 
+.pick-session-recovery {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(129, 155, 190, 0.12);
+  background: linear-gradient(180deg, rgba(10, 16, 27, 0.88), rgba(7, 13, 22, 0.76));
+}
+
+.pick-session-recovery-copy {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.pick-session-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 .pick-backups-block {
   margin-top: 30px;
   padding-top: 22px;
@@ -5428,6 +5465,10 @@ body {
 .detail-text-action--hero:focus-visible {
   border-color: rgba(242, 197, 86, 0.24);
   color: #fff1c2;
+}
+
+.detail-topbar-return {
+  flex-shrink: 0;
 }
 
 .detail-text-action--disabled {
@@ -9138,6 +9179,11 @@ body {
 
   .reelbot-primary-row {
     grid-template-columns: 1fr;
+  }
+
+  .reelbot-inline-subsection--recovery {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .similar-grid {

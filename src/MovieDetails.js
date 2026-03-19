@@ -11,6 +11,7 @@ import { getMoviePath, slugifyMovieTitle } from "./discovery";
 import { buildDetailVerdict } from "./detailDecision";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl } from "./siteConfig";
+import { tasteProfileService } from "./services/tasteProfileService";
 
 const REELBOT_ACTIONS = {
   quick_take: {
@@ -530,6 +531,8 @@ function MovieDetails() {
 
     return storedContext;
   }, [getRecommendationContextForMovie, location.state?.source, movie?.id]);
+  const homePickSession = tasteProfileService.loadHomePickSession();
+  const hasBackToPick = Boolean(homePickSession?.pickResult?.primary || recommendationContext?.source === "reelbot_pick" || location.state?.source === "reelbot_pick");
   const detailVerdict = useMemo(() => buildDetailVerdict({ movie, recommendationContext }), [movie, recommendationContext]);
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
@@ -668,6 +671,15 @@ function MovieDetails() {
     const targetTop = target.getBoundingClientRect().top + window.scrollY;
     window.scrollTo({ top: Math.max(targetTop - DETAIL_ANCHOR_OFFSET, 0), behavior: "smooth" });
   };
+
+  const handleBackToPick = useCallback(() => {
+    navigate("/#pick-result", {
+      state: {
+        restorePickSession: true,
+        scrollToPickResult: true,
+      },
+    });
+  }, [navigate]);
 
   const pulseReelbotPanel = useCallback(() => {
     setPanelPulse(false);
@@ -812,6 +824,11 @@ function MovieDetails() {
               {movie.title}
             </span>
           </div>
+          {hasBackToPick ? (
+            <button type="button" className="detail-text-action detail-text-action--hero detail-topbar-return" onClick={handleBackToPick}>
+              Back to your pick
+            </button>
+          ) : null}
         </nav>
 
         <section
@@ -873,6 +890,9 @@ function MovieDetails() {
                     See Where to Watch
                   </button>
                 ) : null}
+                <button type="button" className="detail-text-action detail-text-action--hero" onClick={(event) => handleJumpLink("ask-reelbot", event)}>
+                  Get another pick
+                </button>
               </div>
               <div className="detail-hero-tracking-actions">
                 <TasteActionBar movie={movie} compact className="detail-taste-actions" showVibeAction={false} />
@@ -918,6 +938,13 @@ function MovieDetails() {
                       : "Quick takes, spoiler answers, and next-watch help in one place."}
                   </p>
                 </div>
+              </div>
+
+              <div className="reelbot-inline-subsection reelbot-inline-subsection--recovery">
+                <p className="reelbot-subsection-copy">Not feeling this? Get another pick →</p>
+                <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => handleReelbotAction("similar_picks")}>
+                  Get another pick
+                </button>
               </div>
 
               {previewMode ? (
@@ -1208,7 +1235,7 @@ function MovieDetails() {
                 </p>
               </div>
               <button type="button" className="detail-text-action" onClick={() => handleReelbotAction("similar_picks")}>
-                {previewMode ? "Ask ReelBot what to watch while you wait" : "Ask ReelBot for a tailored next pick"}
+                {previewMode ? "Find a better fit" : "Get another pick"}
               </button>
             </div>
 
