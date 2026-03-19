@@ -1409,11 +1409,6 @@ body {
   margin-top: 14px;
 }
 
-.detail-reelbot-cta-block--keep-vibe {
-  margin-top: 22px;
-}
-
-
 .detail-description {
   color: #d7e3ef;
   font-size: 1rem;
@@ -5032,7 +5027,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 18px;
+  margin-top: 22px;
 }
 
 .reelbot-inline-subsection--recovery .reelbot-subsection-copy {

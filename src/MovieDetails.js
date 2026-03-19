@@ -708,15 +708,6 @@ function MovieDetails() {
     });
   }, [navigate]);
 
-  const handleRefinePick = useCallback(() => {
-    navigate("/#pick-for-me", {
-      state: {
-        restorePickSession: true,
-        focusPickPrompt: true,
-      },
-    });
-  }, [navigate]);
-
   const pulseReelbotPanel = useCallback(() => {
     setPanelPulse(false);
 
@@ -926,7 +917,7 @@ function MovieDetails() {
                     See Where to Watch
                   </button>
                 ) : null}
-                <button type="button" className="detail-text-action detail-text-action--hero" onClick={(event) => handleJumpLink("ask-reelbot", event)}>
+                <button type="button" className="detail-text-action detail-text-action--hero" onClick={(event) => handleJumpLink("detail-repick-module", event)}>
                   Get another pick
                 </button>
               </div>
@@ -974,13 +965,6 @@ function MovieDetails() {
                       : "Quick takes, spoiler answers, and next-watch help in one place."}
                   </p>
                 </div>
-              </div>
-
-              <div className="reelbot-inline-subsection reelbot-inline-subsection--recovery">
-                <p className="reelbot-subsection-copy">Not feeling this? Get another pick →</p>
-                <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => handleReelbotAction("similar_picks")}>
-                  Get another pick
-                </button>
               </div>
 
               {previewMode ? (
@@ -1176,6 +1160,13 @@ function MovieDetails() {
                   </div>
                 </div>
               )}
+
+              <div id="detail-repick-module" className="reelbot-inline-subsection reelbot-inline-subsection--recovery detail-anchor-target">
+                <p className="reelbot-subsection-copy">Not feeling this? Get another pick →</p>
+                <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => handleReelbotAction("similar_picks")}>
+                  Get another pick
+                </button>
+              </div>
             </section>
 
 
@@ -1277,17 +1268,6 @@ function MovieDetails() {
                   <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
                 </Link>
               ))}
-            </div>
-
-            <div className="detail-reelbot-cta-block detail-reelbot-cta-block--keep-vibe">
-              <div className="detail-reelbot-cta-actions detail-reelbot-cta-actions--standalone">
-                <button type="button" className="detail-text-action" onClick={handleBackToPick}>
-                  Get another pick
-                </button>
-                <button type="button" className="detail-text-action detail-text-action--hero" onClick={handleRefinePick}>
-                  Refine your vibe
-                </button>
-              </div>
             </div>
           </section>
         ) : null}
