@@ -21,8 +21,7 @@ function useTasteProfile() {
   const commit = useCallback((updater) => {
     setProfile((previousProfile) => {
       const nextProfile = typeof updater === "function" ? updater(previousProfile) : updater;
-      tasteProfileService.save(nextProfile);
-      return nextProfile;
+      return tasteProfileService.save(nextProfile);
     });
   }, []);
 
@@ -35,6 +34,9 @@ function useTasteProfile() {
       addRecentMovie: (movie) => commit((currentProfile) => tasteProfileService.addRecentMovie(currentProfile, movie)),
       savePickPreferences: (preferences) => commit((currentProfile) => tasteProfileService.savePickPreferences(currentProfile, preferences)),
       recordPickResult: (preferences, payload) => commit((currentProfile) => tasteProfileService.recordPickResult(currentProfile, preferences, payload)),
+      recordSwapFeedback: (movie, preferences, metadata) => commit((currentProfile) => tasteProfileService.recordSwapFeedback(currentProfile, movie, preferences, metadata)),
+      recordDetailView: (movie, metadata) => commit((currentProfile) => tasteProfileService.recordDetailView(currentProfile, movie, metadata)),
+      recordProviderClick: (movie, provider, metadata) => commit((currentProfile) => tasteProfileService.recordProviderClick(currentProfile, movie, provider, metadata)),
     }),
     [commit]
   );
@@ -60,9 +62,11 @@ function useTasteProfile() {
   );
 
   const savedCounts = useMemo(() => tasteProfileService.getSavedCounts(profile), [profile]);
+  const behavioralMemory = useMemo(() => tasteProfileService.buildBehavioralMemoryPayload(profile), [profile]);
 
   return {
     profile,
+    behavioralMemory,
     actions,
     getMovieState,
     getPickExcludedIds,

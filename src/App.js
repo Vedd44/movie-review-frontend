@@ -7,9 +7,16 @@ import BrowseLibrary from "./BrowseLibrary";
 import MyMovies from "./MyMovies";
 import HowReelbotWorks from "./HowReelbotWorks";
 import { getFeedPath } from "./discovery";
+import { homeFeedService } from "./services/homeFeedService";
 import "./App.css";
 
-const SITE_VERSION = "v0.3";
+const SITE_VERSION = "v0.4";
+
+if (typeof window !== "undefined") {
+  homeFeedService.prefetchHomeFeed("latest", 1).catch((error) => {
+    console.error("Failed to prefetch homepage feed:", error);
+  });
+}
 
 function HeaderSearch({ showOnHome = false }) {
   const location = useLocation();

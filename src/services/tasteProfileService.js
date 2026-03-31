@@ -1,11 +1,20 @@
-const STORAGE_KEY = "reelbot:taste-profile:v1";
+import {
+  buildBehavioralMemory,
+  createInteractionEntry,
+  DEFAULT_TASTE_MEMORY,
+  normalizeInteractions,
+} from "../behavioralMemory";
+
+const STORAGE_KEY = "reelbotTasteProfile";
+const LEGACY_STORAGE_KEY = "reelbot:taste-profile:v1";
 const SESSION_RECOMMENDATION_CONTEXT_KEY = "reelbot:session-recommendations:v1";
 const SESSION_HOME_PICK_STATE_KEY = "reelbotSession";
+const INTERACTIONS_STORAGE_KEY = "reelbotInteractions";
 export const TASTE_PROFILE_UPDATED_EVENT = "reelbot:taste-profile-updated";
 export const SAVED_MOVIE_BUCKETS = ["watchlist", "seen", "hidden", "recent"];
 
 const DEFAULT_PROFILE = {
-  version: 4,
+  version: 5,
   watchlist: [],
   seen: [],
   skipped: [],
@@ -15,10 +24,24 @@ const DEFAULT_PROFILE = {
   pickHistory: [],
   lastPickPreferences: null,
   lastResolvedIntent: null,
+  behavioralMemory: { ...DEFAULT_TASTE_MEMORY },
 };
 
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 const canUseSessionStorage = () => typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+
+const readStorageJson = (key) => {
+  if (!canUseStorage()) {
+    return null;
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    return rawValue ? JSON.parse(rawValue) : null;
+  } catch (error) {
+    return null;
+  }
+};
 
 const dedupeById = (items = []) => {
   const seenIds = new Set();
@@ -40,6 +63,19 @@ const normalizeMovieEntry = (movie = {}, extra = {}) => ({
   poster_path: movie.poster_path || null,
   release_date: movie.release_date || "",
   vote_average: Number(movie.vote_average || movie.rating) || 0,
+  popularity: Number(movie.popularity || 0) || 0,
+  runtime: Number(movie.runtime || 0) || null,
+  genre_ids: Array.isArray(movie.genre_ids)
+    ? movie.genre_ids.map((value) => Number(value)).filter(Boolean).slice(0, 8)
+    : Array.isArray(movie.genres)
+      ? movie.genres.map((genre) => Number(genre?.id)).filter(Boolean).slice(0, 8)
+      : [],
+  genre_names: Array.isArray(movie.genre_names)
+    ? movie.genre_names.slice(0, 8)
+    : Array.isArray(movie.genres)
+      ? movie.genres.map((genre) => genre?.name).filter(Boolean).slice(0, 8)
+      : [],
+  source_type: movie.source_type || "",
   overview: movie.overview || movie.description || "",
   saved_at: new Date().toISOString(),
   ...extra,
@@ -72,10 +108,39 @@ const normalizePickHistory = (pickHistory = []) =>
 const normalizeRecentRecommendations = (recentRecommendations = []) =>
   dedupeById(Array.isArray(recentRecommendations) ? recentRecommendations : []).slice(0, 30);
 
+const loadInteractions = () => {
+  const parsedValue = readStorageJson(INTERACTIONS_STORAGE_KEY);
+  return normalizeInteractions(parsedValue || []);
+};
+
+const saveInteractions = (entries) => {
+  if (!canUseStorage()) {
+    return normalizeInteractions(entries);
+  }
+
+  const normalizedEntries = normalizeInteractions(entries);
+  window.localStorage.setItem(INTERACTIONS_STORAGE_KEY, JSON.stringify(normalizedEntries));
+  window.dispatchEvent(new window.CustomEvent(TASTE_PROFILE_UPDATED_EVENT));
+  return normalizedEntries;
+};
+
+const appendInteraction = (entry) => {
+  const currentEntries = loadInteractions();
+  return saveInteractions([createInteractionEntry(entry.type, entry.movie, entry.metadata), ...currentEntries].slice(0, 80));
+};
+
+const attachBehavioralMemory = (profile) => ({
+  ...profile,
+  behavioralMemory: buildBehavioralMemory({
+    profile,
+    interactions: loadInteractions(),
+  }),
+});
+
 const migrateProfile = (profile = {}) => ({
   ...DEFAULT_PROFILE,
   ...profile,
-  version: 4,
+  version: 5,
   watchlist: dedupeById(Array.isArray(profile.watchlist) ? profile.watchlist : []),
   seen: dedupeById(Array.isArray(profile.seen) ? profile.seen : []),
   skipped: dedupeById(Array.isArray(profile.skipped) ? profile.skipped : []),
@@ -92,27 +157,28 @@ const persist = (profile) => {
     return profile;
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  const nextProfile = attachBehavioralMemory(migrateProfile(profile));
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProfile));
+  window.localStorage.removeItem(LEGACY_STORAGE_KEY);
   window.dispatchEvent(new window.CustomEvent(TASTE_PROFILE_UPDATED_EVENT));
-  return profile;
+  return nextProfile;
 };
 
 const load = () => {
   if (!canUseStorage()) {
-    return { ...DEFAULT_PROFILE };
+    return attachBehavioralMemory({ ...DEFAULT_PROFILE });
   }
 
   try {
-    const rawValue = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawValue) {
-      return { ...DEFAULT_PROFILE };
+    const parsedValue = readStorageJson(STORAGE_KEY) || readStorageJson(LEGACY_STORAGE_KEY);
+    if (!parsedValue) {
+      return attachBehavioralMemory({ ...DEFAULT_PROFILE });
     }
 
-    const parsedValue = JSON.parse(rawValue);
-    return migrateProfile(parsedValue);
+    return attachBehavioralMemory(migrateProfile(parsedValue));
   } catch (error) {
     console.error("Failed to load taste profile:", error);
-    return { ...DEFAULT_PROFILE };
+    return attachBehavioralMemory({ ...DEFAULT_PROFILE });
   }
 };
 
@@ -223,6 +289,8 @@ const clearHomePickSession = () => {
 
 const save = (profile) => persist(migrateProfile(profile));
 
+const rebuildProfile = (profile) => attachBehavioralMemory(migrateProfile(profile));
+
 const removeMovieFromBuckets = (profile, movieId) => ({
   ...profile,
   watchlist: (profile.watchlist || []).filter((item) => item.id !== movieId),
@@ -281,20 +349,49 @@ const getMovieTasteState = (profile, movieId, vibeLabel = "") => {
   };
 };
 
-const toggleWatchlist = (profile, movie) => toggleBucket(profile, "watchlist", movie);
-const toggleSeen = (profile, movie) => toggleBucket(profile, "seen", movie);
-const toggleSkipped = (profile, movie) => toggleBucket(profile, "hidden", movie);
+const toggleWatchlist = (profile, movie) => {
+  const alreadySaved = (profile.watchlist || []).some((item) => item.id === movie?.id);
+  const nextProfile = toggleBucket(profile, "watchlist", movie);
+
+  if (!alreadySaved && movie?.id) {
+    appendInteraction({ type: "save", movie, metadata: { source: "taste_action" } });
+  }
+
+  return rebuildProfile(nextProfile);
+};
+
+const toggleSeen = (profile, movie) => {
+  const alreadySeen = (profile.seen || []).some((item) => item.id === movie?.id);
+  const nextProfile = toggleBucket(profile, "seen", movie);
+
+  if (!alreadySeen && movie?.id) {
+    appendInteraction({ type: "seen", movie, metadata: { source: "taste_action" } });
+  }
+
+  return rebuildProfile(nextProfile);
+};
+
+const toggleSkipped = (profile, movie) => {
+  const alreadySkipped = (profile.skipped || []).some((item) => item.id === movie?.id);
+  const nextProfile = toggleBucket(profile, "hidden", movie);
+
+  if (!alreadySkipped && movie?.id) {
+    appendInteraction({ type: "hidden", movie, metadata: { source: "taste_action" } });
+  }
+
+  return rebuildProfile(nextProfile);
+};
 
 const toggleLikedVibe = (profile, movie, vibeLabel) => {
   if (!movie?.id || !vibeLabel) {
-    return profile;
+    return rebuildProfile(profile);
   }
 
   const key = `${movie.id}:${vibeLabel.toLowerCase()}`;
   const likedVibes = Array.isArray(profile.likedVibes) ? profile.likedVibes : [];
   const alreadyLiked = likedVibes.some((item) => item.key === key);
 
-  return {
+  return rebuildProfile({
     ...profile,
     likedVibes: alreadyLiked
       ? likedVibes.filter((item) => item.key !== key)
@@ -308,21 +405,38 @@ const toggleLikedVibe = (profile, movie, vibeLabel) => {
           },
           ...likedVibes,
         ].slice(0, 24),
-  };
+  });
 };
 
-const addRecentMovie = (profile, movie) => ({
+const addRecentMovie = (profile, movie) => rebuildProfile({
   ...profile,
   recentMovies: upsertMovieEntry(profile.recentMovies, movie, {}, 18),
 });
 
-const savePickPreferences = (profile, preferences) => ({
-  ...profile,
-  lastPickPreferences: {
-    saved_at: new Date().toISOString(),
-    ...preferences,
-  },
-});
+const savePickPreferences = (profile, preferences) => {
+  const shouldLogPromptSubmission = preferences?.log_prompt_submission !== false;
+  if (shouldLogPromptSubmission) {
+    appendInteraction({
+      type: "prompt_submitted",
+      metadata: {
+        prompt: String(preferences?.prompt || "").trim(),
+        source: preferences?.source || "feed",
+        view: preferences?.view || "latest",
+        mood: preferences?.mood || "all",
+        runtime: preferences?.runtime || "any",
+        genre: preferences?.genre || "all",
+      },
+    });
+  }
+
+  return rebuildProfile({
+    ...profile,
+    lastPickPreferences: {
+      saved_at: new Date().toISOString(),
+      ...Object.fromEntries(Object.entries(preferences || {}).filter(([key]) => key !== "log_prompt_submission")),
+    },
+  });
+};
 
 const recordPickResult = (profile, preferences, payload) => {
   const movieIds = dedupeStrings([
@@ -332,7 +446,7 @@ const recordPickResult = (profile, preferences, payload) => {
   const recommendedMovies = [payload?.primary, ...((payload?.alternates || []).filter(Boolean))].filter((movie) => movie?.id);
 
   if (!movieIds.length) {
-    return profile;
+    return rebuildProfile(profile);
   }
 
   const signature = buildPickPreferenceSignature(preferences);
@@ -393,13 +507,73 @@ const recordPickResult = (profile, preferences, payload) => {
     };
   });
   saveSessionRecommendationContexts(nextSessionContexts);
+  appendInteraction({
+    type: "pick_shown",
+    movie: payload?.primary || null,
+    metadata: {
+      prompt,
+      source: preferences?.source || "feed",
+      view: preferences?.view || "latest",
+      candidate_pool_size: Number(payload?.curated_candidate_count || payload?.candidate_count || 0),
+    },
+  });
 
-  return {
+  return rebuildProfile({
     ...profile,
     pickHistory: nextHistory,
     recentRecommendations: nextRecommendations,
     lastResolvedIntent: resolvedIntent,
-  };
+  });
+};
+
+const recordSwapFeedback = (profile, movie, preferences = {}, metadata = {}) => {
+  if (movie?.id) {
+    appendInteraction({
+      type: "swap_used",
+      movie,
+      metadata: {
+        prompt: String(preferences.prompt || "").trim(),
+        source: preferences.source || "feed",
+        view: preferences.view || "latest",
+        ...metadata,
+      },
+    });
+  }
+
+  return rebuildProfile(profile);
+};
+
+const recordDetailView = (profile, movie, metadata = {}) => {
+  if (movie?.id) {
+    appendInteraction({
+      type: "detail_view",
+      movie,
+      metadata,
+    });
+  }
+
+  return rebuildProfile(profile);
+};
+
+const recordProviderClick = (profile, movie, provider = {}, metadata = {}) => {
+  if (movie?.id) {
+    appendInteraction({
+      type: "provider_click",
+      movie,
+      metadata: {
+        provider_id: provider?.id || null,
+        provider_name: provider?.name || "",
+        ...metadata,
+      },
+    });
+  }
+
+  return rebuildProfile(profile);
+};
+
+const buildBehavioralMemoryPayload = (profile) => {
+  const safeProfile = rebuildProfile(profile || DEFAULT_PROFILE);
+  return safeProfile.behavioralMemory || { ...DEFAULT_TASTE_MEMORY };
 };
 
 const getRecommendationContextForMovie = (profile, movieId) => {
@@ -424,20 +598,11 @@ const getRecommendationContextForMovie = (profile, movieId) => {
 
 const getPickExcludedIds = (profile, preferences, extraIds = []) => {
   const excludedIds = new Set(dedupeStrings(extraIds));
-  const safeProfile = profile || DEFAULT_PROFILE;
+  const safeProfile = rebuildProfile(profile || DEFAULT_PROFILE);
   const signature = buildPickPreferenceSignature(preferences);
 
-  (safeProfile.skipped || []).forEach((movie) => {
-    if (movie?.id) {
-      excludedIds.add(movie.id);
-    }
-  });
-
-  (safeProfile.seen || []).forEach((movie) => {
-    if (movie?.id) {
-      excludedIds.add(movie.id);
-    }
-  });
+  (safeProfile.behavioralMemory?.hiddenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
+  (safeProfile.behavioralMemory?.seenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
 
   (safeProfile.recentRecommendations || []).slice(0, 24).forEach((movie) => {
     if (movie?.id) {
@@ -456,7 +621,7 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
 };
 
 const getSavedMoviesForBucket = (profile, bucket) => {
-  const safeProfile = profile || DEFAULT_PROFILE;
+  const safeProfile = rebuildProfile(profile || DEFAULT_PROFILE);
 
   if (bucket === "hidden") {
     return safeProfile.skipped || [];
@@ -470,7 +635,7 @@ const getSavedMoviesForBucket = (profile, bucket) => {
 };
 
 const getSavedCounts = (profile) => {
-  const safeProfile = profile || DEFAULT_PROFILE;
+  const safeProfile = rebuildProfile(profile || DEFAULT_PROFILE);
   return {
     watchlist: (safeProfile.watchlist || []).length,
     seen: (safeProfile.seen || []).length,
@@ -481,8 +646,11 @@ const getSavedCounts = (profile) => {
 
 export const tasteProfileService = {
   STORAGE_KEY,
+  INTERACTIONS_STORAGE_KEY,
   load,
   save,
+  loadInteractions,
+  saveInteractions,
   loadHomePickSession,
   saveHomePickSession,
   clearHomePickSession,
@@ -494,9 +662,13 @@ export const tasteProfileService = {
   addRecentMovie,
   savePickPreferences,
   recordPickResult,
+  recordSwapFeedback,
+  recordDetailView,
+  recordProviderClick,
   getRecommendationContextForMovie,
   getPickExcludedIds,
   getSavedMoviesForBucket,
   getSavedCounts,
   buildPickPreferenceSignature,
+  buildBehavioralMemoryPayload,
 };

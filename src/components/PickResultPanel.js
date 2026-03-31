@@ -9,6 +9,7 @@ import { getBackupCardMeta } from "../recommendationInsights";
 
 function PickResultPanel({
   id,
+  panelStatus = "idle",
   loading,
   error,
   rationale,
@@ -20,10 +21,17 @@ function PickResultPanel({
   emptyCopy,
   emptyActionLabel,
   onEmptyAction,
+  fallbackTitle,
+  fallbackCopy,
+  fallbackActionLabel,
+  onFallbackAction,
+  fallbackSecondaryActionLabel,
+  fallbackSecondaryActionPath,
   refreshLabel = "Swap Pick",
   backupTitle = "Similar picks, different vibes",
   onRefreshChoices,
   refreshDisabled = false,
+  recoveryTitle = "",
   recoveryMessage = "",
   onRefineVibe,
   browsePath = "",
@@ -37,12 +45,16 @@ function PickResultPanel({
   );
   const confidenceStars = rationale?.confidenceStars || "★★★★☆";
   const reelbotPickLinkState = { source: "reelbot_pick", restorePickSession: true };
+  const hasPrimaryMovie = Boolean(primaryMovie);
+  const shouldShowStandaloneLoading = loading && !hasPrimaryMovie;
+  const shouldShowFallbackState = !hasPrimaryMovie && (panelStatus === "exhausted" || panelStatus === "error");
+  const shouldShowInlineRecovery = hasPrimaryMovie && Boolean(recoveryTitle || recoveryMessage || onRefineVibe || browsePath);
 
   return (
     <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
-      {error ? <p className="error-message">{error}</p> : null}
+      {!hasPrimaryMovie && error && !shouldShowFallbackState ? <p className="error-message">{error}</p> : null}
 
-      {!error && loading ? (
+      {!error && shouldShowStandaloneLoading ? (
         <div className="reelbot-loading-state">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
@@ -52,7 +64,7 @@ function PickResultPanel({
         </div>
       ) : null}
 
-      {!error && !loading && primaryMovie ? (
+      {hasPrimaryMovie ? (
         <>
           <article className="pick-primary-card pick-primary-card--hero">
             <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="pick-primary-poster-link">
@@ -110,9 +122,10 @@ function PickResultPanel({
             </div>
           </article>
 
-          {recoveryMessage ? (
+          {shouldShowInlineRecovery ? (
             <div className="pick-session-recovery">
-              <p className="pick-session-recovery-copy">{recoveryMessage}</p>
+              {recoveryTitle ? <p className="pick-session-recovery-title">{recoveryTitle}</p> : null}
+              {recoveryMessage ? <p className="pick-session-recovery-copy">{recoveryMessage}</p> : null}
               <div className="pick-session-recovery-actions">
                 {onRefineVibe ? (
                   <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefineVibe}>
@@ -172,7 +185,7 @@ function PickResultPanel({
         </>
       ) : null}
 
-      {!error && !loading && !primaryMovie && showSessionPlaceholder ? (
+      {!error && !shouldShowStandaloneLoading && !primaryMovie && showSessionPlaceholder ? (
         <div className="reelbot-loading-state pick-session-placeholder" role="status">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
@@ -195,6 +208,25 @@ function PickResultPanel({
               </button>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {!loading && shouldShowFallbackState ? (
+        <div className="pick-empty-state pick-empty-state--result pick-empty-state-soft">
+          {fallbackTitle ? <h3 className="pick-empty-title">{fallbackTitle}</h3> : null}
+          {fallbackCopy ? <p className="pick-result-copy detail-secondary-text">{fallbackCopy}</p> : null}
+          <div className="pick-empty-actions">
+            {onFallbackAction && fallbackActionLabel ? (
+              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={onFallbackAction}>
+                {fallbackActionLabel}
+              </button>
+            ) : null}
+            {fallbackSecondaryActionLabel && fallbackSecondaryActionPath ? (
+              <Link to={fallbackSecondaryActionPath} className="reelbot-inline-button">
+                {fallbackSecondaryActionLabel}
+              </Link>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>

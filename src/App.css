@@ -5295,6 +5295,12 @@ body {
   background: linear-gradient(180deg, rgba(10, 16, 27, 0.88), rgba(7, 13, 22, 0.76));
 }
 
+.pick-session-recovery-title {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
 .pick-session-recovery-copy {
   margin: 0;
   color: var(--text-primary);
@@ -8957,6 +8963,67 @@ body {
   margin: 6px 0 0;
   font-size: 0.88rem;
   line-height: 1.45;
+}
+
+.home-page .home-movie-card--skeleton {
+  pointer-events: none;
+}
+
+.home-page .home-movie-card--skeleton:hover,
+.home-page .home-movie-card--skeleton:focus-within {
+  transform: none;
+  border-color: rgba(129, 155, 190, 0.12);
+  box-shadow: none;
+}
+
+.home-feed-skeleton-block,
+.home-feed-skeleton-line {
+  position: relative;
+  overflow: hidden;
+  background: rgba(129, 155, 190, 0.12);
+}
+
+.home-feed-skeleton-block::after,
+.home-feed-skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: homeFeedSkeletonShimmer 1.35s ease-in-out infinite;
+}
+
+.home-feed-skeleton-poster {
+  aspect-ratio: 2 / 3;
+}
+
+.home-feed-skeleton-line {
+  display: block;
+  border-radius: 999px;
+}
+
+.home-feed-skeleton-line--chip {
+  min-width: 64px;
+  min-height: 26px;
+}
+
+.home-feed-skeleton-line--title {
+  width: 84%;
+  height: 18px;
+  border-radius: 10px;
+}
+
+.home-feed-skeleton-line--date {
+  width: 62%;
+  height: 14px;
+  margin-top: 8px;
+  border-radius: 10px;
+}
+
+@keyframes homeFeedSkeletonShimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @media only screen and (max-width: 860px) {

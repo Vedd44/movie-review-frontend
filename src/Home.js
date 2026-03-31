@@ -15,10 +15,12 @@ import {
 } from "./discovery";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
+import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { buildRecommendationRationale, getBackupRoleLabel } from "./recommendationInsights";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl, DEFAULT_SOCIAL_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "./siteConfig";
+import { homeFeedService } from "./services/homeFeedService";
 import { tasteProfileService } from "./services/tasteProfileService";
 
 const PICK_LOADING_MESSAGES = [
@@ -83,6 +85,20 @@ const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
 const SOFT_SWAP_MESSAGE = "Want more options? Try refining your vibe or browse more movies.";
 const EXPANDED_SWAP_LOADING_MESSAGE = "Expanding the search a bit…";
 const RESTORE_STATUS_TIMEOUT_MS = 1000;
+const SWAP_LOADING_MESSAGE = "Finding another strong option…";
+const PICK_REQUEST_FALLBACK_MESSAGE = "We couldn’t land a strong pick from that prompt. Try refining the vibe or browse more movies.";
+const PICK_REQUEST_ERROR_MESSAGE = "ReelBot could not pull a pick right now.";
+const SWAP_REQUEST_ERROR_MESSAGE = "We couldn’t swap in a stronger alternative right now. Your last pick is still here.";
+
+const PICK_STATUS = {
+  IDLE: "idle",
+  RESTORING: "restoring",
+  LOADING: "loading",
+  LOADING_SWAP: "loading_swap",
+  READY: "ready",
+  EXHAUSTED: "exhausted",
+  ERROR: "error",
+};
 
 const FEED_METADATA = {
   latest: {
@@ -338,30 +354,89 @@ const getPickSessionMovieIds = (entry) =>
     .filter(Boolean)
     .map((value) => Number(value));
 
+const normalizeFeedMovies = (items = [], view = "latest") =>
+  (Array.isArray(items) ? items : []).map((movie) => ({
+    ...movie,
+    homepage_feed_source: movie?.source_type || movie?.homepage_feed_source || view,
+  }));
+
+const getInitialFeedState = (view = "latest", page = 1) => {
+  const cachedSnapshot = homeFeedService.getCachedFeedSnapshot(view, page);
+  const cachedMovies = normalizeFeedMovies(cachedSnapshot?.payload?.results || [], view);
+
+  return {
+    movies: cachedMovies,
+    totalPages: Number(cachedSnapshot?.payload?.total_pages || 1),
+    loading: !cachedMovies.length,
+    refreshing: Boolean(cachedMovies.length),
+    error: null,
+  };
+};
+
+const dedupeIds = (values = []) =>
+  Array.from(new Set((Array.isArray(values) ? values : []).map((value) => Number(value)).filter(Boolean)));
+
+const isValidPickMovie = (movie, excludedIds = new Set()) =>
+  Boolean(movie?.id) && Boolean(String(movie?.title || "").trim()) && !excludedIds.has(Number(movie.id));
+
+const normalizePickPayload = (payload, excludedIds = []) => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const excludedIdSet = new Set(dedupeIds(excludedIds));
+  const uniqueMovieIds = new Set();
+  const rankedCandidates = [payload.primary, ...((Array.isArray(payload.alternates) ? payload.alternates : []))].filter((movie) => {
+    const movieId = Number(movie?.id);
+    if (!isValidPickMovie(movie, excludedIdSet) || uniqueMovieIds.has(movieId)) {
+      return false;
+    }
+
+    uniqueMovieIds.add(movieId);
+    return true;
+  });
+
+  if (!rankedCandidates.length) {
+    return null;
+  }
+
+  return {
+    ...payload,
+    primary: rankedCandidates[0],
+    alternates: rankedCandidates.slice(1),
+  };
+};
+
 function Home({ routeView = "latest", isFeedRoute = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const initialPickSessionRef = useRef(null);
+  const initialFeedStateRef = useRef(null);
 
   if (initialPickSessionRef.current === null) {
     initialPickSessionRef.current = tasteProfileService.loadHomePickSession() || {};
   }
 
+  if (initialFeedStateRef.current === null) {
+    initialFeedStateRef.current = getInitialFeedState(routeView, 1);
+  }
+
   const initialPickSession = initialPickSessionRef.current;
+  const initialFeedState = initialFeedStateRef.current;
 
   const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [movies, setMovies] = useState(() => initialFeedState.movies);
+  const [loading, setLoading] = useState(() => initialFeedState.loading);
+  const [isFeedRefreshing, setIsFeedRefreshing] = useState(() => initialFeedState.refreshing);
+  const [error, setError] = useState(() => initialFeedState.error);
   const [movieType, setMovieType] = useState(routeView);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(() => initialFeedState.totalPages);
   const [selectedMood, setSelectedMood] = useState("all");
   const [showCapabilities, setShowCapabilities] = useState(false);
   const [pickPrompt, setPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [originalPickPrompt, setOriginalPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
-  const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickValidation, setPickValidation] = useState("");
   const [pickResult, setPickResult] = useState(() => initialPickSession.currentPick || null);
@@ -369,11 +444,13 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [lastPickMode, setLastPickMode] = useState(() => (initialPickSession.lastPickMode === "surprise" ? "surprise" : "prompt"));
   const [swapCount, setSwapCount] = useState(() => Number(initialPickSession.swapCount || 0));
   const [hasExpandedSwapPool, setHasExpandedSwapPool] = useState(() => Boolean(initialPickSession.hasExpandedSwapPool));
-  const [pickStatus, setPickStatus] = useState(() => (initialPickSession.currentPick?.primary ? "restoring" : "idle"));
+  const [pickStatus, setPickStatus] = useState(() => (initialPickSession.currentPick?.primary ? PICK_STATUS.RESTORING : PICK_STATUS.IDLE));
   const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
   const [visiblePromptSuggestions, setVisiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
   const restoreStatusTimeoutRef = useRef(null);
+  const pickRequestVersionRef = useRef(0);
+  const restoreVersionRef = useRef(0);
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 560px)").matches;
@@ -397,7 +474,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   }, []);
 
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  const { profile, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
+  const { profile, behavioralMemory, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
+  const isPickLoading = pickStatus === PICK_STATUS.LOADING;
+  const isSwapLoading = pickStatus === PICK_STATUS.LOADING_SWAP;
+  const isPickBusy = isPickLoading || isSwapLoading;
 
   const getStickyOffset = useCallback(() => (window.matchMedia("(max-width: 720px)").matches ? 88 : 112), []);
 
@@ -448,9 +528,16 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
   }, []);
 
-  const cancelRestoreState = useCallback((nextStatus = "idle") => {
+  const cancelRestoreState = useCallback((nextStatus = PICK_STATUS.IDLE) => {
     clearRestoreTimer();
-    setPickStatus((currentStatus) => (currentStatus === "restoring" ? nextStatus : currentStatus));
+    setPickStatus((currentStatus) => {
+      if (currentStatus === PICK_STATUS.RESTORING) {
+        pickRequestVersionRef.current += 1;
+        return nextStatus;
+      }
+
+      return currentStatus;
+    });
   }, [clearRestoreTimer]);
 
   const replaceHomePickSession = useCallback((session) => {
@@ -460,7 +547,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const restoreHomePickSession = () => {
     const storedSession = tasteProfileService.loadHomePickSession();
     if (!storedSession) {
-      setPickStatus("idle");
+      setPickStatus(PICK_STATUS.IDLE);
       return false;
     }
 
@@ -473,7 +560,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     setHasExpandedSwapPool(Boolean(storedSession.hasExpandedSwapPool));
     setPickError(null);
     setPickValidation("");
-    setPickStatus(storedSession.currentPick?.primary ? "restoring" : "idle");
+    setPickLoadingMessageOverride("");
+    restoreVersionRef.current = pickRequestVersionRef.current;
+    setPickStatus(storedSession.currentPick?.primary ? PICK_STATUS.RESTORING : PICK_STATUS.IDLE);
     return Boolean(storedSession.currentPick?.primary);
   };
 
@@ -543,13 +632,23 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   );
 
   useEffect(() => {
-    if (pickStatus !== "restoring") {
+    if (pickStatus !== PICK_STATUS.RESTORING) {
       clearRestoreTimer();
       return undefined;
     }
 
+    const restoreVersion = restoreVersionRef.current;
     restoreStatusTimeoutRef.current = window.setTimeout(() => {
-      setPickStatus((currentStatus) => (currentStatus === "restoring" ? (pickResult?.primary ? "ready" : "idle") : currentStatus));
+      if (restoreVersion !== pickRequestVersionRef.current) {
+        restoreStatusTimeoutRef.current = null;
+        return;
+      }
+
+      setPickStatus((currentStatus) =>
+        currentStatus === PICK_STATUS.RESTORING
+          ? (pickResult?.primary ? PICK_STATUS.READY : PICK_STATUS.IDLE)
+          : currentStatus
+      );
       restoreStatusTimeoutRef.current = null;
     }, RESTORE_STATUS_TIMEOUT_MS);
 
@@ -557,28 +656,55 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   }, [clearRestoreTimer, pickResult, pickStatus]);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    let cancelled = false;
+    const cachedSnapshot = homeFeedService.getCachedFeedSnapshot(movieType, currentPage);
+    const cachedMovies = normalizeFeedMovies(cachedSnapshot?.payload?.results || [], movieType);
+    const hasCachedMovies = cachedMovies.length > 0;
 
-    const fetchFeed = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/movies?type=${movieType}&page=${currentPage}&fill=1`);
-        setMovies(
-          (response.data.results || []).map((movie) => ({
-            ...movie,
-            homepage_feed_source: movie.source_type || movieType,
-          }))
-        );
-        setTotalPages(response.data.total_pages || 1);
-      } catch (requestError) {
+    if (hasCachedMovies) {
+      setMovies(cachedMovies);
+      setTotalPages(Number(cachedSnapshot?.payload?.total_pages || 1));
+      setLoading(false);
+      setIsFeedRefreshing(true);
+      setError(null);
+    } else {
+      setLoading(true);
+      setIsFeedRefreshing(false);
+      setError(null);
+    }
+
+    homeFeedService.requestFeed(movieType, currentPage)
+      .then((payload) => {
+        if (cancelled) {
+          return;
+        }
+
+        setMovies(normalizeFeedMovies(payload.results || [], movieType));
+        setTotalPages(Number(payload.total_pages || 1));
+        setError(null);
+      })
+      .catch((requestError) => {
+        if (cancelled) {
+          return;
+        }
+
         console.error(`Error fetching ${movieType} movies:`, requestError);
-        setError(`Failed to fetch ${movieType} movies.`);
-      } finally {
-        setLoading(false);
-      }
-    };
+        if (!hasCachedMovies) {
+          setError(`Failed to fetch ${movieType} movies.`);
+        }
+      })
+      .finally(() => {
+        if (cancelled) {
+          return;
+        }
 
-    fetchFeed();
+        setLoading(false);
+        setIsFeedRefreshing(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentPage, movieType]);
 
   useEffect(() => {
@@ -609,7 +735,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   }, [movieType]);
 
   useEffect(() => {
-    if (!pickLoading) {
+    if (!isPickBusy) {
       setLoadingMessageIndex(0);
       return undefined;
     }
@@ -619,10 +745,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }, 1400);
 
     return () => window.clearInterval(intervalId);
-  }, [pickLoading]);
+  }, [isPickBusy]);
 
   useEffect(() => {
-    if (pickPrompt.trim() || activePromptSuggestion || pickLoading) {
+    if (pickPrompt.trim() || activePromptSuggestion || isPickBusy) {
       return undefined;
     }
 
@@ -631,7 +757,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }, PROMPT_ROTATION_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [activePromptSuggestion, pickLoading, pickPrompt]);
+  }, [activePromptSuggestion, isPickBusy, pickPrompt]);
 
   useEffect(() => {
     if (!pickResult?.primary) {
@@ -663,14 +789,29 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     [selectedMood]
   );
 
-  const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
-  const visibleMovies = useMemo(() => movies.filter((movie) => !hiddenMovieIds.has(movie.id)), [hiddenMovieIds, movies]);
+  const suppressedMovieIds = useMemo(
+    () => new Set([...(profile.skipped || []).map((item) => item.id), ...(profile.seen || []).map((item) => item.id)].filter(Boolean)),
+    [profile.seen, profile.skipped]
+  );
+  const visibleMovies = useMemo(() => movies.filter((movie) => !suppressedMovieIds.has(movie.id)), [movies, suppressedMovieIds]);
   const curatedMovies = useMemo(() => {
     const qualityFiltered = visibleMovies.filter((movie) => passesFeedQualityCheck(movie, movieType));
     const fallbackPool = qualityFiltered.length >= Math.min(MIN_CURATED_FEED_SIZE, visibleMovies.length) ? qualityFiltered : visibleMovies;
 
-    return [...fallbackPool].sort((leftMovie, rightMovie) => getFeedCurationScore(rightMovie, movieType) - getFeedCurationScore(leftMovie, movieType));
-  }, [movieType, visibleMovies]);
+    return [...fallbackPool].sort((leftMovie, rightMovie) => {
+      const leftBaseScore = getFeedCurationScore(leftMovie, movieType);
+      const rightBaseScore = getFeedCurationScore(rightMovie, movieType);
+
+      if (!hasBehavioralSignals(behavioralMemory)) {
+        return rightBaseScore - leftBaseScore;
+      }
+
+      const leftMemoryScore = scoreMovieForBehavioralMemory(leftMovie, behavioralMemory, { surface: "home" }).score;
+      const rightMemoryScore = scoreMovieForBehavioralMemory(rightMovie, behavioralMemory, { surface: "home" }).score;
+
+      return (rightBaseScore + rightMemoryScore) - (leftBaseScore + leftMemoryScore);
+    });
+  }, [behavioralMemory, movieType, visibleMovies]);
 
   const filteredMovies = useMemo(
     () => curatedMovies.filter((movie) => selectedMoodConfig.predicate(movie)),
@@ -715,7 +856,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     return "What’s currently in theaters.";
   }, [movieType, selectedMood, selectedMoodConfig.label, viewLabel]);
 
+  const hasVisibleFeedContent = displayedMovies.length > 0;
+  const shouldShowFeedSkeletons = loading && !curatedMovies.length;
   const feedCountLabel = selectedMood === "all" ? `${displayedMovies.length} curated titles` : `${displayedMovies.length} curated matches`;
+  const feedCountDisplayLabel = shouldShowFeedSkeletons
+    ? "Loading lineup"
+    : isFeedRefreshing && hasVisibleFeedContent
+      ? `${feedCountLabel} • Updating`
+      : feedCountLabel;
   const heroPreviewLabel = movieType === "upcoming" ? "Coming soon" : movieType === "popular" ? "Trending this week" : "Now playing";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
@@ -740,8 +888,29 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       ),
     [profile.seen, profile.skipped]
   );
-  const hasActivePickSession = Boolean(activePick || swapHistory.length || originalPickPrompt.trim());
-  const showSwapRecoveryMessage = Boolean(activePick && hasExpandedSwapPool);
+  const hasActivePickSession = Boolean(activePick || swapHistory.length);
+  const shouldShowEmptyPickState = pickStatus === PICK_STATUS.IDLE && !activePick && !hasActivePickSession;
+  const shouldShowPickSessionPlaceholder = pickStatus === PICK_STATUS.RESTORING;
+  const shouldShowPickFallbackState = !activePick && (pickStatus === PICK_STATUS.EXHAUSTED || pickStatus === PICK_STATUS.ERROR);
+  const pickFallbackTitle = pickStatus === PICK_STATUS.ERROR ? "Couldn’t get a pick" : "No strong pick yet";
+  const pickFallbackCopy = pickError || PICK_REQUEST_FALLBACK_MESSAGE;
+  const pickRecoveryTitle =
+    pickStatus === PICK_STATUS.LOADING_SWAP
+      ? "Swapping your pick…"
+      : pickStatus === PICK_STATUS.ERROR
+        ? "Keeping your last strong pick"
+        : pickStatus === PICK_STATUS.EXHAUSTED && activePick
+          ? "Want more options?"
+          : "";
+  const pickRecoveryMessage = activePick
+    ? (pickStatus === PICK_STATUS.LOADING_SWAP
+        ? (pickLoadingMessageOverride || SWAP_LOADING_MESSAGE)
+        : pickStatus === PICK_STATUS.ERROR
+          ? (pickError || SWAP_REQUEST_ERROR_MESSAGE)
+          : pickStatus === PICK_STATUS.EXHAUSTED
+            ? SOFT_SWAP_MESSAGE
+            : "")
+    : "";
 
   const homeStructuredData = useMemo(() => {
     if (isFeedRoute) {
@@ -814,64 +983,112 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const pickVibeLabel = useMemo(() => originalPickPrompt.trim() || pickPrompt.trim(), [originalPickPrompt, pickPrompt]);
 
+  const runPickRequest = async (nextPreferences, options = {}, retryCount = 0, retryExcludedIds = []) => {
+    const baseExcludedIds = options.customExcludedIds || getPickExcludedIds(nextPreferences, options.extraExcludedIds || []);
+    const excludedIds = dedupeIds([...(Array.isArray(baseExcludedIds) ? baseExcludedIds : []), ...retryExcludedIds]);
+    const requestPayload = {
+      ...nextPreferences,
+      excluded_ids: excludedIds,
+      behavioral_memory: behavioralMemory,
+      trigger: "user_click",
+    };
+
+    if (options.intentSnapshot || (options.isSwap && pickResult?.resolved_intent)) {
+      requestPayload.intent_snapshot = options.intentSnapshot || pickResult?.resolved_intent;
+    }
+
+    if (!options.disableCandidatePoolReuse && (options.candidatePoolIds || (options.isSwap && pickResult?.candidate_pool_ids))) {
+      requestPayload.candidate_pool_ids = options.candidatePoolIds || pickResult?.candidate_pool_ids;
+    }
+
+    if (options.refreshKey) {
+      requestPayload.refresh_key = options.refreshKey;
+    }
+
+    const response = await axios.post(`${API_BASE_URL}/reelbot/pick`, requestPayload, {
+      headers: {
+        "X-ReelBot-Trigger": "user_click",
+      },
+    });
+
+    const normalizedPayload = normalizePickPayload(response.data, requestPayload.excluded_ids);
+    if (normalizedPayload) {
+      return normalizedPayload;
+    }
+
+    if (retryCount >= 1) {
+      const noValidPickError = new Error("No valid ReelBot pick returned.");
+      noValidPickError.code = PICK_STATUS.EXHAUSTED;
+      throw noValidPickError;
+    }
+
+    const returnedIds = dedupeIds([response.data?.primary?.id, ...((response.data?.alternates || []).map((movie) => movie?.id))]);
+    return runPickRequest(
+      nextPreferences,
+      {
+        ...options,
+        disableCandidatePoolReuse: true,
+        refreshKey: `fallback-${Date.now()}-${retryCount + 1}`,
+      },
+      retryCount + 1,
+      [...retryExcludedIds, ...returnedIds]
+    );
+  };
+
   const requestPick = async (nextPreferences, options = {}) => {
     const previousPick = pickResult;
+    const requestVersion = pickRequestVersionRef.current + 1;
+    pickRequestVersionRef.current = requestVersion;
 
     try {
-      setPickLoading(true);
-      setPickStatus("loading");
+      setPickStatus(options.isSwap ? PICK_STATUS.LOADING_SWAP : PICK_STATUS.LOADING);
       setPickLoadingMessageOverride(options.loadingMessage || "");
       setPickError(null);
       setPickValidation("");
-      tasteActions.savePickPreferences(nextPreferences);
+      tasteActions.savePickPreferences({ ...nextPreferences, log_prompt_submission: !options.isSwap });
 
       if (options.scrollToResults) {
         scrollToPickResults();
       }
 
-      const requestPayload = {
-        ...nextPreferences,
-        excluded_ids: options.customExcludedIds || getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
-        trigger: "user_click",
-      };
-
-      if (options.intentSnapshot || pickResult?.resolved_intent) {
-        requestPayload.intent_snapshot = options.intentSnapshot || pickResult?.resolved_intent;
+      const nextPayload = await runPickRequest(nextPreferences, options);
+      if (requestVersion !== pickRequestVersionRef.current) {
+        return;
       }
 
-      if (!options.disableCandidatePoolReuse && (options.candidatePoolIds || pickResult?.candidate_pool_ids)) {
-        requestPayload.candidate_pool_ids = options.candidatePoolIds || pickResult?.candidate_pool_ids;
-      }
-
-      if (options.refreshKey) {
-        requestPayload.refresh_key = options.refreshKey;
-      }
-
-      const response = await axios.post(`${API_BASE_URL}/reelbot/pick`, requestPayload, {
-        headers: {
-          "X-ReelBot-Trigger": "user_click",
-        },
-      });
-
-      setPickResult(response.data);
-      setPickStatus("ready");
+      setPickResult(nextPayload);
+      setPickStatus(PICK_STATUS.READY);
       if (options.isSwap && previousPick?.primary) {
         setSwapHistory((currentHistory) => [...currentHistory, previousPick].slice(-10));
       } else {
         setSwapHistory([]);
       }
-      tasteActions.recordPickResult(nextPreferences, response.data);
+      tasteActions.recordPickResult(nextPreferences, nextPayload);
 
       if (options.scrollToResults) {
         scrollToPickResults({ skipIfVisible: true });
       }
     } catch (requestError) {
+      if (requestVersion !== pickRequestVersionRef.current) {
+        return;
+      }
+
       console.error("Error fetching ReelBot pick:", requestError);
-      setPickError("ReelBot could not pull a pick right now.");
-      setPickStatus("idle");
+      const nextStatus = requestError?.code === PICK_STATUS.EXHAUSTED ? PICK_STATUS.EXHAUSTED : PICK_STATUS.ERROR;
+
+      if (options.isSwap && previousPick?.primary) {
+        setPickResult(previousPick);
+        setPickStatus(nextStatus);
+        setPickError(nextStatus === PICK_STATUS.EXHAUSTED ? SOFT_SWAP_MESSAGE : SWAP_REQUEST_ERROR_MESSAGE);
+      } else {
+        setPickResult(null);
+        setPickStatus(nextStatus);
+        setPickError(nextStatus === PICK_STATUS.EXHAUSTED ? PICK_REQUEST_FALLBACK_MESSAGE : PICK_REQUEST_ERROR_MESSAGE);
+      }
     } finally {
-      setPickLoading(false);
-      setPickLoadingMessageOverride("");
+      if (requestVersion === pickRequestVersionRef.current) {
+        setPickLoadingMessageOverride("");
+      }
     }
   };
 
@@ -894,12 +1111,12 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       const nextPrompt = String(nextPreferences.prompt || "").trim();
 
       clearRestoreTimer();
-      setPickStatus("loading");
       setOriginalPickPrompt(nextPrompt);
       setPickResult(null);
       setSwapHistory([]);
       setSwapCount(0);
       setHasExpandedSwapPool(false);
+      setPickError(null);
       replaceHomePickSession({
         originalPrompt: nextPrompt,
         currentPick: null,
@@ -914,9 +1131,22 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   const handleRefreshPick = async () => {
-    if (pickLoading || !pickResult?.primary) {
+    if (isPickBusy || !pickResult?.primary) {
       return;
     }
+
+    tasteActions.recordSwapFeedback(
+      pickResult.primary,
+      {
+        view: movieType,
+        mood: "all",
+        runtime: "any",
+        source: lastPickMode === "surprise" ? "library" : "feed",
+        company: "any",
+        prompt: originalPickPrompt || pickPrompt,
+      },
+      { swapCount: swapCount + 1 }
+    );
 
     const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id))].filter(Boolean);
     const nextSwapCount = swapCount + 1;
@@ -940,7 +1170,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   const handlePickSubmit = async () => {
-    cancelRestoreState(activePick ? "ready" : "idle");
+    cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
 
     if (!pickPrompt.trim()) {
       setPickValidation("Enter a vibe or choose Surprise Me.");
@@ -956,7 +1186,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   const handleSurprisePick = async () => {
-    cancelRestoreState("loading");
+    cancelRestoreState(PICK_STATUS.LOADING);
     clearRestoreTimer();
     setPickValidation("");
     setLastPickMode("surprise");
@@ -975,6 +1205,46 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     );
   };
 
+  const handleRetryPick = async () => {
+    cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
+    setPickError(null);
+
+    if (lastPickMode === "surprise" && !originalPickPrompt.trim() && !pickPrompt.trim()) {
+      clearRestoreTimer();
+      setPickValidation("");
+      setLastPickMode("surprise");
+      setOriginalPickPrompt("");
+      setSwapCount(0);
+      setHasExpandedSwapPool(false);
+      await submitPick(
+        {
+          prompt: "",
+          source: "library",
+        },
+        {
+          scrollToResults: true,
+          refreshKey: `surprise-retry-${Date.now()}`,
+        }
+      );
+      return;
+    }
+
+    const nextPrompt = originalPickPrompt.trim() || pickPrompt.trim();
+    if (!nextPrompt) {
+      handleRefinePick();
+      return;
+    }
+
+    setPickPrompt(nextPrompt);
+    clearRestoreTimer();
+    setPickValidation("");
+    setLastPickMode("prompt");
+    setOriginalPickPrompt(nextPrompt);
+    setSwapCount(0);
+    setHasExpandedSwapPool(false);
+    await submitPick({ prompt: nextPrompt }, { scrollToResults: true, refreshKey: `retry-${Date.now()}` });
+  };
+
   const handleEmptyPickCta = () => {
     scrollToSection("pick-for-me", { skipIfVisible: true });
   };
@@ -985,8 +1255,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     event.preventDefault();
-    cancelRestoreState(activePick ? "ready" : "idle");
-    if (!pickLoading) {
+    cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
+    if (!isPickBusy) {
       handlePickSubmit();
     }
   };
@@ -1002,9 +1272,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
     navigate(`/search?q=${encodeURIComponent(nextQuery)}`);
   };
-
-  const shouldShowEmptyPickState = pickStatus === "idle" && !pickLoading && !activePick && !hasActivePickSession;
-  const shouldShowPickSessionPlaceholder = pickStatus === "restoring";
 
   return (
     <div className="browse-page home-page">
@@ -1085,7 +1352,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             activeSuggestion={activePromptSuggestion}
             value={pickPrompt}
             onSuggestionSelect={(value) => {
-              cancelRestoreState(activePick ? "ready" : "idle");
+              cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
               setPickPrompt(value);
               setActivePromptSuggestion(value);
               if (pickValidation) {
@@ -1093,7 +1360,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               }
             }}
             onInputChange={(value) => {
-              cancelRestoreState(activePick ? "ready" : "idle");
+              cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
               setPickPrompt(value);
               if (activePromptSuggestion && value.trim() !== activePromptSuggestion) {
                 setActivePromptSuggestion("");
@@ -1108,11 +1375,11 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           />
 
           <div className="pick-for-me-actions">
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handlePickSubmit} disabled={pickLoading}>
-              {pickLoading && lastPickMode === "prompt" ? "Getting Your Pick…" : "Get a Pick"}
+            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handlePickSubmit} disabled={isPickBusy}>
+              {isPickLoading && lastPickMode === "prompt" ? "Getting Your Pick…" : "Get a Pick"}
             </button>
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleSurprisePick} disabled={pickLoading}>
-              {pickLoading && lastPickMode === "surprise" ? "Surprising You…" : "Surprise Me"}
+            <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleSurprisePick} disabled={isPickBusy}>
+              {isPickLoading && lastPickMode === "surprise" ? "Surprising You…" : "Surprise Me"}
             </button>
           </div>
         </section>
@@ -1126,8 +1393,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           </div>
 
           <PickResultPanel
-            loading={pickLoading}
-            error={pickError}
+            panelStatus={pickStatus}
+            loading={isPickLoading}
+            error={pickStatus === PICK_STATUS.ERROR ? pickError : ""}
             rationale={recommendationRationale}
             summary={null}
             primaryMovie={activePick}
@@ -1137,13 +1405,20 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             emptyCopy="Nothing here yet. Give ReelBot a vibe and we'll line up your next watch."
             emptyActionLabel="Get a Pick"
             onEmptyAction={handleEmptyPickCta}
-            refreshLabel="Swap Pick"
+            fallbackTitle={shouldShowPickFallbackState ? pickFallbackTitle : ""}
+            fallbackCopy={shouldShowPickFallbackState ? pickFallbackCopy : ""}
+            fallbackActionLabel={shouldShowPickFallbackState ? "Try again" : ""}
+            onFallbackAction={shouldShowPickFallbackState ? handleRetryPick : undefined}
+            fallbackSecondaryActionLabel={shouldShowPickFallbackState ? "Browse movies" : ""}
+            fallbackSecondaryActionPath={shouldShowPickFallbackState ? browseLibraryPath : ""}
+            refreshLabel={isSwapLoading ? "Swapping…" : "Swap Pick"}
             backupTitle="Similar picks, different vibes"
             onRefreshChoices={pickResult?.primary ? handleRefreshPick : undefined}
-            refreshDisabled={pickLoading}
-            recoveryMessage={showSwapRecoveryMessage ? SOFT_SWAP_MESSAGE : ""}
-            onRefineVibe={showSwapRecoveryMessage ? handleRefinePick : undefined}
-            browsePath={showSwapRecoveryMessage ? browseLibraryPath : ""}
+            refreshDisabled={isPickBusy}
+            recoveryTitle={pickRecoveryTitle}
+            recoveryMessage={pickRecoveryMessage}
+            onRefineVibe={activePick && pickStatus !== PICK_STATUS.LOADING_SWAP ? handleRefinePick : undefined}
+            browsePath={activePick && pickStatus !== PICK_STATUS.LOADING_SWAP ? browseLibraryPath : ""}
             hasActiveSession={hasActivePickSession}
             showEmptyState={shouldShowEmptyPickState}
             showSessionPlaceholder={shouldShowPickSessionPlaceholder}
@@ -1203,7 +1478,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               <p className="section-subtitle">{sectionSubtitle}</p>
               <div className="feed-showing-label">Showing: {selectedMood === "all" ? viewLabel : selectedMoodConfig.label}</div>
             </div>
-            <div className="results-count">{feedCountLabel}</div>
+            <div className="results-count">{feedCountDisplayLabel}</div>
           </div>
 
           <div className="tabs browse-tabs browse-tabs--secondary">
@@ -1228,18 +1503,33 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               </button>
             ))}
           </div>
-        {loading && (
-          <div className="loading-message">
-            <span className="status-glyph" aria-hidden="true"></span>
-            <span>Loading movies...</span>
-          </div>
-        )}
-        {error && <p className="error-message">{error}</p>}
+        {error && !hasVisibleFeedContent ? <p className="error-message">{error}</p> : null}
 
-        {!loading && !error && (
+        {!error || hasVisibleFeedContent ? (
           <>
             <div className="movie-list home-poster-grid">
-              {displayedMovies.length > 0 ? (
+              {shouldShowFeedSkeletons ? (
+                Array.from({ length: HOMEPAGE_BASE_DISPLAY_COUNT }).map((_, index) => (
+                  <article key={`feed-skeleton-${index}`} className="movie-card home-movie-card home-movie-card--skeleton" aria-hidden="true">
+                    <div className="home-movie-card-link">
+                      <div className="home-movie-card-poster-shell home-feed-skeleton-block home-feed-skeleton-poster">
+                        <span className="home-movie-card-label home-feed-skeleton-line home-feed-skeleton-line--chip"></span>
+                        <span className="home-movie-card-overlay" aria-hidden="true"></span>
+                      </div>
+
+                      <div className="movie-card-content">
+                        <div className="movie-card-meta">
+                          <span className="movie-card-chip home-feed-skeleton-line home-feed-skeleton-line--chip"></span>
+                          <span className="movie-card-chip home-feed-skeleton-line home-feed-skeleton-line--chip"></span>
+                        </div>
+
+                        <div className="home-feed-skeleton-line home-feed-skeleton-line--title"></div>
+                        <div className="home-feed-skeleton-line home-feed-skeleton-line--date"></div>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              ) : displayedMovies.length > 0 ? (
                 displayedMovies.map((movie) => (
                   <article key={movie.id} className="movie-card home-movie-card">
                     <Link to={getMoviePath(movie)} className="home-movie-card-link" aria-label={`Open ${movie.title}`}>
@@ -1294,7 +1584,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               </div>
             ) : null}
           </>
-        )}
+        ) : null}
 
         {totalPages > 1 ? (
           <div className="pagination browse-pagination">

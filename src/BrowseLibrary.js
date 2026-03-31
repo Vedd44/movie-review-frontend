@@ -5,6 +5,7 @@ import "./App.css";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import ReelbotSignatureStrip from "./components/ReelbotSignatureStrip";
+import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { buildRecommendationRationale } from "./recommendationInsights";
 import {
@@ -45,7 +46,7 @@ function BrowseLibrary() {
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickResult, setPickResult] = useState(null);
-  const { profile, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
+  const { profile, behavioralMemory, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
 
   useEffect(() => {
     setGenreLoading(true);
@@ -118,16 +119,30 @@ function BrowseLibrary() {
     [genres, normalizedGenre]
   );
 
-  const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
+  const suppressedMovieIds = useMemo(
+    () => new Set([...(profile.skipped || []).map((item) => item.id), ...(profile.seen || []).map((item) => item.id)].filter(Boolean)),
+    [profile.seen, profile.skipped]
+  );
 
   const filteredMovies = useMemo(
-    () => movies.filter(
-      (movie) =>
-        !hiddenMovieIds.has(movie.id)
-        && selectedMoodConfig.predicate(movie)
-        && passesSignalFloor(movie, { sourceType: normalizedView, allowReleaseSource: true, threshold: 10 })
-    ),
-    [hiddenMovieIds, movies, normalizedView, selectedMoodConfig]
+    () =>
+      movies
+        .filter(
+          (movie) =>
+            !suppressedMovieIds.has(movie.id)
+            && selectedMoodConfig.predicate(movie)
+            && passesSignalFloor(movie, { sourceType: normalizedView, allowReleaseSource: true, threshold: 10 })
+        )
+        .sort((leftMovie, rightMovie) => {
+          if (!hasBehavioralSignals(behavioralMemory)) {
+            return (rightMovie.popularity || 0) - (leftMovie.popularity || 0);
+          }
+
+          const leftScore = scoreMovieForBehavioralMemory(leftMovie, behavioralMemory, { surface: "browse" }).score;
+          const rightScore = scoreMovieForBehavioralMemory(rightMovie, behavioralMemory, { surface: "browse" }).score;
+          return ((rightMovie.popularity || 0) + rightScore) - ((leftMovie.popularity || 0) + leftScore);
+        }),
+    [behavioralMemory, movies, normalizedView, selectedMoodConfig, suppressedMovieIds]
   );
 
   const libraryRationale = useMemo(
@@ -191,17 +206,18 @@ function BrowseLibrary() {
     try {
       setPickLoading(true);
       setPickError(null);
-      tasteActions.savePickPreferences(nextPreferences);
+      tasteActions.savePickPreferences({ ...nextPreferences, log_prompt_submission: !options.isSwap });
 
       const response = await axios.post(
         `${API_BASE_URL}/reelbot/pick`,
         {
           ...nextPreferences,
           excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
+          behavioral_memory: behavioralMemory,
           refresh_key: options.refreshKey,
           trigger: "user_click",
-          intent_snapshot: options.intentSnapshot || pickResult?.resolved_intent,
-          candidate_pool_ids: options.candidatePoolIds || pickResult?.candidate_pool_ids,
+          intent_snapshot: options.intentSnapshot || (options.isSwap ? pickResult?.resolved_intent : undefined),
+          candidate_pool_ids: options.candidatePoolIds || (options.isSwap ? pickResult?.candidate_pool_ids : undefined),
         },
         {
           headers: {
@@ -222,12 +238,24 @@ function BrowseLibrary() {
   };
 
   const handleLibraryPick = async () => {
-    await requestLibraryPick({ refreshKey: `browse-pick-${Date.now()}` });
+    await requestLibraryPick({ refreshKey: `browse-pick-${Date.now()}`, isSwap: false });
   };
 
   const handleRefreshLibraryPick = async () => {
+    if (pickResult?.primary) {
+      tasteActions.recordSwapFeedback(pickResult.primary, {
+        view: normalizedView,
+        mood: normalizedMood,
+        runtime: normalizedRuntime,
+        source: "library",
+        company: "any",
+        prompt: pickPrompt,
+        genre: normalizedGenre,
+      });
+    }
+
     const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id))].filter(Boolean);
-    await requestLibraryPick({ extraExcludedIds: currentDeckIds, refreshKey: `browse-refresh-${Date.now()}` });
+    await requestLibraryPick({ extraExcludedIds: currentDeckIds, refreshKey: `browse-refresh-${Date.now()}`, isSwap: true });
   };
 
   const activeFilterChips = useMemo(

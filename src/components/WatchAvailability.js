@@ -1,5 +1,6 @@
 import React from "react";
 import { buildProviderLink, getProviderCtaLabel } from "../streamingLinks";
+import useTasteProfile from "../hooks/useTasteProfile";
 
 const GROUP_LABELS = {
   subscription: "Included with subscription",
@@ -40,6 +41,7 @@ const getProviderGroups = (availability) => {
 };
 
 function WatchAvailability({ availability, sectionId, movie }) {
+  const { actions } = useTasteProfile();
   const providerGroups = getProviderGroups(availability)
     .map((group) => ({
       ...group,
@@ -77,6 +79,7 @@ function WatchAvailability({ availability, sectionId, movie }) {
               rel="noopener noreferrer sponsored"
               className="detail-text-action watch-now-primary-cta"
               aria-label={getProviderCtaLabel(primaryProvider)}
+              onClick={() => actions.recordProviderClick(movie, primaryProvider, { placement: "watch_now_primary" })}
             >
               {getProviderCtaLabel(primaryProvider)}
               <span className="watch-now-external-glyph" aria-hidden="true">↗</span>
@@ -120,6 +123,7 @@ function WatchAvailability({ availability, sectionId, movie }) {
                       rel="noopener noreferrer sponsored"
                       className="provider-chip provider-chip--cta"
                       aria-label={getProviderCtaLabel(provider)}
+                      onClick={() => actions.recordProviderClick(movie, provider, { placement: group.id })}
                     >
                       {content}
                     </a>

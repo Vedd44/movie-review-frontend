@@ -446,7 +446,10 @@ function MovieDetails() {
     }
 
     tasteActions.addRecentMovie(movie);
-  }, [movie, tasteActions]);
+    tasteActions.recordDetailView(movie, {
+      source: location.state?.source || "detail_page",
+    });
+  }, [location.state?.source, movie, tasteActions]);
 
   useEffect(
     () => () => {
