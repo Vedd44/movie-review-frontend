@@ -29,6 +29,10 @@ const DEFAULT_PROFILE = {
 
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 const canUseSessionStorage = () => typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+const hasPrimaryPick = (pick) => Boolean(pick?.primary?.id);
+const normalizeSessionQueue = (items = []) => (Array.isArray(items) ? items.filter((item) => item?.id) : []);
+const normalizeSessionCandidatePool = (items = []) =>
+  [...new Set((Array.isArray(items) ? items : []).map((value) => Number(value)).filter(Boolean))];
 
 const readStorageJson = (key) => {
   if (!canUseStorage()) {
@@ -227,9 +231,12 @@ const loadHomePickSession = () => {
 
     const normalizedSession = {
       originalPrompt: String(parsedValue.originalPrompt || parsedValue.pickPrompt || "").trim(),
-      currentPick: parsedValue.currentPick || parsedValue.pickResult || null,
+      currentPick: hasPrimaryPick(parsedValue.currentPick || parsedValue.pickResult) ? (parsedValue.currentPick || parsedValue.pickResult) : null,
       swapHistory: Array.isArray(parsedValue.swapHistory) ? parsedValue.swapHistory.filter((entry) => entry?.primary?.id) : [],
+      swapQueue: normalizeSessionQueue(parsedValue.swapQueue || parsedValue.currentPick?.alternates || parsedValue.pickResult?.alternates),
       swapCount: Number(parsedValue.swapCount || (Array.isArray(parsedValue.swapHistory) ? parsedValue.swapHistory.length : 0)),
+      candidatePool: normalizeSessionCandidatePool(parsedValue.candidatePool || parsedValue.candidate_pool_ids),
+      refinementState: parsedValue.refinementState && typeof parsedValue.refinementState === "object" ? parsedValue.refinementState : null,
       lastPickMode: parsedValue.lastPickMode === "surprise" ? "surprise" : "prompt",
       hasExpandedSwapPool: Boolean(parsedValue.hasExpandedSwapPool),
       saved_at: parsedValue.saved_at || null,
@@ -258,9 +265,12 @@ const saveHomePickSession = (session) => {
 
   const normalizedSession = {
     originalPrompt: String(session.originalPrompt || session.pickPrompt || "").trim(),
-    currentPick: session.currentPick || session.pickResult || null,
+    currentPick: hasPrimaryPick(session.currentPick || session.pickResult) ? (session.currentPick || session.pickResult) : null,
     swapHistory: Array.isArray(session.swapHistory) ? session.swapHistory.filter((entry) => entry?.primary?.id) : [],
+    swapQueue: normalizeSessionQueue(session.swapQueue),
     swapCount: Number(session.swapCount || 0),
+    candidatePool: normalizeSessionCandidatePool(session.candidatePool || session.candidate_pool_ids),
+    refinementState: session.refinementState && typeof session.refinementState === "object" ? session.refinementState : null,
     lastPickMode: session.lastPickMode === "surprise" ? "surprise" : "prompt",
     hasExpandedSwapPool: Boolean(session.hasExpandedSwapPool),
   };
@@ -287,40 +297,33 @@ const clearHomePickSession = () => {
   window.localStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
 };
 
+const hasActiveHomePickSession = () => hasPrimaryPick(loadHomePickSession()?.currentPick);
+
 const save = (profile) => persist(migrateProfile(profile));
 
 const rebuildProfile = (profile) => attachBehavioralMemory(migrateProfile(profile));
 
-const removeMovieFromBuckets = (profile, movieId) => ({
-  ...profile,
-  watchlist: (profile.watchlist || []).filter((item) => item.id !== movieId),
-  seen: (profile.seen || []).filter((item) => item.id !== movieId),
-  skipped: (profile.skipped || []).filter((item) => item.id !== movieId),
-});
+const removeMovieFromBucket = (items = [], movieId) => (Array.isArray(items) ? items : []).filter((item) => item.id !== movieId);
 
-const toggleBucket = (profile, bucket, movie) => {
+const applyMovieBucketState = (profile, movie, nextState = {}) => {
   if (!movie?.id) {
     return profile;
   }
 
-  const bucketKey = bucket === "hidden" ? "skipped" : bucket;
-  const currentItems = Array.isArray(profile[bucketKey]) ? profile[bucketKey] : [];
-  const alreadyInBucket = currentItems.some((item) => item.id === movie.id);
-
-  if (alreadyInBucket) {
-    return {
-      ...profile,
-      [bucketKey]: currentItems.filter((item) => item.id !== movie.id),
-    };
-  }
-
-  const nextProfile = removeMovieFromBuckets(profile, movie.id);
-  const nextBucketItems = upsertMovieEntry(nextProfile[bucketKey], movie);
+  const movieId = movie.id;
+  const baseProfile = {
+    ...profile,
+    watchlist: removeMovieFromBucket(profile.watchlist, movieId),
+    seen: removeMovieFromBucket(profile.seen, movieId),
+    skipped: removeMovieFromBucket(profile.skipped, movieId),
+  };
 
   return {
-    ...nextProfile,
-    [bucketKey]: nextBucketItems,
-    recentMovies: bucketKey === "seen" ? upsertMovieEntry(nextProfile.recentMovies, movie, {}, 18) : nextProfile.recentMovies,
+    ...baseProfile,
+    watchlist: nextState.watchlist ? upsertMovieEntry(baseProfile.watchlist, movie) : baseProfile.watchlist,
+    seen: nextState.seen ? upsertMovieEntry(baseProfile.seen, movie) : baseProfile.seen,
+    skipped: nextState.skipped ? upsertMovieEntry(baseProfile.skipped, movie) : baseProfile.skipped,
+    recentMovies: nextState.seen ? upsertMovieEntry(baseProfile.recentMovies, movie, {}, 18) : (baseProfile.recentMovies || []),
   };
 };
 
@@ -350,8 +353,19 @@ const getMovieTasteState = (profile, movieId, vibeLabel = "") => {
 };
 
 const toggleWatchlist = (profile, movie) => {
-  const alreadySaved = (profile.watchlist || []).some((item) => item.id === movie?.id);
-  const nextProfile = toggleBucket(profile, "watchlist", movie);
+  const currentState = getMovieTasteState(profile, movie?.id);
+  const alreadySaved = currentState.inWatchlist;
+  const nextProfile = alreadySaved
+    ? applyMovieBucketState(profile, movie, {
+        watchlist: false,
+        seen: currentState.seen,
+        skipped: false,
+      })
+    : applyMovieBucketState(profile, movie, {
+        watchlist: true,
+        seen: currentState.skipped ? false : currentState.seen,
+        skipped: false,
+      });
 
   if (!alreadySaved && movie?.id) {
     appendInteraction({ type: "save", movie, metadata: { source: "taste_action" } });
@@ -361,8 +375,19 @@ const toggleWatchlist = (profile, movie) => {
 };
 
 const toggleSeen = (profile, movie) => {
-  const alreadySeen = (profile.seen || []).some((item) => item.id === movie?.id);
-  const nextProfile = toggleBucket(profile, "seen", movie);
+  const currentState = getMovieTasteState(profile, movie?.id);
+  const alreadySeen = currentState.seen;
+  const nextProfile = alreadySeen
+    ? applyMovieBucketState(profile, movie, {
+        watchlist: currentState.inWatchlist,
+        seen: false,
+        skipped: false,
+      })
+    : applyMovieBucketState(profile, movie, {
+        watchlist: currentState.inWatchlist,
+        seen: true,
+        skipped: false,
+      });
 
   if (!alreadySeen && movie?.id) {
     appendInteraction({ type: "seen", movie, metadata: { source: "taste_action" } });
@@ -372,8 +397,19 @@ const toggleSeen = (profile, movie) => {
 };
 
 const toggleSkipped = (profile, movie) => {
-  const alreadySkipped = (profile.skipped || []).some((item) => item.id === movie?.id);
-  const nextProfile = toggleBucket(profile, "hidden", movie);
+  const currentState = getMovieTasteState(profile, movie?.id);
+  const alreadySkipped = currentState.skipped;
+  const nextProfile = alreadySkipped
+    ? applyMovieBucketState(profile, movie, {
+        watchlist: false,
+        seen: false,
+        skipped: false,
+      })
+    : applyMovieBucketState(profile, movie, {
+        watchlist: false,
+        seen: false,
+        skipped: true,
+      });
 
   if (!alreadySkipped && movie?.id) {
     appendInteraction({ type: "hidden", movie, metadata: { source: "taste_action" } });
@@ -576,6 +612,8 @@ const buildBehavioralMemoryPayload = (profile) => {
   return safeProfile.behavioralMemory || { ...DEFAULT_TASTE_MEMORY };
 };
 
+const createEmptyProfile = () => attachBehavioralMemory({ ...DEFAULT_PROFILE });
+
 const getRecommendationContextForMovie = (profile, movieId) => {
   if (!movieId) {
     return null;
@@ -600,9 +638,12 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
   const excludedIds = new Set(dedupeStrings(extraIds));
   const safeProfile = rebuildProfile(profile || DEFAULT_PROFILE);
   const signature = buildPickPreferenceSignature(preferences);
+  const isSwapRequest = Boolean(preferences?.is_swap);
 
   (safeProfile.behavioralMemory?.hiddenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
-  (safeProfile.behavioralMemory?.seenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
+  if (!isSwapRequest) {
+    (safeProfile.behavioralMemory?.seenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
+  }
 
   (safeProfile.recentRecommendations || []).slice(0, 24).forEach((movie) => {
     if (movie?.id) {
@@ -647,11 +688,15 @@ const getSavedCounts = (profile) => {
 export const tasteProfileService = {
   STORAGE_KEY,
   INTERACTIONS_STORAGE_KEY,
+  DEFAULT_PROFILE,
   load,
   save,
+  rebuildProfile,
+  createEmptyProfile,
   loadInteractions,
   saveInteractions,
   loadHomePickSession,
+  hasActiveHomePickSession,
   saveHomePickSession,
   clearHomePickSession,
   getMovieTasteState,

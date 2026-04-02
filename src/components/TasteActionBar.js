@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import useTasteProfile from "../hooks/useTasteProfile";
 
 function TasteActionBar({ movie, vibeLabel = "", compact = false, className = "", showVibeAction = true }) {
-  const { actions, getMovieState } = useTasteProfile();
+  const { actions, getMovieState, isCloudSyncing } = useTasteProfile();
+  const { user, openAuthPrompt } = useAuth();
   const [feedback, setFeedback] = useState("");
+  const [pendingAction, setPendingAction] = useState("");
+  const [actionError, setActionError] = useState("");
   const tasteState = getMovieState(movie?.id, vibeLabel);
   const classes = `taste-action-bar${compact ? " taste-action-bar--compact" : ""}${className ? ` ${className}` : ""}`;
 
@@ -15,6 +19,15 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
     const timeoutId = window.setTimeout(() => setFeedback(""), 1800);
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
+
+  useEffect(() => {
+    if (!actionError) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setActionError(""), 2800);
+    return () => window.clearTimeout(timeoutId);
+  }, [actionError]);
 
   const feedbackMap = useMemo(
     () => ({
@@ -30,9 +43,28 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
     return null;
   }
 
-  const handleAction = (actionKey, handler) => {
-    handler();
-    setFeedback(feedbackMap[actionKey] || "Saved");
+  const isBusy = Boolean(pendingAction);
+
+  const handleAction = async (actionKey, handler) => {
+    if (isBusy) {
+      return;
+    }
+
+    setPendingAction(actionKey);
+    setActionError("");
+
+    try {
+      await handler();
+      setFeedback(feedbackMap[actionKey] || "Saved");
+      if (!user && actionKey === "watchlist") {
+        openAuthPrompt("save_movie");
+      }
+    } catch (error) {
+      console.error("Error updating ReelBot taste state:", error);
+      setActionError("Could not save that change. Try again.");
+    } finally {
+      setPendingAction("");
+    }
   };
 
   return (
@@ -41,32 +73,42 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
         type="button"
         className={`taste-action-button${tasteState.inWatchlist ? " is-active" : ""}`}
         onClick={() => handleAction("watchlist", () => actions.toggleWatchlist(movie))}
+        disabled={isBusy}
+        aria-pressed={tasteState.inWatchlist}
       >
-        {tasteState.inWatchlist ? "Saved" : "Save"}
+        {pendingAction === "watchlist" ? "Saving..." : tasteState.inWatchlist ? "Saved" : "Save"}
       </button>
       <button
         type="button"
         className={`taste-action-button${tasteState.seen ? " is-active" : ""}`}
         onClick={() => handleAction("seen", () => actions.toggleSeen(movie))}
+        disabled={isBusy}
+        aria-pressed={tasteState.seen}
       >
-        {tasteState.seen ? "Seen" : "Seen"}
+        {pendingAction === "seen" ? "Updating..." : "Seen"}
       </button>
       <button
         type="button"
         className={`taste-action-button${tasteState.skipped ? " is-active" : ""}`}
         onClick={() => handleAction("hidden", () => actions.toggleSkipped(movie))}
+        disabled={isBusy}
+        aria-pressed={tasteState.skipped}
       >
-        {tasteState.skipped ? "Skipped" : "Skip"}
+        {pendingAction === "hidden" ? "Updating..." : tasteState.skipped ? "Skipped" : "Skip"}
       </button>
       {showVibeAction && vibeLabel ? (
         <button
           type="button"
           className={`taste-action-button${tasteState.likedVibe ? " is-active" : ""}`}
           onClick={() => handleAction("vibe", () => actions.toggleLikedVibe(movie, vibeLabel))}
+          disabled={isBusy}
+          aria-pressed={tasteState.likedVibe}
         >
-          {tasteState.likedVibe ? "Vibe Saved" : "Like this Vibe"}
+          {pendingAction === "vibe" ? "Saving..." : tasteState.likedVibe ? "Vibe Saved" : "Like this Vibe"}
         </button>
       ) : null}
+      {pendingAction && user && isCloudSyncing ? <span className="taste-action-feedback">Saving your changes...</span> : null}
+      {actionError ? <span className="taste-action-feedback taste-action-feedback--error">{actionError}</span> : null}
       {feedback ? <span className="taste-action-feedback">{feedback}</span> : null}
     </div>
   );

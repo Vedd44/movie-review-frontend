@@ -405,7 +405,7 @@ function MovieDetails() {
   const [spoilerModeEnabled, setSpoilerModeEnabled] = useState(false);
   const [showFloatingReelbotCta, setShowFloatingReelbotCta] = useState(false);
   const [floatingReelbotPulse, setFloatingReelbotPulse] = useState(false);
-  const { profile, actions: tasteActions, getRecommendationContextForMovie } = useTasteProfile();
+  const { profile, behavioralMemory, actions: tasteActions, getRecommendationContextForMovie } = useTasteProfile();
 
   useEffect(() => {
     const fetchMovieDetails = async () => {
@@ -445,10 +445,10 @@ function MovieDetails() {
       return;
     }
 
-    tasteActions.addRecentMovie(movie);
-    tasteActions.recordDetailView(movie, {
+    void tasteActions.addRecentMovie(movie).catch(() => {});
+    void tasteActions.recordDetailView(movie, {
       source: location.state?.source || "detail_page",
-    });
+    }).catch(() => {});
   }, [location.state?.source, movie, tasteActions]);
 
   useEffect(
@@ -561,9 +561,13 @@ function MovieDetails() {
     return storedContext;
   }, [getRecommendationContextForMovie, location.state?.source, movie?.id]);
   const homePickSession = tasteProfileService.loadHomePickSession();
-  const hasBackToPick = Boolean(homePickSession?.pickResult?.primary || recommendationContext?.source === "reelbot_pick" || location.state?.source === "reelbot_pick");
+  const hasBackToPick = Boolean(homePickSession?.currentPick?.primary || recommendationContext?.source === "reelbot_pick" || location.state?.source === "reelbot_pick");
   const detailVerdict = useMemo(() => buildDetailVerdict({ movie, recommendationContext }), [movie, recommendationContext]);
   const hiddenMovieIds = useMemo(() => new Set((profile.skipped || []).map((item) => item.id)), [profile]);
+  const tasteState = useMemo(
+    () => tasteProfileService.getMovieTasteState(profile, movie?.id),
+    [movie?.id, profile]
+  );
   const similarMovies = useMemo(() => (movie?.similar || []).filter((similarMovie) => !hiddenMovieIds.has(similarMovie.id)), [hiddenMovieIds, movie]);
   const nextWatchReasonLabels = previewMode
     ? ["Watch-now pick", "Broader pick", "Wildcard"]
@@ -738,8 +742,9 @@ function MovieDetails() {
       use_case: actionId,
       user_prompt: recommendationContext?.prompt || "",
       intent_snapshot: recommendationContext?.intent || undefined,
+      behavioral_memory: behavioralMemory,
     };
-  }, [id, previewMode, recommendationContext, spoilerActionSet]);
+  }, [behavioralMemory, id, previewMode, recommendationContext, spoilerActionSet]);
 
   const handleReelbotAction = useCallback(async (actionId, options = {}) => {
     const action = actionConfigs[actionId];
@@ -926,6 +931,16 @@ function MovieDetails() {
               </div>
               <div className="detail-hero-tracking-actions">
                 <TasteActionBar movie={movie} compact className="detail-taste-actions" showVibeAction={false} />
+                {tasteState.skipped ? (
+                  <p className="detail-taste-state-note">Skipped for future picks.</p>
+                ) : tasteState.inWatchlist || tasteState.seen ? (
+                  <p className="detail-taste-state-note">
+                    {[
+                      tasteState.inWatchlist ? "Saved" : null,
+                      tasteState.seen ? "Seen" : null,
+                    ].filter(Boolean).join(" • ")}
+                  </p>
+                ) : null}
               </div>
             </div>
 

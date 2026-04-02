@@ -6,11 +6,17 @@ import SearchResults from "./SearchResults";
 import BrowseLibrary from "./BrowseLibrary";
 import MyMovies from "./MyMovies";
 import HowReelbotWorks from "./HowReelbotWorks";
+import AccountSettings from "./AccountSettings";
+import AuthModal from "./components/AuthModal";
+import ProfileMenu from "./components/ProfileMenu";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath } from "./discovery";
 import { homeFeedService } from "./services/homeFeedService";
+import { tasteProfileService } from "./services/tasteProfileService";
 import "./App.css";
 
-const SITE_VERSION = "v0.4";
+const SITE_VERSION = "v0.5";
+const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 
 if (typeof window !== "undefined") {
   homeFeedService.prefetchHomeFeed("latest", 1).catch((error) => {
@@ -70,7 +76,9 @@ function LegacyFeedRedirect() {
 
 function SiteHeader({ hasHeaderSearch }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, openAuthPrompt } = useAuth();
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -91,11 +99,28 @@ function SiteHeader({ hasHeaderSearch }) {
       </NavLink>
     ));
 
+  const handleBrandClick = (event) => {
+    event.preventDefault();
+    const hasActivePickSession = tasteProfileService.hasActiveHomePickSession();
+
+    if (hasActivePickSession) {
+      navigate("/#your-pick", {
+        state: {
+          restorePickSession: true,
+          scrollToPickResult: true,
+        },
+      });
+      return;
+    }
+
+    navigate("/");
+  };
+
   return (
     <header className={`site-header${hasHeaderSearch ? " has-search" : ""}`}>
       <div className="site-header-inner">
         <div className="site-header-left">
-          <NavLink to="/" className="site-brand">
+          <NavLink to="/" className="site-brand" onClick={handleBrandClick}>
             <span className="site-brand-mark" aria-hidden="true">
               <span className="site-brand-ring"></span>
               <span className="site-brand-play"></span>
@@ -116,7 +141,17 @@ function SiteHeader({ hasHeaderSearch }) {
         </div>
 
         <div className="site-header-right">
+          {!user ? (
+            <button
+              type="button"
+              className="reelbot-inline-button site-auth-trigger"
+              onClick={() => openAuthPrompt("nav")}
+            >
+              {hasHeaderSearch ? "Save picks" : "Save your picks"}
+            </button>
+          ) : null}
           <HeaderSearch />
+          {user ? <ProfileMenu /> : null}
           <button
             type="button"
             className={`site-menu-toggle${mobileMenuOpen ? " is-open" : ""}`}
@@ -143,30 +178,80 @@ function SiteHeader({ hasHeaderSearch }) {
 }
 
 function SiteFooter() {
+  const footerLinks = [
+    { label: "Now Playing", to: "/now-playing" },
+    { label: "Coming Soon", to: "/coming-soon" },
+    { label: "Browse Library", to: "/browse" },
+    { label: "How ReelBot Works", to: "/how-reelbot-works", secondary: true },
+    { label: "My Movies", to: "/my-movies" },
+  ];
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
         <div className="site-footer-brand">
           <div className="site-footer-title">ReelBot</div>
-          <p className="site-footer-copy">Powered by TMDB &amp; OpenAI for faster picks, clearer reads, and better next-watch decisions.</p>
-          <p className="site-footer-microcopy">ReelBot helps you find what to watch faster.</p>
+          <p className="site-footer-copy">Find something worth watching. Faster.</p>
+          <p className="site-footer-microcopy">Picks, quick reads, and smarter next-watch decisions.</p>
         </div>
 
         <div className="site-footer-meta">
-          <p className="site-footer-credit">
-            A passion project by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a>, built with <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a>.
-          </p>
           <div className="site-footer-links" aria-label="Footer">
-            <NavLink to="/now-playing">Now Playing</NavLink>
-            <NavLink to="/coming-soon">Coming Soon</NavLink>
-            <NavLink to="/browse">Browse Library</NavLink>
-            <NavLink to="/how-reelbot-works">How ReelBot Works</NavLink>
-            <NavLink to="/my-movies">My Movies</NavLink>
+            {footerLinks.map((link) => (
+              <NavLink
+                key={link.label}
+                to={link.to}
+                className={link.secondary ? "site-footer-link site-footer-link--secondary" : "site-footer-link"}
+              >
+                {link.label}
+              </NavLink>
+            ))}
           </div>
-          <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
+          <p className="site-footer-sync-note">
+            Your picks help ReelBot get better over time.
+            <br />
+            Save them to keep everything in sync across devices.
+          </p>
+          <div className="site-footer-meta-row">
+            <p className="site-footer-credit">
+              Built by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a> using <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a>
+            </p>
+            <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
+          </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+function CookieNotice() {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+
+    return window.localStorage.getItem(COOKIE_NOTICE_KEY) === "true";
+  });
+
+  const handleDismiss = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(COOKIE_NOTICE_KEY, "true");
+    }
+
+    setDismissed(true);
+  };
+
+  if (dismissed) {
+    return null;
+  }
+
+  return (
+    <div className="cookie-notice" role="status" aria-live="polite">
+      <p className="cookie-notice-copy">ReelBot uses cookies to improve performance and understand usage.</p>
+      <button type="button" className="reelbot-inline-button cookie-notice-button" onClick={handleDismiss}>
+        OK
+      </button>
+    </div>
   );
 }
 
@@ -185,6 +270,7 @@ function AppShell() {
           <Route path="/coming-soon" element={<Home routeView="upcoming" isFeedRoute />} />
           <Route path="/browse" element={<BrowseLibrary />} />
           <Route path="/my-movies" element={<MyMovies />} />
+          <Route path="/account" element={<AccountSettings />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
           <Route path="/movie/:id" element={<MovieDetails />} />
@@ -194,6 +280,8 @@ function AppShell() {
         </Routes>
       </main>
       <SiteFooter />
+      <CookieNotice />
+      <AuthModal />
     </div>
   );
 }
@@ -212,9 +300,11 @@ function QueryRedirectGuard() {
 
 function App() {
   return (
-    <Router>
-      <QueryRedirectGuard />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <QueryRedirectGuard />
+      </Router>
+    </AuthProvider>
   );
 }
 

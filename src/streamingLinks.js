@@ -213,7 +213,33 @@ export const getProviderBadgeList = (availability, limit = 2) => getPrimaryProvi
 
 export const getProviderActionLabel = (provider) => PROVIDER_ACTION_LABELS[provider?.access_type] || "Watch";
 
-export const getProviderCtaLabel = (provider) => `Open on ${provider?.name || "provider"}`;
+export const getProviderCtaLabel = (providerLink = {}) => {
+  const providerName = providerLink?.provider?.name || providerLink?.name || "provider";
+
+  switch (providerLink?.kind) {
+    case "direct_provider":
+      return `${getProviderActionLabel(providerLink.provider || providerLink)} on ${providerName}`;
+    case "provider_search":
+      return `Search on ${providerName}`;
+    case "tmdb_availability":
+      return "View availability on TMDB";
+    default:
+      return `Open on ${providerName}`;
+  }
+};
+
+export const getProviderSupportLabel = (providerLink = {}) => {
+  switch (providerLink?.kind) {
+    case "direct_provider":
+      return "Direct title link";
+    case "provider_search":
+      return "Search results";
+    case "tmdb_availability":
+      return "TMDB availability";
+    default:
+      return "";
+  }
+};
 
 export const getStreamingLink = (movie, provider, region = "US", availabilityLink = "") => {
   const providerKey = getProviderKey(provider);
@@ -243,4 +269,37 @@ export const getStreamingLink = (movie, provider, region = "US", availabilityLin
   return providerConfig.fallbackToAvailability !== false ? fallbackLink : null;
 };
 
-export const buildProviderLink = ({ movie, provider, region, availabilityLink }) => getStreamingLink(movie, provider, region, availabilityLink);
+export const buildProviderLink = ({ movie, provider, region, availabilityLink }) => {
+  const directLink = String(provider?.direct_link || provider?.deep_link || "").trim();
+
+  if (directLink) {
+    return {
+      kind: "direct_provider",
+      href: directLink,
+      provider,
+      label: getProviderCtaLabel({ kind: "direct_provider", provider }),
+    };
+  }
+
+  const providerSearchHref = getStreamingLink(movie, provider, region, "");
+  if (providerSearchHref) {
+    return {
+      kind: "provider_search",
+      href: providerSearchHref,
+      provider,
+      label: getProviderCtaLabel({ kind: "provider_search", provider }),
+    };
+  }
+
+  const fallbackLink = String(availabilityLink || "").trim();
+  if (fallbackLink) {
+    return {
+      kind: "tmdb_availability",
+      href: fallbackLink,
+      provider,
+      label: getProviderCtaLabel({ kind: "tmdb_availability", provider }),
+    };
+  }
+
+  return null;
+};

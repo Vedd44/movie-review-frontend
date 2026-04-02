@@ -380,6 +380,10 @@ const getBackupShortLine = (movie, index = 0) => {
     return "A different angle that still fits the mood.";
   }
 
+  if (role.includes("stretch")) {
+    return "A slightly bolder reach that still stays in the lane.";
+  }
+
   if (role.includes("action")) {
     return "Leans punchier if you want more movement.";
   }
@@ -399,6 +403,7 @@ export const getBackupCardMeta = (movie, index = 0) => {
   if (role.includes("lighter")) tags.push("Lighter");
   if (role.includes("darker")) tags.push("Darker tone");
   if (role.includes("wildcard")) tags.push("Different angle");
+  if (role.includes("stretch")) tags.push("Stretch");
   if (role.includes("action")) tags.push("More action");
   if (role.includes("demanding")) tags.push("More demanding");
 

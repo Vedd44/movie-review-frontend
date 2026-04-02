@@ -6,8 +6,10 @@ import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import ReelbotSignatureStrip from "./components/ReelbotSignatureStrip";
 import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
+import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { buildRecommendationRationale } from "./recommendationInsights";
+import { buildSwapQueueFromPayload, dedupeIds, mergeSwapQueue, normalizePickPayload, promoteQueuedPick } from "./reelbotSession";
 import {
   API_BASE_URL,
   DISCOVERY_PROMPTS,
@@ -24,6 +26,13 @@ import { passesSignalFloor } from "./movieSignals";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 
 const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
+const LIBRARY_REFINE_ACTIONS = [
+  { id: "lighter", label: "Lighter", loadingMessage: "Looking for something a little lighter…" },
+  { id: "darker", label: "Darker", loadingMessage: "Taking this in a darker direction…" },
+  { id: "shorter", label: "Shorter", loadingMessage: "Tightening the runtime a bit…" },
+  { id: "more_like_this", label: "More like this", loadingMessage: "Staying close to this pick…" },
+  { id: "different_angle", label: "Different angle", loadingMessage: "Trying a nearby angle…" },
+];
 
 function BrowseLibrary() {
   const location = useLocation();
@@ -46,7 +55,11 @@ function BrowseLibrary() {
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickResult, setPickResult] = useState(null);
+  const [swapQueue, setSwapQueue] = useState([]);
+  const [candidatePoolIds, setCandidatePoolIds] = useState([]);
+  const [, setRefinementState] = useState(null);
   const { profile, behavioralMemory, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
+  const { user, maybePromptToSavePicks } = useAuth();
 
   useEffect(() => {
     setGenreLoading(true);
@@ -107,6 +120,9 @@ function BrowseLibrary() {
   useEffect(() => {
     setPickError(null);
     setPickResult(null);
+    setSwapQueue([]);
+    setCandidatePoolIds([]);
+    setRefinementState(null);
   }, [normalizedGenre, normalizedMood, normalizedRuntime, normalizedView, pickPrompt]);
 
   const selectedMoodConfig = useMemo(
@@ -150,6 +166,7 @@ function BrowseLibrary() {
     [pickResult, profile]
   );
   const libraryVibeLabel = useMemo(() => pickPrompt.trim() || selectedMoodConfig.label, [pickPrompt, selectedMoodConfig.label]);
+  const queuedSwapIds = useMemo(() => swapQueue.map((movie) => movie?.id).filter(Boolean), [swapQueue]);
 
   const updateFilters = (updates) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -204,9 +221,13 @@ function BrowseLibrary() {
     };
 
     try {
-      setPickLoading(true);
+      if (!options.backgroundRefill) {
+        setPickLoading(true);
+      }
       setPickError(null);
-      tasteActions.savePickPreferences({ ...nextPreferences, log_prompt_submission: !options.isSwap });
+      if (!options.backgroundRefill) {
+        void tasteActions.savePickPreferences({ ...nextPreferences, log_prompt_submission: !options.isSwap }).catch(() => {});
+      }
 
       const response = await axios.post(
         `${API_BASE_URL}/reelbot/pick`,
@@ -216,8 +237,10 @@ function BrowseLibrary() {
           behavioral_memory: behavioralMemory,
           refresh_key: options.refreshKey,
           trigger: "user_click",
-          intent_snapshot: options.intentSnapshot || (options.isSwap ? pickResult?.resolved_intent : undefined),
-          candidate_pool_ids: options.candidatePoolIds || (options.isSwap ? pickResult?.candidate_pool_ids : undefined),
+          is_swap: Boolean(options.isSwap),
+          refinement: options.refinement,
+          intent_snapshot: options.intentSnapshot || ((options.isSwap || options.isRefinement) ? pickResult?.resolved_intent : undefined),
+          candidate_pool_ids: options.candidatePoolIds || ((options.isSwap || options.isRefinement) ? candidatePoolIds : undefined),
         },
         {
           headers: {
@@ -226,14 +249,51 @@ function BrowseLibrary() {
         }
       );
 
-      setPickResult(response.data);
-      tasteActions.recordPickResult(nextPreferences, response.data);
-      document.getElementById("library-reelbot-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const normalizedPayload = normalizePickPayload(response.data, options.extraExcludedIds || []);
+      if (!normalizedPayload) {
+        throw new Error("No valid ReelBot pick returned.");
+      }
+
+      if (options.backgroundRefill) {
+        const incomingQueue = [normalizedPayload.primary, ...((Array.isArray(normalizedPayload.alternates) ? normalizedPayload.alternates : []))];
+        setCandidatePoolIds((currentIds) => (Array.isArray(normalizedPayload.candidate_pool_ids) && normalizedPayload.candidate_pool_ids.length ? normalizedPayload.candidate_pool_ids : currentIds));
+        setSwapQueue((currentQueue) => {
+          const mergedQueue = mergeSwapQueue(currentQueue, incomingQueue, dedupeIds([
+            pickResult?.primary?.id,
+            ...(options.extraExcludedIds || []),
+            ...currentQueue.map((movie) => movie?.id),
+          ]));
+          setPickResult((currentPickResult) => currentPickResult
+            ? {
+                ...currentPickResult,
+                alternates: mergedQueue.slice(0, 3),
+                candidate_pool_ids: Array.isArray(normalizedPayload.candidate_pool_ids) && normalizedPayload.candidate_pool_ids.length
+                  ? normalizedPayload.candidate_pool_ids
+                  : currentPickResult.candidate_pool_ids,
+              }
+            : currentPickResult);
+          return mergedQueue;
+        });
+      } else {
+        setPickResult(normalizedPayload);
+        setSwapQueue(buildSwapQueueFromPayload(normalizedPayload));
+        setCandidatePoolIds(Array.isArray(normalizedPayload.candidate_pool_ids) ? normalizedPayload.candidate_pool_ids : []);
+        setRefinementState(normalizedPayload.resolved_refinement || options.refinement || null);
+        void tasteActions.recordPickResult(nextPreferences, normalizedPayload).catch(() => {});
+        if (!user && !options.isSwap && !options.isRefinement) {
+          maybePromptToSavePicks("after_pick");
+        }
+        document.getElementById("library-reelbot-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     } catch (requestError) {
       console.error("Error fetching library ReelBot pick:", requestError);
-      setPickError("ReelBot could not narrow the library right now.");
+      if (!options.backgroundRefill) {
+        setPickError("ReelBot could not narrow the library right now.");
+      }
     } finally {
-      setPickLoading(false);
+      if (!options.backgroundRefill) {
+        setPickLoading(false);
+      }
     }
   };
 
@@ -242,20 +302,67 @@ function BrowseLibrary() {
   };
 
   const handleRefreshLibraryPick = async () => {
+    const swapPreferences = {
+      view: normalizedView,
+      mood: normalizedMood,
+      runtime: normalizedRuntime,
+      source: "library",
+      company: "any",
+      prompt: pickPrompt,
+      genre: normalizedGenre,
+    };
+
     if (pickResult?.primary) {
-      tasteActions.recordSwapFeedback(pickResult.primary, {
-        view: normalizedView,
-        mood: normalizedMood,
-        runtime: normalizedRuntime,
-        source: "library",
-        company: "any",
-        prompt: pickPrompt,
-        genre: normalizedGenre,
-      });
+      void tasteActions.recordSwapFeedback(pickResult.primary, swapPreferences).catch(() => {});
     }
 
-    const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id))].filter(Boolean);
+    const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id)), ...queuedSwapIds].filter(Boolean);
+
+    if (swapQueue.length) {
+      const [nextPrimary, ...remainingQueue] = swapQueue;
+      const promotedPayload = promoteQueuedPick(pickResult, nextPrimary, remainingQueue);
+      setPickResult(promotedPayload);
+      setSwapQueue(remainingQueue);
+      setPickLoading(true);
+      setPickError(null);
+      void tasteActions.recordPickResult(swapPreferences, promotedPayload).catch(() => {});
+
+      requestLibraryPick({
+        extraExcludedIds: currentDeckIds,
+        refreshKey: `browse-refill-${Date.now()}`,
+        isSwap: true,
+        candidatePoolIds,
+        backgroundRefill: true,
+      })
+        .catch(() => {})
+        .finally(() => {
+          setPickLoading(false);
+        });
+      return;
+    }
+
     await requestLibraryPick({ extraExcludedIds: currentDeckIds, refreshKey: `browse-refresh-${Date.now()}`, isSwap: true });
+  };
+
+  const handleRefineLibraryPick = async (action) => {
+    if (!pickResult?.primary || !action?.id || pickLoading) {
+      return;
+    }
+
+    await requestLibraryPick({
+      isSwap: true,
+      isRefinement: true,
+      extraExcludedIds: [pickResult.primary.id],
+      refreshKey: `browse-refine-${action.id}-${Date.now()}`,
+      refinement: {
+        id: action.id,
+        label: action.label,
+        source_movie_id: pickResult.primary.id,
+        source_movie_title: pickResult.primary.title,
+      },
+      intentSnapshot: pickResult?.resolved_intent,
+      candidatePoolIds,
+    });
   };
 
   const activeFilterChips = useMemo(
@@ -451,9 +558,12 @@ function BrowseLibrary() {
                 vibeLabel={libraryVibeLabel}
                 loadingCopy="Ranking the best match from your filtered library..."
                 emptyCopy="Let ReelBot choose from these filters, or add a vibe to steer the pick."
-                refreshLabel="Swap Pick"
+                refreshLabel={pickLoading ? "Swapping…" : "Swap Pick"}
                 backupTitle="Similar picks, different vibes"
                 onRefreshChoices={pickResult?.primary ? handleRefreshLibraryPick : undefined}
+                refineActions={pickResult?.primary ? LIBRARY_REFINE_ACTIONS : []}
+                onRefineAction={pickResult?.primary ? handleRefineLibraryPick : undefined}
+                refineStatusLabel={pickResult?.primary && pickLoading ? "ReelBot is adjusting this pick…" : ""}
                 refreshDisabled={pickLoading}
               />
             </div>

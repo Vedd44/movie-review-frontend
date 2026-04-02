@@ -34,11 +34,14 @@ function PickResultPanel({
   recoveryTitle = "",
   recoveryMessage = "",
   onRefineVibe,
+  refineActions = [],
+  onRefineAction,
   browsePath = "",
   hasActiveSession = false,
   showEmptyState = true,
   showSessionPlaceholder = false,
   showExpandedReasoning = false,
+  refineStatusLabel = "",
 }) {
   const providerMap = useWatchProviderBadges(
     useMemo(() => [primaryMovie?.id, ...backupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, backupMovies])
@@ -49,6 +52,7 @@ function PickResultPanel({
   const shouldShowStandaloneLoading = loading && !hasPrimaryMovie;
   const shouldShowFallbackState = !hasPrimaryMovie && (panelStatus === "exhausted" || panelStatus === "error");
   const shouldShowInlineRecovery = hasPrimaryMovie && Boolean(recoveryTitle || recoveryMessage || onRefineVibe || browsePath);
+  const availableRefineActions = Array.isArray(refineActions) ? refineActions.filter((action) => action?.id && action?.label) : [];
 
   return (
     <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
@@ -117,6 +121,25 @@ function PickResultPanel({
                     <TasteActionBar movie={primaryMovie} vibeLabel={vibeLabel} compact className="pick-taste-actions" showVibeAction={false} />
                   </div>
                   {rationale?.tasteCue ? <p className="pick-taste-cue detail-secondary-text">{rationale.tasteCue}</p> : null}
+                  {availableRefineActions.length && onRefineAction ? (
+                    <div className="pick-refine-panel">
+                      <div className="pick-refine-label">Refine this pick</div>
+                      <div className="pick-refine-grid">
+                        {availableRefineActions.map((action) => (
+                          <button
+                            key={action.id}
+                            type="button"
+                            className="reelbot-inline-button pick-refine-button"
+                            onClick={() => onRefineAction(action)}
+                            disabled={refreshDisabled}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                      {refineStatusLabel ? <p className="pick-refine-status detail-secondary-text">{refineStatusLabel}</p> : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -1,7 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./App.css";
 import TasteActionBar from "./components/TasteActionBar";
+import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
@@ -59,13 +60,32 @@ const getSavedMetaLabel = (tabId, movie) => {
   }
 };
 
+const normalizeSavedMovie = (movie = {}) => ({
+  id: Number(movie?.id || 0) || null,
+  title: String(movie?.title || "").trim() || "Saved movie",
+  poster_path: movie?.poster_path || null,
+  release_date: movie?.release_date || "",
+  vote_average: Number(movie?.vote_average || 0) || 0,
+  overview: movie?.overview || "",
+  saved_at: movie?.saved_at || null,
+});
+
 function MyMovies() {
+  const autoPromptedRef = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { profile, getSavedMoviesForBucket, savedCounts } = useTasteProfile();
+  const { user, openAuthPrompt } = useAuth();
+  const { profile, getSavedMoviesForBucket, savedCounts, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
   const activeTab = TAB_CONFIG.some((tab) => tab.id === searchParams.get("tab")) ? searchParams.get("tab") : "watchlist";
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) || TAB_CONFIG[0];
 
-  const savedMovies = useMemo(() => getSavedMoviesForBucket(activeTab), [activeTab, getSavedMoviesForBucket]);
+  const savedMovies = useMemo(
+    () => getSavedMoviesForBucket(activeTab).map((movie) => normalizeSavedMovie(movie)).filter((movie) => movie.id),
+    [activeTab, getSavedMoviesForBucket]
+  );
+  const totalSavedMovies = useMemo(
+    () => savedCounts.watchlist + savedCounts.seen + savedCounts.hidden + savedCounts.recent,
+    [savedCounts.hidden, savedCounts.recent, savedCounts.seen, savedCounts.watchlist]
+  );
 
   const tasteSummary = useMemo(() => {
     const allMovies = [
@@ -102,7 +122,7 @@ function MyMovies() {
 
   usePageMetadata({
     title: "My Movies | ReelBot",
-    description: "Your saved ReelBot picks, seen titles, and hidden movies in this browser.",
+    description: user ? "Your saved ReelBot picks, seen titles, hidden movies, and recent activity." : "Your saved ReelBot picks, seen titles, and hidden movies in this browser.",
     path: "/my-movies",
     robots: "noindex,follow",
     structuredData: [
@@ -113,6 +133,19 @@ function MyMovies() {
     ],
   });
 
+  useEffect(() => {
+    if (user || totalSavedMovies > 0 || autoPromptedRef.current) {
+      return;
+    }
+
+    autoPromptedRef.current = true;
+    const timeoutId = window.setTimeout(() => {
+      openAuthPrompt("my_movies_empty");
+    }, 220);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [openAuthPrompt, totalSavedMovies, user]);
+
   return (
     <div className="browse-page my-movies-page">
       <div className="container browse-shell">
@@ -121,8 +154,11 @@ function MyMovies() {
             <div className="browse-kicker">My Movies</div>
             <h1 className="browse-title">Your ReelBot memory</h1>
             <p className="browse-subtitle browse-subtitle--hero">
-              Save movies for later, mark what you have seen, and hide what you do not want ReelBot to surface again.
+              {user
+                ? "Your saved, seen, hidden, and recent movie memory lives with your ReelBot account."
+                : "Save movies for later, mark what you have seen, and hide what you do not want ReelBot to surface again."}
             </p>
+            {user ? <p className="my-movies-synced-note">Your picks are saved and synced across devices.</p> : null}
           </div>
         </section>
 
@@ -150,11 +186,14 @@ function MyMovies() {
               <p className="section-subtitle">Save = keep for later. Seen = remove from future picks. Hidden = don’t show again.</p>
             </div>
             <div className="saved-movies-count-row">
+              <span className="results-count results-count--context">{isUsingCloudProfile ? "Synced to your account" : "Saved in this browser"}</span>
               <span className="results-count results-count--context">{savedCounts.watchlist} saved</span>
               <span className="results-count results-count--context">{savedCounts.seen} seen</span>
               <span className="results-count results-count--context">{savedCounts.hidden} hidden</span>
+              {isCloudSyncing ? <span className="results-count results-count--context">Saving…</span> : null}
             </div>
           </div>
+          {cloudSyncError ? <p className="error-message my-movies-sync-error">{cloudSyncError}</p> : null}
 
           <div className="tabs saved-movie-tabs" role="tablist" aria-label="Saved movie lists">
             {TAB_CONFIG.map((tab) => (
@@ -221,15 +260,20 @@ function MyMovies() {
           ) : (
             <div className="empty-state saved-movie-empty-state">
               <span className="status-glyph" aria-hidden="true"></span>
-              <div>
-                <strong>{activeTabConfig.emptyTitle}</strong>
-                <p>{activeTabConfig.emptyCopy}</p>
-                <div className="saved-empty-actions">
-                  <Link to="/browse" className="card-link">Browse Movies</Link>
-                  <Link to="/#pick-for-me" className="reelbot-inline-button">Get a Pick</Link>
+                <div>
+                  <strong>{!user && totalSavedMovies === 0 ? "Save your picks to access them anytime" : activeTabConfig.emptyTitle}</strong>
+                  <p>{!user && totalSavedMovies === 0 ? "Enter your email once and your picks, history, and preferences will stay with you across devices." : activeTabConfig.emptyCopy}</p>
+                  <div className="saved-empty-actions">
+                    {!user && totalSavedMovies === 0 ? (
+                      <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAuthPrompt("my_movies_cta")}>
+                        Save your picks
+                      </button>
+                    ) : null}
+                    <Link to="/browse" className="card-link">Browse Movies</Link>
+                    <Link to="/#pick-for-me" className="reelbot-inline-button">Get a Pick</Link>
+                  </div>
                 </div>
               </div>
-            </div>
           )}
         </section>
       </div>
