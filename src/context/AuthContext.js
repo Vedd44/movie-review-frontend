@@ -9,15 +9,29 @@ const AuthContext = createContext({
   authError: "",
   authPromptOpen: false,
   lastMagicLinkEmail: "",
+  passwordRecoveryActive: false,
   sendMagicLink: async () => {},
+  signInWithPassword: async () => {},
+  signUpWithPassword: async () => {},
+  sendPasswordReset: async () => {},
+  updatePassword: async () => {},
   signOut: async () => {},
   updateDisplayName: async () => {},
   deleteAccount: async () => {},
   maybePromptToSavePicks: () => {},
   openAuthPrompt: () => {},
   closeAuthPrompt: () => {},
+  clearPasswordRecovery: () => {},
   clearAuthError: () => {},
 });
+
+function isRecoveryUrl() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.location.href.includes("type=recovery");
+}
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -26,6 +40,7 @@ export function AuthProvider({ children }) {
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [lastMagicLinkEmail, setLastMagicLinkEmail] = useState("");
   const [authPromptSource, setAuthPromptSource] = useState("");
+  const [passwordRecoveryActive, setPasswordRecoveryActive] = useState(() => isRecoveryUrl());
 
   const openAuthPrompt = useCallback((source = "") => {
     setAuthPromptSource(source);
@@ -35,6 +50,10 @@ export function AuthProvider({ children }) {
   const closeAuthPrompt = useCallback(() => {
     setAuthPromptOpen(false);
     setAuthPromptSource("");
+  }, []);
+
+  const clearPasswordRecovery = useCallback(() => {
+    setPasswordRecoveryActive(false);
   }, []);
 
   useEffect(() => {
@@ -56,6 +75,7 @@ export function AuthProvider({ children }) {
         }
 
         setSession(data?.session || null);
+        setPasswordRecoveryActive(isRecoveryUrl());
         setLoading(false);
       })
       .catch((error) => {
@@ -67,7 +87,15 @@ export function AuthProvider({ children }) {
         setLoading(false);
       });
 
-    const { data: listener } = getSupabaseClient().auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = getSupabaseClient().auth.onAuthStateChange((event, nextSession) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setPasswordRecoveryActive(true);
+      } else if (event === "SIGNED_OUT") {
+        setPasswordRecoveryActive(false);
+      } else if (event === "SIGNED_IN" && !isRecoveryUrl()) {
+        setPasswordRecoveryActive(false);
+      }
+
       setSession(nextSession || null);
       setLoading(false);
       if (nextSession?.user) {
@@ -103,6 +131,100 @@ export function AuthProvider({ children }) {
     return response;
   }, []);
 
+  const signInWithPassword = useCallback(async ({ email, password }) => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const response = await getSupabaseClient().auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+    const { error } = response;
+
+    if (error) {
+      setAuthError(error.message || "We couldn't log you in right now.");
+      throw error;
+    }
+
+    setAuthError("");
+    return response;
+  }, []);
+
+  const signUpWithPassword = useCallback(async ({ email, password, displayName = "" }) => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedName = String(displayName || "").trim();
+    const response = await getSupabaseClient().auth.signUp({
+      email: normalizedEmail,
+      password,
+      options: {
+        data: normalizedName ? { display_name: normalizedName } : {},
+      },
+    });
+    const { error } = response;
+
+    if (error) {
+      setAuthError(error.message || "We couldn't create your account right now.");
+      throw error;
+    }
+
+    setAuthError("");
+    return response;
+  }, []);
+
+  const sendPasswordReset = useCallback(async (email) => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const redirectTo = typeof window !== "undefined"
+      ? `${window.location.origin}/reset-password`
+      : undefined;
+
+    const response = await getSupabaseClient().auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
+    });
+    const { error } = response;
+
+    if (error) {
+      setAuthError(error.message || "We couldn't send the reset link.");
+      throw error;
+    }
+
+    setAuthError("");
+    return response;
+  }, []);
+
+  const updatePassword = useCallback(async (password) => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    const response = await getSupabaseClient().auth.updateUser({
+      password,
+    });
+    const { data, error } = response;
+
+    if (error) {
+      setAuthError(error.message || "We couldn't update your password.");
+      throw error;
+    }
+
+    setAuthError("");
+    setPasswordRecoveryActive(false);
+    setSession((currentSession) => ({
+      ...(currentSession || {}),
+      user: data.user || currentSession?.user || null,
+    }));
+    return data.user;
+  }, []);
+
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured || !supabase) {
       return;
@@ -116,6 +238,7 @@ export function AuthProvider({ children }) {
 
     setAuthError("");
     setLastMagicLinkEmail("");
+    setPasswordRecoveryActive(false);
   }, []);
 
   const updateDisplayName = useCallback(async (displayName) => {
@@ -172,6 +295,7 @@ export function AuthProvider({ children }) {
     await getSupabaseClient().auth.signOut();
     setAuthError("");
     setLastMagicLinkEmail("");
+    setPasswordRecoveryActive(false);
     closeAuthPrompt();
   }, [closeAuthPrompt, session?.access_token]);
 
@@ -211,16 +335,42 @@ export function AuthProvider({ children }) {
       authPromptOpen,
       authPromptSource,
       lastMagicLinkEmail,
+      passwordRecoveryActive,
       sendMagicLink,
+      signInWithPassword,
+      signUpWithPassword,
+      sendPasswordReset,
+      updatePassword,
       signOut,
       updateDisplayName,
       deleteAccount,
       maybePromptToSavePicks,
       openAuthPrompt,
       closeAuthPrompt,
+      clearPasswordRecovery,
       clearAuthError: () => setAuthError(""),
     }),
-    [authError, authPromptOpen, authPromptSource, closeAuthPrompt, deleteAccount, lastMagicLinkEmail, loading, maybePromptToSavePicks, openAuthPrompt, sendMagicLink, session, signOut, updateDisplayName]
+    [
+      authError,
+      authPromptOpen,
+      authPromptSource,
+      clearPasswordRecovery,
+      closeAuthPrompt,
+      deleteAccount,
+      lastMagicLinkEmail,
+      loading,
+      maybePromptToSavePicks,
+      openAuthPrompt,
+      passwordRecoveryActive,
+      sendMagicLink,
+      sendPasswordReset,
+      session,
+      signInWithPassword,
+      signOut,
+      signUpWithPassword,
+      updateDisplayName,
+      updatePassword,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -7,6 +7,7 @@ import BrowseLibrary from "./BrowseLibrary";
 import MyMovies from "./MyMovies";
 import HowReelbotWorks from "./HowReelbotWorks";
 import AccountSettings from "./AccountSettings";
+import ResetPassword from "./ResetPassword";
 import AuthModal from "./components/AuthModal";
 import ProfileMenu from "./components/ProfileMenu";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -62,7 +63,6 @@ function HeaderSearch({ showOnHome = false }) {
         placeholder="Search movies"
         aria-label="Search movies"
       />
-      <button type="submit">Search</button>
     </form>
   );
 }
@@ -89,7 +89,6 @@ function SiteHeader({ hasHeaderSearch }) {
     { label: "Trending", to: "/trending", isActive: location.pathname === "/trending" },
     { label: "Coming Soon", to: "/coming-soon", isActive: location.pathname === "/coming-soon" },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
-    { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
   ];
 
   const renderNavLinks = () =>
@@ -141,16 +140,16 @@ function SiteHeader({ hasHeaderSearch }) {
         </div>
 
         <div className="site-header-right">
+          <HeaderSearch />
           {!user ? (
             <button
               type="button"
               className="reelbot-inline-button site-auth-trigger"
               onClick={() => openAuthPrompt("nav")}
             >
-              {hasHeaderSearch ? "Save picks" : "Save your picks"}
+              Sign in
             </button>
           ) : null}
-          <HeaderSearch />
           {user ? <ProfileMenu /> : null}
           <button
             type="button"
@@ -183,7 +182,7 @@ function SiteFooter() {
     { label: "Coming Soon", to: "/coming-soon" },
     { label: "Browse Library", to: "/browse" },
     { label: "How ReelBot Works", to: "/how-reelbot-works", secondary: true },
-    { label: "My Movies", to: "/my-movies" },
+    { label: "Your Movies", to: "/my-movies" },
   ];
 
   return (
@@ -267,6 +266,7 @@ function AppShell() {
           <Route path="/browse" element={<BrowseLibrary />} />
           <Route path="/my-movies" element={<MyMovies />} />
           <Route path="/account" element={<AccountSettings />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
           <Route path="/movie/:id" element={<MovieDetails />} />

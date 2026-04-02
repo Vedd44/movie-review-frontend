@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./App.css";
 import TasteActionBar from "./components/TasteActionBar";
@@ -71,7 +71,6 @@ const normalizeSavedMovie = (movie = {}) => ({
 });
 
 function MyMovies() {
-  const autoPromptedRef = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, openAuthPrompt } = useAuth();
   const { profile, getSavedMoviesForBucket, savedCounts, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
@@ -82,11 +81,6 @@ function MyMovies() {
     () => getSavedMoviesForBucket(activeTab).map((movie) => normalizeSavedMovie(movie)).filter((movie) => movie.id),
     [activeTab, getSavedMoviesForBucket]
   );
-  const totalSavedMovies = useMemo(
-    () => savedCounts.watchlist + savedCounts.seen + savedCounts.hidden + savedCounts.recent,
-    [savedCounts.hidden, savedCounts.recent, savedCounts.seen, savedCounts.watchlist]
-  );
-
   const tasteSummary = useMemo(() => {
     const allMovies = [
       ...(profile.watchlist || []),
@@ -121,48 +115,58 @@ function MyMovies() {
   }, [profile]);
 
   usePageMetadata({
-    title: "My Movies | ReelBot",
-    description: user ? "Your saved ReelBot picks, seen titles, hidden movies, and recent activity." : "Your saved ReelBot picks, seen titles, and hidden movies in this browser.",
+    title: "Your Movies | ReelBot",
+    description: user ? "Your saved ReelBot picks, seen titles, hidden movies, and recent activity." : "Sign in to view your saved movies and account history in ReelBot.",
     path: "/my-movies",
     robots: "noindex,follow",
     structuredData: [
       buildBreadcrumbJsonLd([
         { name: "Home", path: "/" },
-        { name: "My Movies", path: "/my-movies" },
+        { name: "Your Movies", path: "/my-movies" },
       ]),
     ],
   });
-
-  useEffect(() => {
-    if (user || totalSavedMovies > 0 || autoPromptedRef.current) {
-      return;
-    }
-
-    autoPromptedRef.current = true;
-    const timeoutId = window.setTimeout(() => {
-      openAuthPrompt("my_movies_empty");
-    }, 220);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [openAuthPrompt, totalSavedMovies, user]);
 
   return (
     <div className="browse-page my-movies-page">
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="browse-kicker">My Movies</div>
+            <div className="browse-kicker">Your Movies</div>
             <h1 className="browse-title">Your ReelBot memory</h1>
             <p className="browse-subtitle browse-subtitle--hero">
               {user
                 ? "Your saved, seen, hidden, and recent movie memory lives with your ReelBot account."
-                : "Save movies for later, mark what you have seen, and hide what you do not want ReelBot to surface again."}
+                : "Sign in to view your saved movies, seen titles, hidden picks, and recent activity."}
             </p>
             {user ? <p className="my-movies-synced-note">Your picks are saved and synced across devices.</p> : null}
           </div>
         </section>
 
-        {tasteSummary.length ? (
+        {!user ? (
+          <section className="detail-info-card my-movies-empty-gate">
+            <div className="section-header section-header--stacked-mobile section-header--compact">
+              <div>
+                <h2 className="section-title">Sign in to view your saved movies</h2>
+                <p className="section-subtitle">Your movies live with your account, so you can pick up where you left off across devices.</p>
+              </div>
+            </div>
+            <div className="saved-empty-actions">
+              <button
+                type="button"
+                className="reelbot-inline-button reelbot-inline-button--solid"
+                onClick={() => openAuthPrompt("my_movies_gate")}
+              >
+                Sign in
+              </button>
+              <Link to="/browse" className="card-link">
+                Browse Movies
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
+        {user && tasteSummary.length ? (
           <section className="detail-info-card my-movies-taste-card">
             <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
@@ -179,6 +183,7 @@ function MyMovies() {
           </section>
         ) : null}
 
+        {user ? (
         <section className="saved-movies-shell detail-info-card">
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
@@ -261,14 +266,9 @@ function MyMovies() {
             <div className="empty-state saved-movie-empty-state">
               <span className="status-glyph" aria-hidden="true"></span>
                 <div>
-                  <strong>{!user && totalSavedMovies === 0 ? "Save your picks to access them anytime" : activeTabConfig.emptyTitle}</strong>
-                  <p>{!user && totalSavedMovies === 0 ? "Enter your email once and your picks, history, and preferences will stay with you across devices." : activeTabConfig.emptyCopy}</p>
+                  <strong>{activeTabConfig.emptyTitle}</strong>
+                  <p>{activeTabConfig.emptyCopy}</p>
                   <div className="saved-empty-actions">
-                    {!user && totalSavedMovies === 0 ? (
-                      <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAuthPrompt("my_movies_cta")}>
-                        Save your picks
-                      </button>
-                    ) : null}
                     <Link to="/browse" className="card-link">Browse Movies</Link>
                     <Link to="/#pick-for-me" className="reelbot-inline-button">Get a Pick</Link>
                   </div>
@@ -276,6 +276,7 @@ function MyMovies() {
               </div>
           )}
         </section>
+        ) : null}
       </div>
     </div>
   );

@@ -39,7 +39,7 @@ function ProfileMenu() {
       {open ? (
         <div className="profile-menu-dropdown" role="menu">
           <Link to="/my-movies" className="profile-menu-link" role="menuitem" onClick={() => setOpen(false)}>
-            Your picks
+            Your Movies
           </Link>
           <Link to="/account" className="profile-menu-link" role="menuitem" onClick={() => setOpen(false)}>
             Account settings

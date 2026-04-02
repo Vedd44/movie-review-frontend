@@ -2,15 +2,31 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { validatePassword } from "./authValidation";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 
 function AccountSettings() {
   const navigate = useNavigate();
-  const { user, loading, authReady, updateDisplayName, signOut, deleteAccount, authError, clearAuthError } = useAuth();
+  const {
+    user,
+    loading,
+    authReady,
+    updateDisplayName,
+    updatePassword,
+    signOut,
+    deleteAccount,
+    authError,
+    clearAuthError,
+  } = useAuth();
   const [displayName, setDisplayName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     setDisplayName(String(user?.user_metadata?.display_name || ""));
@@ -62,7 +78,7 @@ function AccountSettings() {
             <label className="account-settings-field">
               <span>Email</span>
               <input type="email" value={user.email || ""} readOnly className="account-settings-input--readonly" />
-              <small className="account-settings-note">Your sign-in email is managed through your email link.</small>
+              <small className="account-settings-note">This is the email you use to sign in to ReelBot.</small>
             </label>
             <label className="account-settings-field">
               <span>Display name</span>
@@ -89,7 +105,7 @@ function AccountSettings() {
                 clearAuthError();
                 try {
                   await updateDisplayName(displayName);
-                  setSuccessMessage("Saved.");
+                  setSuccessMessage("Profile updated.");
                 } catch (error) {
                   console.error("Error updating ReelBot display name:", error);
                 } finally {
@@ -115,6 +131,96 @@ function AccountSettings() {
               Log out
             </button>
           </div>
+
+          <div className="account-settings-password">
+            <div className="section-header section-header--stacked-mobile section-header--compact">
+              <div>
+                <h2 className="section-title">Password</h2>
+                <p className="section-subtitle">Add or update a password if you want to sign in without waiting for an email link.</p>
+              </div>
+            </div>
+
+            <form
+              className="account-settings-stack"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const validationMessage = validatePassword(password);
+
+                if (validationMessage) {
+                  setPasswordError(validationMessage);
+                  return;
+                }
+
+                if (password !== confirmPassword) {
+                  setPasswordError("Passwords need to match");
+                  return;
+                }
+
+                setPasswordSaving(true);
+                setPasswordError("");
+                setPasswordMessage("");
+                clearAuthError();
+
+                try {
+                  await updatePassword(password);
+                  setPassword("");
+                  setConfirmPassword("");
+                  setPasswordMessage("Password updated.");
+                } catch (error) {
+                  console.error("Error updating ReelBot password:", error);
+                  setPasswordError("Something went wrong. Try again.");
+                } finally {
+                  setPasswordSaving(false);
+                }
+              }}
+            >
+              <div className="account-settings-form account-settings-form--single-row">
+                <label className="account-settings-field">
+                  <span>New password</span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      if (passwordError) {
+                        setPasswordError("");
+                      }
+                    }}
+                    placeholder="New password"
+                  />
+                </label>
+                <label className="account-settings-field">
+                  <span>Confirm password</span>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value);
+                      if (passwordError) {
+                        setPasswordError("");
+                      }
+                    }}
+                    placeholder="Confirm password"
+                  />
+                </label>
+              </div>
+
+              <p className="account-settings-note">Use at least 8 characters with letters and numbers.</p>
+              {passwordError ? <p className="error-message">{passwordError}</p> : null}
+              {passwordMessage ? <p className="account-settings-success">{passwordMessage}</p> : null}
+
+              <div className="account-settings-actions account-settings-actions--compact">
+                <button
+                  type="submit"
+                  className="reelbot-inline-button reelbot-inline-button--solid"
+                  disabled={passwordSaving}
+                >
+                  {passwordSaving ? "Updating…" : "Update password"}
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div className="account-settings-danger">
             <div>
               <div className="detail-description-label">Danger zone</div>
@@ -132,6 +238,7 @@ function AccountSettings() {
 
                 setDeleting(true);
                 setSuccessMessage("");
+                setPasswordMessage("");
                 clearAuthError();
                 try {
                   await deleteAccount();

@@ -2738,10 +2738,10 @@ body {
 .site-header-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex: 0 1 320px;
-  width: min(320px, 100%);
-  min-width: 220px;
+  gap: 0;
+  flex: 0 1 240px;
+  width: min(240px, 100%);
+  min-width: 180px;
   margin: 0;
 }
 
@@ -2759,20 +2759,6 @@ body {
   color: #8fa7c0;
 }
 
-.site-header-search button {
-  min-width: 82px;
-  padding: 11px 14px;
-  border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-  color: var(--accent-text);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.site-header-search button:hover {
-  background: linear-gradient(135deg, #f6cf72, #d79733);
-}
 
 .site-footer {
   margin-top: 48px;
@@ -6434,21 +6420,95 @@ body {
 .site-auth-trigger {
   white-space: nowrap;
   flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .auth-panel {
   padding: 0;
+  display: grid;
 }
 
 .auth-panel--compact {
   padding: 0;
 }
 
+.auth-panel-switcher {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 3px;
+  margin: 16px auto 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(129, 155, 190, 0.18);
+}
+
+.auth-panel-switch {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  min-height: 26px;
+  padding: 4px 12px;
+  background: transparent;
+  color: rgba(225, 234, 246, 0.58);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.auth-panel-switch.is-active {
+  background: rgba(225, 194, 113, 0.09);
+  border-color: rgba(225, 194, 113, 0.14);
+  color: var(--text-primary);
+}
+
+.auth-panel-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 16px 0 20px;
+}
+
+.auth-panel-subnav-link,
+.auth-panel-link {
+  border: none;
+  background: transparent;
+  color: rgba(225, 234, 246, 0.62);
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  padding: 0 0 2px;
+  border-radius: 0;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.auth-panel-subnav-link.is-active,
+.auth-panel-link:hover,
+.auth-panel-link:focus-visible,
+.auth-panel-subnav-link:hover,
+.auth-panel-subnav-link:focus-visible {
+  background: transparent;
+  border-bottom-color: rgba(225, 194, 113, 0.3);
+  color: var(--accent-warm);
+}
+
+.auth-panel-mode-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
 .auth-panel-title {
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 
 .auth-panel-copy {
@@ -6465,7 +6525,12 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 16px;
+}
+
+.auth-panel-form--stacked {
+  display: grid;
+  gap: 12px;
 }
 
 .auth-panel-form input {
@@ -6476,6 +6541,28 @@ body {
   border: 1px solid rgba(129, 155, 190, 0.2);
   border-radius: 999px;
   padding: 11px 14px;
+}
+
+.auth-panel-form--stacked .reelbot-inline-button--solid {
+  width: 100%;
+  max-width: 360px;
+  min-height: 46px;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 0 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  box-shadow: none;
+  background: linear-gradient(135deg, #f0be57, #d89935);
+  align-self: start;
+}
+
+.auth-panel-form--stacked .reelbot-inline-button--solid:hover,
+.auth-panel-form--stacked .reelbot-inline-button--solid:focus-visible {
+  transform: none;
+  background: linear-gradient(135deg, #f3c96a, #dca043);
+  border-color: transparent;
 }
 
 .auth-panel-error {
@@ -6491,13 +6578,32 @@ body {
 .auth-panel-success-block {
   display: grid;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 20px;
 }
 
 .auth-panel-success-title {
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.auth-panel-actions--links {
+  margin-top: 12px;
+}
+
+.auth-panel-actions--links .auth-panel-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(225, 234, 246, 0.62);
+  font-size: 0.86rem;
+}
+
+.auth-panel-actions--links .auth-panel-link:hover,
+.auth-panel-actions--links .auth-panel-link:focus-visible {
+  background: transparent;
+  border-bottom-color: transparent;
+  color: rgba(225, 234, 246, 0.86);
 }
 
 .auth-modal-backdrop {
@@ -6514,7 +6620,7 @@ body {
 
 .auth-modal-shell {
   position: relative;
-  width: min(440px, 100%);
+  width: min(480px, 100%);
   padding: 24px;
   border-radius: 24px;
   background: rgba(11, 18, 32, 0.98);
@@ -6535,7 +6641,7 @@ body {
 
 .profile-menu-shell {
   position: relative;
-  margin-left: 4px;
+  margin-left: 8px;
 }
 
 .profile-menu-trigger {
@@ -6618,11 +6724,24 @@ body {
   max-width: 780px;
 }
 
+.account-settings-card--narrow {
+  max-width: 620px;
+}
+
 .account-settings-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   margin-top: 10px;
+}
+
+.account-settings-form--single-row {
+  margin-top: 0;
+}
+
+.account-settings-stack {
+  display: grid;
+  gap: 12px;
 }
 
 .account-settings-field {
@@ -6663,9 +6782,19 @@ body {
   margin-top: 20px;
 }
 
+.account-settings-actions--compact {
+  margin-top: 2px;
+}
+
 .account-settings-success {
   margin-top: 14px;
   color: rgba(191, 233, 171, 0.95);
+}
+
+.account-settings-password {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(129, 155, 190, 0.12);
 }
 
 .account-settings-danger {
@@ -7439,7 +7568,7 @@ body {
   flex: 0 1 auto;
   min-width: 0;
   justify-content: flex-end;
-  gap: 14px;
+  gap: 10px;
 }
 
 .site-brand-subtitle {
@@ -7468,10 +7597,10 @@ body {
 }
 
 .site-header-search {
-  flex: 0 1 248px;
-  width: min(248px, 100%);
-  max-width: 248px;
-  min-width: 190px;
+  flex: 0 1 220px;
+  width: min(220px, 100%);
+  max-width: 220px;
+  min-width: 170px;
 }
 
 .site-nav-shell,
@@ -7489,13 +7618,13 @@ body {
   }
 
   .site-header-right {
-    gap: 12px;
+    gap: 10px;
   }
 
   .site-header-search {
-    flex-basis: 216px;
-    width: min(216px, 100%);
-    max-width: 216px;
+    flex-basis: 196px;
+    width: min(196px, 100%);
+    max-width: 196px;
   }
 }
 

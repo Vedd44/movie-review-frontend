@@ -31,14 +31,14 @@ function AuthModal() {
   return (
     <div className="auth-modal-backdrop" onClick={closeAuthPrompt} role="presentation">
       <div className="auth-modal-shell" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" onClick={(event) => event.stopPropagation()}>
-        <button type="button" className="auth-modal-close" onClick={closeAuthPrompt} aria-label="Close save your picks dialog">
+        <button type="button" className="auth-modal-close" onClick={closeAuthPrompt} aria-label="Close sign in dialog">
           ×
         </button>
         <AuthPanel
           titleId="auth-modal-title"
-          title="Save your picks"
-          subtitle="Enter your email and we’ll send you a quick sign-in link. No password needed. Your picks, history, and preferences will stay saved across devices."
-          ctaLabel="Send link"
+          title="Sign in to ReelBot"
+          subtitle="Enter your email and we’ll send you a sign-in link. No password needed."
+          ctaLabel="Send sign-in link"
           onComplete={closeAuthPrompt}
         />
       </div>
