@@ -195,7 +195,7 @@ function SiteFooter() {
           <p className="site-footer-microcopy">Picks, quick reads, and smarter next-watch decisions.</p>
         </div>
 
-        <div className="site-footer-meta">
+        <nav className="site-footer-nav" aria-label="Footer">
           <div className="site-footer-links" aria-label="Footer">
             {footerLinks.map((link) => (
               <NavLink
@@ -207,17 +207,13 @@ function SiteFooter() {
               </NavLink>
             ))}
           </div>
-          <p className="site-footer-sync-note">
-            Your picks help ReelBot get better over time.
-            <br />
-            Save them to keep everything in sync across devices.
+        </nav>
+
+        <div className="site-footer-bottom-bar">
+          <p className="site-footer-credit">
+            Built by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a> using <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a>
           </p>
-          <div className="site-footer-meta-row">
-            <p className="site-footer-credit">
-              Built by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a> using <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a>
-            </p>
-            <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
-          </div>
+          <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
         </div>
       </div>
     </footer>

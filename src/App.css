@@ -2782,19 +2782,19 @@ body {
 .site-footer-inner {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 24px 28px;
+  padding: 20px 24px 18px;
   box-sizing: border-box;
   border-radius: 24px;
   border: 1px solid rgba(129, 155, 190, 0.12);
   background: linear-gradient(180deg, rgba(7, 12, 20, 0.82), rgba(7, 12, 20, 0.68));
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   gap: 20px 32px;
-  align-items: end;
+  align-items: start;
 }
 
 .site-footer-title {
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--text-primary);
@@ -2802,16 +2802,15 @@ body {
 
 .site-footer-copy,
 .site-footer-credit {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--text-secondary);
-  line-height: 1.7;
+  line-height: 1.55;
+  font-size: 0.94rem;
 }
 
-.site-footer-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 14px;
+.site-footer-nav {
+  min-width: 0;
+  justify-self: end;
 }
 
 .site-footer a {
@@ -2827,63 +2826,59 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px;
-  order: 1;
+  gap: 6px 8px;
   min-width: 0;
+  max-width: 420px;
 }
 
 .site-footer-link {
-  padding: 9px 14px;
+  padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(129, 155, 190, 0.12);
-  background: rgba(9, 18, 31, 0.76);
-  color: var(--text-primary);
+  border: 1px solid rgba(129, 155, 190, 0.06);
+  background: rgba(9, 18, 31, 0.3);
+  color: rgba(225, 234, 246, 0.74);
   min-width: 0;
   box-sizing: border-box;
   overflow-wrap: anywhere;
+  font-size: 0.81rem;
+  line-height: 1.2;
 }
 
 .site-footer-link:hover {
-  background: rgba(16, 28, 45, 0.92);
-  color: var(--text-primary);
+  background: rgba(16, 28, 45, 0.48);
+  color: rgba(244, 239, 226, 0.86);
 }
 
 .site-footer-link--secondary {
-  color: rgba(225, 234, 246, 0.72);
-  border-color: rgba(129, 155, 190, 0.1);
-  background: rgba(9, 18, 31, 0.58);
+  color: rgba(225, 234, 246, 0.58);
+  border-color: rgba(129, 155, 190, 0.06);
+  background: rgba(9, 18, 31, 0.26);
 }
 
 .site-footer-credit {
   margin-top: 0;
-  font-size: 0.82rem;
-  line-height: 1.55;
-  color: rgba(159, 178, 202, 0.74);
-  order: 1;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  color: rgba(159, 178, 202, 0.68);
 }
 
 .site-footer-version {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(159, 178, 202, 0.62);
-  order: 2;
   white-space: nowrap;
 }
 
-.site-footer-meta-row {
-  width: 100%;
+.site-footer-bottom-bar {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-}
-
-.site-footer-sync-note {
-  margin: 0;
-  color: rgba(225, 234, 246, 0.78);
-  max-width: 42ch;
-  text-align: right;
+  padding-top: 14px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(129, 155, 190, 0.08);
 }
 
 .cookie-notice {
@@ -5681,7 +5676,7 @@ body {
 }
 
 .saved-movie-list {
-  gap: 20px;
+  gap: 18px;
 }
 
 .saved-movie-card {
@@ -5691,7 +5686,7 @@ body {
 .saved-movie-card-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .saved-movie-note {
@@ -5704,7 +5699,15 @@ body {
 .saved-movie-overview {
   margin: 0;
   color: var(--text-secondary);
-  line-height: 1.65;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 4.2em;
+  max-height: 4.2em;
 }
 
 .saved-movie-actions {
@@ -5980,20 +5983,52 @@ body {
 }
 
 .my-movies-page .saved-movie-card {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 22px;
   border: 1px solid rgba(129, 155, 190, 0.12);
   background: linear-gradient(180deg, rgba(9, 15, 25, 0.96), rgba(7, 12, 20, 0.92));
   box-shadow: 0 22px 44px rgba(0, 0, 0, 0.18);
+  min-height: 680px;
 }
 
 .my-movies-page .saved-movie-card-content {
-  gap: 12px;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 14px 14px 16px;
+  gap: 8px;
 }
 
 .saved-movie-card .movie-poster,
 .saved-movie-card .no-poster {
   height: 330px;
+}
+
+.my-movies-page .saved-movie-card .movie-card-meta {
+  margin-bottom: 2px;
+}
+
+.my-movies-page .saved-movie-card .movie-card-title {
+  font-size: 1.02rem;
+  line-height: 1.32;
+}
+
+.my-movies-page .saved-movie-card .movie-card-date {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.my-movies-page .saved-movie-note {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.my-movies-page .saved-movie-actions {
+  justify-content: flex-end;
+  min-height: 148px;
 }
 
 @media only screen and (max-width: 860px) {
@@ -9051,24 +9086,22 @@ body {
     display: grid;
     grid-template-columns: 1fr;
     width: 100%;
+    max-width: none;
   }
 
-  .site-footer-links a {
+  .site-footer-link {
     justify-content: center;
   }
 
-  .site-footer-meta {
-    align-items: flex-start;
-  }
-
-  .site-footer-sync-note {
-    text-align: left;
-  }
-
-  .site-footer-meta-row,
+  .site-footer-inner,
+  .site-footer-bottom-bar,
   .cookie-notice {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .site-footer-inner {
+    grid-template-columns: 1fr;
   }
 
   .cookie-notice {
