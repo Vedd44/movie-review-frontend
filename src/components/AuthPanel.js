@@ -28,7 +28,6 @@ function AuthPanel({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [successState, setSuccessState] = useState(null);
   const [error, setError] = useState("");
@@ -48,18 +47,18 @@ function AuthPanel({
     }
 
     if (view === PASSWORD_LOGIN_VIEW) {
-      return "Use your email and password to sign in.";
+      return "Use your email and password.";
     }
 
     if (view === PASSWORD_SIGNUP_VIEW) {
-      return "Save your picks and pick up where you left off across devices.";
+      return "Save your picks and pick up where you left off.";
     }
 
     if (view === FORGOT_PASSWORD_VIEW) {
       return "Enter your email and we’ll send you a reset link.";
     }
 
-    return subtitle || "Enter your email and we’ll send you a sign-in link. No password needed.";
+    return subtitle || "Enter your email and we’ll send you a sign-in link.";
   }, [subtitle, user?.email, view]);
 
   const modeTitle = useMemo(() => {
@@ -81,7 +80,6 @@ function AuthPanel({
   const resetFormState = () => {
     setPassword("");
     setConfirmPassword("");
-    setDisplayName("");
     setError("");
     setSuccessState(null);
     clearAuthError();
@@ -95,7 +93,6 @@ function AuthPanel({
   const handleSubmit = async (event) => {
     event.preventDefault();
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    console.log("Auth click triggered");
 
     const emailError = validateEmail(normalizedEmail);
     if (emailError) {
@@ -130,11 +127,10 @@ function AuthPanel({
 
     try {
       if (view === EMAIL_LINK_VIEW) {
-        const response = await sendMagicLink(normalizedEmail);
-        console.log("Supabase response:", response);
+        await sendMagicLink(normalizedEmail);
         setSuccessState({
           title: "Check your email",
-          body: "We just sent you a sign-in link.",
+          body: "Your sign-in link is on the way.",
           resetLabel: "Send another sign-in link",
         });
       } else if (view === PASSWORD_LOGIN_VIEW) {
@@ -149,14 +145,13 @@ function AuthPanel({
         const response = await signUpWithPassword({
           email: normalizedEmail,
           password,
-          displayName,
         });
         const hasSession = Boolean(response?.data?.session);
 
         if (!hasSession) {
           setSuccessState({
             title: "Check your email",
-            body: "Your account is almost ready. Confirm your email to finish signing in.",
+            body: "Confirm your email to finish creating your account.",
             resetLabel: "Use a different email",
           });
         } else if (typeof onComplete === "function") {
@@ -166,7 +161,7 @@ function AuthPanel({
         await sendPasswordReset(normalizedEmail);
         setSuccessState({
           title: "Check your email",
-          body: "We sent you a password reset link.",
+          body: "Your reset link is on the way.",
           resetLabel: "Send another reset link",
         });
       }
@@ -286,17 +281,6 @@ function AuthPanel({
             disabled={loading || authLoading}
             autoFocus
           />
-
-          {view === PASSWORD_SIGNUP_VIEW ? (
-            <input
-              type="text"
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="Display name (optional)"
-              aria-label="Display name"
-              disabled={loading || authLoading}
-            />
-          ) : null}
 
           {usingPasswordFlow && !isForgotPasswordView ? (
             <input

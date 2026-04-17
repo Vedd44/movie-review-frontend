@@ -18,6 +18,18 @@ import "./App.css";
 
 const SITE_VERSION = "v0.5";
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
+const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
+
+function closeTransientUi() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(CLOSE_TRANSIENT_UI_EVENT));
+  }
+
+  if (typeof document !== "undefined") {
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+  }
+}
 
 if (typeof window !== "undefined") {
   homeFeedService.prefetchHomeFeed("latest", 1).catch((error) => {
@@ -53,6 +65,7 @@ function HeaderSearch({ showOnHome = false }) {
           return;
         }
 
+        closeTransientUi();
         navigate(`/search?q=${encodeURIComponent(query.trim())}`);
       }}
     >
@@ -84,11 +97,22 @@ function SiteHeader({ hasHeaderSearch }) {
     setMobileMenuOpen(false);
   }, [location.pathname, location.search, location.hash]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleCloseTransientUi = () => setMobileMenuOpen(false);
+    window.addEventListener(CLOSE_TRANSIENT_UI_EVENT, handleCloseTransientUi);
+    return () => window.removeEventListener(CLOSE_TRANSIENT_UI_EVENT, handleCloseTransientUi);
+  }, []);
+
   const navItems = [
     { label: "Now Playing", to: "/now-playing", isActive: location.pathname === "/now-playing" },
     { label: "Trending", to: "/trending", isActive: location.pathname === "/trending" },
     { label: "Coming Soon", to: "/coming-soon", isActive: location.pathname === "/coming-soon" },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
+    { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
   ];
 
   const renderNavLinks = () =>
@@ -128,7 +152,7 @@ function SiteHeader({ hasHeaderSearch }) {
             </span>
             <span className="site-brand-copy">
               <span className="site-brand-title">ReelBot</span>
-              <span className="site-brand-subtitle">Your AI movie guide</span>
+              <span className="site-brand-subtitle">Find something worth watching</span>
             </span>
           </NavLink>
         </div>
@@ -180,9 +204,9 @@ function SiteFooter() {
   const footerLinks = [
     { label: "Now Playing", to: "/now-playing" },
     { label: "Coming Soon", to: "/coming-soon" },
-    { label: "Browse Library", to: "/browse" },
-    { label: "How ReelBot Works", to: "/how-reelbot-works", secondary: true },
-    { label: "Your Movies", to: "/my-movies" },
+    { label: "Browse", to: "/browse" },
+    { label: "My Movies", to: "/my-movies" },
+    { label: "How it works", to: "/how-reelbot-works", secondary: true },
   ];
 
   return (
@@ -191,7 +215,6 @@ function SiteFooter() {
         <div className="site-footer-brand">
           <div className="site-footer-title">ReelBot</div>
           <p className="site-footer-copy">Find something worth watching. Faster.</p>
-          <p className="site-footer-microcopy">Picks, quick reads, and smarter next-watch decisions.</p>
         </div>
 
         <nav className="site-footer-nav" aria-label="Footer">
@@ -296,11 +319,11 @@ function QueryRedirectGuard() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <QueryRedirectGuard />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

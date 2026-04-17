@@ -931,9 +931,7 @@ function MovieDetails() {
               </div>
               <div className="detail-hero-tracking-actions">
                 <TasteActionBar movie={movie} compact className="detail-taste-actions" showVibeAction={false} />
-                {tasteState.skipped ? (
-                  <p className="detail-taste-state-note">Skipped for future picks.</p>
-                ) : tasteState.inWatchlist || tasteState.seen ? (
+                {tasteState.inWatchlist || tasteState.seen ? (
                   <p className="detail-taste-state-note">
                     {[
                       tasteState.inWatchlist ? "Saved" : null,
@@ -1180,7 +1178,7 @@ function MovieDetails() {
               )}
 
               <div id="detail-repick-module" className="reelbot-inline-subsection reelbot-inline-subsection--recovery detail-anchor-target">
-                <p className="reelbot-subsection-copy">Not feeling this? Get another pick →</p>
+                <p className="reelbot-subsection-copy">Want another option?</p>
                 <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => handleReelbotAction("similar_picks")}>
                   Get another pick
                 </button>

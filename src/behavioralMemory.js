@@ -503,7 +503,7 @@ export const scoreMovieForBehavioralMemory = (movie = {}, memory = {}, options =
   }
 
   if (seenIds.has(movieId)) {
-    score -= 9;
+    score -= 4;
     reasons.push("seen-deprioritized");
   }
 

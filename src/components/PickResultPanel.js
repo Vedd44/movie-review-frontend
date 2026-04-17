@@ -27,12 +27,22 @@ function PickResultPanel({
   onFallbackAction,
   fallbackSecondaryActionLabel,
   fallbackSecondaryActionPath,
+  primaryActionLabel = "",
+  onPrimaryAction,
+  showDetailLink = true,
+  detailActionLabel = "View Details",
   refreshLabel = "Swap Pick",
+  resetLabel = "Start fresh",
   backupTitle = "Similar picks, different vibes",
   onRefreshChoices,
+  onResetChoices,
   refreshDisabled = false,
+  resetDisabled = false,
+  hideRefreshCta = false,
+  refreshExhaustionMessage = "",
   recoveryTitle = "",
   recoveryMessage = "",
+  refineVibeLabel = "Adjust your vibe",
   onRefineVibe,
   refineActions = [],
   onRefineAction,
@@ -42,6 +52,7 @@ function PickResultPanel({
   showSessionPlaceholder = false,
   showExpandedReasoning = false,
   refineStatusLabel = "",
+  tasteActionProps = {},
 }) {
   const providerMap = useWatchProviderBadges(
     useMemo(() => [primaryMovie?.id, ...backupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, backupMovies])
@@ -100,6 +111,9 @@ function PickResultPanel({
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
                 {primaryMovie.runtime ? <span className="movie-card-chip">{primaryMovie.runtime} min</span> : null}
                 {primaryMovie.vote_average ? <span className="movie-card-chip">TMDB {primaryMovie.vote_average.toFixed(1)}</span> : null}
+                {primaryMovie.seen ? (
+                  <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
+                ) : null}
               </div>
               <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
               <RecommendationRationale rationale={rationale} collapsible={!showExpandedReasoning} />
@@ -107,18 +121,47 @@ function PickResultPanel({
               <div className="pick-result-actions-block">
                 <div className="pick-primary-actions">
                   <div className="pick-primary-action-row pick-primary-action-row--primary">
-                    <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="card-link pick-primary-detail-link">
-                      View Details
-                    </Link>
-                    {onRefreshChoices ? (
+                    {primaryActionLabel && onPrimaryAction ? (
+                      <button type="button" className="reelbot-inline-button reelbot-inline-button--solid pick-primary-main-action" onClick={onPrimaryAction}>
+                        {primaryActionLabel}
+                      </button>
+                    ) : null}
+                    {onRefreshChoices && !hideRefreshCta ? (
                       <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
                         {refreshLabel}
                       </button>
                     ) : null}
+                    {onResetChoices ? (
+                      <button
+                        type="button"
+                        className="reelbot-inline-button reelbot-inline-button--secondary pick-result-reset"
+                        onClick={onResetChoices}
+                        disabled={resetDisabled}
+                      >
+                        {resetLabel}
+                      </button>
+                    ) : null}
                   </div>
+                  {refreshExhaustionMessage ? (
+                    <p className="pick-refresh-hint">{refreshExhaustionMessage}</p>
+                  ) : null}
+                  {showDetailLink ? (
+                    <div className="pick-primary-action-row pick-primary-action-row--detail">
+                      <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="pick-primary-detail-link">
+                        {detailActionLabel}
+                      </Link>
+                    </div>
+                  ) : null}
                   <div className="pick-personal-actions-block">
-                    <div className="pick-personal-actions-label">Your actions</div>
-                    <TasteActionBar movie={primaryMovie} vibeLabel={vibeLabel} compact className="pick-taste-actions" showVibeAction={false} />
+                    <div className="pick-personal-actions-label">Actions</div>
+                    <TasteActionBar
+                      movie={primaryMovie}
+                      vibeLabel={vibeLabel}
+                      compact
+                      className="pick-taste-actions"
+                      showVibeAction={false}
+                      {...tasteActionProps}
+                    />
                   </div>
                   {rationale?.tasteCue ? <p className="pick-taste-cue detail-secondary-text">{rationale.tasteCue}</p> : null}
                   {availableRefineActions.length && onRefineAction ? (
@@ -152,7 +195,7 @@ function PickResultPanel({
               <div className="pick-session-recovery-actions">
                 {onRefineVibe ? (
                   <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefineVibe}>
-                    Refine your vibe
+                    {refineVibeLabel}
                   </button>
                 ) : null}
                 {browsePath ? (
@@ -196,8 +239,12 @@ function PickResultPanel({
                             {movie.title}
                           </Link>
                         </h4>
+                        {movie.seen ? (
+                          <div className="pick-backup-status">
+                            <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
+                          </div>
+                        ) : null}
                         {backupMeta.shortLine ? <p className="pick-backup-reason detail-secondary-text">{backupMeta.shortLine}</p> : null}
-                        {backupMeta.tags.length ? <p className="pick-backup-tags">{backupMeta.tags.join(" • ")}</p> : null}
                       </div>
                     </article>
                   );

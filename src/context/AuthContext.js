@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getSupabaseClient, isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const AuthContext = createContext({
@@ -41,6 +42,7 @@ export function AuthProvider({ children }) {
   const [lastMagicLinkEmail, setLastMagicLinkEmail] = useState("");
   const [authPromptSource, setAuthPromptSource] = useState("");
   const [passwordRecoveryActive, setPasswordRecoveryActive] = useState(() => isRecoveryUrl());
+  const [pendingRecoverySession, setPendingRecoverySession] = useState(null);
 
   const openAuthPrompt = useCallback((source = "") => {
     setAuthPromptSource(source);
@@ -52,8 +54,13 @@ export function AuthProvider({ children }) {
     setAuthPromptSource("");
   }, []);
 
+  const navigate = useNavigate();
+  const recoveryRedirectedRef = useRef(false);
+
   const clearPasswordRecovery = useCallback(() => {
     setPasswordRecoveryActive(false);
+    setPendingRecoverySession(null);
+    recoveryRedirectedRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -74,8 +81,15 @@ export function AuthProvider({ children }) {
           setAuthError(error.message || "Could not restore your account session.");
         }
 
-        setSession(data?.session || null);
-        setPasswordRecoveryActive(isRecoveryUrl());
+        const enteringRecovery = isRecoveryUrl();
+        setPasswordRecoveryActive(enteringRecovery);
+        if (enteringRecovery) {
+          setPendingRecoverySession(data?.session || null);
+          setSession(null);
+        } else {
+          setPendingRecoverySession(null);
+          setSession(data?.session || null);
+        }
         setLoading(false);
       })
       .catch((error) => {
@@ -87,27 +101,39 @@ export function AuthProvider({ children }) {
         setLoading(false);
       });
 
-    const { data: listener } = getSupabaseClient().auth.onAuthStateChange((event, nextSession) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setPasswordRecoveryActive(true);
-      } else if (event === "SIGNED_OUT") {
-        setPasswordRecoveryActive(false);
-      } else if (event === "SIGNED_IN" && !isRecoveryUrl()) {
-        setPasswordRecoveryActive(false);
-      }
+      const { data: listener } = getSupabaseClient().auth.onAuthStateChange((event, nextSession) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setPasswordRecoveryActive(true);
+          setPendingRecoverySession(nextSession || null);
+          if (!recoveryRedirectedRef.current) {
+            recoveryRedirectedRef.current = true;
+            navigate("/reset-password", { replace: true });
+          }
+        } else if (event === "SIGNED_OUT") {
+          setPasswordRecoveryActive(false);
+          setPendingRecoverySession(null);
+          recoveryRedirectedRef.current = false;
+        } else if (event === "SIGNED_IN" && !recoveryRedirectedRef.current && !isRecoveryUrl()) {
+          setPasswordRecoveryActive(false);
+        }
 
-      setSession(nextSession || null);
-      setLoading(false);
-      if (nextSession?.user) {
-        closeAuthPrompt();
-      }
-    });
+        if (event === "PASSWORD_RECOVERY") {
+          setSession(null);
+        } else {
+          setPendingRecoverySession(null);
+          setSession(nextSession || null);
+        }
+        setLoading(false);
+        if (nextSession?.user) {
+          closeAuthPrompt();
+        }
+      });
 
     return () => {
       cancelled = true;
       listener.subscription.unsubscribe();
     };
-  }, [closeAuthPrompt]);
+  }, [closeAuthPrompt, navigate]);
 
   const sendMagicLink = useCallback(async (email) => {
     if (!isSupabaseConfigured || !supabase) {
@@ -118,7 +144,6 @@ export function AuthProvider({ children }) {
     const response = await getSupabaseClient().auth.signInWithOtp({
       email: normalizedEmail,
     });
-    console.log("Supabase response:", response);
     const { error } = response;
 
     if (error) {
@@ -327,7 +352,7 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      user: session?.user || null,
+      user: passwordRecoveryActive ? null : session?.user || null,
       session,
       loading,
       authReady: !loading,
@@ -336,6 +361,7 @@ export function AuthProvider({ children }) {
       authPromptSource,
       lastMagicLinkEmail,
       passwordRecoveryActive,
+      recoverySession: pendingRecoverySession,
       sendMagicLink,
       signInWithPassword,
       signUpWithPassword,
@@ -362,6 +388,7 @@ export function AuthProvider({ children }) {
       maybePromptToSavePicks,
       openAuthPrompt,
       passwordRecoveryActive,
+      pendingRecoverySession,
       sendMagicLink,
       sendPasswordReset,
       session,

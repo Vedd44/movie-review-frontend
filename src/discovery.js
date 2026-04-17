@@ -99,7 +99,7 @@ export const DISCOVERY_PROMPTS = DISCOVERY_PROMPT_SETS.flat();
 export const REELBOT_CAPABILITIES = [
   {
     title: "Quick Take",
-    description: "Get the fast spoiler-light read on tone, audience fit, and whether this feels right for tonight.",
+    description: "Get the fast spoiler-light read on tone, audience fit, and whether this feels right.",
   },
   {
     title: "Pick for Me",

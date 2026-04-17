@@ -33,6 +33,8 @@ const hasPrimaryPick = (pick) => Boolean(pick?.primary?.id);
 const normalizeSessionQueue = (items = []) => (Array.isArray(items) ? items.filter((item) => item?.id) : []);
 const normalizeSessionCandidatePool = (items = []) =>
   [...new Set((Array.isArray(items) ? items : []).map((value) => Number(value)).filter(Boolean))];
+const normalizeSessionMovieIds = (items = []) =>
+  [...new Set((Array.isArray(items) ? items : []).map((value) => Number(value)).filter(Boolean))];
 
 const readStorageJson = (key) => {
   if (!canUseStorage()) {
@@ -239,6 +241,10 @@ const loadHomePickSession = () => {
       refinementState: parsedValue.refinementState && typeof parsedValue.refinementState === "object" ? parsedValue.refinementState : null,
       lastPickMode: parsedValue.lastPickMode === "surprise" ? "surprise" : "prompt",
       hasExpandedSwapPool: Boolean(parsedValue.hasExpandedSwapPool),
+      onboardingVibeId: String(parsedValue.onboardingVibeId || "").trim(),
+      onboardingLikedIds: normalizeSessionMovieIds(parsedValue.onboardingLikedIds),
+      onboardingDislikedIds: normalizeSessionMovieIds(parsedValue.onboardingDislikedIds),
+      onboardingSkippedIds: normalizeSessionMovieIds(parsedValue.onboardingSkippedIds),
       saved_at: parsedValue.saved_at || null,
     };
 
@@ -273,6 +279,10 @@ const saveHomePickSession = (session) => {
     refinementState: session.refinementState && typeof session.refinementState === "object" ? session.refinementState : null,
     lastPickMode: session.lastPickMode === "surprise" ? "surprise" : "prompt",
     hasExpandedSwapPool: Boolean(session.hasExpandedSwapPool),
+    onboardingVibeId: String(session.onboardingVibeId || "").trim(),
+    onboardingLikedIds: normalizeSessionMovieIds(session.onboardingLikedIds),
+    onboardingDislikedIds: normalizeSessionMovieIds(session.onboardingDislikedIds),
+    onboardingSkippedIds: normalizeSessionMovieIds(session.onboardingSkippedIds),
   };
 
   if (!normalizedSession.originalPrompt && !normalizedSession.currentPick?.primary && !normalizedSession.swapHistory.length) {

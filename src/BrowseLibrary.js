@@ -136,8 +136,12 @@ function BrowseLibrary() {
   );
 
   const suppressedMovieIds = useMemo(
-    () => new Set([...(profile.skipped || []).map((item) => item.id), ...(profile.seen || []).map((item) => item.id)].filter(Boolean)),
-    [profile.seen, profile.skipped]
+    () => new Set((profile.skipped || []).map((item) => item.id).filter(Boolean)),
+    [profile.skipped]
+  );
+  const seenMovieIds = useMemo(
+    () => new Set((profile.seen || []).map((item) => item.id).filter(Boolean)),
+    [profile.seen]
   );
 
   const filteredMovies = useMemo(
@@ -538,7 +542,7 @@ function BrowseLibrary() {
               suggestions={LIBRARY_PROMPTS.slice(0, 4)}
               value={pickPrompt}
               onChange={setPickPrompt}
-              placeholder="Try: smart sci-fi under 2 hours, dark but rewarding, or a strong date-night pick"
+              placeholder="Try: smart sci-fi under 2 hours, dark but rewarding, or an easy watch"
             />
 
             <div className="pick-for-me-actions">
@@ -630,6 +634,9 @@ function BrowseLibrary() {
                     <div className="movie-card-meta">
                       <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
                       {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                      {seenMovieIds.has(movie.id) ? (
+                        <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
+                      ) : null}
                     </div>
 
                     <h3 className="movie-card-title">

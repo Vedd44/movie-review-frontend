@@ -11,30 +11,30 @@ const TAB_CONFIG = [
   {
     id: "watchlist",
     label: "Saved",
-    emptyTitle: "Nothing saved yet",
-    emptyCopy: "Save keeps a movie around for later so ReelBot can leave it in your mix.",
-    description: "Saved means keep this around for a future night.",
+    emptyTitle: "No saved movies yet.",
+    emptyCopy: "Save something to come back to.",
+    description: "Keep this for later.",
   },
   {
     id: "seen",
     label: "Seen",
-    emptyTitle: "Nothing marked Seen yet",
-    emptyCopy: "Seen tells ReelBot you already watched it, so it can stay out of future picks.",
-    description: "Seen means you watched it and ReelBot should stop resurfacing it.",
+    emptyTitle: "Nothing marked as seen yet.",
+    emptyCopy: "You’ve already watched this.",
+    description: "You’ve already watched this.",
   },
   {
     id: "hidden",
     label: "Hidden",
-    emptyTitle: "Nothing hidden yet",
-    emptyCopy: "Hidden tells ReelBot not to show it again in this browser.",
-    description: "Hidden means don’t show this again in future picks.",
+    emptyTitle: "No hidden movies.",
+    emptyCopy: "We won’t show this again.",
+    description: "We won’t show this again.",
   },
   {
     id: "recent",
     label: "Recent",
     emptyTitle: "No recent visits yet",
-    emptyCopy: "Open a movie page and it will show up here for quick backtracking.",
-    description: "Recent gives you a fast way back to the movies you were just checking.",
+    emptyCopy: "Your latest activity.",
+    description: "Your latest activity.",
   },
 ];
 
@@ -115,14 +115,14 @@ function MyMovies() {
   }, [profile]);
 
   usePageMetadata({
-    title: "Your Movies | ReelBot",
-    description: user ? "Your saved ReelBot picks, seen titles, hidden movies, and recent activity." : "Sign in to view your saved movies and account history in ReelBot.",
+    title: "My movies | ReelBot",
+    description: user ? "Saved, seen, and hidden picks in one place." : "Sign in to see your saved picks and recent activity in ReelBot.",
     path: "/my-movies",
     robots: "noindex,follow",
     structuredData: [
       buildBreadcrumbJsonLd([
         { name: "Home", path: "/" },
-        { name: "Your Movies", path: "/my-movies" },
+        { name: "My Movies", path: "/my-movies" },
       ]),
     ],
   });
@@ -132,12 +132,10 @@ function MyMovies() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="browse-kicker">Your Movies</div>
-            <h1 className="browse-title">Your ReelBot memory</h1>
+            <div className="browse-kicker">My Movies</div>
+            <h1 className="browse-title">My movies</h1>
             <p className="browse-subtitle browse-subtitle--hero">
-              {user
-                ? "Your saved, seen, hidden, and recent movie memory lives with your ReelBot account."
-                : "Sign in to view your saved movies, seen titles, hidden picks, and recent activity."}
+              {user ? "Saved, seen, and hidden — all in one place." : "Sign in to see your saved picks, hidden movies, and recent activity."}
             </p>
             {user ? <p className="my-movies-synced-note">Your picks are saved and synced across devices.</p> : null}
           </div>
@@ -147,8 +145,8 @@ function MyMovies() {
           <section className="detail-info-card my-movies-empty-gate">
             <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
-                <h2 className="section-title">Sign in to view your saved movies</h2>
-                <p className="section-subtitle">Your movies live with your account, so you can pick up where you left off across devices.</p>
+                <h2 className="section-title">Sign in to see your picks</h2>
+                <p className="section-subtitle">Save your picks and pick up where you left off.</p>
               </div>
             </div>
             <div className="saved-empty-actions">
@@ -172,7 +170,7 @@ function MyMovies() {
               <div>
                 <div className="detail-description-label">Your taste so far</div>
                 <h2 className="section-title">What ReelBot is learning</h2>
-                <p className="section-subtitle">A quick read from your saved, seen, hidden, and vibe interactions on this browser.</p>
+                <p className="section-subtitle">A quick read on your saved, seen, and hidden picks.</p>
               </div>
             </div>
             <div className="taste-learning-chips">
@@ -187,8 +185,8 @@ function MyMovies() {
         <section className="saved-movies-shell detail-info-card">
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
-              <h2 className="section-title">Your movie lists</h2>
-              <p className="section-subtitle">Save = keep for later. Seen = remove from future picks. Hidden = don’t show again.</p>
+              <h2 className="section-title">My lists</h2>
+              <p className="section-subtitle">Saved, seen, and hidden — all in one place.</p>
             </div>
             <div className="saved-movies-count-row">
               <span className="results-count results-count--context">{isUsingCloudProfile ? "Synced to your account" : "Saved in this browser"}</span>
@@ -270,7 +268,7 @@ function MyMovies() {
                   <p>{activeTabConfig.emptyCopy}</p>
                   <div className="saved-empty-actions">
                     <Link to="/browse" className="card-link">Browse Movies</Link>
-                    <Link to="/#pick-for-me" className="reelbot-inline-button">Get a Pick</Link>
+                    <Link to="/#pick-for-me" className="reelbot-inline-button">Get a pick</Link>
                   </div>
                 </div>
               </div>

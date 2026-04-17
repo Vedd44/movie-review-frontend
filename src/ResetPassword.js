@@ -84,13 +84,13 @@ function ResetPassword() {
           <div className="browse-copy">
             <div className="browse-kicker">Account</div>
             <h1 className="browse-title">Reset your password</h1>
-            <p className="browse-subtitle browse-subtitle--hero">Choose a new password and get back to your picks.</p>
+            <p className="browse-subtitle browse-subtitle--hero">Set a new password, then return to your account.</p>
           </div>
         </section>
 
         <section className="detail-info-card account-settings-card account-settings-card--narrow">
           {!authReady || authLoading ? (
-            <p className="account-settings-note">Checking your reset link…</p>
+            <p className="account-settings-note">Checking your reset link.</p>
           ) : canResetPassword ? (
             <>
               <div className="section-header section-header--stacked-mobile section-header--compact">
@@ -141,14 +141,14 @@ function ResetPassword() {
                     className="reelbot-inline-button reelbot-inline-button--solid"
                     disabled={loading}
                   >
-                    {loading ? "Updating…" : "Reset password"}
+                    {loading ? "Updating…" : "Update password"}
                   </button>
                 </div>
               </form>
             </>
           ) : (
             <div className="account-settings-stack">
-              <p className="account-settings-note">Open the reset link from your email to choose a new password.</p>
+              <p className="account-settings-note">Open the reset link from your email to set a new password.</p>
               <div className="account-settings-actions">
                 <Link to="/" className="reelbot-inline-button">
                   Back home

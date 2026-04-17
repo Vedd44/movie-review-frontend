@@ -39,7 +39,7 @@ function AccountSettings() {
   }, [authReady, navigate, user]);
 
   usePageMetadata({
-    title: "Account Settings | ReelBot",
+    title: "Account settings | ReelBot",
     description: "Manage your ReelBot account and saved picks.",
     path: "/account",
     robots: "noindex,follow",
@@ -62,7 +62,7 @@ function AccountSettings() {
           <div className="browse-copy">
             <div className="browse-kicker">Account</div>
             <h1 className="browse-title">Account settings</h1>
-            <p className="browse-subtitle browse-subtitle--hero">Keep your ReelBot account light, simple, and out of the way.</p>
+            <p className="browse-subtitle browse-subtitle--hero">Manage your account details.</p>
           </div>
         </section>
 
@@ -70,7 +70,7 @@ function AccountSettings() {
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
               <h2 className="section-title">Your account</h2>
-              <p className="section-subtitle">Your picks stay tied to this email so they travel with you.</p>
+              <p className="section-subtitle">Your picks stay tied to this account.</p>
             </div>
           </div>
 
@@ -78,7 +78,7 @@ function AccountSettings() {
             <label className="account-settings-field">
               <span>Email</span>
               <input type="email" value={user.email || ""} readOnly className="account-settings-input--readonly" />
-              <small className="account-settings-note">This is the email you use to sign in to ReelBot.</small>
+              <small className="account-settings-note">This is the email you use to sign in.</small>
             </label>
             <label className="account-settings-field">
               <span>Display name</span>
@@ -136,7 +136,7 @@ function AccountSettings() {
             <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
                 <h2 className="section-title">Password</h2>
-                <p className="section-subtitle">Add or update a password if you want to sign in without waiting for an email link.</p>
+                <p className="section-subtitle">Set a password if you want to sign in without email.</p>
               </div>
             </div>
 
@@ -224,7 +224,7 @@ function AccountSettings() {
           <div className="account-settings-danger">
             <div>
               <div className="detail-description-label">Danger zone</div>
-              <p className="detail-secondary-text">Delete your account and remove your saved ReelBot history.</p>
+              <p className="detail-secondary-text">Delete your account and remove your saved picks.</p>
             </div>
             <button
               type="button"

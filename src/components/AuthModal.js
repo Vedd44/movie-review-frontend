@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import AuthPanel from "./AuthPanel";
 import { useAuth } from "../context/AuthContext";
 
+const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
+
 function AuthModal() {
   const { authPromptOpen, closeAuthPrompt } = useAuth();
 
@@ -10,17 +12,25 @@ function AuthModal() {
       return undefined;
     }
 
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousDocumentOverflow = document.documentElement.style.overflow;
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         closeAuthPrompt();
       }
     };
 
+    const handleCloseTransientUi = () => closeAuthPrompt();
+
     window.addEventListener("keydown", handleEscape);
+    window.addEventListener(CLOSE_TRANSIENT_UI_EVENT, handleCloseTransientUi);
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
+      window.removeEventListener(CLOSE_TRANSIENT_UI_EVENT, handleCloseTransientUi);
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousDocumentOverflow;
     };
   }, [authPromptOpen, closeAuthPrompt]);
 
@@ -37,7 +47,7 @@ function AuthModal() {
         <AuthPanel
           titleId="auth-modal-title"
           title="Sign in to ReelBot"
-          subtitle="Enter your email and we’ll send you a sign-in link. No password needed."
+          subtitle="Enter your email and we’ll send you a sign-in link."
           ctaLabel="Send sign-in link"
           onComplete={closeAuthPrompt}
         />

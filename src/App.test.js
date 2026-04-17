@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders the ReelBot tagline', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const taglines = screen.getAllByText(/Find something worth watching/i);
+  expect(taglines.length).toBeGreaterThan(0);
 });

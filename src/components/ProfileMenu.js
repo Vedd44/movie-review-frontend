@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
+
 function ProfileMenu() {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
@@ -15,6 +17,16 @@ function ProfileMenu() {
     window.addEventListener("click", handleWindowClick);
     return () => window.removeEventListener("click", handleWindowClick);
   }, [open]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleCloseTransientUi = () => setOpen(false);
+    window.addEventListener(CLOSE_TRANSIENT_UI_EVENT, handleCloseTransientUi);
+    return () => window.removeEventListener(CLOSE_TRANSIENT_UI_EVENT, handleCloseTransientUi);
+  }, []);
 
   const initial = useMemo(() => {
     const source = user?.user_metadata?.display_name || user?.email || "R";
@@ -39,7 +51,7 @@ function ProfileMenu() {
       {open ? (
         <div className="profile-menu-dropdown" role="menu">
           <Link to="/my-movies" className="profile-menu-link" role="menuitem" onClick={() => setOpen(false)}>
-            Your Movies
+            My Movies
           </Link>
           <Link to="/account" className="profile-menu-link" role="menuitem" onClick={() => setOpen(false)}>
             Account settings

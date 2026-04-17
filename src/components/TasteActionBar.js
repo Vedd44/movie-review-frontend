@@ -2,7 +2,22 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import useTasteProfile from "../hooks/useTasteProfile";
 
-function TasteActionBar({ movie, vibeLabel = "", compact = false, className = "", showVibeAction = true }) {
+function TasteActionBar({
+  movie,
+  vibeLabel = "",
+  compact = false,
+  className = "",
+  showSaveAction = true,
+  showSeenAction = true,
+  showSkipAction = true,
+  showVibeAction = true,
+  saveLabel = "Save",
+  savedLabel = "Saved",
+  seenLabel = "Seen",
+  skipLabel = "Not for me",
+  skipActiveLabel = "Not for me",
+  onInteraction = null,
+}) {
   const { actions, getMovieState, isCloudSyncing } = useTasteProfile();
   const { user, openAuthPrompt } = useAuth();
   const [feedback, setFeedback] = useState("");
@@ -33,7 +48,7 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
     () => ({
       watchlist: tasteState.inWatchlist ? "Removed from Watchlist" : "Saved",
       seen: tasteState.seen ? "Removed from Seen" : "Marked seen",
-      hidden: tasteState.skipped ? "Removed skip" : "Skipped for future picks",
+      hidden: tasteState.skipped ? "Removed from hidden" : "Hidden from picks",
       vibe: tasteState.likedVibe ? "Removed saved vibe" : "Saved this vibe",
     }),
     [tasteState.inWatchlist, tasteState.likedVibe, tasteState.seen, tasteState.skipped]
@@ -55,6 +70,9 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
 
     try {
       await handler();
+      if (typeof onInteraction === "function") {
+        onInteraction(actionKey);
+      }
       setFeedback(feedbackMap[actionKey] || "Saved");
       if (!user && actionKey === "watchlist") {
         openAuthPrompt("save_movie");
@@ -69,33 +87,39 @@ function TasteActionBar({ movie, vibeLabel = "", compact = false, className = ""
 
   return (
     <div className={classes}>
-      <button
-        type="button"
-        className={`taste-action-button${tasteState.inWatchlist ? " is-active" : ""}`}
-        onClick={() => handleAction("watchlist", () => actions.toggleWatchlist(movie))}
-        disabled={isBusy}
-        aria-pressed={tasteState.inWatchlist}
-      >
-        {pendingAction === "watchlist" ? "Saving..." : tasteState.inWatchlist ? "Saved" : "Save"}
-      </button>
-      <button
-        type="button"
-        className={`taste-action-button${tasteState.seen ? " is-active" : ""}`}
-        onClick={() => handleAction("seen", () => actions.toggleSeen(movie))}
-        disabled={isBusy}
-        aria-pressed={tasteState.seen}
-      >
-        {pendingAction === "seen" ? "Updating..." : "Seen"}
-      </button>
-      <button
-        type="button"
-        className={`taste-action-button${tasteState.skipped ? " is-active" : ""}`}
-        onClick={() => handleAction("hidden", () => actions.toggleSkipped(movie))}
-        disabled={isBusy}
-        aria-pressed={tasteState.skipped}
-      >
-        {pendingAction === "hidden" ? "Updating..." : tasteState.skipped ? "Skipped" : "Skip"}
-      </button>
+      {showSaveAction ? (
+        <button
+          type="button"
+          className={`taste-action-button${tasteState.inWatchlist ? " is-active" : ""}`}
+          onClick={() => handleAction("watchlist", () => actions.toggleWatchlist(movie))}
+          disabled={isBusy}
+          aria-pressed={tasteState.inWatchlist}
+        >
+          {pendingAction === "watchlist" ? "Saving..." : tasteState.inWatchlist ? savedLabel : saveLabel}
+        </button>
+      ) : null}
+      {showSeenAction ? (
+        <button
+          type="button"
+          className={`taste-action-button${tasteState.seen ? " is-active" : ""}`}
+          onClick={() => handleAction("seen", () => actions.toggleSeen(movie))}
+          disabled={isBusy}
+          aria-pressed={tasteState.seen}
+        >
+          {pendingAction === "seen" ? "Updating..." : seenLabel}
+        </button>
+      ) : null}
+      {showSkipAction ? (
+        <button
+          type="button"
+          className={`taste-action-button${tasteState.skipped ? " is-active" : ""}`}
+          onClick={() => handleAction("hidden", () => actions.toggleSkipped(movie))}
+          disabled={isBusy}
+          aria-pressed={tasteState.skipped}
+        >
+          {pendingAction === "hidden" ? "Updating..." : tasteState.skipped ? skipActiveLabel : skipLabel}
+        </button>
+      ) : null}
       {showVibeAction && vibeLabel ? (
         <button
           type="button"

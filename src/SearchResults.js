@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
@@ -12,10 +12,12 @@ function SearchResults() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
+  const searchInputRef = useRef(null);
   const [draftQuery, setDraftQuery] = useState(searchQuery);
   const [searchPayload, setSearchPayload] = useState({ results: [], top_match: null, related_results: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [requestNonce, setRequestNonce] = useState(0);
 
   useEffect(() => {
     setDraftQuery(searchQuery);
@@ -26,14 +28,17 @@ function SearchResults() {
       setError("No search query provided.");
       setSearchPayload({ results: [], top_match: null, related_results: [] });
       setLoading(false);
-      return;
+      return undefined;
     }
 
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
 
     axios
-      .get(`${API_BASE_URL}/search?query=${encodeURIComponent(searchQuery)}`)
+      .get(`${API_BASE_URL}/search?query=${encodeURIComponent(searchQuery)}`, {
+        signal: controller.signal,
+      })
       .then((response) => {
         setSearchPayload({
           results: response.data.results || [],
@@ -43,6 +48,10 @@ function SearchResults() {
         setError(null);
       })
       .catch((requestError) => {
+        if (axios.isCancel(requestError) || requestError?.code === "ERR_CANCELED") {
+          return;
+        }
+
         console.error("❌ Error fetching search results:", requestError);
         setError("Failed to fetch search results.");
         setSearchPayload({ results: [], top_match: null, related_results: [] });
@@ -50,7 +59,9 @@ function SearchResults() {
       .finally(() => {
         setLoading(false);
       });
-  }, [searchQuery]);
+
+    return () => controller.abort();
+  }, [requestNonce, searchQuery]);
 
   const rankedMovies = useMemo(
     () => (searchPayload.results?.length ? searchPayload.results : rankSearchResults(searchQuery, [])),
@@ -77,6 +88,23 @@ function SearchResults() {
     const nextQuery = draftQuery.trim();
 
     if (!nextQuery) {
+      setError("Enter a movie title, actor, franchise, or director to search.");
+      searchInputRef.current?.focus();
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("reelbot:close-transient-ui"));
+    }
+
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    setError(null);
+
+    if (nextQuery === searchQuery) {
+      setRequestNonce((current) => current + 1);
       return;
     }
 
@@ -118,12 +146,13 @@ function SearchResults() {
           <div className="browse-copy search-results-hero-copy">
             <div className="browse-kicker">ReelBot Search</div>
             <h1 className="browse-title">Results for “{searchQuery || "your search"}”</h1>
-            <p className="browse-subtitle">We surface the clearest match first, then keep the strongest nearby titles within easy reach.</p>
+            <p className="browse-subtitle">We've highlighted your best match first, with other top-rated options below.</p>
           </div>
 
           <div className="search-results-toolbar">
             <form onSubmit={handleSearchSubmit} className="search-bar search-results-form">
               <input
+                ref={searchInputRef}
                 type="text"
                 value={draftQuery}
                 onChange={(event) => setDraftQuery(event.target.value)}
@@ -149,12 +178,7 @@ function SearchResults() {
             <div className="section-header section-header--stacked-mobile section-header--compact search-results-section-head">
               <div>
                 <div className="detail-description-label">Search results</div>
-                <h2 className="section-title">{topMatch ? "Top Match" : "Matching Movies"}</h2>
-                <p className="section-subtitle">
-                  {topMatch
-                    ? "This is the clearest match based on title, relevance, and overall quality."
-                    : "We could not find a strong match for that search just yet."}
-                </p>
+                
               </div>
               <div className="results-count">{resultCountLabel}</div>
             </div>
@@ -202,14 +226,7 @@ function SearchResults() {
                       <Link to={getMoviePath(topMatch)} className="card-link">
                         View Details
                       </Link>
-                      <Link
-                        to={getMoviePath(topMatch)}
-                        state={{ reelbotAction: "is_this_for_me", fromCard: true }}
-                        className="movie-card-ask-reelbot search-top-match-ask"
-                      >
-                        Ask ReelBot
-                        <span className="movie-card-ask-copy">Is this for me?</span>
-                      </Link>
+                      
                     </div>
                   </aside>
                 </div>

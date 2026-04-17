@@ -150,7 +150,13 @@ function ReelbotStructuredContent({ action, result }) {
       return (
         <div className="reelbot-body">
           <p><strong>What happens:</strong> {content.what_happens}</p>
-          <p><strong>What it means:</strong> {content.what_it_means}</p>
+          <p><strong>Why it lands:</strong> {content.why_it_lands || content.what_it_means}</p>
+          {content.what_it_leaves_you_with ? (
+            <p><strong>What it leaves you with:</strong> {content.what_it_leaves_you_with}</p>
+          ) : null}
+          {content.if_youre_deciding ? (
+            <p><strong>If you're deciding:</strong> {content.if_youre_deciding}</p>
+          ) : null}
         </div>
       );
     case "themes_and_takeaways":
