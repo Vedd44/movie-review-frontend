@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Home from "./Home";
 import MovieDetails from "./MovieDetails";
+import PersonDetails from "./PersonDetails";
 import SearchResults from "./SearchResults";
 import BrowseLibrary from "./BrowseLibrary";
 import MyMovies from "./MyMovies";
@@ -16,68 +17,14 @@ import { homeFeedService } from "./services/homeFeedService";
 import { tasteProfileService } from "./services/tasteProfileService";
 import "./App.css";
 
-const SITE_VERSION = "v0.5";
+const SITE_VERSION = "v0.8";
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
-
-function closeTransientUi() {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(CLOSE_TRANSIENT_UI_EVENT));
-  }
-
-  if (typeof document !== "undefined") {
-    document.body.style.overflow = "";
-    document.documentElement.style.overflow = "";
-  }
-}
 
 if (typeof window !== "undefined") {
   homeFeedService.prefetchHomeFeed("latest", 1).catch((error) => {
     console.error("Failed to prefetch homepage feed:", error);
   });
-}
-
-function HeaderSearch({ showOnHome = false }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const currentQuery = new URLSearchParams(location.search).get("q") || "";
-  const [query, setQuery] = useState(currentQuery);
-
-  useEffect(() => {
-    if (location.pathname === "/search") {
-      setQuery(currentQuery);
-      return;
-    }
-
-    setQuery("");
-  }, [currentQuery, location.pathname]);
-
-  if (location.pathname === "/" && !showOnHome) {
-    return null;
-  }
-
-  return (
-    <form
-      className="site-header-search"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!query.trim()) {
-          return;
-        }
-
-        closeTransientUi();
-        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-      }}
-    >
-      <input
-        type="text"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search movies"
-        aria-label="Search movies"
-      />
-    </form>
-  );
 }
 
 function LegacyFeedRedirect() {
@@ -87,7 +34,7 @@ function LegacyFeedRedirect() {
   return <Navigate to={getFeedPath(view)} replace />;
 }
 
-function SiteHeader({ hasHeaderSearch }) {
+function SiteHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -109,8 +56,6 @@ function SiteHeader({ hasHeaderSearch }) {
 
   const navItems = [
     { label: "Now Playing", to: "/now-playing", isActive: location.pathname === "/now-playing" },
-    { label: "Trending", to: "/trending", isActive: location.pathname === "/trending" },
-    { label: "Coming Soon", to: "/coming-soon", isActive: location.pathname === "/coming-soon" },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
     { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
   ];
@@ -140,7 +85,7 @@ function SiteHeader({ hasHeaderSearch }) {
   };
 
   return (
-    <header className={`site-header${hasHeaderSearch ? " has-search" : ""}`}>
+    <header className="site-header">
       <div className="site-header-inner">
         <div className="site-header-left">
           <NavLink to="/" className="site-brand" onClick={handleBrandClick}>
@@ -152,7 +97,7 @@ function SiteHeader({ hasHeaderSearch }) {
             </span>
             <span className="site-brand-copy">
               <span className="site-brand-title">ReelBot</span>
-              <span className="site-brand-subtitle">Find something worth watching</span>
+              <span className="site-brand-subtitle">Skip the scroll</span>
             </span>
           </NavLink>
         </div>
@@ -164,7 +109,6 @@ function SiteHeader({ hasHeaderSearch }) {
         </div>
 
         <div className="site-header-right">
-          <HeaderSearch />
           {!user ? (
             <button
               type="button"
@@ -193,7 +137,6 @@ function SiteHeader({ hasHeaderSearch }) {
           <nav id="site-mobile-nav" className="site-nav site-nav--mobile" aria-label="Mobile primary">
             {renderNavLinks()}
           </nav>
-          {hasHeaderSearch || location.pathname === "/" ? <HeaderSearch showOnHome={location.pathname === "/"} /> : null}
         </div>
       </div>
     </header>
@@ -274,13 +217,10 @@ function CookieNotice() {
 }
 
 function AppShell() {
-  const location = useLocation();
-  const hasHeaderSearch = location.pathname !== "/";
-
   return (
     <div className="app-shell">
-      <SiteHeader hasHeaderSearch={hasHeaderSearch} />
-      <main className={`site-main${hasHeaderSearch ? " has-header-search" : ""}`}>
+      <SiteHeader />
+      <main className="site-main">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/now-playing" element={<Home routeView="latest" isFeedRoute />} />
@@ -295,6 +235,7 @@ function AppShell() {
           <Route path="/movie/:id" element={<MovieDetails />} />
           <Route path="/movies/:id/:slug" element={<MovieDetails />} />
           <Route path="/movies/:id" element={<MovieDetails />} />
+          <Route path="/person/:personId" element={<PersonDetails />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
