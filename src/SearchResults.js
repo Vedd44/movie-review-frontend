@@ -8,6 +8,9 @@ import { rankSearchResults } from "./movieSignals";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
 
+const getAvailabilityStatus = (movie, providerEntry) => movie?.availability_status || providerEntry?.availability_status || null;
+const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
+
 function SearchResults() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -81,6 +84,7 @@ function SearchResults() {
     [relatedMovies, topMatch]
   );
   const providerMap = useWatchProviderBadges(visibleResults.map((movie) => movie.id));
+  const topMatchAvailabilityStatus = getAvailabilityStatus(topMatch, providerMap[topMatch?.id]);
   const resultCountLabel = `${visibleResults.length} ${visibleResults.length === 1 ? "result" : "results"}`;
 
   const handleSearchSubmit = (event) => {
@@ -209,6 +213,9 @@ function SearchResults() {
                       <span className="movie-card-chip">{getReleaseYear(topMatch.release_date)}</span>
                       {topMatch.vote_average ? <span className="movie-card-chip">TMDB {topMatch.vote_average.toFixed(1)}</span> : null}
                       <span className="movie-card-chip movie-card-chip--accent">{topMatch.exact_match ? "Exact Match" : "Best Fit"}</span>
+                      {shouldShowAvailabilityChip(topMatchAvailabilityStatus) ? (
+                        <span className="movie-card-chip movie-card-chip--availability">{topMatchAvailabilityStatus.label}</span>
+                      ) : null}
                     </div>
                     <p className="search-top-match-summary">
                       {topMatch.exact_match
@@ -244,7 +251,10 @@ function SearchResults() {
                 </div>
 
                 <div className="movie-list search-related-grid">
-                  {relatedMovies.map((movie) => (
+                  {relatedMovies.map((movie) => {
+                    const availabilityStatus = getAvailabilityStatus(movie, providerMap[movie.id]);
+
+                    return (
                     <article key={movie.id} className="movie-card search-result-card">
                       <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
                         {movie.poster_path ? (
@@ -262,6 +272,9 @@ function SearchResults() {
                         <div className="movie-card-meta">
                           <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
                           {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                          {shouldShowAvailabilityChip(availabilityStatus) ? (
+                            <span className="movie-card-chip movie-card-chip--availability">{availabilityStatus.label}</span>
+                          ) : null}
                         </div>
                         <ProviderBadgeRow badges={providerMap[movie.id]?.provider_badges} compact />
 
@@ -288,7 +301,7 @@ function SearchResults() {
                         </div>
                       </div>
                     </article>
-                  ))}
+                  );})}
                 </div>
               </section>
             ) : null}

@@ -27,13 +27,13 @@ export const fetchWatchProviderMap = async (movieIds = []) => {
 
     missingIds.forEach((id) => {
       if (!returnedIds.has(id)) {
-        providerCache.set(id, { id, watch_providers: null, provider_badges: [] });
+        providerCache.set(id, { id, watch_providers: null, provider_badges: [], availability_status: null });
       }
     });
   }
 
   return ids.reduce((accumulator, id) => {
-    accumulator[id] = providerCache.get(id) || { id, watch_providers: null, provider_badges: [] };
+    accumulator[id] = providerCache.get(id) || { id, watch_providers: null, provider_badges: [], availability_status: null };
     return accumulator;
   }, {});
 };

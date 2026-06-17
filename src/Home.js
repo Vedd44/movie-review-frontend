@@ -15,6 +15,7 @@ import {
 } from "./discovery";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
+import CinematicAtmosphere from "./components/CinematicAtmosphere";
 import TrailerModal from "./components/TrailerModal";
 import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
 import { useAuth } from "./context/AuthContext";
@@ -26,13 +27,6 @@ import { buildAbsoluteUrl, DEFAULT_SOCIAL_IMAGE, SITE_DESCRIPTION, SITE_NAME } f
 import { homeFeedService } from "./services/homeFeedService";
 import { tasteProfileService } from "./services/tasteProfileService";
 
-const DYNAMIC_HEADLINE_PROMPTS = [
-  "What are you in the mood for?",
-  "What should I watch?",
-  "Find something worth watching",
-  "Let’s find your next watch",
-];
-
 const PICK_LOADING_MESSAGES = [
   "Scanning the library…",
   "Evaluating candidates…",
@@ -40,56 +34,21 @@ const PICK_LOADING_MESSAGES = [
 ];
 
 const HOMEPAGE_PROMPT_POOL = [
-  "Something visually stunning but not slow",
-  "Dark but not depressing",
-  "Feel-good but not cheesy",
-  "Smart but still easy to follow",
-  "Fast-paced but not exhausting",
-  "Movie to watch while half-paying attention",
-  "Something for a Sunday afternoon",
-  "Late night, don't want to think too hard",
-  "Background movie that still holds up",
-  "Good to watch with parents",
-  "Something everyone will agree on",
-  "Easy watch with friends",
-  "Under 90 minutes",
-  "Something newer but not mainstream",
-  "Critically good but not heavy",
-  "A movie that makes you think after it ends",
-  "Something you probably haven't seen but should",
-  "A comfort rewatch that always works",
-  "A movie that starts slow but pays off",
-  "A tense thriller that isn't bleak",
-  "Funny without feeling dumb",
-  "Big emotions, still easy to get into",
-  "A stylish action movie with actual story",
-  "A rainy-night movie",
-  "Something cozy but not sleepy",
-  "One of those 'how have I never seen this?' movies",
-  "A movie with great chemistry",
-  "Something gripping from the first 10 minutes",
-  "A crowd-pleaser that still feels smart",
-  "Great soundtrack, great mood",
-  "Something twisty but not confusing",
-  "A low-stress movie night pick",
-  "A sharp thriller under two hours",
-  "Easy sci-fi that still feels clever",
-  "A great first-watch with someone",
-  "Something heartfelt without wrecking me",
-  "A movie that feels bigger than it is",
-  "Lighter than a drama, smarter than a comedy",
-  "A comfort movie for a rough day",
-  "Something adventurous but not too loud",
-  "An underrated movie with real payoff",
-  "Visually rich and easy to sink into",
+  "Date night",
+  "Smart but easy",
+  "Cozy night",
+  "Crowd-pleaser",
+  "Family safe",
+  "Something weird",
+  "Under 100 minutes",
 ];
 
-const HOMEPAGE_PROMPT_COUNT = 4;
+const HOMEPAGE_PROMPT_COUNT = HOMEPAGE_PROMPT_POOL.length;
 const PROMPT_ROTATION_MS = 12000;
 const MIN_CURATED_FEED_SIZE = 8;
 const HOMEPAGE_DESKTOP_COLUMNS = 5;
-const HOMEPAGE_BASE_DISPLAY_COUNT = 15;
-const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 20;
+const HOMEPAGE_BASE_DISPLAY_COUNT = 8;
+const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 12;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
 const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
 const SOFT_SWAP_MESSAGE = "Want more options? Try refining your vibe or browse more movies.";
@@ -106,6 +65,9 @@ const PICK_REFINE_ACTIONS = [
   { id: "more_like_this", label: "More like this", loadingMessage: "Staying close to this pick…" },
   { id: "different_angle", label: "Different angle", loadingMessage: "Trying a nearby angle…" },
 ];
+
+const getAvailabilityStatus = (movie) => movie?.availability_status || null;
+const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
 
 const PICK_VARIATION_SEQUENCE = [
   { id: "tone_gritty", dimension: "tone", emphasis: "gritty", description: "Lean into a grittier tone" },
@@ -229,8 +191,6 @@ const ONBOARDING_BUCKETS = [
   { id: "offbeat", genreIds: [14, 16, 9648], fallbackTag: "Distinctive" },
 ];
 
-const pickDynamicHeadline = () => DYNAMIC_HEADLINE_PROMPTS[Math.floor(Math.random() * DYNAMIC_HEADLINE_PROMPTS.length)];
-
 const readLocalFlag = (key) => {
   if (typeof window === "undefined") {
     return false;
@@ -273,22 +233,11 @@ const writeSessionFlag = (key, value) => {
   window.sessionStorage.removeItem(key);
 };
 
-const shuffleArray = (items = []) => {
-  const nextItems = [...items];
-
-  for (let index = nextItems.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    [nextItems[index], nextItems[randomIndex]] = [nextItems[randomIndex], nextItems[index]];
-  }
-
-  return nextItems;
-};
-
 const pickPromptSuggestions = (pool, count, excludedItems = []) => {
   const excludedSet = new Set(excludedItems);
   const availableItems = pool.filter((item) => !excludedSet.has(item));
   const workingPool = availableItems.length >= count ? availableItems : pool;
-  return shuffleArray(workingPool).slice(0, count);
+  return workingPool.slice(0, count);
 };
 
 const getDaysSinceRelease = (releaseDate) => {
@@ -692,7 +641,7 @@ const buildOnboardingReasoningCopy = ({ vibe, likedMovies = [], dislikedMovies =
     return `Pulls toward the ${likedGenre} side of your taste.`;
   }
 
-  return "Feels close to the shape of what you picked.";
+  return "Keeps the same feel, just with a different angle.";
 };
 
 const normalizeFeedMovies = (items = [], view = "latest") =>
@@ -740,7 +689,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const hasDismissedOnboardingRef = useRef(readSessionFlag(ONBOARDING_DISMISSED_SESSION_KEY));
 
   const [query, setQuery] = useState("");
-  const [homeHeadline] = useState(() => pickDynamicHeadline());
+  const [homeHeadline] = useState("What should I watch?");
   const [movies, setMovies] = useState(() => initialFeedState.movies);
   const [loading, setLoading] = useState(() => initialFeedState.loading);
   const [isFeedRefreshing, setIsFeedRefreshing] = useState(() => initialFeedState.refreshing);
@@ -751,8 +700,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [selectedMood, setSelectedMood] = useState("all");
   const [showCapabilities, setShowCapabilities] = useState(false);
   const [pickPrompt, setPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
+  const [includeTheatrical, setIncludeTheatrical] = useState(false);
   const [originalPickPrompt, setOriginalPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
+  const [isHeroInputFocused, setIsHeroInputFocused] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickValidation, setPickValidation] = useState("");
   const [pickResult, setPickResult] = useState(() => initialPickSession.currentPick || null);
@@ -1286,8 +1237,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const heroPreviewMovies = useMemo(() => {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
-    return source.slice(0, isCompactHeroPreview ? 4 : 3);
-  }, [curatedMovies, displayedMovies, filteredMovies, isCompactHeroPreview]);
+    return source.slice(0, 3);
+  }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
     [onboardingVibeId]
@@ -1352,7 +1303,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     : isFeedRefreshing && hasVisibleFeedContent
       ? `${feedCountLabel} • Updating`
       : feedCountLabel;
-  const heroPreviewLabel = movieType === "upcoming" ? "Coming soon" : movieType === "popular" ? "Trending this week" : "Now playing";
+  const heroPreviewLabel = "In theaters now";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
   const activePick = pickResult?.primary || null;
@@ -1401,6 +1352,13 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     () => backupPicks.map((movie, index) => ({ ...movie, backupRole: movie.backupRole || getBackupRoleLabel(movie, index) })),
     [backupPicks]
   );
+  const visibleBackupPicks = useMemo(() => {
+    const theatricalSafeBackups = includeTheatrical
+      ? backupPicksWithRoles
+      : backupPicksWithRoles.filter((movie) => !shouldShowAvailabilityChip(getAvailabilityStatus(movie)));
+
+    return theatricalSafeBackups.slice(0, 3);
+  }, [backupPicksWithRoles, includeTheatrical]);
   const queuedSwapIds = useMemo(() => swapQueue.map((movie) => movie?.id).filter(Boolean), [swapQueue]);
   const swapHistoryExcludedIds = useMemo(
     () => Array.from(new Set(swapHistory.flatMap((entry) => getPickSessionMovieIds(entry)))),
@@ -1462,22 +1420,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const showPromptComposerSection = !showOnboardingFlow && (!activePick || isPickComposerOpen);
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
   const showSessionResumeMessaging = isSessionHomepageUser && (activePick || hasActivePickSession || shouldShowPickSessionPlaceholder);
-  const heroHeadline = showSessionResumeMessaging
-    ? "Pick up where you left off"
-    : isAuthenticatedHomepageUser
-      ? "Find something worth watching"
-      : homeHeadline;
-  const heroSubtext = showSessionResumeMessaging
-    ? "Your recent picks are saved on this device."
-    : isAuthenticatedHomepageUser
-      ? "ReelBot uses your saved signals to keep the next pick sharper."
-      : "Start with a vibe. We’ll do the rest.";
-  const heroSupportCopy = showSessionResumeMessaging
-    ? "Your last ReelBot session is still here."
-    : isAuthenticatedHomepageUser
-      ? "Your history is already in play."
-      : "Learns fast. Keeps getting sharper.";
-  const primaryHeroActionLabel = activePick ? "See your pick" : "Get a pick";
+  const heroSubtext = "Say the mood, the moment, or who’s watching. ReelBot will narrow it down.";
 
   const homeStructuredData = useMemo(() => {
     if (isFeedRoute) {
@@ -1541,7 +1484,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       : {
           title: "ReelBot — AI Movie Picker | Find Something Worth Watching",
           description:
-            "Find something worth watching with ReelBot — fast recommendations, spoiler-light insights, and sharper next-watch picks.",
+            "Find something worth watching with ReelBot — fast recommendations, spoiler-light insights, and better next-watch picks.",
           path: "/",
           image: DEFAULT_SOCIAL_IMAGE,
           structuredData: homeStructuredData,
@@ -1756,6 +1699,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       source: "feed",
       company: "any",
       prompt: pickPrompt,
+      include_theatrical: includeTheatrical,
       ...overrides,
     };
 
@@ -1823,6 +1767,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     pickRequestVersionRef.current += 1;
     clearRestoreTimer();
     setPickPrompt("");
+    setIncludeTheatrical(false);
     setOriginalPickPrompt("");
     setActivePromptSuggestion("");
     setPickError(null);
@@ -1903,6 +1848,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       source: "library",
       company: "any",
       prompt: onboardingPrompt,
+      include_theatrical: false,
     };
 
     cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
@@ -2021,6 +1967,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       source: lastPickMode === "surprise" ? "library" : "feed",
       company: "any",
       prompt: originalPickPrompt || pickPrompt,
+      include_theatrical: pickResult?.resolved_preferences?.include_theatrical ?? includeTheatrical,
     };
 
     void tasteActions.recordSwapFeedback(
@@ -2250,352 +2197,113 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   return (
     <div className="browse-page home-page">
+      <CinematicAtmosphere active={isHeroInputFocused || isPickBusy} loading={isPickBusy} />
       <div className="container browse-shell home-shell">
-        <section className={`browse-hero browse-hero--compact ${isCompactHeroPreview ? "browse-hero--solo" : "browse-hero--with-search"}`}>
-          <div className="browse-copy">
-            <div className="browse-kicker">ReelBot</div>
-            <h1 className="browse-title browse-title--brand">{heroHeadline}</h1>
-            <div className="browse-powered">Quick read. Strong pick.</div>
-            <p className="browse-subtitle browse-subtitle--hero">
-              {heroSubtext}
-              {" "}
-              <span className="browse-subtitle-break">{showOnboardingFlow ? "Browse if you want a wider search." : "Keep going with another pick, or browse wider."}</span>
-            </p>
-            <div className="hero-trust-signal">{heroSupportCopy}</div>
+        <section className="home-hero" aria-labelledby="home-hero-title">
+          <div className="home-hero-copy">
+            <div className="browse-kicker">Skip the endless scroll</div>
+            <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
+            <p className="home-hero-subtitle">{heroSubtext}</p>
 
-            <div className="browse-hero-actions">
-              <a href={activePick ? "#your-pick" : "#pick-for-me"} className="reelbot-inline-button reelbot-inline-button--solid">
-                {primaryHeroActionLabel}
-              </a>
-              {activePick ? (
-                <button type="button" className="reelbot-inline-button" onClick={handleRefinePickForHero}>
-                  Adjust your vibe
+            <div className="home-hero-form">
+              <ReelbotPromptComposer
+                inputId="pick-prompt-input"
+                introText="Try one:"
+                suggestions={visiblePromptSuggestions}
+                activeSuggestion={activePromptSuggestion}
+                value={pickPrompt}
+                onSuggestionSelect={(value) => {
+                  cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
+                  setPickPrompt(value);
+                  setActivePromptSuggestion(value);
+                  if (pickValidation) {
+                    setPickValidation("");
+                  }
+                }}
+                onInputChange={(value) => {
+                  cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
+                  setPickPrompt(value);
+                  if (activePromptSuggestion && value.trim() !== activePromptSuggestion) {
+                    setActivePromptSuggestion("");
+                  }
+                  if (pickValidation) {
+                    setPickValidation("");
+                  }
+                }}
+                onKeyDown={handlePromptKeyDown}
+                onFocus={() => setIsHeroInputFocused(true)}
+                onBlur={() => setIsHeroInputFocused(false)}
+                placeholder='Try “a smart thriller under two hours”'
+                errorText={pickValidation}
+              />
+
+              <div className="home-hero-actions home-hero-actions--primary">
+                <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handlePickSubmit} disabled={isPickBusy}>
+                  {isPickLoading && lastPickMode === "prompt" ? "Getting a pick…" : "Get a pick"}
                 </button>
-              ) : null}
-              {hasResettableDiscoveryState ? (
-                <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleStartFresh}>
-                  Start fresh
+                <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleSurprisePick} disabled={isPickBusy}>
+                  {isPickLoading && lastPickMode === "surprise" ? "Surprising you…" : "Surprise me"}
                 </button>
-              ) : null}
-              <button type="button" className="reelbot-inline-button" onClick={() => setShowCapabilities(true)}>
-                How it works
-              </button>
-            </div>
-          </div>
-
-          {!isCompactHeroPreview ? (
-            <div className="browse-hero-aside">
-              <form onSubmit={handleHeroSearch} className="search-bar search-bar--hero">
-                <input
-                  type="text"
-                  placeholder="Try a title, actor, or vibe"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                <button type="submit">Search</button>
-              </form>
-
-              {heroPreviewMovies.length ? (
-                <div className="hero-preview-card">
-                  <div className="hero-preview-head">
-                    <div className="detail-description-label">{heroPreviewLabel}</div>
-                    <span className="results-count results-count--context">{heroPreviewMovies.length} picks</span>
-                  </div>
-
-                  <div className="hero-preview-grid">
-                    {heroPreviewMovies.map((movie) => (
-                      <Link key={movie.id} to={getMoviePath(movie)} className="hero-preview-item" aria-label={`Open ${movie.title}`}>
-                        {movie.poster_path ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                            alt={movie.title}
-                            className="hero-preview-poster"
-                          />
-                        ) : (
-                          <div className="hero-preview-poster hero-preview-poster--placeholder">Poster unavailable</div>
-                        )}
-                        <span className="hero-preview-title">{movie.title}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-
-        {showOnboardingFlow || showPromptComposerSection ? (
-        <section id="pick-for-me" className="pick-for-me-card pick-for-me-card--primary">
-          <div className="section-header section-header--compact section-header--stacked-mobile">
-            <div>
-              <h2 className="section-title">{showOnboardingFlow ? "Get a pick" : "Find something worth watching"}</h2>
-              <p className="section-subtitle">
-                {showOnboardingFlow ? "Start with a vibe. We’ll do the rest." : "Describe the vibe and ReelBot will sharpen the next pick."}
-              </p>
-            </div>
-          </div>
-
-          {showOnboardingFlow ? (
-            <div className={`quick-onboarding-shell quick-onboarding-shell--${onboardingStep}`}>
-              <div className="quick-onboarding-content">
-                <div className="quick-onboarding-head">
-                  <div className="quick-onboarding-head-copy">
-                    <div className="detail-description-label">
-                      {onboardingStep === "complete" ? "YOUR FIRST PICK" : onboardingStep === "taste" ? "TASTE INPUT" : "YOUR VIBE"}
-                    </div>
-                    <h3 className="quick-onboarding-title">
-                      {onboardingStep === "intent"
-                        ? homeHeadline
-                        : onboardingStep === "taste"
-                          ? "Help me get a quick read on your taste"
-                          : onboardingStep === "loading"
-                            ? "Building your first pick"
-                            : "This feels like you"}
-                    </h3>
-                    <p className="detail-secondary-text quick-onboarding-copy">
-                      {onboardingStep === "intent"
-                        ? "We’ll use this to shape your first pick."
-                        : onboardingStep === "taste"
-                          ? "Tap a few movies — no thinking required"
-                          : onboardingStep === "loading"
-                            ? "Reading your picks and lining up the best match."
-                            : onboardingReasoning || "A sharper read based on the signals you gave ReelBot."}
-                    </p>
-                  </div>
-                  {onboardingStep !== "intent" && onboardingStep !== "taste" ? (
-                    <button type="button" className="reelbot-inline-button quick-onboarding-reset" onClick={handleRestartOnboarding}>
-                      Start fresh
-                    </button>
-                  ) : null}
-                </div>
-
-                {onboardingStep === "intent" ? (
-                  <>
-                    <div className="quick-onboarding-vibe-grid" role="list" aria-label="Pick a vibe">
-                      {[
-                        { id: "easy_fun", label: "Easy watch" },
-                        { id: "intense", label: "Something intense" },
-                        { id: "thought_provoking", label: "Smart / twisty" },
-                        { id: "emotional", label: "Emotional" },
-                        { id: "surprise_me", label: "Surprise me" },
-                      ].map((option) => (
-                        <button
-                          key={option.id}
-                          type="button"
-                          className={`quick-onboarding-vibe-button${onboardingVibeId === option.id ? " is-active" : ""}`}
-                          onClick={() => handleOnboardingVibeSelect(option.id)}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="quick-onboarding-footer">
-                      <div className="quick-onboarding-footer-actions">
-                        <button
-                          type="button"
-                          className="reelbot-inline-button reelbot-inline-button--solid"
-                          onClick={handleOnboardingContinue}
-                          disabled={!onboardingVibeId}
-                        >
-                          Continue
-                        </button>
-                      </div>
-                      <button type="button" className="quick-onboarding-dismiss" onClick={handleDismissOnboarding}>
-                        Skip for now
-                      </button>
-                    </div>
-                  </>
-                ) : null}
-
-                {onboardingStep === "taste" ? (
-                  onboardingPosterDeck.length ? (
-                    <div className="quick-onboarding-taste-shell">
-                      <div className="quick-onboarding-progress-row">
-                        <div className="quick-onboarding-progress-copy">
-                          <span className="quick-onboarding-progress-step">{onboardingInteractionCount} / {ONBOARDING_MIN_SIGNAL_COUNT} picks</span>
-                          <span className="quick-onboarding-progress-note">{canFinishOnboarding ? "Enough signal. Keep going or continue." : `${onboardingRemainingCount} more to go`}</span>
-                        </div>
-                        <button type="button" className="reelbot-inline-button quick-onboarding-reset quick-onboarding-reset--inline" onClick={handleRestartOnboarding}>
-                          Start fresh
-                        </button>
-                      </div>
-
-                      <div className="quick-onboarding-grid">
-                        {onboardingPosterDeck.map((movie) => {
-                          const reactionState = onboardingLikedIds.includes(movie.id)
-                            ? "like"
-                            : onboardingDislikedIds.includes(movie.id)
-                              ? "dislike"
-                              : onboardingSkippedIds.includes(movie.id)
-                                ? "skip"
-                                : "";
-
-                          return (
-                            <article key={movie.id} className={`movie-card home-movie-card quick-onboarding-grid-card${reactionState ? ` is-${reactionState}` : ""}`}>
-                              <div className="home-movie-card-link quick-onboarding-grid-shell">
-                                <div className="home-movie-card-poster-shell quick-onboarding-grid-poster-shell">
-                                  <span className="home-movie-card-label">{getPosterToneTag(movie, onboardingVibeId)}</span>
-                                  <img
-                                    src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                                    alt={movie.title}
-                                    className="movie-poster"
-                                  />
-                                  <span className="home-movie-card-overlay" aria-hidden="true"></span>
-                                </div>
-
-                                <div className="movie-card-content quick-onboarding-grid-copy">
-                                  <div className="movie-card-meta">
-                                    <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-                                    {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
-                                  </div>
-                                  <h4 className="movie-card-title quick-onboarding-grid-title">{movie.title}</h4>
-                                  <p className="movie-card-date quick-onboarding-grid-date">{formatMovieDate(movie.release_date)}</p>
-                                  <div className="quick-onboarding-grid-actions">
-                                    <button
-                                      type="button"
-                                      aria-pressed={reactionState === "like"}
-                                      className={`quick-onboarding-chip quick-onboarding-chip--like${reactionState === "like" ? " is-active" : ""}`}
-                                      onClick={() => handleOnboardingReaction(movie.id, "like")}
-                                    >
-                                      Interested
-                                    </button>
-                                    <button
-                                      type="button"
-                                      aria-pressed={reactionState === "dislike"}
-                                      className={`quick-onboarding-chip quick-onboarding-chip--dislike${reactionState === "dislike" ? " is-active" : ""}`}
-                                      onClick={() => handleOnboardingReaction(movie.id, "dislike")}
-                                    >
-                                      Not for me
-                                    </button>
-                                    <button
-                                      type="button"
-                                      aria-pressed={reactionState === "skip"}
-                                      className={`quick-onboarding-chip quick-onboarding-chip--skip${reactionState === "skip" ? " is-active" : ""}`}
-                                      onClick={() => handleOnboardingReaction(movie.id, "skip")}
-                                    >
-                                      Skip
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-
-                      <div className="quick-onboarding-footer">
-                        <div className="detail-secondary-text quick-onboarding-footer-copy">{onboardingSignalSummary || "Pick a few posters and keep moving."}</div>
-                        <div className="quick-onboarding-footer-actions">
-                          {canFinishOnboarding ? (
-                            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid quick-onboarding-finish" onClick={() => handleOnboardingPick()}>
-                              Continue
-                            </button>
-                          ) : (
-                            <button type="button" className="reelbot-inline-button quick-onboarding-finish quick-onboarding-finish--pending" disabled>
-                              {onboardingInteractionCount ? `Pick ${onboardingRemainingCount} more to continue` : `Pick ${ONBOARDING_MIN_SIGNAL_COUNT} to continue`}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <button type="button" className="quick-onboarding-dismiss quick-onboarding-dismiss--footer" onClick={handleDismissOnboarding}>
-                        Skip for now
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="reelbot-loading-state onboarding-loading-state">
-                      <span className="reelbot-loading-dot" aria-hidden="true"></span>
-                      <div className="reelbot-loading-copy">
-                        <p className="reelbot-loading-title">Loading your taste cards…</p>
-                        <p className="detail-secondary-text reelbot-placeholder-copy">Pulling together a better mix.</p>
-                      </div>
-                    </div>
-                  )
-                ) : null}
               </div>
 
-              {onboardingStep === "loading" || onboardingStep === "complete" ? (
-                <div className="quick-onboarding-content quick-onboarding-content--status">
-                  {onboardingStep === "loading" ? (
-                    <div className="reelbot-loading-state onboarding-loading-state">
-                      <span className="reelbot-loading-dot" aria-hidden="true"></span>
-                      <div className="reelbot-loading-copy">
-                        <p className="reelbot-loading-title">Finding your first pick…</p>
-                        <p className="detail-secondary-text reelbot-placeholder-copy">
-                          {onboardingVibe?.shortLabel ? `${onboardingVibe.shortLabel} locked.` : "Vibe locked."} {onboardingSignalSummary}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {onboardingStep === "complete" ? (
-                    <div className="quick-onboarding-complete">
-                      <div className="quick-onboarding-complete-copy">
-                        <span className="quick-onboarding-complete-pill">{onboardingVibe?.shortLabel || "Ready"}</span>
-                        <p className="detail-secondary-text quick-onboarding-complete-text">
-                          {onboardingSignalSummary || "Taste saved."}
-                        </p>
-                      </div>
-                      <button type="button" className="reelbot-inline-button" onClick={handleRestartOnboarding}>
-                        Start fresh
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+              <label className="reelbot-toggle-option theatrical-toggle theatrical-toggle--quiet">
+                <input
+                  type="checkbox"
+                  checked={includeTheatrical}
+                  onChange={(event) => setIncludeTheatrical(event.target.checked)}
+                  disabled={isPickBusy}
+                />
+                <span className="reelbot-toggle-option-control" aria-hidden="true"></span>
+                <span className="reelbot-toggle-option-copy">
+                  <span className="reelbot-toggle-option-title">Include movies in theaters</span>
+                  <span className="reelbot-toggle-option-subtitle">Quietly widen the pool when you want current releases included.</span>
+                </span>
+              </label>
             </div>
-          ) : null}
 
-          {showPromptComposerSection ? (
-          <ReelbotPromptComposer
-            inputId="pick-prompt-input"
-            suggestions={visiblePromptSuggestions}
-            activeSuggestion={activePromptSuggestion}
-            value={pickPrompt}
-            onSuggestionSelect={(value) => {
-              cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
-              setPickPrompt(value);
-              setActivePromptSuggestion(value);
-              if (pickValidation) {
-                setPickValidation("");
-              }
-            }}
-            onInputChange={(value) => {
-              cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
-              setPickPrompt(value);
-              if (activePromptSuggestion && value.trim() !== activePromptSuggestion) {
-                setActivePromptSuggestion("");
-              }
-              if (pickValidation) {
-                setPickValidation("");
-              }
-            }}
-            onKeyDown={handlePromptKeyDown}
-            placeholder="Try a title, actor, or vibe"
-            errorText={pickValidation}
-          />
-          ) : null}
+            <div className="home-hero-now-playing home-hero-now-playing--inline" aria-label="In theaters now">
+              <div className="home-hero-now-playing-head">
+                <div>
+                  <h2 className="home-hero-now-playing-heading">{heroPreviewLabel}</h2>
+                  <p className="home-hero-now-playing-copy">Current releases you can ask about.</p>
+                </div>
+              </div>
 
-          {showPromptComposerSection ? (
-          <div className="pick-for-me-actions">
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handlePickSubmit} disabled={isPickBusy}>
-              {isPickLoading && lastPickMode === "prompt" ? "Getting a pick…" : "Get a pick"}
-            </button>
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleSurprisePick} disabled={isPickBusy}>
-              {isPickLoading && lastPickMode === "surprise" ? "Surprising you…" : "Surprise me"}
-            </button>
+              {heroPreviewMovies.length ? (
+                <div className="home-hero-now-playing-rail">
+                  {heroPreviewMovies.map((movie) => (
+                    <Link key={movie.id} to={getMoviePath(movie)} className="home-hero-now-playing-item" aria-label={`Open ${movie.title}`}>
+                      {movie.poster_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                          alt={movie.title}
+                          className="home-hero-now-playing-poster"
+                        />
+                      ) : (
+                        <div className="home-hero-now-playing-poster home-hero-now-playing-poster--placeholder">Poster unavailable</div>
+                      )}
+                      <span className="home-hero-now-playing-title">{movie.title}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="home-hero-now-playing-empty">
+                  <span className="status-glyph" aria-hidden="true"></span>
+                  <span>Current releases will show up here.</span>
+                </div>
+              )}
+            </div>
           </div>
-          ) : null}
         </section>
-        ) : null}
 
         {shouldRenderPickResultSection ? (
-        <section id="your-pick" ref={pickResultSectionRef} className="pick-result-section" aria-live="polite">
+        <section id="your-pick" ref={pickResultSectionRef} className="pick-result-section home-result-section" aria-live="polite">
           <div id="pick-result" aria-hidden="true"></div>
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-              {shouldShowFirstPickIntro ? <div className="detail-description-label">YOUR FIRST PICK</div> : null}
-              <h2 className="section-title">{shouldShowFirstPickIntro ? "This feels like you" : isSessionHomepageUser ? "Your latest pick" : pickResultTitle}</h2>
-              {activePick && !shouldShowFirstPickIntro ? <p className="section-subtitle">{pickResultSubtitle}</p> : null}
+              <div className="detail-description-label">Recent pick</div>
+              <h2 className="section-title">Your pick</h2>
+              {activePick ? <p className="section-subtitle">One pick, with a few ways to adjust it.</p> : null}
             </div>
           </div>
 
@@ -2615,7 +2323,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             rationale={resultRationale}
             summary={null}
             primaryMovie={activePick}
-            backupMovies={backupPicksWithRoles}
+            backupMovies={visibleBackupPicks}
             vibeLabel={pickVibeLabel}
             loadingCopy={pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
             emptyCopy="Nothing here yet. Give ReelBot a vibe and we'll line up your next watch."
@@ -2627,15 +2335,20 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             onFallbackAction={shouldShowPickFallbackState ? handleRetryPick : undefined}
             fallbackSecondaryActionLabel={shouldShowPickFallbackState ? "Browse movies" : ""}
             fallbackSecondaryActionPath={shouldShowPickFallbackState ? browseLibraryPath : ""}
-            primaryActionLabel={activePick ? "Movie details" : ""}
+            primaryActionLabel={activePick?.trailer ? "Watch trailer" : "View details"}
             onPrimaryAction={activePick ? () => {
               markFirstPickSummarySeen();
+              if (activePick.trailer) {
+                setIsPickTrailerOpen(true);
+                return;
+              }
               navigate(getMoviePath(activePick), { state: { source: "reelbot_pick", restorePickSession: true } });
             } : undefined}
             showDetailLink={false}
             refreshLabel={isSwapLoading ? "Swapping…" : "Get another pick"}
             resetLabel="Start fresh"
-            backupTitle="Similar picks, different vibes"
+            backupTitle="Also worth considering"
+            backupCopy="If you want another angle."
             onRefreshChoices={pickResult?.primary ? () => {
               markFirstPickSummarySeen();
               return handleRefreshPick();
@@ -2646,7 +2359,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             recoveryTitle={pickRecoveryTitle}
             recoveryMessage={pickRecoveryMessage}
             onRefineVibe={activePick && !isPickBusy ? handleRefinePick : undefined}
-            refineVibeLabel="Adjust your vibe"
+            refineVibeLabel="Refine this"
             refineActions={activePick ? PICK_REFINE_ACTIONS : []}
             onRefineAction={activePick && !isPickBusy ? handleInlineRefinement : undefined}
             refineStatusLabel={inlineRefineStatus}
@@ -2656,8 +2369,11 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             showSessionPlaceholder={shouldShowPickSessionPlaceholder}
             showExpandedReasoning
             tasteActionProps={{
-              skipLabel: "Not for me",
-              skipActiveLabel: "Not for me",
+              showSeenAction: false,
+              showSkipAction: false,
+              showVibeAction: false,
+              skipLabel: "Save",
+              skipActiveLabel: "Saved",
               onInteraction: markFirstPickSummarySeen,
             }}
             hideRefreshCta={refreshExhausted}
@@ -2666,59 +2382,16 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         </section>
         ) : null}
 
-        <div className="mode-divider" aria-hidden="true">
-          <span className="mode-divider-line"></span>
-          <span className="mode-divider-label">Explore Mode</span>
-          <span className="mode-divider-line"></span>
-        </div>
-
-        <section className="explore-mode-shell">
-          <div className="section-header section-header--compact section-header--stacked-mobile explore-mode-header">
+        <section className="home-browse-section">
+          <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-              <div className="detail-description-label">Explore</div>
-              <h2 className="section-title">Explore Movies</h2>
-              <p className="section-subtitle">Prefer browsing? Scan what’s in theaters, trending, or coming soon.</p>
+              <div className="detail-description-label">Still browsing?</div>
+              <h2 className="section-title">Browse what’s out now</h2>
+              <p className="section-subtitle">Current releases, trending titles, and what’s coming soon.</p>
             </div>
-          </div>
-
-          <section className="secondary-discovery-section">
-            <div className="secondary-discovery-grid">
-              <aside className="browse-library-card browse-library-card--secondary">
-                <div className="detail-description-label">Browse Library</div>
-                <h3 className="browse-library-title">Need a wider search?</h3>
-                <p className="detail-secondary-text browse-library-copy">
-                  Use Browse Library when you want more control over genre, runtime, and mood.
-                </p>
-
-                <div className="browse-library-links">
-                  <Link to="/browse?view=popular&genre=878#library-results" className="browse-library-link">
-                    Trending Sci-Fi
-                  </Link>
-                  <Link to="/browse?view=popular&runtime=under_two_hours#library-results" className="browse-library-link">
-                    Under 100 Minutes
-                  </Link>
-                  <Link to="/browse?view=popular&genre=10749&runtime=under_two_hours#library-results" className="browse-library-link">
-                    Date-Night Range
-                  </Link>
-                  <Link to="/browse?view=latest&mood=dark#library-results" className="browse-library-link">
-                    Dark Now Playing
-                  </Link>
-                </div>
-
-                <Link to="/browse" className="card-link browse-library-cta">
-                  Browse Movies
-                </Link>
-              </aside>
-            </div>
-          </section>
-
-          <div id="movie-grid" className="section-header section-header--stacked-mobile">
-            <div>
-              <h2 className="section-title">{heading}</h2>
-              <p className="section-subtitle">{sectionSubtitle}</p>
-              <div className="feed-showing-label">Showing: {selectedMood === "all" ? viewLabel : selectedMoodConfig.label}</div>
-            </div>
-            <div className="results-count">{feedCountDisplayLabel}</div>
+            <Link to="/browse" className="browse-library-link browse-library-link--header">
+              Browse Movies
+            </Link>
           </div>
 
           <div className="tabs browse-tabs browse-tabs--secondary">
@@ -2791,6 +2464,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                         <div className="movie-card-meta">
                           <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
                           {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                          {shouldShowAvailabilityChip(getAvailabilityStatus(movie)) ? (
+                            <span className="movie-card-chip movie-card-chip--availability">{getAvailabilityStatus(movie).label}</span>
+                          ) : null}
                           {seenMovieIds.has(movie.id) ? (
                             <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
                           ) : null}
@@ -2843,6 +2519,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           </div>
         ) : null}
         </section>
+
       </div>
 
       <TrailerModal

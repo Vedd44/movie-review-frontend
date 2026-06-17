@@ -65,7 +65,7 @@ function HowReelbotWorks() {
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
               <h2 className="section-title">What the actions do</h2>
-              <p className="section-subtitle">Your actions help ReelBot keep the next pick sharper.</p>
+              <p className="section-subtitle">Your actions help ReelBot make the next pick feel more like you.</p>
             </div>
           </div>
           <div className="capability-grid">

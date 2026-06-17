@@ -159,16 +159,65 @@ const PANEL_SCROLL_OFFSET = 112;
 const DETAIL_ANCHOR_OFFSET = 110;
 const DEFAULT_REELBOT_ERROR = "ReelBot hit a snag on that answer. Please try again.";
 
-const summarizeList = (items = [], limit = 3) => {
+const getPersonPath = (personId) => `/person/${personId}`;
 
-  if (!Array.isArray(items) || items.length === 0) {
-    return "";
+const PersonLink = ({ person, fallbackName = "", block = false }) => {
+  const name = person?.name || fallbackName;
+
+  if (!name) {
+    return <span>TBA</span>;
   }
 
-  const visibleItems = items.slice(0, limit);
-  const remainingCount = items.length - visibleItems.length;
+  if (!person?.id) {
+    return <span>{name}</span>;
+  }
 
-  return remainingCount > 0 ? `${visibleItems.join(", ")} +${remainingCount} more` : visibleItems.join(", ");
+  const path = getPersonPath(person.id);
+
+  return (
+    <button
+      type="button"
+      className={`person-inline-link${block ? " person-inline-link--block" : ""}`}
+      aria-label={`Open ${name}'s filmography`}
+      title={`Open ${name}'s filmography`}
+      onMouseDown={(event) => {
+        if (event.button !== 0) {
+          return;
+        }
+
+        event.preventDefault();
+        window.location.assign(path);
+      }}
+      onClick={() => window.location.assign(path)}
+    >
+      <span>{name}</span>
+    </button>
+  );
+};
+
+const renderCastLinks = (credits = [], fallbackNames = [], limit = 4) => {
+  const visibleCredits = Array.isArray(credits) && credits.length
+    ? credits.slice(0, limit)
+    : (Array.isArray(fallbackNames) ? fallbackNames.slice(0, limit).map((name) => ({ name })) : []);
+  const totalCount = Array.isArray(credits) && credits.length ? credits.length : Array.isArray(fallbackNames) ? fallbackNames.length : 0;
+
+  if (!visibleCredits.length) {
+    return "TBA";
+  }
+
+  const remainingCount = Math.max(0, totalCount - visibleCredits.length);
+
+  return (
+    <span className="person-inline-list">
+      {visibleCredits.map((credit, index) => (
+        <React.Fragment key={credit.id || credit.name}>
+          {index > 0 ? <span className="person-inline-separator">, </span> : null}
+          <PersonLink person={credit} />
+        </React.Fragment>
+      ))}
+      {remainingCount > 0 ? <span className="person-inline-more"> +{remainingCount} more</span> : null}
+    </span>
+  );
 };
 
 const includesAnyGenre = (genres, values) => values.some((value) => genres.includes(value));
@@ -534,15 +583,15 @@ function MovieDetails() {
     if (previewMode) {
       return [
         { label: "Release Date", value: formatReleaseDate(movie.release_date) },
-        { label: "Director", value: movie.director || "TBA" },
-        { label: "Lead Cast", value: summarizeList(movie.top_cast, 4) || "TBA" },
+        { label: "Director", value: <PersonLink person={movie.director_credit} fallbackName={movie.director} block /> },
+        { label: "Lead Cast", value: renderCastLinks(movie.top_cast_credits, movie.top_cast, 4) },
         { label: "Runtime", value: runtimeFactValue },
       ];
     }
 
     return [
-      { label: "Director", value: movie.director || "TBA" },
-      { label: "Lead Cast", value: summarizeList(movie.top_cast, 4) || "TBA" },
+      { label: "Director", value: <PersonLink person={movie.director_credit} fallbackName={movie.director} block /> },
+      { label: "Lead Cast", value: renderCastLinks(movie.top_cast_credits, movie.top_cast, 4) },
       { label: "Runtime", value: runtimeFactValue },
       { label: boxOfficeValue ? "Box Office" : "Audience Score", value: boxOfficeValue || (movie.rating ? `TMDB ${movie.rating.toFixed(1)}` : "Not enough data") },
     ];
@@ -1203,7 +1252,7 @@ function MovieDetails() {
             {compactFacts.map((fact) => (
               <div key={fact.label} className="detail-compact-fact">
                 <span className="detail-fact-pill-label">{fact.label}</span>
-                <span className="detail-compact-fact-value">{fact.value}</span>
+                <div className="detail-compact-fact-value">{fact.value}</div>
               </div>
             ))}
           </div>

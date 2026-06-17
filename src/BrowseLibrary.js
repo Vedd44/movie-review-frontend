@@ -33,6 +33,8 @@ const LIBRARY_REFINE_ACTIONS = [
   { id: "more_like_this", label: "More like this", loadingMessage: "Staying close to this pick…" },
   { id: "different_angle", label: "Different angle", loadingMessage: "Trying a nearby angle…" },
 ];
+const getAvailabilityStatus = (movie) => movie?.availability_status || null;
+const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
 
 function BrowseLibrary() {
   const location = useLocation();
@@ -52,6 +54,7 @@ function BrowseLibrary() {
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   const [pickPrompt, setPickPrompt] = useState("");
+  const [includeTheatrical, setIncludeTheatrical] = useState(false);
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickResult, setPickResult] = useState(null);
@@ -123,7 +126,7 @@ function BrowseLibrary() {
     setSwapQueue([]);
     setCandidatePoolIds([]);
     setRefinementState(null);
-  }, [normalizedGenre, normalizedMood, normalizedRuntime, normalizedView, pickPrompt]);
+  }, [includeTheatrical, normalizedGenre, normalizedMood, normalizedRuntime, normalizedView, pickPrompt]);
 
   const selectedMoodConfig = useMemo(
     () => MOOD_FILTERS.find((filter) => filter.id === normalizedMood) || MOOD_FILTERS[0],
@@ -210,6 +213,11 @@ function BrowseLibrary() {
       return;
     }
 
+    if (filterId === "theatrical") {
+      setIncludeTheatrical(false);
+      return;
+    }
+
     updateFilters({ mood: "all" });
   };
 
@@ -222,6 +230,7 @@ function BrowseLibrary() {
       company: "any",
       prompt: pickPrompt,
       genre: normalizedGenre,
+      include_theatrical: includeTheatrical,
     };
 
     try {
@@ -314,6 +323,7 @@ function BrowseLibrary() {
       company: "any",
       prompt: pickPrompt,
       genre: normalizedGenre,
+      include_theatrical: pickResult?.resolved_preferences?.include_theatrical ?? includeTheatrical,
     };
 
     if (pickResult?.primary) {
@@ -375,8 +385,9 @@ function BrowseLibrary() {
       { id: "genre", label: selectedGenreLabel },
       { id: "runtime", label: PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length" },
       { id: "mood", label: selectedMoodConfig.label },
-    ],
-    [normalizedRuntime, normalizedView, selectedGenreLabel, selectedMoodConfig.label]
+      includeTheatrical ? { id: "theatrical", label: "Includes theatrical" } : null,
+    ].filter(Boolean),
+    [includeTheatrical, normalizedRuntime, normalizedView, selectedGenreLabel, selectedMoodConfig.label]
   );
 
   const browseStructuredData = useMemo(
@@ -538,12 +549,26 @@ function BrowseLibrary() {
 
             <ReelbotPromptComposer
               label="Add a vibe"
-              helperText="Optional: add a vibe if you want to sharpen the pick."
+              helperText="Optional: add a vibe if you want a more specific pick."
               suggestions={LIBRARY_PROMPTS.slice(0, 4)}
               value={pickPrompt}
               onChange={setPickPrompt}
               placeholder="Try: smart sci-fi under 2 hours, dark but rewarding, or an easy watch"
             />
+
+            <label className="reelbot-toggle-option theatrical-toggle">
+              <input
+                type="checkbox"
+                checked={includeTheatrical}
+                onChange={(event) => setIncludeTheatrical(event.target.checked)}
+                disabled={pickLoading}
+              />
+              <span className="reelbot-toggle-option-control" aria-hidden="true"></span>
+              <span className="reelbot-toggle-option-copy">
+                <span className="reelbot-toggle-option-title">Include movies still in theaters</span>
+                <span className="reelbot-toggle-option-subtitle">Off by default so everything here is easy to watch at home.</span>
+              </span>
+            </label>
 
             <div className="pick-for-me-actions">
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handleLibraryPick} disabled={pickLoading}>
@@ -634,6 +659,9 @@ function BrowseLibrary() {
                     <div className="movie-card-meta">
                       <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
                       {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                      {shouldShowAvailabilityChip(getAvailabilityStatus(movie)) ? (
+                        <span className="movie-card-chip movie-card-chip--availability">{getAvailabilityStatus(movie).label}</span>
+                      ) : null}
                       {seenMovieIds.has(movie.id) ? (
                         <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
                       ) : null}

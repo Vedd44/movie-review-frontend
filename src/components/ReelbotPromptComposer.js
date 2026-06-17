@@ -3,6 +3,7 @@ import React, { useRef } from "react";
 function ReelbotPromptComposer({
   label,
   helperText = "",
+  introText = "",
   suggestions = [],
   activeSuggestion = "",
   inputId,
@@ -10,6 +11,8 @@ function ReelbotPromptComposer({
   onSuggestionSelect,
   onInputChange,
   onKeyDown,
+  onFocus,
+  onBlur,
   placeholder,
   errorText = "",
 }) {
@@ -39,6 +42,7 @@ function ReelbotPromptComposer({
     <div className="pick-control-group pick-control-group--prompt">
       {label ? <div className="detail-description-label">{label}</div> : null}
       {helperText ? <p className="prompt-composer-copy detail-secondary-text">{helperText}</p> : null}
+      {introText ? <div className="prompt-composer-intro">{introText}</div> : null}
       {suggestions.length ? (
         <div className="pick-prompt-suggestions">
           {suggestions.map((prompt) => (
@@ -63,6 +67,8 @@ function ReelbotPromptComposer({
           value={value}
           onChange={handleInputChange}
           onKeyDown={onKeyDown}
+          onFocus={onFocus}
+          onBlur={onBlur}
           aria-invalid={errorText ? "true" : "false"}
           aria-describedby={errorText ? "pick-prompt-validation" : undefined}
         />

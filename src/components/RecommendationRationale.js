@@ -7,7 +7,9 @@ function RecommendationRationale({ rationale, collapsible = false }) {
 
   return (
     <section className={`recommendation-rationale${collapsible ? " recommendation-rationale--compact" : ""}`}>
-      {rationale.decisionVerdict ? <h4 className="recommendation-rationale-title">{rationale.decisionVerdict}</h4> : null}
+      <div className="recommendation-rationale-head">
+        <h4 className="recommendation-rationale-title">Why it works</h4>
+      </div>
       {rationale.contextAnchor ? (
         <p className="recommendation-rationale-why-now">{rationale.contextAnchor}</p>
       ) : null}

@@ -7,6 +7,11 @@ import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getReleaseYear } from "../discovery";
 import { getBackupCardMeta } from "../recommendationInsights";
 
+const getAvailabilityStatus = (movie, providerEntry) =>
+  movie?.availability_status || providerEntry?.availability_status || null;
+
+const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
+
 function PickResultPanel({
   id,
   panelStatus = "idle",
@@ -34,6 +39,7 @@ function PickResultPanel({
   refreshLabel = "Swap Pick",
   resetLabel = "Start fresh",
   backupTitle = "Similar picks, different vibes",
+  backupCopy = "",
   onRefreshChoices,
   onResetChoices,
   refreshDisabled = false,
@@ -54,16 +60,21 @@ function PickResultPanel({
   refineStatusLabel = "",
   tasteActionProps = {},
 }) {
-  const providerMap = useWatchProviderBadges(
-    useMemo(() => [primaryMovie?.id, ...backupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, backupMovies])
+  const visibleBackupMovies = useMemo(
+    () => (Array.isArray(backupMovies) ? backupMovies.slice(0, 3) : []),
+    [backupMovies]
   );
-  const confidenceStars = rationale?.confidenceStars || "★★★★☆";
+  const providerMap = useWatchProviderBadges(
+    useMemo(() => [primaryMovie?.id, ...visibleBackupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, visibleBackupMovies])
+  );
   const reelbotPickLinkState = { source: "reelbot_pick", restorePickSession: true };
   const hasPrimaryMovie = Boolean(primaryMovie);
   const shouldShowStandaloneLoading = loading && !hasPrimaryMovie;
   const shouldShowFallbackState = !hasPrimaryMovie && (panelStatus === "exhausted" || panelStatus === "error");
   const shouldShowInlineRecovery = hasPrimaryMovie && Boolean(recoveryTitle || recoveryMessage || onRefineVibe || browsePath);
   const availableRefineActions = Array.isArray(refineActions) ? refineActions.filter((action) => action?.id && action?.label) : [];
+  const primaryAvailabilityStatus = getAvailabilityStatus(primaryMovie, providerMap[primaryMovie?.id]);
+  const bestFitLabel = "Best fit";
 
   return (
     <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
@@ -99,18 +110,17 @@ function PickResultPanel({
                   {primaryMovie.title}
                 </Link>
               </h3>
-              {rationale?.confidenceLabel ? (
-                <div className="pick-result-confidence-detail pick-result-confidence-detail--inline">
-                  <span className="pick-result-confidence-text">Confidence</span>
-                  <span className="pick-result-confidence-stars" aria-label={`Confidence ${rationale.confidenceLabel}`}>
-                    {confidenceStars}
-                  </span>
-                </div>
-              ) : null}
+              <div className="pick-primary-fit-row">
+                <span className="pick-primary-fit-label">{bestFitLabel}</span>
+                {rationale?.summaryLine ? <p className="pick-primary-hook">{rationale.summaryLine}</p> : null}
+              </div>
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
                 {primaryMovie.runtime ? <span className="movie-card-chip">{primaryMovie.runtime} min</span> : null}
                 {primaryMovie.vote_average ? <span className="movie-card-chip">TMDB {primaryMovie.vote_average.toFixed(1)}</span> : null}
+                {shouldShowAvailabilityChip(primaryAvailabilityStatus) ? (
+                  <span className="movie-card-chip movie-card-chip--availability">{primaryAvailabilityStatus.label}</span>
+                ) : null}
                 {primaryMovie.seen ? (
                   <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
                 ) : null}
@@ -165,8 +175,8 @@ function PickResultPanel({
                   </div>
                   {rationale?.tasteCue ? <p className="pick-taste-cue detail-secondary-text">{rationale.tasteCue}</p> : null}
                   {availableRefineActions.length && onRefineAction ? (
-                    <div className="pick-refine-panel">
-                      <div className="pick-refine-label">Refine this pick</div>
+                  <div className="pick-refine-panel">
+                      <div className="pick-refine-label">Refine this</div>
                       <div className="pick-refine-grid">
                         {availableRefineActions.map((action) => (
                           <button
@@ -207,18 +217,19 @@ function PickResultPanel({
             </div>
           ) : null}
 
-          {backupMovies.length ? (
+          {visibleBackupMovies.length ? (
             <section className="pick-backups-block">
               <div className="pick-backups-head">
                 <div>
                   <h3 className="pick-backups-title">{backupTitle}</h3>
-                  <p className="pick-backups-eyebrow">Same vibe, different angle</p>
+                  {backupCopy ? <p className="pick-backups-copy">{backupCopy}</p> : null}
                 </div>
               </div>
 
               <div className="pick-backup-strip">
-                {backupMovies.map((movie, index) => {
+                {visibleBackupMovies.map((movie, index) => {
                   const backupMeta = getBackupCardMeta(movie, index);
+                  const availabilityStatus = getAvailabilityStatus(movie, providerMap[movie.id]);
 
                   return (
                     <article key={movie.id} className="pick-backup-card">
@@ -242,6 +253,11 @@ function PickResultPanel({
                         {movie.seen ? (
                           <div className="pick-backup-status">
                             <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
+                          </div>
+                        ) : null}
+                        {shouldShowAvailabilityChip(availabilityStatus) ? (
+                          <div className="pick-backup-status">
+                            <span className="movie-card-chip movie-card-chip--availability">{availabilityStatus.label}</span>
                           </div>
                         ) : null}
                         {backupMeta.shortLine ? <p className="pick-backup-reason detail-secondary-text">{backupMeta.shortLine}</p> : null}

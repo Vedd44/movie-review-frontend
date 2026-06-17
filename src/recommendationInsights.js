@@ -204,7 +204,7 @@ const getOverviewSummary = (movie) => {
   }
 
   if (hasGenres(movie, ["Thriller", "Mystery"])) {
-    return "A sharper, more immersive option that keeps the tension up without turning punishing.";
+    return "A more focused, immersive option that keeps the tension up without turning punishing.";
   }
 
   if (hasGenres(movie, ["Comedy", "Animation"])) {
@@ -416,19 +416,11 @@ const getFitLabel = (fitTier = "strong_fit", validation = {}, timeConstraintStat
     return "Fallback pick";
   }
 
-  if (fitTier === "strong_fit" || fitTier === "exact_fit") {
-    return "Great fit";
+  if (fitTier === "strong_fit" || fitTier === "exact_fit" || fitTier === "decent_fit" || fitTier === "weak_fit") {
+    return "Best fit";
   }
 
-  if (fitTier === "decent_fit") {
-    return "Good fit";
-  }
-
-  if (fitTier === "weak_fit") {
-    return "Worth a look";
-  }
-
-  return "Close enough";
+  return "Best fit";
 };
 
 const getContextAnchor = (preferences = {}, surpriseMode = false, timeConstraintState = null) => {
@@ -465,7 +457,7 @@ const createEditorialBackupLine = (movie = {}, index = 0) => {
   const detail = hasGenres(movie, ["Comedy", "Animation", "Romance", "Family"])
     ? "Cleaner tone with a lighter grip, great for easy viewing."
     : hasGenres(movie, ["Thriller", "Horror", "Crime"])
-      ? "Higher stakes and sharper pacing, though it trades some polish."
+      ? "Higher stakes and tighter pacing, though it trades some polish."
       : hasGenres(movie, ["Action"])
         ? "Muscular action that keeps momentum driving."
         : hasGenres(movie, ["Drama", "History", "Music"])
