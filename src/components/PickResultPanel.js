@@ -48,11 +48,8 @@ function PickResultPanel({
   refreshExhaustionMessage = "",
   recoveryTitle = "",
   recoveryMessage = "",
-  refineVibeLabel = "Adjust your vibe",
-  onRefineVibe,
   refineActions = [],
   onRefineAction,
-  browsePath = "",
   hasActiveSession = false,
   showEmptyState = true,
   showSessionPlaceholder = false,
@@ -71,7 +68,7 @@ function PickResultPanel({
   const hasPrimaryMovie = Boolean(primaryMovie);
   const shouldShowStandaloneLoading = loading && !hasPrimaryMovie;
   const shouldShowFallbackState = !hasPrimaryMovie && (panelStatus === "exhausted" || panelStatus === "error");
-  const shouldShowInlineRecovery = hasPrimaryMovie && Boolean(recoveryTitle || recoveryMessage || onRefineVibe || browsePath);
+  const shouldShowInlineRecovery = hasPrimaryMovie && Boolean(recoveryTitle || recoveryMessage);
   const availableRefineActions = Array.isArray(refineActions) ? refineActions.filter((action) => action?.id && action?.label) : [];
   const primaryAvailabilityStatus = getAvailabilityStatus(primaryMovie, providerMap[primaryMovie?.id]);
   const bestFitLabel = "Best fit";
@@ -202,18 +199,6 @@ function PickResultPanel({
             <div className="pick-session-recovery">
               {recoveryTitle ? <p className="pick-session-recovery-title">{recoveryTitle}</p> : null}
               {recoveryMessage ? <p className="pick-session-recovery-copy">{recoveryMessage}</p> : null}
-              <div className="pick-session-recovery-actions">
-                {onRefineVibe ? (
-                  <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefineVibe}>
-                    {refineVibeLabel}
-                  </button>
-                ) : null}
-                {browsePath ? (
-                  <Link to={browsePath} className="reelbot-inline-button">
-                    Browse movies
-                  </Link>
-                ) : null}
-              </div>
             </div>
           ) : null}
 

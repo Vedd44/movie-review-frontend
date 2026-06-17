@@ -2358,12 +2358,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             resetDisabled={false}
             recoveryTitle={pickRecoveryTitle}
             recoveryMessage={pickRecoveryMessage}
-            onRefineVibe={activePick && !isPickBusy ? handleRefinePick : undefined}
-            refineVibeLabel="Refine this"
             refineActions={activePick ? PICK_REFINE_ACTIONS : []}
             onRefineAction={activePick && !isPickBusy ? handleInlineRefinement : undefined}
             refineStatusLabel={inlineRefineStatus}
-            browsePath={activePick && !isPickBusy ? browseLibraryPath : ""}
             hasActiveSession={hasActivePickSession}
             showEmptyState={shouldShowEmptyPickState}
             showSessionPlaceholder={shouldShowPickSessionPlaceholder}
