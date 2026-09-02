@@ -15,6 +15,7 @@ function ReelbotPromptComposer({
   onBlur,
   placeholder,
   errorText = "",
+  maxLength = 500,
 }) {
   const inputRef = useRef(null);
   const inputShellRef = useRef(null);
@@ -65,6 +66,7 @@ function ReelbotPromptComposer({
           placeholder={placeholder}
           ref={inputRef}
           value={value}
+          maxLength={maxLength}
           onChange={handleInputChange}
           onKeyDown={onKeyDown}
           onFocus={onFocus}

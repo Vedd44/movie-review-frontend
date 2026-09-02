@@ -32,7 +32,7 @@ function ReelbotStructuredContent({ action, result }) {
   const content = result?.structured_content;
 
   if (!content) {
-    return <div className="reelbot-body" dangerouslySetInnerHTML={{ __html: result?.content || "" }} />;
+    return <div className="reelbot-body"><p>{result?.summary || "ReelBot could not format this answer."}</p></div>;
   }
 
   switch (action) {
@@ -92,6 +92,8 @@ function ReelbotStructuredContent({ action, result }) {
                         src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
                         alt={item.title}
                         className="reelbot-next-watch-poster"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="reelbot-next-watch-poster reelbot-next-watch-poster--placeholder">Poster unavailable</div>
@@ -176,7 +178,7 @@ function ReelbotStructuredContent({ action, result }) {
         </div>
       );
     default:
-      return <div className="reelbot-body" dangerouslySetInnerHTML={{ __html: result?.content || "" }} />;
+      return <div className="reelbot-body"><p>{result?.summary || "ReelBot could not format this answer."}</p></div>;
   }
 }
 

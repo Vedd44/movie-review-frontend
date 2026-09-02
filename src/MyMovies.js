@@ -6,6 +6,7 @@ import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
+import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotContext";
 
 const TAB_CONFIG = [
   {
@@ -17,17 +18,17 @@ const TAB_CONFIG = [
   },
   {
     id: "seen",
-    label: "Seen",
-    emptyTitle: "Nothing marked as seen yet.",
-    emptyCopy: "You’ve already watched this.",
-    description: "You’ve already watched this.",
+    label: "Watched",
+    emptyTitle: "Nothing marked as watched yet.",
+    emptyCopy: "Movies you’ve watched will stay out of future decisions.",
+    description: "Movies you’ve already watched.",
   },
   {
     id: "hidden",
-    label: "Hidden",
-    emptyTitle: "No hidden movies.",
-    emptyCopy: "We won’t show this again.",
-    description: "We won’t show this again.",
+    label: "Not for me",
+    emptyTitle: "Nothing marked not for me.",
+    emptyCopy: "Use this to avoid repeats that aren’t a fit.",
+    description: "Movies ReelBot should avoid recommending again.",
   },
   {
     id: "recent",
@@ -81,6 +82,17 @@ function MyMovies() {
     () => getSavedMoviesForBucket(activeTab).map((movie) => normalizeSavedMovie(movie)).filter((movie) => movie.id),
     [activeTab, getSavedMoviesForBucket]
   );
+  const askCandidateIds = useMemo(
+    () => getSavedMoviesForBucket("watchlist").map((movie) => Number(movie?.id)).filter(Boolean),
+    [getSavedMoviesForBucket]
+  );
+  useAskReelbotPageContext(useMemo(() => ({
+    page: "my_movies",
+    candidateMovieIds: askCandidateIds,
+    savedMovieIds: askCandidateIds,
+    watchedMovieIds: (profile.seen || []).map((movie) => Number(movie?.id)).filter(Boolean),
+    rejectedMovieIds: (profile.skipped || []).map((movie) => Number(movie?.id)).filter(Boolean),
+  }), [askCandidateIds, profile.seen, profile.skipped]));
   const tasteSummary = useMemo(() => {
     const allMovies = [
       ...(profile.watchlist || []),
@@ -135,9 +147,14 @@ function MyMovies() {
             <div className="browse-kicker">My Movies</div>
             <h1 className="browse-title">My movies</h1>
             <p className="browse-subtitle browse-subtitle--hero">
-              {user ? "Saved, seen, and hidden — all in one place." : "Sign in to see your saved picks, hidden movies, and recent activity."}
+              {user ? "Saved, watched, and not for me — useful context for your next decision." : "Sign in to keep picks and help ReelBot avoid repeats."}
             </p>
             {user ? <p className="my-movies-synced-note">Your picks are saved and synced across devices.</p> : null}
+            {user && askCandidateIds.length ? (
+              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: "pick something I saved but have not watched" })}>
+                Pick one for tonight
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -170,7 +187,7 @@ function MyMovies() {
               <div>
                 <div className="detail-description-label">Your taste so far</div>
                 <h2 className="section-title">What ReelBot is learning</h2>
-                <p className="section-subtitle">A quick read on your saved, seen, and hidden picks.</p>
+                <p className="section-subtitle">Signals from your saved, watched, and not-for-me choices.</p>
               </div>
             </div>
             <div className="taste-learning-chips">
@@ -186,13 +203,13 @@ function MyMovies() {
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
               <h2 className="section-title">My lists</h2>
-              <p className="section-subtitle">Saved, seen, and hidden — all in one place.</p>
+              <p className="section-subtitle">Keep what interests you, remember what you watched, and rule out what doesn’t fit.</p>
             </div>
             <div className="saved-movies-count-row">
               <span className="results-count results-count--context">{isUsingCloudProfile ? "Synced to your account" : "Saved in this browser"}</span>
               <span className="results-count results-count--context">{savedCounts.watchlist} saved</span>
-              <span className="results-count results-count--context">{savedCounts.seen} seen</span>
-              <span className="results-count results-count--context">{savedCounts.hidden} hidden</span>
+              <span className="results-count results-count--context">{savedCounts.seen} watched</span>
+              <span className="results-count results-count--context">{savedCounts.hidden} not for me</span>
               {isCloudSyncing ? <span className="results-count results-count--context">Saving…</span> : null}
             </div>
           </div>
@@ -229,6 +246,8 @@ function MyMovies() {
                         src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                         alt={movie.title}
                         className="movie-poster"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="no-poster">Poster unavailable</div>

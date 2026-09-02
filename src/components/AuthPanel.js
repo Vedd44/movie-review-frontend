@@ -9,6 +9,7 @@ const FORGOT_PASSWORD_VIEW = "forgot-password";
 
 function AuthPanel({
   compact = false,
+  initialView = PASSWORD_LOGIN_VIEW,
   title = "",
   titleId = "",
   subtitle = "",
@@ -24,7 +25,7 @@ function AuthPanel({
     sendPasswordReset,
     clearAuthError,
   } = useAuth();
-  const [view, setView] = useState(PASSWORD_LOGIN_VIEW);
+  const [view, setView] = useState(initialView);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -63,7 +64,7 @@ function AuthPanel({
 
   const modeTitle = useMemo(() => {
     if (view === PASSWORD_LOGIN_VIEW) {
-      return "Log in";
+      return "Sign in";
     }
 
     if (view === PASSWORD_SIGNUP_VIEW) {
@@ -130,8 +131,8 @@ function AuthPanel({
         await sendMagicLink(normalizedEmail);
         setSuccessState({
           title: "Check your email",
-          body: "Your sign-in link is on the way.",
-          resetLabel: "Send another sign-in link",
+          body: `We sent a sign-in link to ${normalizedEmail}.`,
+          resetLabel: "Use a different email",
         });
       } else if (view === PASSWORD_LOGIN_VIEW) {
         await signInWithPassword({
@@ -167,7 +168,10 @@ function AuthPanel({
       }
     } catch (submitError) {
       console.error("Error with ReelBot auth flow:", submitError);
-      setError("Something went wrong. Try again.");
+      if (view === PASSWORD_LOGIN_VIEW) setError("That email and password didn’t work.");
+      else if (view === EMAIL_LINK_VIEW) setError("We couldn’t send the link. Try again.");
+      else if (view === PASSWORD_SIGNUP_VIEW) setError("We couldn’t create that account. Try again.");
+      else setError("We couldn’t send the reset link. Try again.");
     } finally {
       setLoading(false);
     }
@@ -175,11 +179,13 @@ function AuthPanel({
 
   const submitLabel = (() => {
     if (loading) {
-      return "Sending...";
+      if (view === PASSWORD_LOGIN_VIEW) return "Signing in…";
+      if (view === PASSWORD_SIGNUP_VIEW) return "Creating account…";
+      return "Sending…";
     }
 
     if (view === PASSWORD_LOGIN_VIEW) {
-      return "Log in";
+      return "Sign in";
     }
 
     if (view === PASSWORD_SIGNUP_VIEW) {
@@ -227,7 +233,7 @@ function AuthPanel({
             className={`auth-panel-subnav-link${view === PASSWORD_LOGIN_VIEW ? " is-active" : ""}`}
             onClick={() => handleViewChange(PASSWORD_LOGIN_VIEW)}
           >
-            Log in
+            Sign in
           </button>
           <button
             type="button"

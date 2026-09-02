@@ -60,4 +60,39 @@ describe("normalizePickPayload", () => {
     expect(payload.primary.title).toBe("Close Enough");
     expect(payload.alternates).toEqual([]);
   });
+
+  it("removes theatrical-only movies when the shared preference is off", () => {
+    const theatricalOnly = {
+      ...buildMovie(1, "Theater Only", "2026-08-20"),
+      availability_status: { theater_only: true, watch_home: false },
+    };
+    const availableAtHome = {
+      ...buildMovie(2, "Watch at Home", "2026-08-20"),
+      availability_status: { theater_only: false, watch_home: true },
+    };
+
+    const payload = normalizePickPayload({
+      primary: theatricalOnly,
+      alternates: [availableAtHome],
+      resolved_preferences: { prompt: "surprise me", include_theatrical: false },
+    });
+
+    expect(payload.primary.title).toBe("Watch at Home");
+    expect(payload.alternates).toEqual([]);
+  });
+
+  it("keeps theatrical-only movies when the shared preference is on", () => {
+    const theatricalOnly = {
+      ...buildMovie(1, "Theater Only", "2026-08-20"),
+      availability_status: { theater_only: true, watch_home: false },
+    };
+
+    const payload = normalizePickPayload({
+      primary: theatricalOnly,
+      alternates: [],
+      resolved_preferences: { include_theatrical: true },
+    });
+
+    expect(payload.primary.title).toBe("Theater Only");
+  });
 });

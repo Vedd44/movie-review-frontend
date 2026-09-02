@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import useTasteProfile from "../hooks/useTasteProfile";
+import { trackProductEvent } from "../analytics";
 
 function TasteActionBar({
   movie,
@@ -19,7 +20,7 @@ function TasteActionBar({
   onInteraction = null,
 }) {
   const { actions, getMovieState, isCloudSyncing } = useTasteProfile();
-  const { user, openAuthPrompt } = useAuth();
+  const { user, requestMovieSaveAuth } = useAuth();
   const [feedback, setFeedback] = useState("");
   const [pendingAction, setPendingAction] = useState("");
   const [actionError, setActionError] = useState("");
@@ -65,18 +66,23 @@ function TasteActionBar({
       return;
     }
 
+    if (!user && actionKey === "watchlist") {
+      trackProductEvent("save_clicked", { authenticated: false, movie_id: Number(movie.id) });
+      requestMovieSaveAuth(movie);
+      return;
+    }
+
     setPendingAction(actionKey);
     setActionError("");
 
     try {
       await handler();
+      const eventNames = { watchlist: "save_clicked", seen: "watched_clicked", hidden: "not_for_me_clicked" };
+      if (eventNames[actionKey]) trackProductEvent(eventNames[actionKey], { authenticated: Boolean(user), movie_id: Number(movie.id) });
       if (typeof onInteraction === "function") {
         onInteraction(actionKey);
       }
       setFeedback(feedbackMap[actionKey] || "Saved");
-      if (!user && actionKey === "watchlist") {
-        openAuthPrompt("save_movie");
-      }
     } catch (error) {
       console.error("Error updating ReelBot taste state:", error);
       setActionError("Could not save that change. Try again.");

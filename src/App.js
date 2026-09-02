@@ -11,6 +11,9 @@ import AccountSettings from "./AccountSettings";
 import ResetPassword from "./ResetPassword";
 import AuthModal from "./components/AuthModal";
 import ProfileMenu from "./components/ProfileMenu";
+import GlobalMovieSearch from "./components/GlobalMovieSearch";
+import AskReelbotLayer from "./components/AskReelbotLayer";
+import { AskReelbotProvider } from "./context/AskReelbotContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath } from "./discovery";
 import { homeFeedService } from "./services/homeFeedService";
@@ -39,6 +42,7 @@ function SiteHeader() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, openAuthPrompt } = useAuth();
+  const isAskReelbotActive = location.pathname === "/" && location.hash === "#pick-for-me";
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -55,6 +59,7 @@ function SiteHeader() {
   }, []);
 
   const navItems = [
+    { label: "Ask ReelBot", to: "/#pick-for-me", isActive: isAskReelbotActive },
     { label: "Now Playing", to: "/now-playing", isActive: location.pathname === "/now-playing" },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
     { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
@@ -109,6 +114,7 @@ function SiteHeader() {
         </div>
 
         <div className="site-header-right">
+          <GlobalMovieSearch />
           {!user ? (
             <button
               type="button"
@@ -136,6 +142,18 @@ function SiteHeader() {
         <div className={`site-nav-shell${mobileMenuOpen ? " is-open" : ""}`}>
           <nav id="site-mobile-nav" className="site-nav site-nav--mobile" aria-label="Mobile primary">
             {renderNavLinks()}
+            {!user ? (
+              <button
+                type="button"
+                className="site-nav-link site-nav-account-link"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthPrompt("nav");
+                }}
+              >
+                Sign in
+              </button>
+            ) : null}
           </nav>
         </div>
       </div>
@@ -218,10 +236,11 @@ function CookieNotice() {
 
 function AppShell() {
   return (
-    <div className="app-shell">
-      <SiteHeader />
-      <main className="site-main">
-        <Routes>
+    <AskReelbotProvider>
+      <div className="app-shell">
+        <SiteHeader />
+        <main className="site-main">
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/now-playing" element={<Home routeView="latest" isFeedRoute />} />
           <Route path="/trending" element={<Home routeView="popular" isFeedRoute />} />
@@ -237,12 +256,14 @@ function AppShell() {
           <Route path="/movies/:id" element={<MovieDetails />} />
           <Route path="/person/:personId" element={<PersonDetails />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <SiteFooter />
-      <CookieNotice />
-      <AuthModal />
-    </div>
+          </Routes>
+        </main>
+        <SiteFooter />
+        <CookieNotice />
+        <AuthModal />
+        <AskReelbotLayer />
+      </div>
+    </AskReelbotProvider>
   );
 }
 

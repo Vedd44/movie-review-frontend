@@ -262,6 +262,8 @@ function SearchResults() {
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                             alt={movie.title}
                             className="movie-poster"
+                            loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <div className="no-poster">Poster unavailable</div>
@@ -309,7 +311,7 @@ function SearchResults() {
             {!topMatch && !relatedMovies.length ? (
               <div className="empty-state">
                 <span className="status-glyph" aria-hidden="true"></span>
-                <span>No strong results found. Try a fuller title or browse what&apos;s trending instead.</span>
+                <span>No movies found. Try another title.</span>
               </div>
             ) : null}
           </>

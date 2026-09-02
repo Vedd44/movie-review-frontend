@@ -1,24 +1,11 @@
 import React from "react";
-import { buildProviderLink, getProviderCtaLabel, getProviderSupportLabel } from "../streamingLinks";
+import { buildAvailabilityLink, buildProviderLink, getProviderCtaLabel } from "../streamingLinks";
 import useTasteProfile from "../hooks/useTasteProfile";
 
 const GROUP_LABELS = {
-  subscription: "Included with subscription",
-  transactional: "Rent or buy",
-};
-
-const mergeProviders = (...groups) => {
-  const seen = new Map();
-
-  groups.flat().forEach((provider) => {
-    if (!provider?.id || seen.has(provider.id)) {
-      return;
-    }
-
-    seen.set(provider.id, provider);
-  });
-
-  return Array.from(seen.values());
+  subscription: "Stream",
+  rent: "Rent",
+  buy: "Buy",
 };
 
 const getProviderGroups = (availability) => {
@@ -33,29 +20,26 @@ const getProviderGroups = (availability) => {
       providers: subscription,
     },
     {
-      id: "transactional",
-      label: GROUP_LABELS.transactional,
-      providers: mergeProviders(rent, buy),
+      id: "rent",
+      label: GROUP_LABELS.rent,
+      providers: rent,
+    },
+    {
+      id: "buy",
+      label: GROUP_LABELS.buy,
+      providers: buy,
     },
   ].filter((group) => group.providers.length);
 };
 
 function WatchAvailability({ availability, sectionId, movie }) {
   const { actions } = useTasteProfile();
-  const providerGroups = getProviderGroups(availability)
-    .map((group) => ({
-      ...group,
-      providers: group.providers
-        .map((provider) => ({
-          ...provider,
-          action: buildProviderLink({ movie, provider, region: availability?.region, availabilityLink: availability?.link }),
-        }))
-        .filter((provider) => provider.action?.href),
-    }))
-    .filter((group) => group.providers.length);
+  const providerGroups = getProviderGroups(availability);
   const hasProviders = providerGroups.length > 0;
-  const primaryProvider = providerGroups[0]?.providers?.[0] || null;
-  const primaryAction = primaryProvider?.action || null;
+  const availabilityAction = buildAvailabilityLink(availability?.link);
+  const regionLabel = availability?.region === "US" ? "the U.S." : availability?.region || "your region";
+
+  if (!hasProviders && !availabilityAction) return null;
 
   return (
     <section id={sectionId} className="detail-info-card detail-info-card--utility detail-info-card--providers detail-info-card--watch-now detail-anchor-target">
@@ -65,25 +49,22 @@ function WatchAvailability({ availability, sectionId, movie }) {
           <h2 className="detail-section-title">Where to Watch</h2>
           <p className="detail-secondary-text">
             {hasProviders
-              ? `Streaming and rental options for ${availability.region || "your region"}.`
-              : "Streaming and rental options are not listed yet for this title."}
+              ? `Availability reported for ${regionLabel}. Availability can change.`
+              : "Current provider availability is not listed."}
           </p>
         </div>
 
         <div className="watch-now-head-actions">
           {availability?.region ? <div className="results-count">{availability.region}</div> : null}
-          {primaryProvider && primaryAction?.href ? (
+          {availabilityAction ? (
             <a
-              href={primaryAction.href}
+              href={availabilityAction.href}
               target="_blank"
               rel="noopener noreferrer sponsored"
               className="detail-text-action watch-now-primary-cta"
-              aria-label={getProviderCtaLabel(primaryAction)}
-              onClick={() => {
-                void actions.recordProviderClick(movie, primaryProvider, { placement: "watch_now_primary" }).catch(() => {});
-              }}
+              aria-label="View current availability"
             >
-              {getProviderCtaLabel(primaryAction)}
+              View availability
               <span className="watch-now-external-glyph" aria-hidden="true">↗</span>
             </a>
           ) : null}
@@ -97,6 +78,12 @@ function WatchAvailability({ availability, sectionId, movie }) {
               <div className="watch-now-group-label">{group.label}</div>
               <div className="watch-now-provider-grid watch-now-provider-grid--grouped">
                 {group.providers.map((provider) => {
+                  const providerAction = buildProviderLink({
+                    movie,
+                    provider,
+                    region: availability?.region,
+                    availabilityLink: availability?.link,
+                  });
                   const content = (
                     <>
                       <div className="provider-chip-top">
@@ -110,34 +97,37 @@ function WatchAvailability({ availability, sectionId, movie }) {
                           ) : null}
                           <span className="provider-chip-name">{provider.name}</span>
                         </div>
-                        <span className="watch-now-external-glyph" aria-hidden="true">↗</span>
+                        {providerAction ? <span className="watch-now-external-glyph" aria-hidden="true">↗</span> : null}
                       </div>
-                      <span className="provider-chip-action">{getProviderCtaLabel(provider.action)}</span>
-                      <span className="provider-chip-cta-copy">{getProviderSupportLabel(provider.action)}</span>
+                      <span className="provider-chip-action">{group.label}</span>
                     </>
                   );
 
-                  return (
+                  return providerAction ? (
                     <a
                       key={`${group.id}-${provider.id}`}
-                      href={provider.action.href}
+                      href={providerAction.href}
                       target="_blank"
                       rel="noopener noreferrer sponsored"
                       className="provider-chip provider-chip--cta"
-                      aria-label={getProviderCtaLabel(provider.action)}
+                      aria-label={providerAction.label || getProviderCtaLabel(providerAction)}
                       onClick={() => {
                         void actions.recordProviderClick(movie, provider, { placement: group.id }).catch(() => {});
                       }}
                     >
                       {content}
                     </a>
+                  ) : (
+                    <div key={`${group.id}-${provider.id}`} className="provider-chip provider-chip--informational" aria-label={`${provider.name}, ${group.label}`}>
+                      {content}
+                    </div>
                   );
                 })}
               </div>
             </div>
           ))}
 
-          <p className="detail-secondary-text watch-now-footnote">Links open in a new tab. Some providers open search results or TMDB availability instead of a direct title page.</p>
+          <p className="detail-secondary-text watch-now-footnote">Data from JustWatch via TMDB.</p>
         </div>
       ) : (
         <div className="provider-placeholder provider-placeholder--clean">

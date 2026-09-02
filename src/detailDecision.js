@@ -209,12 +209,9 @@ const buildExplanationVerdict = (attributes = {}, promptReference = "") => {
   };
 };
 
-const buildDecisionSnapshotItems = (attributes = {}) => ([
-  { label: "Attention", value: attributes.attention },
-  { label: "Emotional Weight", value: attributes.emotionalWeight },
-  { label: "Pace", value: attributes.pace },
-  { label: "Best With", value: attributes.bestWith },
-]);
+// Genre and runtime alone are not reliable enough to present pace, attention,
+// intensity, or group-fit as factual movie attributes.
+const buildDecisionSnapshotItems = () => [];
 
 const buildDetailVerdict = ({ movie, recommendationContext = null }) => {
   const attributes = deriveMovieAttributes(movie);
@@ -254,7 +251,7 @@ const buildDetailVerdict = ({ movie, recommendationContext = null }) => {
     label: "",
     contextReference: "",
     title: "Is this worth watching?",
-    supportingLine: "Get a quick read based on your taste.",
+    supportingLine: "Ask about tone, pacing, content, or whether it fits tonight.",
     snapshotItems: buildDecisionSnapshotItems(attributes),
     attributes,
   };

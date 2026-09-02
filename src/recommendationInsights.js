@@ -254,14 +254,14 @@ const getGenreReason = (movie) => {
   }
 
   if (hasGenres(movie, ["Sci-Fi", "Fantasy"])) {
-    return "Visual world-building gives it more flavor than a generic safe pick.";
+    return "Visual world-building gives it a clear speculative identity.";
   }
 
   if (hasGenres(movie, ["Drama", "Romance", "Music"])) {
     return "The emotional angle adds weight while still keeping the story accessible.";
   }
 
-  return "It has a clear point of view, which makes it feel more deliberate than filler.";
+  return "Its premise gives the recommendation a clear direction.";
 };
 
 const getRuntimeReason = (movie) => {
@@ -283,28 +283,12 @@ const getRuntimeReason = (movie) => {
 };
 
 const getAudienceReason = (movie) => {
-  const voteAverage = Number(movie?.vote_average || 0);
-  const voteCount = Number(movie?.vote_count || 0);
-  const signalScore = Number(movie?.signal_score || 0);
-
-  if (voteAverage >= 7.4 && voteCount >= 80) {
-    return "Strong audience response makes it feel like a safer yes.";
-  }
-
-  if (signalScore >= 18) {
-    return "It has real momentum right now, which helps it feel like a live option instead of a random pull.";
-  }
-
   return null;
 };
 
 const getReleaseReason = (movie) => {
   if (movie?.source_type === "now_playing") {
-    return "Current theatrical momentum helps it feel timely even while audience totals are still catching up.";
-  }
-
-  if (movie?.source_type === "upcoming") {
-    return "Early release buzz gives it more weight than a low-data title would usually have.";
+    return "It is currently playing in theaters.";
   }
 
   return null;
@@ -425,7 +409,7 @@ const getFitLabel = (fitTier = "strong_fit", validation = {}, timeConstraintStat
 
 const getContextAnchor = (preferences = {}, surpriseMode = false, timeConstraintState = null) => {
   if (surpriseMode) {
-    return "A curated wildcard when you want ReelBot to surprise you.";
+    return "A dependable wildcard when you want ReelBot to choose.";
   }
 
   if (timeConstraintState?.relaxed && timeConstraintState?.label) {
@@ -446,7 +430,7 @@ const getContextAnchor = (preferences = {}, surpriseMode = false, timeConstraint
     return "For the mood you’re in right now.";
   }
 
-  return "A strong place to start.";
+  return "A clear place to start.";
 };
 
 const getTasteCue = () => "ReelBot learns from the movies you save, skip, or mark as seen.";
@@ -484,8 +468,13 @@ export const getBackupRoleLabel = (movie = {}, index = 0) => {
 };
 
 export const getBackupCardMeta = (movie, index = 0) => {
+  const generatedReason = humanizeVisibleCopy(movie?.reason || "");
+  const generatedRole = normalizeReason(movie?.backupRole || "");
+
   return {
-    shortLine: createEditorialBackupLine(movie, index),
+    shortLine: generatedReason
+      ? [generatedRole ? `${generatedRole}:` : "", generatedReason].filter(Boolean).join(" ")
+      : createEditorialBackupLine(movie, index),
   };
 };
 
@@ -507,11 +496,19 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
 
     confidenceScore = clamp(confidenceScore, 68, 97);
 
-    const decisionSentence = buildRecommendationSentence({
-      baseReason: pickResult.rationale.primary_reason || activePick.reason || pickResult.rationale.summaryLine,
-      movie: activePick,
-      timeConstraintState,
-    });
+    const groundedReasons = Array.isArray(pickResult.rationale.whyRecommended)
+      ? pickResult.rationale.whyRecommended
+          .map((reason) => humanizeVisibleCopy(reason))
+          .filter((reason) => reason && !isPromptEcho(reason) && !isSystemReason(reason))
+          .slice(0, 2)
+      : [];
+    const decisionSentence = groundedReasons.length === 2
+      ? groundedReasons.join(" ")
+      : buildRecommendationSentence({
+          baseReason: groundedReasons[0] || pickResult.rationale.primary_reason || activePick.reason || pickResult.rationale.summaryLine,
+          movie: activePick,
+          timeConstraintState,
+        });
 
     return {
       title: "Your Pick",

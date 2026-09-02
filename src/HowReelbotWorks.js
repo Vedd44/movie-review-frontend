@@ -92,11 +92,11 @@ function HowReelbotWorks() {
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
               <h2 className="section-title">Why the site has both feeds and picks</h2>
-              <p className="section-subtitle">Sometimes you want one strong pick. Sometimes you want to browse.</p>
+              <p className="section-subtitle">Sometimes you want one answer. Sometimes you want to browse.</p>
             </div>
           </div>
           <p className="detail-secondary-text">
-            Use the homepage when you want a strong pick fast. Use the feeds and Browse when you want a wider scan first.
+            Use the homepage when you want one pick fast. Use Browse when you want to compare options.
           </p>
           <div className="browse-hero-actions" style={{ marginTop: 18 }}>
             <Link to="/" className="reelbot-inline-button reelbot-inline-button--solid">Get a pick</Link>

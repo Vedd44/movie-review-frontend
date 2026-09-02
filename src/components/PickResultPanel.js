@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
 import RecommendationRationale from "./RecommendationRationale";
 import TasteActionBar from "./TasteActionBar";
@@ -81,7 +82,7 @@ function PickResultPanel({
         <div className="reelbot-loading-state">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
-            <p className="reelbot-loading-title">ReelBot is thinking…</p>
+            <p className="reelbot-loading-title">Finding a pick…</p>
             <p className="detail-secondary-text reelbot-placeholder-copy">{loadingCopy}</p>
           </div>
         </div>
@@ -138,6 +139,14 @@ function PickResultPanel({
                         {refreshLabel}
                       </button>
                     ) : null}
+                    <TasteActionBar
+                      movie={primaryMovie}
+                      vibeLabel={vibeLabel}
+                      compact
+                      className="pick-taste-actions pick-taste-actions--inline"
+                      showVibeAction={false}
+                      {...tasteActionProps}
+                    />
                     {onResetChoices ? (
                       <button
                         type="button"
@@ -159,17 +168,6 @@ function PickResultPanel({
                       </Link>
                     </div>
                   ) : null}
-                  <div className="pick-personal-actions-block">
-                    <div className="pick-personal-actions-label">Actions</div>
-                    <TasteActionBar
-                      movie={primaryMovie}
-                      vibeLabel={vibeLabel}
-                      compact
-                      className="pick-taste-actions"
-                      showVibeAction={false}
-                      {...tasteActionProps}
-                    />
-                  </div>
                   {rationale?.tasteCue ? <p className="pick-taste-cue detail-secondary-text">{rationale.tasteCue}</p> : null}
                   {availableRefineActions.length && onRefineAction ? (
                   <div className="pick-refine-panel">
@@ -218,7 +216,7 @@ function PickResultPanel({
 
                   return (
                     <article key={movie.id} className="pick-backup-card">
-                      <Link to={getMoviePath(movie)} state={reelbotPickLinkState} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`}>
+                      <Link to={getMoviePath(movie)} state={reelbotPickLinkState} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`} onClick={() => trackProductEvent("alternate_clicked", { movie_id: Number(movie.id), alternate_index: index })}>
                         {movie.poster_path ? (
                           <img
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}

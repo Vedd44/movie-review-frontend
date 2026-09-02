@@ -1,6 +1,48 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSupabaseClient, isSupabaseConfigured, supabase } from "../lib/supabaseClient";
+import { trackProductEvent } from "../analytics";
+import { tasteProfileService } from "../services/tasteProfileService";
+
+export const PENDING_SAVE_KEY = "reelbotPendingMovieSave";
+const AUTH_TIMEOUT_MS = 15000;
+
+const withAuthTimeout = (promise, actionLabel) => new Promise((resolve, reject) => {
+  const timeoutId = window.setTimeout(() => reject(new Error(`${actionLabel} timed out. Try again.`)), AUTH_TIMEOUT_MS);
+  Promise.resolve(promise).then(
+    (value) => {
+      window.clearTimeout(timeoutId);
+      resolve(value);
+    },
+    (error) => {
+      window.clearTimeout(timeoutId);
+      reject(error);
+    }
+  );
+});
+
+const getAuthRedirectUrl = () => {
+  if (typeof window === "undefined") return "https://reelbot.movie/";
+  return ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? `${window.location.origin}/`
+    : "https://reelbot.movie/";
+};
+
+export const completePendingMovieSave = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const movie = JSON.parse(window.localStorage.getItem(PENDING_SAVE_KEY) || "null");
+    if (!movie?.id) return null;
+    const profile = tasteProfileService.load();
+    const state = tasteProfileService.getMovieTasteState(profile, movie.id);
+    if (!state.inWatchlist) tasteProfileService.save(tasteProfileService.toggleWatchlist(profile, movie));
+    window.localStorage.removeItem(PENDING_SAVE_KEY);
+    return movie;
+  } catch (error) {
+    console.error("Could not complete pending ReelBot save:", error);
+    return null;
+  }
+};
 
 const AuthContext = createContext({
   user: null,
@@ -21,6 +63,7 @@ const AuthContext = createContext({
   deleteAccount: async () => {},
   maybePromptToSavePicks: () => {},
   openAuthPrompt: () => {},
+  requestMovieSaveAuth: () => {},
   closeAuthPrompt: () => {},
   clearPasswordRecovery: () => {},
   clearAuthError: () => {},
@@ -45,6 +88,7 @@ export function AuthProvider({ children }) {
   const [pendingRecoverySession, setPendingRecoverySession] = useState(null);
 
   const openAuthPrompt = useCallback((source = "") => {
+    trackProductEvent("signup_started", { source: source || "account" });
     setAuthPromptSource(source);
     setAuthPromptOpen(true);
   }, []);
@@ -71,7 +115,7 @@ export function AuthProvider({ children }) {
 
     let cancelled = false;
 
-    getSupabaseClient().auth.getSession()
+    withAuthTimeout(getSupabaseClient().auth.getSession(), "Restoring the account session")
       .then(({ data, error }) => {
         if (cancelled) {
           return;
@@ -88,6 +132,7 @@ export function AuthProvider({ children }) {
           setSession(null);
         } else {
           setPendingRecoverySession(null);
+          if (data?.session?.user) completePendingMovieSave();
           setSession(data?.session || null);
         }
         setLoading(false);
@@ -121,6 +166,7 @@ export function AuthProvider({ children }) {
           setSession(null);
         } else {
           setPendingRecoverySession(null);
+          if (nextSession?.user) completePendingMovieSave();
           setSession(nextSession || null);
         }
         setLoading(false);
@@ -141,9 +187,10 @@ export function AuthProvider({ children }) {
     }
 
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const response = await getSupabaseClient().auth.signInWithOtp({
+    const response = await withAuthTimeout(getSupabaseClient().auth.signInWithOtp({
       email: normalizedEmail,
-    });
+      options: { emailRedirectTo: getAuthRedirectUrl() },
+    }), "Sending the sign-in link");
     const { error } = response;
 
     if (error) {
@@ -162,10 +209,10 @@ export function AuthProvider({ children }) {
     }
 
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const response = await getSupabaseClient().auth.signInWithPassword({
+    const response = await withAuthTimeout(getSupabaseClient().auth.signInWithPassword({
       email: normalizedEmail,
       password,
-    });
+    }), "Signing in");
     const { error } = response;
 
     if (error) {
@@ -184,13 +231,14 @@ export function AuthProvider({ children }) {
 
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedName = String(displayName || "").trim();
-    const response = await getSupabaseClient().auth.signUp({
+    const response = await withAuthTimeout(getSupabaseClient().auth.signUp({
       email: normalizedEmail,
       password,
       options: {
         data: normalizedName ? { display_name: normalizedName } : {},
+        emailRedirectTo: getAuthRedirectUrl(),
       },
-    });
+    }), "Creating the account");
     const { error } = response;
 
     if (error) {
@@ -199,6 +247,7 @@ export function AuthProvider({ children }) {
     }
 
     setAuthError("");
+    trackProductEvent("signup_completed", { method: "email" });
     return response;
   }, []);
 
@@ -212,9 +261,9 @@ export function AuthProvider({ children }) {
       ? `${window.location.origin}/reset-password`
       : undefined;
 
-    const response = await getSupabaseClient().auth.resetPasswordForEmail(normalizedEmail, {
+    const response = await withAuthTimeout(getSupabaseClient().auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo,
-    });
+    }), "Sending the reset link");
     const { error } = response;
 
     if (error) {
@@ -350,6 +399,12 @@ export function AuthProvider({ children }) {
     }, 700);
   }, [openAuthPrompt, session?.user]);
 
+  const requestMovieSaveAuth = useCallback((movie) => {
+    if (!movie?.id || typeof window === "undefined") return;
+    window.localStorage.setItem(PENDING_SAVE_KEY, JSON.stringify(movie));
+    openAuthPrompt("save_movie");
+  }, [openAuthPrompt]);
+
   const value = useMemo(
     () => ({
       user: passwordRecoveryActive ? null : session?.user || null,
@@ -372,6 +427,7 @@ export function AuthProvider({ children }) {
       deleteAccount,
       maybePromptToSavePicks,
       openAuthPrompt,
+      requestMovieSaveAuth,
       closeAuthPrompt,
       clearPasswordRecovery,
       clearAuthError: () => setAuthError(""),
@@ -387,6 +443,7 @@ export function AuthProvider({ children }) {
       loading,
       maybePromptToSavePicks,
       openAuthPrompt,
+      requestMovieSaveAuth,
       passwordRecoveryActive,
       pendingRecoverySession,
       sendMagicLink,

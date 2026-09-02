@@ -12,6 +12,8 @@ import { buildDetailVerdict } from "./detailDecision";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl } from "./siteConfig";
 import { tasteProfileService } from "./services/tasteProfileService";
+import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotContext";
+import { trackProductEvent } from "./analytics";
 
 const REELBOT_ACTIONS = {
   quick_take: {
@@ -222,6 +224,29 @@ const renderCastLinks = (credits = [], fallbackNames = [], limit = 4) => {
 
 const includesAnyGenre = (genres, values) => values.some((value) => genres.includes(value));
 
+const TITLE_TOKEN_STOPWORDS = new Set(["about", "after", "before", "black", "dark", "first", "house", "movie", "night", "return", "story", "world"]);
+const getDistinctiveTitleTokens = (title = "") => String(title || "")
+  .toLowerCase()
+  .match(/[a-z0-9]+/g)?.filter((token) => token.length >= 5 && !TITLE_TOKEN_STOPWORDS.has(token)) || [];
+
+export const selectDiverseSimilarMovies = (movies = [], limit = 3) => {
+  const candidates = Array.isArray(movies) ? movies : [];
+  const frequencies = new Map();
+  candidates.forEach((movie) => {
+    new Set(getDistinctiveTitleTokens(movie?.title)).forEach((token) => frequencies.set(token, (frequencies.get(token) || 0) + 1));
+  });
+  const usedSeriesTokens = new Set();
+  const selected = [];
+  candidates.forEach((movie) => {
+    if (selected.length >= limit) return;
+    const seriesTokens = getDistinctiveTitleTokens(movie?.title).filter((token) => (frequencies.get(token) || 0) > 1);
+    if (seriesTokens.some((token) => usedSeriesTokens.has(token))) return;
+    seriesTokens.forEach((token) => usedSeriesTokens.add(token));
+    selected.push(movie);
+  });
+  return selected;
+};
+
 const getReleaseDateObject = (movie) => {
   if (!movie?.release_date) {
     return null;
@@ -320,26 +345,29 @@ const getFollowUpActionIds = (actionId, previewMode) => {
   return releasedMap[actionId] || ["is_this_for_me", "best_mood", "similar_picks"];
 };
 
-const getTimeCommitment = (runtime) => {
+export const getTimeCommitment = (runtime) => {
   const minutes = Number(runtime || 0);
 
   if (!minutes) {
     return "TBA";
   }
 
-  if (minutes < 100) {
-    return "Short";
+  if (minutes < 90) {
+    return "Short and easy to fit in.";
   }
-
+  if (minutes <= 105) {
+    return "Comfortably under two hours.";
+  }
+  if (minutes <= 120) {
+    return "Right around two hours.";
+  }
   if (minutes <= 140) {
-    return "Medium";
+    return "A longer watch — plan on a little over two hours.";
   }
-
-  if (minutes <= 180) {
-    return "Long";
+  if (minutes <= 165) {
+    return "A substantial time commitment.";
   }
-
-  return "Epic";
+  return "An epic-length watch.";
 };
 
 const buildWhyReelbotBullets = (movie, previewMode = false) => {
@@ -351,37 +379,29 @@ const buildWhyReelbotBullets = (movie, previewMode = false) => {
   const bullets = [];
 
   if (previewMode) {
-    bullets.push("The cast, genre mix, and premise already give it a distinct lane.");
-    bullets.push(movie.director ? `The director signal gives the movie a clearer identity than a generic preview.` : "The early materials suggest a more specific tone than a generic studio preview.");
-    bullets.push("Best treated as an early-read prospect rather than a guaranteed opening-night lock.");
+    if (movie.top_cast?.length) bullets.push(`The announced cast includes ${movie.top_cast.slice(0, 3).join(", ")}.`);
+    if (movie.director && movie.director !== "Unknown") bullets.push(`${movie.director} is directing.`);
+    if (genres.length) bullets.push(`It is currently listed as ${genres.slice(0, 3).join(", ")}.`);
     return bullets;
   }
 
-  if (includesAnyGenre(genres, ["Thriller", "Mystery", "Crime"])) {
-    bullets.push("Strong tension and momentum make it easier to commit to than a flatter drama.");
+  if (includesAnyGenre(genres, ["Horror", "Thriller", "Mystery", "Crime"])) {
+    bullets.push("A fit when you want tension rather than a relaxed background watch.");
   }
 
   if (includesAnyGenre(genres, ["Drama", "History", "War"])) {
-    bullets.push("It plays best when you want something serious, immersive, and a little more demanding.");
+    bullets.push("Best suited to a more serious, story-focused movie night.");
   }
 
   if (includesAnyGenre(genres, ["Comedy", "Romance", "Animation", "Family"])) {
-    bullets.push("Easy to get into without much effort.");
+    bullets.push("A lighter option when you want something easy to share.");
   }
 
-  if (includesAnyGenre(genres, ["Sci-Fi", "Fantasy"])) {
-    bullets.push("More personality than a typical background watch.");
+  if (includesAnyGenre(genres, ["Science Fiction", "Sci-Fi", "Fantasy"])) {
+    bullets.push("Leans into speculative world-building rather than everyday realism.");
   }
 
-  if (Number(movie.runtime || 0) >= 145) {
-    bullets.push("It rewards patience more than casual half-attention viewing.");
-  } else if (Number(movie.runtime || 0) > 0) {
-    bullets.push("A runtime that’s easy to fit in.");
-  }
-
-  if (Number(movie.rating || 0) >= 7.3 && Number(movie.vote_count || 0) >= 100) {
-    bullets.push("Audience response is strong enough to make this a safer recommendation than a pure wildcard.");
-  }
+  if (Number(movie.runtime || 0) > 0) bullets.push(`At ${movie.runtime} minutes, ${getTimeCommitment(movie.runtime).charAt(0).toLowerCase()}${getTimeCommitment(movie.runtime).slice(1)}`);
 
   return bullets.slice(0, 3);
 };
@@ -438,7 +458,6 @@ function MovieDetails() {
   const { id, slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const heroRef = useRef(null);
   const reelbotPanelRef = useRef(null);
   const reelbotPulseTimeoutRef = useRef(null);
   const autoOpenedReelbotActionRef = useRef(false);
@@ -452,8 +471,6 @@ function MovieDetails() {
   const [panelPulse, setPanelPulse] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [spoilerModeEnabled, setSpoilerModeEnabled] = useState(false);
-  const [showFloatingReelbotCta, setShowFloatingReelbotCta] = useState(false);
-  const [floatingReelbotPulse, setFloatingReelbotPulse] = useState(false);
   const { profile, behavioralMemory, actions: tasteActions, getRecommendationContextForMovie } = useTasteProfile();
 
   useEffect(() => {
@@ -509,31 +526,6 @@ function MovieDetails() {
     []
   );
 
-  useEffect(() => {
-    const heroNode = heroRef.current;
-    if (!heroNode || typeof IntersectionObserver === "undefined") {
-      return undefined;
-    }
-
-    let hasPulsed = false;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const nextVisible = !entry.isIntersecting;
-        setShowFloatingReelbotCta(nextVisible);
-
-        if (nextVisible && !hasPulsed) {
-          hasPulsed = true;
-          setFloatingReelbotPulse(true);
-          window.setTimeout(() => setFloatingReelbotPulse(false), 1800);
-        }
-      },
-      { threshold: 0.15 }
-    );
-
-    observer.observe(heroNode);
-    return () => observer.disconnect();
-  }, []);
-
   const previewMode = useMemo(() => isUpcomingMovie(movie), [movie]);
   const actionConfigs = useMemo(() => getActionConfigMap(previewMode), [previewMode]);
   const primaryActionIds = useMemo(() => DETAIL_PRIMARY_ACTION_IDS, []);
@@ -557,6 +549,7 @@ function MovieDetails() {
     return [
       movie.runtime ? `${movie.runtime} min` : null,
       movie.release_year ? `${movie.release_year}` : null,
+      movie.certification || null,
       movie.genre_names?.length ? movie.genre_names.join(" • ") : null,
       !previewMode && movie.rating ? `TMDB ${movie.rating.toFixed(1)}` : null,
       previewMode && movie.status ? movie.status : null,
@@ -564,8 +557,6 @@ function MovieDetails() {
   }, [movie, previewMode]);
 
   const movieDescription = movie?.description || movie?.overview || "No description available.";
-  const timeCommitment = useMemo(() => getTimeCommitment(movie?.runtime), [movie]);
-
   const compactFacts = useMemo(() => {
     if (!movie) {
       return [];
@@ -576,7 +567,6 @@ function MovieDetails() {
     const runtimeFactValue = (
       <>
         <span>{runtimeValue}</span>
-        <span className="detail-compact-fact-subvalue">Time Commitment: {timeCommitment}</span>
       </>
     );
 
@@ -593,9 +583,9 @@ function MovieDetails() {
       { label: "Director", value: <PersonLink person={movie.director_credit} fallbackName={movie.director} block /> },
       { label: "Lead Cast", value: renderCastLinks(movie.top_cast_credits, movie.top_cast, 4) },
       { label: "Runtime", value: runtimeFactValue },
-      { label: boxOfficeValue ? "Box Office" : "Audience Score", value: boxOfficeValue || (movie.rating ? `TMDB ${movie.rating.toFixed(1)}` : "Not enough data") },
+      { label: boxOfficeValue ? "Box Office" : "TMDB Rating", value: boxOfficeValue || (movie.rating ? `${movie.rating.toFixed(1)}/10` : "Not rated") },
     ];
-  }, [movie, previewMode, timeCommitment]);
+  }, [movie, previewMode]);
 
   const recommendationContext = useMemo(() => {
     const storedContext = getRecommendationContextForMovie(movie?.id);
@@ -621,7 +611,7 @@ function MovieDetails() {
   const nextWatchReasonLabels = previewMode
     ? ["Watch-now pick", "Broader pick", "Wildcard"]
     : ["Similar tone", "Safer pick", "Darker pick", "Wildcard"];
-  const displayedSimilarMovies = useMemo(() => similarMovies.slice(0, 3), [similarMovies]);
+  const displayedSimilarMovies = useMemo(() => selectDiverseSimilarMovies(similarMovies, 3), [similarMovies]);
   const whyReelbotBullets = useMemo(() => {
     const whyWatchReasons = reelbotResults.why_watch?.structured_content?.reasons;
     if (Array.isArray(whyWatchReasons) && whyWatchReasons.length) {
@@ -675,13 +665,45 @@ function MovieDetails() {
   }, [movie, movieDescription, previewMode]);
 
   usePageMetadata({
-    title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""} — Should You Watch It? | ReelBot` : "Movie Details | ReelBot",
+    title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""} | ReelBot` : "Movie Details | ReelBot",
     description: movie ? `Is ${movie.title} worth watching? See the ReelBot verdict, movie tone analysis, streaming options, and similar movies.` : "Movie details on ReelBot.",
     path: movie ? getMoviePath(movie) : "/",
     type: "video.movie",
     image: movie?.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : undefined,
     structuredData: detailStructuredData,
   });
+  useEffect(() => {
+    if (movie?.id) trackProductEvent("movie_detail_opened", { movie_id: Number(movie.id) });
+  }, [movie?.id]);
+  useAskReelbotPageContext(useMemo(() => ({
+    page: "movie_detail",
+    movieId: movie?.id || null,
+    movieTitle: movie?.title || "",
+    movie: movie ? {
+      id: movie.id,
+      title: movie.title,
+      originalTitle: movie.original_title || movie.title,
+      year: movie.release_year || null,
+      genres: movie.genre_names || [],
+      certification: movie.certification || "",
+      runtime: movie.runtime || null,
+      overview: movie.description || "",
+      tagline: movie.tagline || "",
+      director: movie.director || "",
+      topCast: movie.top_cast || [],
+      keywords: movie.keyword_names || [],
+      voteAverage: movie.rating || null,
+      voteCount: movie.vote_count || 0,
+      popularity: movie.popularity || null,
+      productionCountries: movie.production_countries || [],
+      language: movie.original_language || "",
+      watchProviders: movie.watch_providers || null,
+      releaseStatus: movie.status || "",
+      theaterStatus: movie.availability_status || null,
+      knownAudienceSignals: movie.audience_signals || null,
+      knownContentSignals: movie.content_signals || null,
+    } : null,
+  }), [movie]));
 
   useEffect(() => {
     if (!movie?.id) {
@@ -745,16 +767,6 @@ function MovieDetails() {
     window.scrollTo({ top: Math.max(targetTop - DETAIL_ANCHOR_OFFSET, 0), behavior: "smooth" });
   };
 
-  const handleFloatingReelbotClick = () => {
-    const target = document.getElementById("ask-reelbot");
-    if (!target) {
-      return;
-    }
-
-    const targetTop = target.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: Math.max(targetTop - DETAIL_ANCHOR_OFFSET, 0), behavior: "smooth" });
-  };
-
   const handleBackToPick = useCallback(() => {
     navigate("/#pick-result", {
       state: {
@@ -805,7 +817,7 @@ function MovieDetails() {
     }
 
     if (spoilerActionSelected && !spoilerModeActive) {
-      setReelbotError("Turn Spoiler Mode on to unlock spoiler answers.");
+      setReelbotError("Turn Spoiler Mode on to see spoiler answers.");
       scrollToReelbotPanel();
       return;
     }
@@ -916,7 +928,6 @@ function MovieDetails() {
         </nav>
 
         <section
-          ref={heroRef}
           className="detail-hero"
           style={
             movie.backdrop_path
@@ -958,7 +969,7 @@ function MovieDetails() {
                   Is This Worth Watching?
                 </button>
                 {movie.trailer?.key ? (
-                  <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => setIsTrailerOpen(true)}>
+                  <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => { setIsTrailerOpen(true); trackProductEvent("trailer_clicked", { movie_id: Number(movie.id) }); }}>
                     Watch Trailer
                   </button>
                 ) : (
@@ -976,6 +987,9 @@ function MovieDetails() {
                 ) : null}
                 <button type="button" className="detail-text-action detail-text-action--hero" onClick={(event) => handleJumpLink("detail-repick-module", event)}>
                   Get another pick
+                </button>
+                <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => openAskReelbot({ prompt: `something like ${movie.title}` })}>
+                  Find something like this
                 </button>
               </div>
               <div className="detail-hero-tracking-actions">
@@ -1009,14 +1023,14 @@ function MovieDetails() {
             </div>
           </div>
 
-          <div className="detail-decision-snapshot-grid" aria-label="Decision snapshot">
+          {detailVerdict.snapshotItems.length ? <div className="detail-decision-snapshot-grid" aria-label="Decision snapshot">
             {detailVerdict.snapshotItems.map((item) => (
               <div key={item.label} className="detail-vibe-item detail-vibe-item--compact">
                 <div className="detail-vibe-label">{item.label}</div>
                 <div className="detail-vibe-value">{item.value}</div>
               </div>
             ))}
-          </div>
+          </div> : null}
         </section>
 
             <section id="ask-reelbot" className="reelbot-module reelbot-module--streamlined detail-anchor-target">
@@ -1075,7 +1089,7 @@ function MovieDetails() {
                       aria-pressed={isActive}
                       aria-controls="reelbot-response"
                     >
-                      {isLoading ? "Thinking..." : action.label}
+                      {isLoading ? "Checking…" : action.label}
                     </button>
                   );
                 })}
@@ -1093,7 +1107,7 @@ function MovieDetails() {
                       </div>
                       <p className="detail-secondary-text">
                         {spoilerModeEnabled
-                          ? "Full-spoiler answers are unlocked below, including synopsis, ending, themes, and debate points."
+                          ? "Spoiler answers can include the synopsis, ending, themes, and debate points."
                           : "Spoiler answers stay locked until you turn this on intentionally."}
                       </p>
                     </div>
@@ -1126,7 +1140,7 @@ function MovieDetails() {
                             aria-pressed={activeReelbotAction === action.id}
                             aria-controls="reelbot-response"
                           >
-                            {isLoading ? "Thinking..." : action.label}
+                            {isLoading ? "Checking…" : action.label}
                           </button>
                         );
                       })}
@@ -1177,7 +1191,7 @@ function MovieDetails() {
                     <div className="reelbot-loading-state">
                       <span className="reelbot-loading-dot" aria-hidden="true"></span>
                       <p className="detail-secondary-text reelbot-placeholder-copy">
-                        {previewMode ? "ReelBot is sizing it up from the early details..." : "ReelBot is putting that answer together..."}
+                        {previewMode ? "Checking the available details…" : "Checking…"}
                       </p>
                     </div>
                   ) : null}
@@ -1198,7 +1212,7 @@ function MovieDetails() {
                               aria-pressed={activeReelbotAction === action.id}
                               aria-controls="reelbot-response"
                             >
-                              {reelbotLoadingAction === action.id ? "Thinking..." : action.label}
+                              {reelbotLoadingAction === action.id ? "Checking…" : action.label}
                             </button>
                           );
                         })}
@@ -1241,11 +1255,6 @@ function MovieDetails() {
           <div className="detail-section-head detail-section-head--facts">
             <div>
               <h2 className="detail-section-title">At a Glance</h2>
-              <p className="detail-secondary-text">
-                {previewMode
-                  ? "The release details that matter most right now."
-                  : "The details that help you size it up fast."}
-              </p>
             </div>
           </div>
           <div className="detail-compact-facts">
@@ -1263,7 +1272,6 @@ function MovieDetails() {
             <div>
               <div className="detail-description-label">Why ReelBot recommends this</div>
               <h2 className="detail-section-title">Why This Is Worth Your Time</h2>
-              <p className="detail-secondary-text">Clear reasons this works based on your vibe.</p>
             </div>
           </div>
           <ul className="detail-why-reelbot-list">
@@ -1324,6 +1332,8 @@ function MovieDetails() {
                       src={`https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`}
                       alt={similarMovie.title}
                       className="similar-poster"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>
@@ -1336,16 +1346,6 @@ function MovieDetails() {
             </div>
           </section>
         ) : null}
-        {showFloatingReelbotCta ? (
-          <button
-            type="button"
-            className={`detail-floating-reelbot${floatingReelbotPulse ? " is-pulsing" : ""}`}
-            onClick={handleFloatingReelbotClick}
-          >
-            Ask ReelBot
-          </button>
-        ) : null}
-
         <TrailerModal
           isOpen={isTrailerOpen}
           video={movie?.trailer}

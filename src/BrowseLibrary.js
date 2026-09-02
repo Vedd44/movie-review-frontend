@@ -24,8 +24,11 @@ import {
 } from "./discovery";
 import { passesSignalFloor } from "./movieSignals";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
+import { useAskReelbotPageContext } from "./context/AskReelbotContext";
+import { trackProductEvent } from "./analytics";
 
 const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
+const BROWSE_VIEW_OPTIONS = VIEW_OPTIONS.filter((option) => option.id !== "latest");
 const LIBRARY_REFINE_ACTIONS = [
   { id: "lighter", label: "Lighter", loadingMessage: "Looking for something a little lighter…" },
   { id: "darker", label: "Darker", loadingMessage: "Taking this in a darker direction…" },
@@ -174,6 +177,27 @@ function BrowseLibrary() {
   );
   const libraryVibeLabel = useMemo(() => pickPrompt.trim() || selectedMoodConfig.label, [pickPrompt, selectedMoodConfig.label]);
   const queuedSwapIds = useMemo(() => swapQueue.map((movie) => movie?.id).filter(Boolean), [swapQueue]);
+  const askReelbotPageContext = useMemo(() => ({
+    page: "browse",
+    activeFilters: {
+      view: normalizedView,
+      mood: normalizedMood,
+      runtime: normalizedRuntime,
+      genre: normalizedGenre,
+    },
+    visibleMovieIds: filteredMovies.slice(0, 24).map((movie) => movie.id).filter(Boolean),
+    includeTheatrical,
+    activeConstraints: { includeTheatrical },
+  }), [filteredMovies, includeTheatrical, normalizedGenre, normalizedMood, normalizedRuntime, normalizedView]);
+  useAskReelbotPageContext(askReelbotPageContext);
+  useEffect(() => {
+    trackProductEvent("browse_used", {
+      view: normalizedView,
+      mood: normalizedMood,
+      runtime: normalizedRuntime,
+      genre: normalizedGenre,
+    });
+  }, [normalizedGenre, normalizedMood, normalizedRuntime, normalizedView]);
 
   const updateFilters = (updates) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -379,6 +403,15 @@ function BrowseLibrary() {
     });
   };
 
+  const handleStartFreshLibraryPick = () => {
+    setPickPrompt("");
+    setPickError(null);
+    setPickResult(null);
+    setSwapQueue([]);
+    setCandidatePoolIds([]);
+    setRefinementState(null);
+  };
+
   const activeFilterChips = useMemo(
     () => [
       { id: "view", label: getViewLabel(normalizedView) },
@@ -409,8 +442,8 @@ function BrowseLibrary() {
   );
 
   usePageMetadata({
-    title: "Browse Movies | ReelBot Movie Discovery",
-    description: "Browse movies currently playing, trending, and upcoming, then let ReelBot narrow the options with smarter AI movie discovery.",
+    title: "Browse Movies | ReelBot",
+    description: "Browse movies currently playing, trending, and coming soon, then ask ReelBot to narrow the choice.",
     path: "/browse",
     structuredData: browseStructuredData,
   });
@@ -444,7 +477,7 @@ function BrowseLibrary() {
                 <p className="detail-secondary-text">Choose a feed to start browsing.</p>
               </div>
               <div className="tabs browse-tabs browse-tabs--library">
-                {VIEW_OPTIONS.map((option) => (
+                {BROWSE_VIEW_OPTIONS.map((option) => (
                   <button
                     key={option.id}
                     type="button"
@@ -585,14 +618,17 @@ function BrowseLibrary() {
                 primaryMovie={pickResult?.primary}
                 backupMovies={pickResult?.alternates || []}
                 vibeLabel={libraryVibeLabel}
-                loadingCopy="Ranking the best match from your filtered library..."
-                emptyCopy="Let ReelBot choose from these filters, or add a vibe to steer the pick."
-                refreshLabel={pickLoading ? "Swapping…" : "Swap Pick"}
-                backupTitle="Similar picks, different vibes"
+                loadingCopy="Finding a pick…"
+                emptyCopy="Let ReelBot choose from these filters, or add one detail."
+                refreshLabel={pickLoading ? "Finding…" : "Get another pick"}
+                resetLabel="Start fresh"
+                backupTitle="Also worth considering"
+                backupCopy="If you want another angle."
                 onRefreshChoices={pickResult?.primary ? handleRefreshLibraryPick : undefined}
+                onResetChoices={pickResult?.primary ? handleStartFreshLibraryPick : undefined}
                 refineActions={pickResult?.primary ? LIBRARY_REFINE_ACTIONS : []}
                 onRefineAction={pickResult?.primary ? handleRefineLibraryPick : undefined}
-                refineStatusLabel={pickResult?.primary && pickLoading ? "ReelBot is adjusting this pick…" : ""}
+                refineStatusLabel={pickResult?.primary && pickLoading ? "Finding a pick…" : ""}
                 refreshDisabled={pickLoading}
               />
             </div>
@@ -637,6 +673,8 @@ function BrowseLibrary() {
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                           alt={movie.title}
                           className="movie-poster"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="no-poster">Poster unavailable</div>
@@ -685,7 +723,7 @@ function BrowseLibrary() {
             ) : (
               <div className="empty-state">
                 <span className="status-glyph" aria-hidden="true"></span>
-                <span>That filter stack is too tight right now. Loosen genre, runtime, or mood and try again.</span>
+                <span>Nothing great matched that exactly. Try loosening one filter.</span>
               </div>
             )}
           </div>

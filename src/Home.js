@@ -5,7 +5,6 @@ import "./App.css";
 import {
   API_BASE_URL,
   MOOD_FILTERS,
-  REELBOT_CAPABILITIES,
   VIEW_OPTIONS,
   formatMovieDate,
   getFeedPath,
@@ -17,6 +16,7 @@ import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import CinematicAtmosphere from "./components/CinematicAtmosphere";
 import TrailerModal from "./components/TrailerModal";
+import SwipeableRail from "./components/SwipeableRail";
 import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
@@ -26,12 +26,10 @@ import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./s
 import { buildAbsoluteUrl, DEFAULT_SOCIAL_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "./siteConfig";
 import { homeFeedService } from "./services/homeFeedService";
 import { tasteProfileService } from "./services/tasteProfileService";
+import { useAskReelbotPageContext } from "./context/AskReelbotContext";
+import { getPromptCategory, trackProductEvent } from "./analytics";
 
-const PICK_LOADING_MESSAGES = [
-  "Scanning the library…",
-  "Evaluating candidates…",
-  "Ranking the best match…",
-];
+const PICK_LOADING_MESSAGES = ["Finding a pick…"];
 
 const HOMEPAGE_PROMPT_POOL = [
   "Date night",
@@ -51,13 +49,13 @@ const HOMEPAGE_BASE_DISPLAY_COUNT = 8;
 const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 12;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
 const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
-const SOFT_SWAP_MESSAGE = "Want more options? Try refining your vibe or browse more movies.";
+const SOFT_SWAP_MESSAGE = "Want more options? Refine this pick or start fresh.";
 const EXPANDED_SWAP_LOADING_MESSAGE = "Expanding the search a bit…";
 const RESTORE_STATUS_TIMEOUT_MS = 1000;
-const SWAP_LOADING_MESSAGE = "Finding another strong option…";
-const PICK_REQUEST_FALLBACK_MESSAGE = "We couldn’t land a strong pick from that prompt. Try refining the vibe or browse more movies.";
-const PICK_REQUEST_ERROR_MESSAGE = "ReelBot could not pull a pick right now.";
-const SWAP_REQUEST_ERROR_MESSAGE = "We couldn’t swap in a stronger alternative right now. Your last pick is still here.";
+const SWAP_LOADING_MESSAGE = "Finding another pick…";
+const PICK_REQUEST_FALLBACK_MESSAGE = "Try loosening one detail.";
+const PICK_REQUEST_ERROR_MESSAGE = "ReelBot hit a snag. Try that again.";
+const SWAP_REQUEST_ERROR_MESSAGE = "ReelBot hit a snag. Your last pick is still here.";
 const PICK_REFINE_ACTIONS = [
   { id: "lighter", label: "Lighter", loadingMessage: "Looking for something a little lighter…" },
   { id: "darker", label: "Darker", loadingMessage: "Taking this in a darker direction…" },
@@ -65,6 +63,29 @@ const PICK_REFINE_ACTIONS = [
   { id: "more_like_this", label: "More like this", loadingMessage: "Staying close to this pick…" },
   { id: "different_angle", label: "Different angle", loadingMessage: "Trying a nearby angle…" },
 ];
+
+const getContextualRefineActions = (movie = {}, prompt = "", resolvedIntent = {}) => {
+  const genres = new Set(movie.genre_names || []);
+  const actions = [];
+  const add = (id) => {
+    const action = PICK_REFINE_ACTIONS.find((item) => item.id === id)
+      || (id === "funnier" ? { id, label: "Funnier", loadingMessage: "Finding a funnier version…" } : null)
+      || (id === "less_intense" ? { id, label: "Less intense", loadingMessage: "Dialing the intensity down…" } : null);
+    if (action && !actions.some((item) => item.id === id)) actions.push(action);
+  };
+
+  if (Number(movie.runtime || 0) > 120) add("shorter");
+  if (["Horror", "Thriller", "Crime"].some((genre) => genres.has(genre))) add("lighter");
+  if (/\b(kids?|family|child|children)\b/i.test(prompt)) {
+    add("less_intense");
+    add("funnier");
+  }
+  if (resolvedIntent?.entity_anchor?.kind === "movie_title" || resolvedIntent?.prompt_type === "title_similarity") add("more_like_this");
+  add("different_angle");
+  if (actions.length < 3) add(genres.has("Comedy") ? "darker" : "lighter");
+  if (actions.length < 3) add("more_like_this");
+  return actions.slice(0, 4);
+};
 
 const getAvailabilityStatus = (movie) => movie?.availability_status || null;
 const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
@@ -122,7 +143,7 @@ const FIRST_PICK_SUMMARY_SEEN_STORAGE_KEY = "reelbotHasSeenFirstPickSummary";
 
 const FEED_METADATA = {
   latest: {
-    title: "Now Playing Movies | ReelBot",
+    title: "Movies in Theaters Now | ReelBot",
     description: "See what’s in theaters now, then let ReelBot help narrow the best pick.",
     path: "/now-playing",
     heading: "Now Playing & Trending",
@@ -688,7 +709,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const hasCompletedOnboardingRef = useRef(readLocalFlag(ONBOARDING_COMPLETED_STORAGE_KEY));
   const hasDismissedOnboardingRef = useRef(readSessionFlag(ONBOARDING_DISMISSED_SESSION_KEY));
 
-  const [query, setQuery] = useState("");
   const [homeHeadline] = useState("What should I watch?");
   const [movies, setMovies] = useState(() => initialFeedState.movies);
   const [loading, setLoading] = useState(() => initialFeedState.loading);
@@ -698,9 +718,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(() => initialFeedState.totalPages);
   const [selectedMood, setSelectedMood] = useState("all");
-  const [showCapabilities, setShowCapabilities] = useState(false);
   const [pickPrompt, setPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
-  const [includeTheatrical, setIncludeTheatrical] = useState(false);
+  const [includeTheatrical, setIncludeTheatrical] = useState(() => Boolean(
+    initialPickSession.includeTheatrical ?? initialPickSession.currentPick?.resolved_preferences?.include_theatrical
+  ));
   const [originalPickPrompt, setOriginalPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
   const [isHeroInputFocused, setIsHeroInputFocused] = useState(false);
@@ -884,6 +905,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     setSwapHistory(Array.isArray(storedSession.swapHistory) ? storedSession.swapHistory : []);
     setSwapQueue(Array.isArray(storedSession.swapQueue) ? storedSession.swapQueue : []);
     setLastPickMode(storedSession.lastPickMode === "surprise" ? "surprise" : "prompt");
+    setIncludeTheatrical(Boolean(storedSession.includeTheatrical ?? storedSession.currentPick?.resolved_preferences?.include_theatrical));
     setSwapCount(Number(storedSession.swapCount || 0));
     setCandidatePoolIds(Array.isArray(storedSession.candidatePool) ? storedSession.candidatePool : []);
     setRefinementState(storedSession.refinementState || null);
@@ -1081,21 +1103,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   }, [currentPage, movieType]);
 
   useEffect(() => {
-    if (!showCapabilities) {
-      return undefined;
-    }
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        setShowCapabilities(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [showCapabilities]);
-
-  useEffect(() => {
     setPickError(null);
     setPickValidation("");
   }, [pickPrompt]);
@@ -1147,6 +1154,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       swapHistory,
       swapQueue,
       lastPickMode,
+      includeTheatrical,
       swapCount,
       candidatePool: candidatePoolIds,
       refinementState,
@@ -1159,6 +1167,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   }, [
     candidatePoolIds,
     hasExpandedSwapPool,
+    includeTheatrical,
     lastPickMode,
     onboardingDislikedIds,
     onboardingLikedIds,
@@ -1175,7 +1184,11 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const handleViewChange = (view) => {
     setCurrentPage(1);
-    navigate(getFeedPath(view));
+    if (isFeedRoute) {
+      navigate(getFeedPath(view));
+      return;
+    }
+    setMovieType(view);
   };
 
   const handleExploreMoodChange = (moodId) => {
@@ -1297,7 +1310,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const hasVisibleFeedContent = displayedMovies.length > 0;
   const shouldShowFeedSkeletons = loading && !curatedMovies.length;
-  const feedCountLabel = selectedMood === "all" ? `${displayedMovies.length} curated titles` : `${displayedMovies.length} curated matches`;
+  const feedCountLabel = `${displayedMovies.length} ${displayedMovies.length === 1 ? "movie" : "movies"}`;
   const feedCountDisplayLabel = shouldShowFeedSkeletons
     ? "Loading lineup"
     : isFeedRefreshing && hasVisibleFeedContent
@@ -1359,6 +1372,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
     return theatricalSafeBackups.slice(0, 3);
   }, [backupPicksWithRoles, includeTheatrical]);
+  const contextualRefineActions = useMemo(
+    () => activePick ? getContextualRefineActions(activePick, originalPickPrompt || pickPrompt, pickResult?.resolved_intent || {}) : [],
+    [activePick, originalPickPrompt, pickPrompt, pickResult?.resolved_intent]
+  );
   const queuedSwapIds = useMemo(() => swapQueue.map((movie) => movie?.id).filter(Boolean), [swapQueue]);
   const swapHistoryExcludedIds = useMemo(
     () => Array.from(new Set(swapHistory.flatMap((entry) => getPickSessionMovieIds(entry)))),
@@ -1381,9 +1398,9 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       : isAuthenticatedHomepageUser && activePick
         ? "A current pick, with a few nearby options."
         : activePick
-          ? "A strong pick, with a few nearby alternatives."
+          ? "One pick, with a few useful alternatives."
           : "";
-  const pickFallbackTitle = pickStatus === PICK_STATUS.ERROR ? "Couldn’t get a pick" : "No strong pick yet";
+  const pickFallbackTitle = pickStatus === PICK_STATUS.ERROR ? "ReelBot hit a snag." : "Nothing great matched that exactly.";
   const pickFallbackCopy = pickError || PICK_REQUEST_FALLBACK_MESSAGE;
   const candidatePoolSize = Array.isArray(pickResult?.candidate_pool_ids)
     ? pickResult.candidate_pool_ids.length
@@ -1392,7 +1409,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const refreshExhausted =
     candidatePoolSize > 0 && candidatePoolSize < PICK_REFRESH_EXHAUSTION_THRESHOLD;
   const refreshExhaustionMessage = candidatePoolExhausted
-    ? "ReelBot’s lane is exhausted—start fresh or refine your vibe."
+    ? "You’ve seen the available picks here. Refine this or start fresh."
     : refreshExhausted
       ? "You've seen the strongest options here"
       : "";
@@ -1400,7 +1417,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     pickStatus === PICK_STATUS.LOADING_SWAP
       ? "Swapping your pick…"
       : pickStatus === PICK_STATUS.ERROR
-        ? "Keeping your last strong pick"
+        ? "Your last pick is still here"
         : pickStatus === PICK_STATUS.EXHAUSTED && activePick
           ? "Want more options?"
           : "";
@@ -1408,14 +1425,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     ? (pickStatus === PICK_STATUS.LOADING_SWAP
         ? (pickLoadingMessageOverride || SWAP_LOADING_MESSAGE)
         : pickStatus === PICK_STATUS.LOADING
-          ? (pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…")
+          ? (pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding a pick…")
         : pickStatus === PICK_STATUS.ERROR
           ? (pickError || SWAP_REQUEST_ERROR_MESSAGE)
           : pickStatus === PICK_STATUS.EXHAUSTED
             ? SOFT_SWAP_MESSAGE
             : "")
     : "";
-  const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…")) : "";
+  const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding a pick…")) : "";
   const showOnboardingFlow = isVibeEditorOpen || (isNewHomepageUser && !onboardingDismissed && (!hasCompletedOnboarding || onboardingStep !== "intent"));
   const showPromptComposerSection = !showOnboardingFlow && (!activePick || isPickComposerOpen);
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
@@ -1467,7 +1484,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         url: buildAbsoluteUrl("/"),
         applicationCategory: "EntertainmentApplication",
         operatingSystem: "Web",
-        description: "AI movie recommendation companion for quick picks, spoiler-light takes, review splits, and better next-watch decisions.",
+        description: SITE_DESCRIPTION,
       },
       buildBreadcrumbJsonLd([{ name: "Home", path: "/" }]),
     ];
@@ -1482,9 +1499,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           structuredData: homeStructuredData,
         }
       : {
-          title: "ReelBot — AI Movie Picker | Find Something Worth Watching",
-          description:
-            "Find something worth watching with ReelBot — fast recommendations, spoiler-light insights, and better next-watch picks.",
+          title: "ReelBot — Find a Movie Worth Watching",
+          description: "Get one tailored movie pick, useful backups, and a faster way to decide what to watch.",
           path: "/",
           image: DEFAULT_SOCIAL_IMAGE,
           structuredData: homeStructuredData,
@@ -1567,6 +1583,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   };
 
   const requestPick = async (nextPreferences, options = {}) => {
+    const startedAt = Date.now();
     const previousPick = pickResult;
     const requestVersion = pickRequestVersionRef.current + 1;
     pickRequestVersionRef.current = requestVersion;
@@ -1599,6 +1616,11 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         setSwapHistory([]);
       }
       void tasteActions.recordPickResult(nextPreferences, nextPayload).catch(() => {});
+      trackProductEvent("recommendation_returned", {
+        latency_ms: Date.now() - startedAt,
+        fit_tier: nextPayload.fit_tier || "unknown",
+        theaters_toggle: Boolean(nextPreferences.include_theatrical),
+      });
 
       if (options.scrollToResults) {
         scrollToPickResults({ skipIfVisible: true });
@@ -1611,6 +1633,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       }
 
       console.error("Error fetching ReelBot pick:", requestError);
+      trackProductEvent("recommendation_failed", { latency_ms: Date.now() - startedAt, theaters_toggle: Boolean(nextPreferences.include_theatrical) });
       const nextStatus = requestError?.code === PICK_STATUS.EXHAUSTED ? PICK_STATUS.EXHAUSTED : PICK_STATUS.ERROR;
 
       if (options.isSwap && previousPick?.primary) {
@@ -1764,6 +1787,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   }, []);
 
   const handleStartFresh = useCallback(() => {
+    trackProductEvent("start_fresh_clicked", { page: "home" });
     pickRequestVersionRef.current += 1;
     clearRestoreTimer();
     setPickPrompt("");
@@ -1791,6 +1815,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     setIsFirstPickIntroActive(false);
     setIsPickTrailerOpen(false);
     setIsPickComposerOpen(false);
+    replaceHomePickSession(null);
 
     if (isNewHomepageUser) {
       clearOnboardingDismissal();
@@ -1802,7 +1827,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     if (!isNewHomepageUser) {
       focusPickPromptComposer();
     }
-  }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, resetOnboardingSignals, scrollToSection]);
+  }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, replaceHomePickSession, resetOnboardingSignals, scrollToSection]);
 
   const handleOnboardingVibeSelect = (vibeId) => {
     cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
@@ -1959,6 +1984,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     if (isPickBusy || !pickResult?.primary) {
       return;
     }
+    trackProductEvent("another_pick_clicked", { page: "home", theaters_toggle: includeTheatrical });
 
     const swapPreferences = {
       view: movieType,
@@ -1967,7 +1993,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       source: lastPickMode === "surprise" ? "library" : "feed",
       company: "any",
       prompt: originalPickPrompt || pickPrompt,
-      include_theatrical: pickResult?.resolved_preferences?.include_theatrical ?? includeTheatrical,
+      include_theatrical: includeTheatrical,
     };
 
     void tasteActions.recordSwapFeedback(
@@ -1985,8 +2011,12 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     setSwapCount(nextSwapCount);
     setHasExpandedSwapPool(shouldExpandSearch);
 
-    if (swapQueue.length) {
-      const [nextPrimary, ...remainingQueue] = swapQueue;
+    const eligibleSwapQueue = includeTheatrical
+      ? swapQueue
+      : swapQueue.filter((movie) => !movie?.availability_status?.theater_only);
+
+    if (eligibleSwapQueue.length) {
+      const [nextPrimary, ...remainingQueue] = eligibleSwapQueue;
       const previousPick = pickResult;
       const nextPayload = promoteQueuedPick(previousPick, nextPrimary, remainingQueue);
 
@@ -2039,6 +2069,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     if (isPickBusy || !pickResult?.primary || !action?.id) {
       return;
     }
+    trackProductEvent("refine_clicked", { page: "home", refinement: action.id, theaters_toggle: includeTheatrical });
 
     await submitPick(
       {},
@@ -2072,6 +2103,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
 
     clearRestoreTimer();
+    trackProductEvent("prompt_submitted", { prompt_category: getPromptCategory(pickPrompt), theaters_toggle: includeTheatrical });
     setOnboardingResultActive(false);
     setLastPickMode("prompt");
     setOriginalPickPrompt(pickPrompt.trim());
@@ -2082,6 +2114,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const handleSurprisePick = async () => {
     cancelRestoreState(PICK_STATUS.LOADING);
+    trackProductEvent("surprise_me_clicked", { page: "home", theaters_toggle: includeTheatrical });
     clearRestoreTimer();
     setPickValidation("");
     setOnboardingResultActive(false);
@@ -2166,40 +2199,28 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     }
   };
 
-  const handleHeroSearch = (event) => {
-    event.preventDefault();
-    const nextQuery = query.trim();
-
-    if (!nextQuery) {
-      scrollToSection("pick-for-me");
-      return;
-    }
-
-    navigate(`/search?q=${encodeURIComponent(nextQuery)}`);
-  };
-
-  const hasResettableDiscoveryState = Boolean(
-    activePick
-      || pickPrompt.trim()
-      || originalPickPrompt.trim()
-      || activePromptSuggestion
-      || swapHistory.length
-      || swapQueue.length
-      || candidatePoolIds.length
-      || refinementState
-      || pickError
-      || pickStatus !== PICK_STATUS.IDLE
-      || onboardingVibeId
-      || onboardingInteractionCount
-      || onboardingResultActive
-      || onboardingStep !== "intent"
-  );
+  const askReelbotPageContext = useMemo(() => ({
+    page: isFeedRoute && movieType === "now_playing"
+      ? "now_playing"
+      : activePick
+        ? "recommendation"
+        : "home",
+    originalPrompt: originalPickPrompt || pickPrompt,
+    currentPick: activePick ? { id: activePick.id, title: activePick.title } : null,
+    alternateIds: visibleBackupPicks.map((movie) => movie.id).filter(Boolean),
+    includeTheatrical,
+    activeConstraints: { includeTheatrical },
+    excludedMovieIds: [...swapHistoryExcludedIds, ...persistentExcludedIds],
+    visibleMovieIds: displayedMovies.slice(0, 12).map((movie) => movie.id).filter(Boolean),
+    activeFilters: { view: movieType, mood: selectedMood, runtime: "any", genre: "all" },
+  }), [activePick, displayedMovies, includeTheatrical, isFeedRoute, movieType, originalPickPrompt, persistentExcludedIds, pickPrompt, selectedMood, swapHistoryExcludedIds, visibleBackupPicks]);
+  useAskReelbotPageContext(askReelbotPageContext);
 
   return (
     <div className="browse-page home-page">
       <CinematicAtmosphere active={isHeroInputFocused || isPickBusy} loading={isPickBusy} />
       <div className="container browse-shell home-shell">
-        <section className="home-hero" aria-labelledby="home-hero-title">
+        <section id="pick-for-me" className="home-hero" aria-labelledby="home-hero-title">
           <div className="home-hero-copy">
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
@@ -2231,7 +2252,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                   }
                 }}
                 onKeyDown={handlePromptKeyDown}
-                onFocus={() => setIsHeroInputFocused(true)}
+                onFocus={() => { setIsHeroInputFocused(true); trackProductEvent("prompt_started", { page: "home" }); }}
                 onBlur={() => setIsHeroInputFocused(false)}
                 placeholder='Try “a smart thriller under two hours”'
                 errorText={pickValidation}
@@ -2256,12 +2277,12 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                 <span className="reelbot-toggle-option-control" aria-hidden="true"></span>
                 <span className="reelbot-toggle-option-copy">
                   <span className="reelbot-toggle-option-title">Include movies in theaters</span>
-                  <span className="reelbot-toggle-option-subtitle">Quietly widen the pool when you want current releases included.</span>
+                  <span className="reelbot-toggle-option-subtitle">Include current theatrical releases in your picks.</span>
                 </span>
               </label>
             </div>
 
-            <div className="home-hero-now-playing home-hero-now-playing--inline" aria-label="In theaters now">
+            <div id="now-playing" className="home-hero-now-playing home-hero-now-playing--inline" aria-label="In theaters now">
               <div className="home-hero-now-playing-head">
                 <div>
                   <h2 className="home-hero-now-playing-heading">{heroPreviewLabel}</h2>
@@ -2270,7 +2291,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               </div>
 
               {heroPreviewMovies.length ? (
-                <div className="home-hero-now-playing-rail">
+                <SwipeableRail className="home-hero-now-playing-rail" ariaLabel="In theaters now">
                   {heroPreviewMovies.map((movie) => (
                     <Link key={movie.id} to={getMoviePath(movie)} className="home-hero-now-playing-item" aria-label={`Open ${movie.title}`}>
                       {movie.poster_path ? (
@@ -2278,6 +2299,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                           alt={movie.title}
                           className="home-hero-now-playing-poster"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="home-hero-now-playing-poster home-hero-now-playing-poster--placeholder">Poster unavailable</div>
@@ -2285,13 +2308,12 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                       <span className="home-hero-now-playing-title">{movie.title}</span>
                     </Link>
                   ))}
+                </SwipeableRail>
+              ) : loading ? (
+                <div className="home-hero-now-playing-rail home-hero-now-playing-rail--loading" aria-hidden="true">
+                  {Array.from({ length: 3 }).map((_, index) => <span key={index} className="home-hero-now-playing-skeleton" />)}
                 </div>
-              ) : (
-                <div className="home-hero-now-playing-empty">
-                  <span className="status-glyph" aria-hidden="true"></span>
-                  <span>Current releases will show up here.</span>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         </section>
@@ -2325,8 +2347,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             primaryMovie={activePick}
             backupMovies={visibleBackupPicks}
             vibeLabel={pickVibeLabel}
-            loadingCopy={pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Evaluating candidates…"}
-            emptyCopy="Nothing here yet. Give ReelBot a vibe and we'll line up your next watch."
+            loadingCopy={pickLoadingMessageOverride || "Finding a pick…"}
+            emptyCopy="Nothing here yet. Tell ReelBot what you want to watch."
             emptyActionLabel="Get a pick"
             onEmptyAction={handleEmptyPickCta}
             fallbackTitle={shouldShowPickFallbackState ? pickFallbackTitle : ""}
@@ -2358,7 +2380,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             resetDisabled={false}
             recoveryTitle={pickRecoveryTitle}
             recoveryMessage={pickRecoveryMessage}
-            refineActions={activePick ? PICK_REFINE_ACTIONS : []}
+            refineActions={contextualRefineActions}
             onRefineAction={activePick && !isPickBusy ? handleInlineRefinement : undefined}
             refineStatusLabel={inlineRefineStatus}
             hasActiveSession={hasActivePickSession}
@@ -2399,7 +2421,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             ))}
           </div>
 
-          <div className="mood-rail mood-rail--secondary mood-rail--grid" aria-label="Filter poster grid by mood">
+          {isFeedRoute ? <div className="mood-rail mood-rail--secondary mood-rail--grid" aria-label="Filter poster grid by mood">
             {MOOD_FILTERS.map((filter) => (
               <button
                 key={filter.id}
@@ -2412,14 +2434,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                 <span className="mood-rail-chip-label">{filter.label}</span>
               </button>
             ))}
-          </div>
+          </div> : null}
         {error && !hasVisibleFeedContent ? <p className="error-message">{error}</p> : null}
 
         {!error || hasVisibleFeedContent ? (
           <>
             <div className="movie-list home-poster-grid">
               {shouldShowFeedSkeletons ? (
-                Array.from({ length: HOMEPAGE_BASE_DISPLAY_COUNT }).map((_, index) => (
+                Array.from({ length: isCompactHeroPreview ? 6 : HOMEPAGE_BASE_DISPLAY_COUNT }).map((_, index) => (
                   <article key={`feed-skeleton-${index}`} className="movie-card home-movie-card home-movie-card--skeleton" aria-hidden="true">
                     <div className="home-movie-card-link">
                       <div className="home-movie-card-poster-shell home-feed-skeleton-block home-feed-skeleton-poster">
@@ -2440,7 +2462,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                   </article>
                 ))
               ) : displayedMovies.length > 0 ? (
-                displayedMovies.map((movie) => (
+                displayedMovies.slice(0, isCompactHeroPreview ? 6 : 8).map((movie) => (
                   <article key={movie.id} className="movie-card home-movie-card">
                     <Link to={getMoviePath(movie)} className="home-movie-card-link" aria-label={`Open ${movie.title}`}>
                       <div className="home-movie-card-poster-shell">
@@ -2450,6 +2472,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                             alt={movie.title}
                             className="movie-poster"
+                            loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <div className="no-poster">Poster unavailable</div>
@@ -2502,7 +2526,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           </>
         ) : null}
 
-        {totalPages > 1 ? (
+        {isFeedRoute && totalPages > 1 ? (
           <div className="pagination browse-pagination">
             <button disabled={currentPage === 1} onClick={() => setCurrentPage((previous) => previous - 1)}>
               ⬅ Previous
@@ -2526,35 +2550,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         onClose={() => setIsPickTrailerOpen(false)}
       />
 
-      {showCapabilities ? (
-        <div className="reelbot-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reelbot-modal-title">
-          <div className="reelbot-modal">
-            <button
-              type="button"
-              className="reelbot-modal-close"
-              onClick={() => setShowCapabilities(false)}
-              aria-label="Close ReelBot capabilities"
-            >
-              ×
-            </button>
-
-            <div className="reelbot-modal-kicker">Ask when you want clarity</div>
-            <h2 id="reelbot-modal-title" className="reelbot-modal-title">
-              How ReelBot helps you decide
-            </h2>
-            <p className="reelbot-modal-copy">Browse on your own first, then use ReelBot when you want a faster read, a stronger pick, or help breaking a tie.</p>
-
-            <div className="reelbot-modal-grid">
-              {REELBOT_CAPABILITIES.map((capability) => (
-                <div key={capability.title} className="reelbot-modal-card">
-                  <div className="reelbot-modal-card-title">{capability.title}</div>
-                  <p className="reelbot-modal-card-copy">{capability.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

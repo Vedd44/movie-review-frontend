@@ -133,7 +133,9 @@ export const normalizePickPayload = (payload, excludedIds = []) => {
   }
 
   const timeConstraint = getResolvedTimeConstraint(payload);
+  const includeTheatrical = payload?.resolved_preferences?.include_theatrical === true;
   const rankedCandidates = normalizeQueueMovies([payload.primary, ...((Array.isArray(payload.alternates) ? payload.alternates : []))], excludedIds)
+    .filter((movie) => includeTheatrical || !movie?.availability_status?.theater_only)
     .filter((movie) => isMovieInTimeRange(movie, timeConstraint?.range || null));
 
   if (!rankedCandidates.length) {
