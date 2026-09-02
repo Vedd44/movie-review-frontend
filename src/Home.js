@@ -164,7 +164,6 @@ const FEED_METADATA = {
 
 const ONBOARDING_TASTE_FEED_VIEWS = ["latest", "popular"];
 const ONBOARDING_POSTER_TARGET = 8;
-const ONBOARDING_MIN_SIGNAL_COUNT = 5;
 const ONBOARDING_VIBES = [
   {
     id: "easy_fun",
@@ -473,27 +472,6 @@ const getHomepageCardLabel = (movie, view) => {
 
 const hasGenreMatch = (movie, genreIds = []) => genreIds.some((genreId) => movie?.genre_ids?.includes(genreId));
 
-const formatTitleList = (movies = [], maxItems = 3) => {
-  const titles = (Array.isArray(movies) ? movies : [])
-    .map((movie) => String(movie?.title || "").trim())
-    .filter(Boolean)
-    .slice(0, maxItems);
-
-  if (!titles.length) {
-    return "";
-  }
-
-  if (titles.length === 1) {
-    return titles[0];
-  }
-
-  if (titles.length === 2) {
-    return `${titles[0]} and ${titles[1]}`;
-  }
-
-  return `${titles.slice(0, -1).join(", ")}, and ${titles[titles.length - 1]}`;
-};
-
 const getOnboardingBucketOrder = (vibeId = "") => {
   const preferredOrder = {
     easy_fun: ["easy_fun", "adventurous", "offbeat", "emotional", "thought_provoking", "intense"],
@@ -504,20 +482,6 @@ const getOnboardingBucketOrder = (vibeId = "") => {
   };
   const order = preferredOrder[vibeId] || preferredOrder.surprise_me;
   return order.map((bucketId) => ONBOARDING_BUCKETS.find((bucket) => bucket.id === bucketId)).filter(Boolean);
-};
-
-const getPosterToneTag = (movie, vibeId = "") => {
-  const genreNames = Array.isArray(movie?.genre_names) ? movie.genre_names : [];
-  const bucketTag = getOnboardingBucketOrder(vibeId).find((bucket) => hasGenreMatch(movie, bucket.genreIds))?.fallbackTag;
-  if (bucketTag) {
-    return bucketTag;
-  }
-
-  if (genreNames.length) {
-    return genreNames[0];
-  }
-
-  return "Tonight pick";
 };
 
 const buildOnboardingPosterDeck = (movies = [], vibeId = "surprise_me", view = "latest") => {
@@ -574,23 +538,6 @@ const buildOnboardingPosterDeck = (movies = [], vibeId = "surprise_me", view = "
   });
 
   return selectedMovies.slice(0, ONBOARDING_POSTER_TARGET);
-};
-
-const buildOnboardingPrompt = ({ vibe, likedMovies = [], dislikedMovies = [] }) => {
-  const promptParts = [vibe?.promptLead || ONBOARDING_VIBES[3].promptLead];
-  const likedTitles = formatTitleList(likedMovies, 3);
-  const dislikedTitles = formatTitleList(dislikedMovies, 2);
-
-  if (likedTitles) {
-    promptParts.push(`Positive signals: the user was interested in ${likedTitles}.`);
-  }
-
-  if (dislikedTitles) {
-    promptParts.push(`Avoid leaning toward movies closer to ${dislikedTitles}.`);
-  }
-
-  promptParts.push("Return one strong first recommendation, not a generic safe pick.");
-  return promptParts.join(" ");
 };
 
 const countNames = (movies = []) => {
@@ -712,7 +659,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [homeHeadline] = useState("What should I watch?");
   const [movies, setMovies] = useState(() => initialFeedState.movies);
   const [loading, setLoading] = useState(() => initialFeedState.loading);
-  const [isFeedRefreshing, setIsFeedRefreshing] = useState(() => initialFeedState.refreshing);
+  const [, setIsFeedRefreshing] = useState(() => initialFeedState.refreshing);
   const [error, setError] = useState(() => initialFeedState.error);
   const [movieType, setMovieType] = useState(routeView);
   const [currentPage, setCurrentPage] = useState(1);
@@ -728,19 +675,19 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const [pickError, setPickError] = useState(null);
   const [pickValidation, setPickValidation] = useState("");
   const [pickResult, setPickResult] = useState(() => initialPickSession.currentPick || null);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => hasCompletedOnboardingRef.current);
-  const [onboardingDismissed, setOnboardingDismissed] = useState(() => hasDismissedOnboardingRef.current);
+  const [, setHasCompletedOnboarding] = useState(() => hasCompletedOnboardingRef.current);
+  const [, setOnboardingDismissed] = useState(() => hasDismissedOnboardingRef.current);
   const [hasSeenFirstPickSummary, setHasSeenFirstPickSummary] = useState(() => readLocalFlag(FIRST_PICK_SUMMARY_SEEN_STORAGE_KEY));
   const [isFirstPickIntroActive, setIsFirstPickIntroActive] = useState(false);
   const [onboardingFeedMovies, setOnboardingFeedMovies] = useState([]);
-  const [onboardingStep, setOnboardingStep] = useState(() => (initialPickSession.currentPick?.primary ? "complete" : "intent"));
+  const [, setOnboardingStep] = useState(() => (initialPickSession.currentPick?.primary ? "complete" : "intent"));
   const [onboardingVibeId, setOnboardingVibeId] = useState(() => String(initialPickSession.onboardingVibeId || ""));
   const [onboardingLikedIds, setOnboardingLikedIds] = useState(() => (Array.isArray(initialPickSession.onboardingLikedIds) ? initialPickSession.onboardingLikedIds : []));
   const [onboardingDislikedIds, setOnboardingDislikedIds] = useState(() => (Array.isArray(initialPickSession.onboardingDislikedIds) ? initialPickSession.onboardingDislikedIds : []));
   const [onboardingSkippedIds, setOnboardingSkippedIds] = useState(() => (Array.isArray(initialPickSession.onboardingSkippedIds) ? initialPickSession.onboardingSkippedIds : []));
   const [onboardingResultActive, setOnboardingResultActive] = useState(() => Boolean(initialPickSession.currentPick?.primary));
-  const [isVibeEditorOpen, setIsVibeEditorOpen] = useState(false);
-  const [isPickComposerOpen, setIsPickComposerOpen] = useState(false);
+  const [, setIsVibeEditorOpen] = useState(false);
+  const [, setIsPickComposerOpen] = useState(false);
   const [isPickTrailerOpen, setIsPickTrailerOpen] = useState(false);
   const [swapHistory, setSwapHistory] = useState(() => (Array.isArray(initialPickSession.swapHistory) ? initialPickSession.swapHistory : []));
   const [swapQueue, setSwapQueue] = useState(() => (Array.isArray(initialPickSession.swapQueue) ? initialPickSession.swapQueue : []));
@@ -858,10 +805,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       document.getElementById("pick-prompt-input")?.focus();
     }, 140);
   }, []);
-
-  const handleRefinePickForHero = useCallback(() => {
-    handleRefinePick();
-  }, [handleRefinePick]);
 
   const clearRestoreTimer = useCallback(() => {
     if (restoreStatusTimeoutRef.current) {
@@ -1264,9 +1207,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     () => buildOnboardingPosterDeck(onboardingPosterPool, onboardingVibeId || "surprise_me", movieType),
     [movieType, onboardingPosterPool, onboardingVibeId]
   );
-  const onboardingInteractionCount = onboardingLikedIds.length + onboardingDislikedIds.length + onboardingSkippedIds.length;
-  const canFinishOnboarding = onboardingInteractionCount >= ONBOARDING_MIN_SIGNAL_COUNT;
-  const onboardingRemainingCount = Math.max(0, ONBOARDING_MIN_SIGNAL_COUNT - onboardingInteractionCount);
   const onboardingLikedMovies = useMemo(
     () => onboardingPosterDeck.filter((movie) => onboardingLikedIds.includes(movie.id)),
     [onboardingLikedIds, onboardingPosterDeck]
@@ -1275,11 +1215,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     () => onboardingPosterDeck.filter((movie) => onboardingDislikedIds.includes(movie.id)),
     [onboardingDislikedIds, onboardingPosterDeck]
   );
-  const onboardingSignalSummary = useMemo(() => {
-    const likedSummary = onboardingLikedMovies.length ? `${onboardingLikedMovies.length} liked` : "No strong likes yet";
-    const dislikedSummary = onboardingDislikedMovies.length ? `${onboardingDislikedMovies.length} not for me` : "";
-    return [likedSummary, dislikedSummary].filter(Boolean).join(" • ");
-  }, [onboardingDislikedMovies.length, onboardingLikedMovies.length]);
   const homepageUserState = user
     ? HOMEPAGE_USER_STATE.AUTHENTICATED
     : hasInitialLocalSession
@@ -1287,35 +1222,10 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       : HOMEPAGE_USER_STATE.NEW;
   const isNewHomepageUser = homepageUserState === HOMEPAGE_USER_STATE.NEW;
   const isSessionHomepageUser = homepageUserState === HOMEPAGE_USER_STATE.SESSION;
-  const isAuthenticatedHomepageUser = homepageUserState === HOMEPAGE_USER_STATE.AUTHENTICATED;
-
-  const viewLabel = getViewLabel(movieType);
   const heading = FEED_METADATA[movieType]?.heading || getViewLabel(movieType);
-
-  const sectionSubtitle = useMemo(() => {
-    if (selectedMood !== "all") {
-      return `${selectedMoodConfig.label} picks from this ${viewLabel.toLowerCase()} lineup.`;
-    }
-
-    if (movieType === "popular") {
-      return "A look at what is trending this week.";
-    }
-
-    if (movieType === "upcoming") {
-      return "A look at what's arriving soon.";
-    }
-
-    return "What’s currently in theaters.";
-  }, [movieType, selectedMood, selectedMoodConfig.label, viewLabel]);
 
   const hasVisibleFeedContent = displayedMovies.length > 0;
   const shouldShowFeedSkeletons = loading && !curatedMovies.length;
-  const feedCountLabel = `${displayedMovies.length} ${displayedMovies.length === 1 ? "movie" : "movies"}`;
-  const feedCountDisplayLabel = shouldShowFeedSkeletons
-    ? "Loading lineup"
-    : isFeedRefreshing && hasVisibleFeedContent
-      ? `${feedCountLabel} • Updating`
-      : feedCountLabel;
   const heroPreviewLabel = "In theaters now";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
@@ -1392,14 +1302,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
   const shouldShowEmptyPickState = pickStatus === PICK_STATUS.IDLE && !activePick && !hasActivePickSession;
   const shouldShowPickSessionPlaceholder = pickStatus === PICK_STATUS.RESTORING;
   const shouldShowPickFallbackState = !activePick && (pickStatus === PICK_STATUS.EXHAUSTED || pickStatus === PICK_STATUS.ERROR);
-  const pickResultTitle = "Your pick";
-  const pickResultSubtitle = isSessionHomepageUser && activePick
-      ? "Your recent ReelBot pick is still here, with a few nearby options."
-      : isAuthenticatedHomepageUser && activePick
-        ? "A current pick, with a few nearby options."
-        : activePick
-          ? "One pick, with a few useful alternatives."
-          : "";
   const pickFallbackTitle = pickStatus === PICK_STATUS.ERROR ? "ReelBot hit a snag." : "Nothing great matched that exactly.";
   const pickFallbackCopy = pickError || PICK_REQUEST_FALLBACK_MESSAGE;
   const candidatePoolSize = Array.isArray(pickResult?.candidate_pool_ids)
@@ -1433,10 +1335,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             : "")
     : "";
   const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding a pick…")) : "";
-  const showOnboardingFlow = isVibeEditorOpen || (isNewHomepageUser && !onboardingDismissed && (!hasCompletedOnboarding || onboardingStep !== "intent"));
-  const showPromptComposerSection = !showOnboardingFlow && (!activePick || isPickComposerOpen);
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
-  const showSessionResumeMessaging = isSessionHomepageUser && (activePick || hasActivePickSession || shouldShowPickSessionPlaceholder);
   const heroSubtext = "Say the mood, the moment, or who’s watching. ReelBot will narrow it down.";
 
   const homeStructuredData = useMemo(() => {
@@ -1828,157 +1727,6 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
       focusPickPromptComposer();
     }
   }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, replaceHomePickSession, resetOnboardingSignals, scrollToSection]);
-
-  const handleOnboardingVibeSelect = (vibeId) => {
-    cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
-    setOnboardingVibeId(vibeId);
-    setOnboardingResultActive(false);
-    setIsVibeEditorOpen(true);
-    setPickError(null);
-    setPickValidation("");
-  };
-
-  const handleOnboardingContinue = () => {
-    if (!onboardingVibeId) {
-      return;
-    }
-
-    clearOnboardingDismissal();
-    resetOnboardingSignals();
-    setIsVibeEditorOpen(true);
-    setOnboardingStep("taste");
-    scrollToSection("pick-for-me", { skipIfVisible: true });
-  };
-
-  const handleOnboardingPick = async (signalOverrides = {}) => {
-    const activeVibe = ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId);
-    const likedIds = signalOverrides.likedIds || onboardingLikedIds;
-    const dislikedIds = signalOverrides.dislikedIds || onboardingDislikedIds;
-
-    if (!activeVibe || onboardingStep === "loading" || likedIds.length + dislikedIds.length + onboardingSkippedIds.length < ONBOARDING_MIN_SIGNAL_COUNT) {
-      return null;
-    }
-
-    const likedMovies = onboardingPosterDeck.filter((movie) => likedIds.includes(movie.id));
-    const dislikedMovies = onboardingPosterDeck.filter((movie) => dislikedIds.includes(movie.id));
-    const onboardingPrompt = buildOnboardingPrompt({
-      vibe: activeVibe,
-      likedMovies,
-      dislikedMovies,
-    });
-    const nextPreferences = {
-      view: movieType,
-      mood: "all",
-      runtime: "any",
-      source: "library",
-      company: "any",
-      prompt: onboardingPrompt,
-      include_theatrical: false,
-    };
-
-    cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
-    clearRestoreTimer();
-    setPickPrompt(onboardingPrompt);
-    setOriginalPickPrompt(onboardingPrompt);
-    setLastPickMode("prompt");
-    setSwapHistory([]);
-    setSwapQueue([]);
-    setSwapCount(0);
-    setCandidatePoolIds([]);
-    setRefinementState(null);
-    setHasExpandedSwapPool(false);
-    setPickError(null);
-    setPickValidation("");
-    setOnboardingStep("loading");
-    setIsVibeEditorOpen(true);
-    replaceHomePickSession({
-      originalPrompt: onboardingPrompt,
-      currentPick: null,
-      swapHistory: [],
-      swapQueue: [],
-      lastPickMode: "prompt",
-      swapCount: 0,
-      candidatePool: [],
-      refinementState: null,
-      hasExpandedSwapPool: false,
-      onboardingVibeId,
-      onboardingLikedIds: likedIds,
-      onboardingDislikedIds: dislikedIds,
-      onboardingSkippedIds,
-    });
-
-    const nextPayload = await requestPick(nextPreferences, {
-      scrollToResults: true,
-      loadingMessage: "Learning your taste and lining up a strong first pick…",
-      customExcludedIds: getPickExcludedIds(nextPreferences, dislikedIds),
-      refreshKey: `onboarding-${Date.now()}`,
-    });
-
-    if (nextPayload?.primary) {
-      writeLocalFlag(ONBOARDING_COMPLETED_STORAGE_KEY, true);
-      writeSessionFlag(ONBOARDING_DISMISSED_SESSION_KEY, false);
-      setHasCompletedOnboarding(true);
-      setOnboardingDismissed(false);
-      setIsFirstPickIntroActive(!hasSeenFirstPickSummary);
-      setOnboardingResultActive(true);
-      setIsVibeEditorOpen(false);
-      setOnboardingStep("complete");
-      return nextPayload;
-    }
-
-    setOnboardingResultActive(false);
-    setIsVibeEditorOpen(true);
-    setOnboardingStep("taste");
-    setIsFirstPickIntroActive(false);
-    return null;
-  };
-
-  const handleOnboardingReaction = (movieId, reaction) => {
-    if (!movieId || onboardingStep === "loading") {
-      return;
-    }
-
-    const withoutMovie = (values = []) => values.filter((value) => value !== movieId);
-
-    if (reaction === "like") {
-      setOnboardingLikedIds((currentValues) => dedupeIds([...withoutMovie(currentValues), movieId]));
-      setOnboardingDislikedIds((currentValues) => withoutMovie(currentValues));
-      setOnboardingSkippedIds((currentValues) => withoutMovie(currentValues));
-      return;
-    }
-
-    if (reaction === "dislike") {
-      setOnboardingLikedIds((currentValues) => withoutMovie(currentValues));
-      setOnboardingDislikedIds((currentValues) => dedupeIds([...withoutMovie(currentValues), movieId]));
-      setOnboardingSkippedIds((currentValues) => withoutMovie(currentValues));
-      return;
-    }
-
-    setOnboardingLikedIds((currentValues) => withoutMovie(currentValues));
-    setOnboardingDislikedIds((currentValues) => withoutMovie(currentValues));
-    setOnboardingSkippedIds((currentValues) => dedupeIds([...withoutMovie(currentValues), movieId]));
-  };
-
-  const handleRestartOnboarding = () => {
-    handleStartFresh();
-  };
-
-  const handleDismissOnboarding = () => {
-    writeSessionFlag(ONBOARDING_DISMISSED_SESSION_KEY, true);
-    setOnboardingDismissed(true);
-    resetOnboardingSignals();
-    setOnboardingVibeId("");
-    setOnboardingStep("intent");
-    setOnboardingResultActive(false);
-    setIsVibeEditorOpen(false);
-    setIsPickComposerOpen(false);
-    setIsFirstPickIntroActive(false);
-    setPickError(null);
-    setPickValidation("");
-    window.requestAnimationFrame(() => {
-      scrollToSection("pick-for-me", { skipIfVisible: true });
-    });
-  };
 
   const handleRefreshPick = async () => {
     if (isPickBusy || !pickResult?.primary) {

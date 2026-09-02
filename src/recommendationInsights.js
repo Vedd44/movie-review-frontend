@@ -11,19 +11,6 @@ const truncateText = (value, maxLength = 140) => {
 
 const normalizeReason = (value = "") => String(value || "").replace(/\s+/g, " ").trim();
 
-const truncateWords = (value = "", maxWords = 12) => {
-  const words = String(value || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (words.length <= maxWords) {
-    return words.join(" ");
-  }
-
-  return `${words.slice(0, maxWords).join(" ")}…`;
-};
-
 const ensureSentence = (value = "") => {
   const text = normalizeReason(value).replace(/\s+([,.;!?])/g, "$1");
   if (!text) {
@@ -218,26 +205,6 @@ const getOverviewSummary = (movie) => {
   const overview = String(movie?.overview || "").trim();
   const firstSentence = overview.match(/[^.!?]+[.!?]/)?.[0]?.trim();
   return truncateText(firstSentence || "A confident pick with clear tone and enough pull to dive into right away.", 140);
-};
-
-const getDecisionFallback = (movie) => {
-  if (hasGenres(movie, ["Comedy", "Animation"])) {
-    return "Easy to settle into, with a lighter tone that never gets too heavy.";
-  }
-
-  if (hasGenres(movie, ["Thriller", "Mystery"])) {
-    return "Keeps things tense and engaging without feeling punishing.";
-  }
-
-  if (hasGenres(movie, ["Action", "Adventure"])) {
-    return "Fast-moving and accessible, with enough momentum to keep you locked in.";
-  }
-
-  if (hasGenres(movie, ["Drama", "Romance", "Music"])) {
-    return "More emotionally grounded, but still easy enough to stay with.";
-  }
-
-  return "A clear, accessible watch that knows exactly what kind of night it suits.";
 };
 
 const getGenreReason = (movie) => {
