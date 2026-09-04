@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
 import RecommendationRationale from "./RecommendationRationale";
@@ -7,6 +7,7 @@ import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getReleaseYear } from "../discovery";
 import { getBackupCardMeta } from "../recommendationInsights";
+import { pickLoadingQuote } from "../reelbotLoadingQuotes";
 
 const getAvailabilityStatus = (movie, providerEntry) =>
   movie?.availability_status || providerEntry?.availability_status || null;
@@ -22,7 +23,6 @@ function PickResultPanel({
   primaryMovie,
   backupMovies = [],
   vibeLabel = "",
-  loadingCopy,
   emptyTitle,
   emptyCopy,
   emptyActionLabel,
@@ -58,6 +58,10 @@ function PickResultPanel({
   refineStatusLabel = "",
   tasteActionProps = {},
 }) {
+  const [loadingQuote, setLoadingQuote] = useState(() => pickLoadingQuote());
+  useEffect(() => {
+    if (loading) setLoadingQuote(pickLoadingQuote());
+  }, [loading]);
   const visibleBackupMovies = useMemo(
     () => (Array.isArray(backupMovies) ? backupMovies.slice(0, 3) : []),
     [backupMovies]
@@ -82,8 +86,8 @@ function PickResultPanel({
         <div className="reelbot-loading-state">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
-            <p className="reelbot-loading-title">Finding a pick…</p>
-            <p className="detail-secondary-text reelbot-placeholder-copy">{loadingCopy}</p>
+            <p className="reelbot-loading-title">Finding your pick…</p>
+            <p className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></p>
           </div>
         </div>
       ) : null}
@@ -185,7 +189,12 @@ function PickResultPanel({
                           </button>
                         ))}
                       </div>
-                      {refineStatusLabel ? <p className="pick-refine-status detail-secondary-text">{refineStatusLabel}</p> : null}
+                      {refineStatusLabel ? (
+                        <div className="pick-refine-status detail-secondary-text">
+                          <div>Finding your pick…</div>
+                          {loading ? <div className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></div> : null}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

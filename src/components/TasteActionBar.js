@@ -101,7 +101,7 @@ function TasteActionBar({
           disabled={isBusy}
           aria-pressed={tasteState.inWatchlist}
         >
-          {pendingAction === "watchlist" ? "Saving..." : tasteState.inWatchlist ? savedLabel : saveLabel}
+          {pendingAction === "watchlist" ? "Saving…" : tasteState.inWatchlist ? savedLabel : saveLabel}
         </button>
       ) : null}
       {showSeenAction ? (
@@ -134,10 +134,10 @@ function TasteActionBar({
           disabled={isBusy}
           aria-pressed={tasteState.likedVibe}
         >
-          {pendingAction === "vibe" ? "Saving..." : tasteState.likedVibe ? "Vibe Saved" : "Like this Vibe"}
+          {pendingAction === "vibe" ? "Saving…" : tasteState.likedVibe ? "Vibe Saved" : "Like this Vibe"}
         </button>
       ) : null}
-      {pendingAction && user && isCloudSyncing ? <span className="taste-action-feedback">Saving your changes...</span> : null}
+      {pendingAction && user && isCloudSyncing ? <span className="taste-action-feedback">Saving…</span> : null}
       {actionError ? <span className="taste-action-feedback taste-action-feedback--error">{actionError}</span> : null}
       {feedback ? <span className="taste-action-feedback">{feedback}</span> : null}
     </div>

@@ -25,7 +25,7 @@ test("magic-link request exits loading and shows the destination address", async
   render(<AuthPanel initialView="email-link" />);
   fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "viewer@example.com" } });
   fireEvent.click(screen.getByRole("button", { name: "Send sign-in link" }));
-  expect(screen.getByRole("button", { name: "Sending…" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Sending link…" })).toBeDisabled();
   expect(await screen.findByText("Check your email")).toBeInTheDocument();
   expect(screen.getByText("We sent a sign-in link to viewer@example.com.")).toBeInTheDocument();
 });

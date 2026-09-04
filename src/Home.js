@@ -29,7 +29,7 @@ import { tasteProfileService } from "./services/tasteProfileService";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { getPromptCategory, trackProductEvent } from "./analytics";
 
-const PICK_LOADING_MESSAGES = ["Finding a pick…"];
+const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 
 const HOMEPAGE_PROMPT_POOL = [
   "Date night",
@@ -50,9 +50,9 @@ const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 12;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
 const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
 const SOFT_SWAP_MESSAGE = "Want more options? Refine this pick or start fresh.";
-const EXPANDED_SWAP_LOADING_MESSAGE = "Expanding the search a bit…";
+const EXPANDED_SWAP_LOADING_MESSAGE = "Finding your pick…";
 const RESTORE_STATUS_TIMEOUT_MS = 1000;
-const SWAP_LOADING_MESSAGE = "Finding another pick…";
+const SWAP_LOADING_MESSAGE = "Finding your pick…";
 const PICK_REQUEST_FALLBACK_MESSAGE = "Try loosening one detail.";
 const PICK_REQUEST_ERROR_MESSAGE = "ReelBot hit a snag. Try that again.";
 const SWAP_REQUEST_ERROR_MESSAGE = "ReelBot hit a snag. Your last pick is still here.";
@@ -1327,14 +1327,14 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
     ? (pickStatus === PICK_STATUS.LOADING_SWAP
         ? (pickLoadingMessageOverride || SWAP_LOADING_MESSAGE)
         : pickStatus === PICK_STATUS.LOADING
-          ? (pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding a pick…")
+          ? (pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")
         : pickStatus === PICK_STATUS.ERROR
           ? (pickError || SWAP_REQUEST_ERROR_MESSAGE)
           : pickStatus === PICK_STATUS.EXHAUSTED
             ? SOFT_SWAP_MESSAGE
             : "")
     : "";
-  const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding a pick…")) : "";
+  const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")) : "";
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
   const heroSubtext = "Say the mood, the moment, or who’s watching. ReelBot will narrow it down.";
 
@@ -2095,7 +2095,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
             primaryMovie={activePick}
             backupMovies={visibleBackupPicks}
             vibeLabel={pickVibeLabel}
-            loadingCopy={pickLoadingMessageOverride || "Finding a pick…"}
+            loadingCopy={pickLoadingMessageOverride || "Finding your pick…"}
             emptyCopy="Nothing here yet. Tell ReelBot what you want to watch."
             emptyActionLabel="Get a pick"
             onEmptyAction={handleEmptyPickCta}

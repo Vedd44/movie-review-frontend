@@ -7,7 +7,9 @@ import { useAskReelbotContext } from "../context/AskReelbotContext";
 import useTasteProfile from "../hooks/useTasteProfile";
 import TasteActionBar from "./TasteActionBar";
 import { getPromptCategory, trackProductEvent } from "../analytics";
-import { classifyAskIntent, getAskLoadingCopy } from "../askIntent";
+import { classifyAskIntent, getAskLoadingCopy, isRecommendationIntent } from "../askIntent";
+import { addHistoryStatus, createAskConversation } from "../askConversation";
+import { pickLoadingQuote } from "../reelbotLoadingQuotes";
 
 const GENERAL_ACTIONS = [
   ["Find me something to watch", "something worth watching tonight"],
@@ -36,7 +38,7 @@ export const getPanelConfig = (context = {}) => {
 
   if (context.page === "browse") {
     return {
-      heading: "Ask ReelBot",
+      heading: "Ask ReelBot about these movies",
       prompt: context.visibleMovieIds?.length ? "Pick from these results" : "What are you looking for?",
       actions: [
         ["Best crowd-pleaser", "the best crowd-pleaser from these movies"],
@@ -63,7 +65,7 @@ export const getPanelConfig = (context = {}) => {
 
   if (context.page === "my_movies") {
     return {
-      heading: "Pick from my movies",
+      heading: "Pick from My Movies",
       prompt: "Choose something I already saved",
       actions: [
         ["Something I saved", "pick something I saved but have not watched"],
@@ -76,7 +78,7 @@ export const getPanelConfig = (context = {}) => {
 
   if (context.page === "recommendation") {
     return {
-      heading: context.currentPick?.title ? `Ask about ${context.currentPick.title}` : "Ask ReelBot",
+      heading: "Refine this pick",
       prompt: "Adjust this pick without starting over",
       actions: [
         ["Something lighter", `${context.originalPrompt || "this request"}, but lighter`],
@@ -103,10 +105,10 @@ function AskReelbotLayer() {
   const [result, setResult] = useState(null);
   const [answerResult, setAnswerResult] = useState(null);
   const [lastTurn, setLastTurn] = useState(null);
-  const [originalPrompt, setOriginalPrompt] = useState("");
   const [excludedIds, setExcludedIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingIntent, setLoadingIntent] = useState("");
+  const [loadingQuote, setLoadingQuote] = useState(null);
   const [error, setError] = useState("");
 
   const fallbackContext = useMemo(() => ({
@@ -114,6 +116,21 @@ function AskReelbotLayer() {
   }), [location.pathname]);
   const context = pageContext || fallbackContext;
   const config = useMemo(() => getPanelConfig(context), [context]);
+  const [conversation, setConversation] = useState(() => createAskConversation(pageContext || fallbackContext));
+  const contextRef = useRef(context);
+  contextRef.current = context;
+
+  useEffect(() => {
+    setConversation((current) => {
+      if (!current.lastUserMessage) return createAskConversation(context);
+      return {
+        ...current,
+        pageContext: context.page || current.pageContext,
+        anchorMovie: context.movie || context.currentPick || current.anchorMovie,
+        activeRequest: current.activeRequest || context.originalPrompt || "",
+      };
+    });
+  }, [context]);
 
   useEffect(() => {
     const handleOpen = (event) => {
@@ -163,6 +180,7 @@ function AskReelbotLayer() {
     setLastTurn(null);
     setError("");
     setExcludedIds([]);
+    setConversation(createAskConversation(contextRef.current));
   }, [location.pathname, location.search]);
 
   const requestPick = async (prompt, options = {}) => {
@@ -178,8 +196,12 @@ function AskReelbotLayer() {
       return;
     }
 
-    const predictedIntent = classifyAskIntent({ prompt: normalizedPrompt, context });
+    const requestConversation = result && /^\s*(?:not that one|no,? not that|skip)/i.test(normalizedPrompt)
+      ? addHistoryStatus(conversation, result.primary, "rejected")
+      : conversation;
+    const predictedIntent = classifyAskIntent({ prompt: normalizedPrompt, context, conversation: requestConversation });
     setLoadingIntent(predictedIntent);
+    setLoadingQuote(isRecommendationIntent(predictedIntent) ? pickLoadingQuote() : null);
     setLoading(true);
     setError("");
     const startedAt = Date.now();
@@ -198,12 +220,13 @@ function AskReelbotLayer() {
           excludedMovieIds: requestExcludedIds,
         },
         previous_turn: lastTurn,
+        conversation_state: requestConversation,
       }, { headers: { "X-ReelBot-Trigger": "user_click" } });
+      if (response.data?.conversation_state) setConversation(response.data.conversation_state);
       if (response.data?.kind === "answer") {
         setAnswerResult(response.data);
         setResult(null);
         setLastTurn({ prompt: normalizedPrompt, intent: response.data.intent, answer: response.data.answer });
-        setOriginalPrompt(normalizedPrompt);
         trackProductEvent("ask_reelbot_intent", { intent: response.data.intent, page: context.page || "general" });
         trackProductEvent("ask_reelbot_result", { kind: "answer", latency_ms: response.data.latency_ms || Date.now() - startedAt });
         return;
@@ -215,7 +238,6 @@ function AskReelbotLayer() {
       setLastTurn({ prompt: normalizedPrompt, intent: response.data?.intent, movie_id: payload.primary.id, movie_title: payload.primary.title });
       trackProductEvent("ask_reelbot_intent", { intent: response.data?.intent || "UNKNOWN", page: context.page || "general" });
       trackProductEvent("ask_reelbot_result", { kind: "recommendation", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
-      setOriginalPrompt((current) => options.isSwap ? current : normalizedPrompt);
       setExcludedIds((current) => dedupeIds([...current, payload.primary.id]));
     } catch (requestError) {
       trackProductEvent("ask_reelbot_failed", { page: context.page || "general", latency_ms: Date.now() - startedAt });
@@ -223,6 +245,7 @@ function AskReelbotLayer() {
     } finally {
       setLoading(false);
       setLoadingIntent("");
+      setLoadingQuote(null);
     }
   };
 
@@ -235,6 +258,7 @@ function AskReelbotLayer() {
   const rationaleLines = result?.rationale?.whyRecommended || result?.rationale?.why_this_works || [];
   const resultReason = rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.primary?.reason || result?.summary;
   const loadingCopy = getAskLoadingCopy(loadingIntent);
+  const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
 
   return (
     <>
@@ -264,7 +288,7 @@ function AskReelbotLayer() {
             ) : null}
             {answerResult ? (
               <article className="ask-reelbot-answer ask-reelbot-answer--direct">
-                <div className="ask-reelbot-answer-label">About {context.movie?.title || context.movieTitle || "this movie"}</div>
+                <div className="ask-reelbot-answer-label">About {answerMovieTitle}</div>
                 <p className="ask-reelbot-direct-copy">{answerResult.answer}</p>
                 <div className="ask-reelbot-answer-actions">
                   <button type="button" className="reelbot-inline-button" onClick={() => { setDraft("something gentler than this"); requestPick("something gentler than this"); }}>Something gentler</button>
@@ -283,7 +307,7 @@ function AskReelbotLayer() {
                 </div>
                 <div className="ask-reelbot-answer-actions">
                   <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => { closePanel(); navigate(getMoviePath(result.primary)); }}>View movie</button>
-                  <button type="button" className="reelbot-inline-button" disabled={loading} onClick={() => requestPick(originalPrompt, { isSwap: true, extraExcludedIds: [result.primary.id] })}>{loading ? "Finding…" : "Another option"}</button>
+                  <button type="button" className="reelbot-inline-button" disabled={loading} onClick={() => requestPick("Another one", { isSwap: true, extraExcludedIds: [result.primary.id] })}>{loading ? "Finding your pick…" : "Another option"}</button>
                   <TasteActionBar movie={result.primary} compact showSeenAction={false} showSkipAction={false} showVibeAction={false} />
                 </div>
               </article>
@@ -292,7 +316,17 @@ function AskReelbotLayer() {
               <input ref={inputRef} value={draft} maxLength={500} onChange={(event) => setDraft(event.target.value)} placeholder={answerResult || result ? "Ask a follow-up…" : "Ask ReelBot…"} aria-label="Ask ReelBot" />
               <button type="submit" disabled={loading || !draft.trim()}>{loading ? loadingCopy : "Ask"}</button>
             </form>
-            {loading && !result ? <div className="ask-reelbot-status" role="status">{loadingCopy}</div> : null}
+            {loading ? (
+              <div className="ask-reelbot-status" role="status">
+                <div>{loadingCopy}</div>
+                {isRecommendationIntent(loadingIntent) && loadingQuote ? (
+                  <div className="ask-reelbot-loading-quote">
+                    <q>{loadingQuote.quote}</q>
+                    <span>{loadingQuote.movie}</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {error ? <div className="ask-reelbot-status ask-reelbot-status--error" role="alert">{error}</div> : null}
           </section>
         </div>

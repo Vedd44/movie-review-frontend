@@ -14,6 +14,11 @@ test("adapts Ask ReelBot to constrained page collections", () => {
   const myMovies = getPanelConfig({ page: "my_movies" });
 
   expect(browse.prompt).toBe("Pick from these results");
+  expect(browse.heading).toBe("Ask ReelBot about these movies");
   expect(nowPlaying.heading).toBe("Pick from what’s in theaters");
-  expect(myMovies.heading).toBe("Pick from my movies");
+  expect(myMovies.heading).toBe("Pick from My Movies");
+});
+
+test("labels an active recommendation as a refinement context", () => {
+  expect(getPanelConfig({ page: "recommendation", currentPick: { title: "Alien" } }).heading).toBe("Refine this pick");
 });

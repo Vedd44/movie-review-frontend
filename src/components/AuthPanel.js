@@ -181,7 +181,7 @@ function AuthPanel({
     if (loading) {
       if (view === PASSWORD_LOGIN_VIEW) return "Signing in…";
       if (view === PASSWORD_SIGNUP_VIEW) return "Creating account…";
-      return "Sending…";
+      return "Sending link…";
     }
 
     if (view === PASSWORD_LOGIN_VIEW) {
