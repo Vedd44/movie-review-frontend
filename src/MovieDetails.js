@@ -304,18 +304,18 @@ function MovieDetails() {
             {movie.tagline ? <p className="detail-tagline">{movie.tagline}</p> : null}
             <div className="detail-meta-strip">{metaItems.map((item) => <span key={item} className="detail-meta-pill">{item}</span>)}</div>
             <div className="detail-description-block"><div className="detail-description-label">Overview</div><p className="detail-description">{movieDescription}</p></div>
-            <div className="detail-hero-actions detail-hero-actions--simplified">
+            <div className="detail-hero-actions detail-hero-actions--simplified" role="group" aria-label="Movie actions">
               <button type="button" className="detail-trailer-cta" onClick={() => jumpTo("where-to-watch")}>Where to Watch</button>
               <TasteActionBar movie={movie} compact showSeenAction={false} showSkipAction={false} showVibeAction={false} />
               <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => jumpTo("cast-and-details")}>Cast &amp; details <span aria-hidden="true">↓</span></button>
-              {movie.trailer?.key ? <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => { setIsTrailerOpen(true); trackProductEvent("trailer_clicked", { movie_id: Number(movie.id) }); }}>Watch trailer</button> : null}
+              {movie.trailer?.key ? <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => { setIsTrailerOpen(true); trackProductEvent("trailer_clicked", { movie_id: Number(movie.id) }); }}>Watch trailer <span aria-hidden="true">↗</span></button> : null}
               {canTryAnother ? <button type="button" className="detail-text-action detail-text-action--hero" onClick={backToPick}>Try another</button> : null}
             </div>
           </div>
         </section>
 
         <section className="detail-info-card detail-reelbot-take">
-          <div className="detail-section-head"><div><div className="detail-description-label">Decision help</div><h2 className="detail-section-title">{reelbotTake.heading}</h2></div></div>
+          <div className="detail-section-head"><h2 className="detail-section-title">{reelbotTake.heading}</h2></div>
           <p className="detail-take-assessment">{reelbotTake.assessment}</p>
           <dl className="detail-take-fit">
             <div><dt>Good fit if</dt><dd>{reelbotTake.goodFit}</dd></div>

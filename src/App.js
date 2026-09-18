@@ -20,7 +20,7 @@ import { homeFeedService } from "./services/homeFeedService";
 import { tasteProfileService } from "./services/tasteProfileService";
 import "./App.css";
 
-const SITE_VERSION = "v1.3";
+const SITE_VERSION = "v1.3.1";
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
@@ -153,8 +153,7 @@ function SiteHeader() {
 
 function SiteFooter() {
   const footerLinks = [
-    { label: "Now Playing", to: "/now-playing" },
-    { label: "Coming Soon", to: "/coming-soon" },
+    { label: "Ask ReelBot", to: "/#pick-for-me" },
     { label: "Browse", to: "/browse" },
     { label: "My Movies", to: "/my-movies" },
     { label: "How it works", to: "/how-reelbot-works", secondary: true },

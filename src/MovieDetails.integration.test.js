@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import axios from "axios";
 import MovieDetails from "./MovieDetails";
@@ -24,6 +24,7 @@ const movie = {
   audience_signals: { kid_friendliness: 0, consensus_friendliness: 0.28 },
   rating: 8.0,
   poster_path: "/aliens.jpg",
+  trailer: { key: "aliens-trailer", name: "Aliens trailer" },
   watch_providers: {
     region: "US",
     link: "https://www.themoviedb.org/movie/679-aliens/watch?locale=US",
@@ -59,6 +60,7 @@ test("presents one contextual ReelBot entry point and factual watch providers", 
   );
 
   expect(await screen.findByRole("heading", { name: "ReelBot’s Take" })).toBeInTheDocument();
+  expect(screen.queryByText("Decision help")).not.toBeInTheDocument();
   expect(screen.queryByText("Why ReelBot recommends this")).not.toBeInTheDocument();
   expect(screen.queryByText("Quick Take or deeper check?")).not.toBeInTheDocument();
   expect(screen.getByText("Netflix")).toBeInTheDocument();
@@ -68,6 +70,23 @@ test("presents one contextual ReelBot entry point and factual watch providers", 
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot about Aliens/i }));
   expect(askListener).toHaveBeenCalled();
   window.removeEventListener("reelbot:open-ask", askListener);
+});
+
+test("groups movie hero actions in the intended order", async () => {
+  render(
+    <MemoryRouter initialEntries={["/movies/aliens-1986"]}>
+      <Routes><Route path="/movies/:movieSlug" element={<MovieDetails />} /></Routes>
+    </MemoryRouter>
+  );
+
+  const actionGroup = await screen.findByRole("group", { name: "Movie actions" });
+  expect(actionGroup).toHaveClass("detail-hero-actions--simplified");
+  expect(within(actionGroup).getAllByRole("button").map((button) => button.textContent.trim())).toEqual([
+    "Where to Watch",
+    "Save",
+    "Cast & details ↓",
+    "Watch trailer ↗",
+  ]);
 });
 
 test("does not reuse historical recommendation context for a direct, search, or browse visit", async () => {

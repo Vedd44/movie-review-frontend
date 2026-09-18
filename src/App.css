@@ -14889,6 +14889,7 @@ body {
 
 .detail-hero-actions--simplified {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 16px;
@@ -15166,15 +15167,24 @@ body {
     height: 64px;
   }
 
-  .detail-hero-actions--simplified,
   .watch-availability-footer {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .detail-hero-actions--simplified {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 10px;
+  }
+
   .detail-hero-actions--simplified > button,
   .detail-hero-actions--simplified .taste-action-button {
+    min-width: 0;
     width: 100%;
     justify-content: center;
+    padding-inline: 12px;
+    white-space: normal;
   }
 }

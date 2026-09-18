@@ -112,8 +112,11 @@ function BrowseLibrary() {
   }, [location.hash, loading, normalizedGenre, normalizedMood, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
+    let isCurrentRequest = true;
+
     if (normalizedPage === 1) {
       setLoading(true);
+      setLoadingMore(false);
     } else {
       setLoadingMore(true);
     }
@@ -125,11 +128,13 @@ function BrowseLibrary() {
     axios
       .get(`${API_BASE_URL}/movies?type=${normalizedView}&page=${normalizedPage}${genreQuery}${runtimeQuery}`)
       .then((response) => {
+        if (!isCurrentRequest) return;
         const incomingMovies = Array.isArray(response.data.results) ? response.data.results : [];
         setMovies((currentMovies) => mergeBrowseMoviePages(currentMovies, incomingMovies, normalizedPage === 1));
         setTotalPages(response.data.total_pages || 1);
       })
       .catch((requestError) => {
+        if (!isCurrentRequest) return;
         console.error("Error fetching browse library movies:", requestError);
         setError("Failed to fetch browse library movies.");
         if (normalizedPage === 1) {
@@ -137,9 +142,14 @@ function BrowseLibrary() {
         }
       })
       .finally(() => {
+        if (!isCurrentRequest) return;
         setLoading(false);
         setLoadingMore(false);
       });
+
+    return () => {
+      isCurrentRequest = false;
+    };
   }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
@@ -689,7 +699,11 @@ function BrowseLibrary() {
 
         {normalizedPage < totalPages ? (
           <div className="browse-load-more">
-            <button type="button" className="reelbot-inline-button" onClick={() => updateFilters({ page: normalizedPage + 1 })} disabled={loadingMore}>
+            <button type="button" className="reelbot-inline-button" onClick={() => {
+              if (loading || loadingMore) return;
+              setLoadingMore(true);
+              updateFilters({ page: normalizedPage + 1 });
+            }} disabled={loading || loadingMore}>
               {loadingMore ? "Loading more…" : "Load more"}
             </button>
           </div>

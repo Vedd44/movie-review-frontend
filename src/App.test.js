@@ -21,6 +21,16 @@ test('exposes the core navigation and global movie search', async () => {
   await waitFor(() => expect(screen.getByRole('searchbox', { name: 'Search movie titles' })).toHaveFocus());
 });
 
+test('keeps discovery modes out of the footer navigation', () => {
+  render(<App />);
+  const footer = screen.getByRole('navigation', { name: 'Footer' });
+  expect(within(footer).getByRole('link', { name: 'Ask ReelBot' })).toHaveAttribute('href', '/#pick-for-me');
+  expect(within(footer).getByRole('link', { name: 'Browse' })).toBeInTheDocument();
+  expect(within(footer).getByRole('link', { name: 'My Movies' })).toBeInTheDocument();
+  expect(within(footer).queryByRole('link', { name: 'Now Playing' })).not.toBeInTheDocument();
+  expect(within(footer).queryByRole('link', { name: 'Coming Soon' })).not.toBeInTheDocument();
+});
+
 test('defaults homepage discovery to Trending', () => {
   render(<App />);
   expect(screen.getByRole('button', { name: 'Trending' })).toHaveClass('active');
@@ -30,12 +40,13 @@ test('navigates to the Now Playing feed and its poster grid', async () => {
   const scrollIntoView = jest.fn();
   Element.prototype.scrollIntoView = scrollIntoView;
 
+  window.history.pushState({}, '', '/now-playing');
   render(<App />);
-  fireEvent.click(screen.getAllByRole('link', { name: 'Now Playing' })[0]);
 
   await waitFor(() => expect(window.location.pathname).toBe('/now-playing'));
   expect(document.getElementById('movie-grid')).toBeInTheDocument();
   await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+  window.history.pushState({}, '', '/');
 });
 
 test('frames account creation around remembered utility', () => {
