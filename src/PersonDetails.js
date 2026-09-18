@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
-import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
+import { API_BASE_URL, formatMovieDate, getMoviePath, getPersonPath, getReleaseYear } from "./discovery";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 
 const getCreditTime = (movie) => {
@@ -26,7 +26,9 @@ const sortCredits = (credits = [], sortDirection = "newest") =>
   });
 
 function PersonDetails() {
-  const { personId } = useParams();
+  const { personId, personSlug } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [person, setPerson] = useState(null);
   const [sortDirection, setSortDirection] = useState("newest");
   const [loading, setLoading] = useState(true);
@@ -38,11 +40,19 @@ function PersonDetails() {
     setLoading(true);
     setError(null);
 
+    const endpoint = personId
+      ? `${API_BASE_URL}/person/${personId}`
+      : `${API_BASE_URL}/people/resolve/${encodeURIComponent(personSlug)}`;
+
     axios
-      .get(`${API_BASE_URL}/person/${personId}`)
+      .get(endpoint)
       .then((response) => {
         if (!cancelled) {
           setPerson(response.data);
+          const canonicalPath = getPersonPath(response.data);
+          if (location.pathname !== canonicalPath) {
+            navigate(canonicalPath, { replace: true });
+          }
         }
       })
       .catch((requestError) => {
@@ -61,7 +71,7 @@ function PersonDetails() {
     return () => {
       cancelled = true;
     };
-  }, [personId]);
+  }, [location.pathname, navigate, personId, personSlug]);
 
   const sortedCredits = useMemo(
     () => sortCredits(person?.movie_credits || [], sortDirection),
@@ -71,12 +81,12 @@ function PersonDetails() {
   usePageMetadata({
     title: person?.name ? `${person.name} Filmography | ReelBot` : "Filmography | ReelBot",
     description: person?.name ? `Browse ${person.name}'s movie credits ordered by release date.` : "Browse movie credits ordered by release date.",
-    path: `/person/${personId}`,
+    path: person ? getPersonPath(person) : "/people",
     image: person?.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : undefined,
     structuredData: [
       buildBreadcrumbJsonLd([
         { name: "Home", path: "/" },
-        { name: person?.name || "Person", path: `/person/${personId}` },
+        { name: person?.name || "Person", path: person ? getPersonPath(person) : "/people" },
       ]),
       sortedCredits.length
         ? buildItemListJsonLd(
@@ -157,7 +167,7 @@ function PersonDetails() {
             <div className="person-credit-list">
               {sortedCredits.map((movie) => (
                 <article key={movie.id} className="person-credit-card">
-                  <a href={getMoviePath(movie)} className="person-credit-poster-link" aria-label={`Open ${movie.title}`}>
+                  <Link to={getMoviePath(movie)} className="person-credit-poster-link" aria-label={`Open ${movie.title}`}>
                     {movie.poster_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
@@ -167,7 +177,7 @@ function PersonDetails() {
                     ) : (
                       <div className="person-credit-poster person-credit-poster--placeholder">Poster unavailable</div>
                     )}
-                  </a>
+                  </Link>
 
                   <div className="person-credit-copy">
                     <div className="movie-card-meta">
@@ -175,9 +185,9 @@ function PersonDetails() {
                       {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
                     </div>
                     <h3 className="person-credit-title">
-                      <a href={getMoviePath(movie)} className="movie-title-link">
+                      <Link to={getMoviePath(movie)} className="movie-title-link">
                         {movie.title}
-                      </a>
+                      </Link>
                     </h3>
                     <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
                     {movie.roles?.length ? <p className="person-credit-role">{movie.roles.join(" / ")}</p> : null}

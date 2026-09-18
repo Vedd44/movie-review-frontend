@@ -20,12 +20,12 @@ import { homeFeedService } from "./services/homeFeedService";
 import { tasteProfileService } from "./services/tasteProfileService";
 import "./App.css";
 
-const SITE_VERSION = "v0.8";
+const SITE_VERSION = "v1.3";
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
 if (typeof window !== "undefined") {
-  homeFeedService.prefetchHomeFeed("latest", 1).catch((error) => {
+  homeFeedService.prefetchHomeFeed("popular", 1).catch((error) => {
     console.error("Failed to prefetch homepage feed:", error);
   });
 }
@@ -60,7 +60,6 @@ function SiteHeader() {
 
   const navItems = [
     { label: "Ask ReelBot", to: "/#pick-for-me", isActive: isAskReelbotActive },
-    { label: "Now Playing", to: "/now-playing", isActive: location.pathname === "/now-playing" },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
     { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
   ];
@@ -242,10 +241,11 @@ function AppShell() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
-          <Route path="/movie/:id" element={<MovieDetails />} />
-          <Route path="/movies/:id/:slug" element={<MovieDetails />} />
-          <Route path="/movies/:id" element={<MovieDetails />} />
+          <Route path="/movie/:legacyMovieId" element={<MovieDetails />} />
+          <Route path="/movies/:legacyMovieId/:legacySlug" element={<MovieDetails />} />
+          <Route path="/movies/:movieSlug" element={<MovieDetails />} />
           <Route path="/person/:personId" element={<PersonDetails />} />
+          <Route path="/people/:personSlug" element={<PersonDetails />} />
           <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

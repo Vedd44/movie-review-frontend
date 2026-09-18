@@ -1,4 +1,5 @@
 import { getTimeCommitment, selectDiverseSimilarMovies } from "./MovieDetails";
+import { buildReelbotTake } from "./detailDecision";
 
 test.each([
   [89, "Short and easy to fit in."],
@@ -19,4 +20,22 @@ test("does not fill related titles with repeated franchise entries", () => {
     { id: 4, title: "Enemy of the State" },
   ]);
   expect(result.map((movie) => movie.title)).toEqual(["The Bourne Identity", "Ronin", "Enemy of the State"]);
+});
+
+test("does not claim a direct visit was recommended", () => {
+  const take = buildReelbotTake({
+    movie: { title: "Aliens", runtime: 137, genre_names: ["Action", "Science Fiction"], director: "James Cameron" },
+    recommendationContext: null,
+  });
+  expect(take.heading).toBe("ReelBot’s Take");
+  expect(take.hasReliableProvenance).toBe(false);
+});
+
+test("uses recommendation-specific language only with stored prompt and intent", () => {
+  const take = buildReelbotTake({
+    movie: { title: "Aliens", runtime: 137, genre_names: ["Action", "Science Fiction"], director: "James Cameron" },
+    recommendationContext: { source: "reelbot_pick", prompt: "tense sci-fi", intent: { tone: ["tense"] } },
+  });
+  expect(take.heading).toBe("Why ReelBot Picked This");
+  expect(take.assessment).toContain("tense sci-fi");
 });

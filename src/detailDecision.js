@@ -257,4 +257,52 @@ const buildDetailVerdict = ({ movie, recommendationContext = null }) => {
   };
 };
 
-export { deriveMovieAttributes, buildDetailVerdict };
+const buildReelbotTake = ({ movie, recommendationContext = null }) => {
+  const genres = Array.isArray(movie?.genre_names) ? movie.genre_names : [];
+  const genreLabel = genres.slice(0, 2).join(" / ") || "movie";
+  const runtime = Number(movie?.runtime || 0);
+  const director = movie?.director && movie.director !== "Unknown" ? movie.director : "";
+  const hasReliableProvenance = Boolean(
+    recommendationContext?.source === "reelbot_pick"
+    && recommendationContext?.intent
+    && String(recommendationContext?.prompt || "").trim()
+  );
+  const factualParts = [
+    runtime ? `${runtime}-minute` : null,
+    genreLabel,
+    director ? `directed by ${director}` : null,
+  ].filter(Boolean);
+  const assessment = hasReliableProvenance
+    ? `ReelBot matched ${movie?.title || "this movie"} to “${trimDisplayText(recommendationContext.prompt, 72)}.” It’s a ${factualParts.join(" ")}.`
+    : `${movie?.title || "This movie"} is a ${factualParts.join(" ")}.`;
+
+  let goodFit = `You want ${genreLabel.toLowerCase()} and the premise described in the overview appeals to you.`;
+  if (includesAnyGenre(genres, ["Action", "Adventure", "Thriller"])) {
+    goodFit = `You want momentum, set pieces, or sustained tension in a ${genreLabel.toLowerCase()} movie.`;
+  } else if (includesAnyGenre(genres, ["Comedy", "Animation", "Family"])) {
+    goodFit = `You want a lighter ${genreLabel.toLowerCase()} movie that can work for a shared watch.`;
+  } else if (includesAnyGenre(genres, ["Drama", "History", "War"])) {
+    goodFit = `You want a story-led ${genreLabel.toLowerCase()} movie and are ready to give it your attention.`;
+  } else if (includesAnyGenre(genres, ["Horror", "Mystery"])) {
+    goodFit = `You want suspense, uncertainty, or darker material from a ${genreLabel.toLowerCase()} movie.`;
+  }
+
+  let maybeNot = `The ${genreLabel.toLowerCase()} mix is outside what you feel like watching tonight.`;
+  if (runtime >= 145) {
+    maybeNot = `You need a short watch; this runs ${runtime} minutes.`;
+  } else if (includesAnyGenre(genres, ["Horror", "Thriller", "Crime", "War"])) {
+    maybeNot = `You want something calm or low-tension; its ${genreLabel.toLowerCase()} billing points elsewhere.`;
+  } else if (includesAnyGenre(genres, ["Drama", "History"])) {
+    maybeNot = `You want background viewing rather than a story-led ${genreLabel.toLowerCase()} movie.`;
+  }
+
+  return {
+    heading: hasReliableProvenance ? "Why ReelBot Picked This" : "ReelBot’s Take",
+    hasReliableProvenance,
+    assessment,
+    goodFit,
+    maybeNot,
+  };
+};
+
+export { deriveMovieAttributes, buildDetailVerdict, buildReelbotTake };

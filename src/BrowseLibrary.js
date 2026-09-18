@@ -28,7 +28,7 @@ import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { trackProductEvent } from "./analytics";
 
 const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
-const BROWSE_VIEW_OPTIONS = VIEW_OPTIONS.filter((option) => option.id !== "latest");
+const BROWSE_VIEW_OPTIONS = VIEW_OPTIONS;
 const LIBRARY_REFINE_ACTIONS = [
   { id: "lighter", label: "Lighter", loadingMessage: "Looking for something a little lighter…" },
   { id: "darker", label: "Darker", loadingMessage: "Taking this in a darker direction…" },
@@ -38,6 +38,15 @@ const LIBRARY_REFINE_ACTIONS = [
 ];
 const getAvailabilityStatus = (movie) => movie?.availability_status || null;
 const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
+
+export const mergeBrowseMoviePages = (currentMovies = [], incomingMovies = [], replace = false) => {
+  if (replace) return incomingMovies;
+  const movieMap = new Map(currentMovies.map((movie) => [movie.id, movie]));
+  incomingMovies.forEach((movie) => {
+    if (movie?.id && !movieMap.has(movie.id)) movieMap.set(movie.id, movie);
+  });
+  return Array.from(movieMap.values());
+};
 
 function BrowseLibrary() {
   const location = useLocation();
@@ -53,9 +62,11 @@ function BrowseLibrary() {
   const [movies, setMovies] = useState([]);
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [genreLoading, setGenreLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
+  const [showReelbotPicker, setShowReelbotPicker] = useState(false);
   const [pickPrompt, setPickPrompt] = useState("");
   const [includeTheatrical, setIncludeTheatrical] = useState(false);
   const [pickLoading, setPickLoading] = useState(false);
@@ -101,7 +112,11 @@ function BrowseLibrary() {
   }, [location.hash, loading, normalizedGenre, normalizedMood, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
-    setLoading(true);
+    if (normalizedPage === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
 
     const genreQuery = normalizedGenre !== "all" ? `&genre=${encodeURIComponent(normalizedGenre)}` : "";
@@ -110,16 +125,20 @@ function BrowseLibrary() {
     axios
       .get(`${API_BASE_URL}/movies?type=${normalizedView}&page=${normalizedPage}${genreQuery}${runtimeQuery}`)
       .then((response) => {
-        setMovies(response.data.results || []);
+        const incomingMovies = Array.isArray(response.data.results) ? response.data.results : [];
+        setMovies((currentMovies) => mergeBrowseMoviePages(currentMovies, incomingMovies, normalizedPage === 1));
         setTotalPages(response.data.total_pages || 1);
       })
       .catch((requestError) => {
         console.error("Error fetching browse library movies:", requestError);
         setError("Failed to fetch browse library movies.");
-        setMovies([]);
+        if (normalizedPage === 1) {
+          setMovies([]);
+        }
       })
       .finally(() => {
         setLoading(false);
+        setLoadingMore(false);
       });
   }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
 
@@ -414,13 +433,12 @@ function BrowseLibrary() {
 
   const activeFilterChips = useMemo(
     () => [
-      { id: "view", label: getViewLabel(normalizedView) },
-      { id: "genre", label: selectedGenreLabel },
-      { id: "runtime", label: PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length" },
-      { id: "mood", label: selectedMoodConfig.label },
-      includeTheatrical ? { id: "theatrical", label: "Includes theatrical" } : null,
+      normalizedView !== "popular" ? { id: "view", label: getViewLabel(normalizedView) } : null,
+      normalizedGenre !== "all" ? { id: "genre", label: selectedGenreLabel } : null,
+      normalizedRuntime !== "any" ? { id: "runtime", label: PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length" } : null,
+      normalizedMood !== "all" ? { id: "mood", label: selectedMoodConfig.label } : null,
     ].filter(Boolean),
-    [includeTheatrical, normalizedRuntime, normalizedView, selectedGenreLabel, selectedMoodConfig.label]
+    [normalizedGenre, normalizedMood, normalizedRuntime, normalizedView, selectedGenreLabel, selectedMoodConfig.label]
   );
 
   const browseStructuredData = useMemo(
@@ -455,123 +473,87 @@ function BrowseLibrary() {
           <div className="browse-copy">
             <div className="browse-kicker">Browse Library</div>
             <h1 className="browse-title">Browse Movies</h1>
-            <p className="browse-subtitle browse-subtitle--hero">
-              Start broad, then narrow by genre, runtime, mood, or source.
-            </p>
           </div>
         </section>
 
-        <section id="library-filters" className="library-filters-card">
-          <div className="section-header section-header--stacked-mobile section-header--compact">
-            <div>
-              <div className="detail-description-label">Browse controls</div>
-              <h2 className="section-title">Filter the lineup</h2>
-              <p className="section-subtitle">Filter by source, genre, runtime, and mood without losing the poster-first feel.</p>
+        <section id="library-filters" className="library-discovery-controls" aria-label="Browse movie filters">
+          <div className="filter-group-row filter-group-row--primary">
+            <div className="filter-group-head">
+              <div className="detail-description-label">Browse by</div>
             </div>
-                      </div>
-
-          <div className="filter-group-stack">
-            <div className="filter-group-row">
-              <div className="filter-group-head">
-                <div className="detail-description-label">Source</div>
-                <p className="detail-secondary-text">Choose a feed to start browsing.</p>
-              </div>
-              <div className="tabs browse-tabs browse-tabs--library">
-                {BROWSE_VIEW_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={normalizedView === option.id ? "active" : ""}
-                    onClick={() => updateFilters({ view: option.id })}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="filter-group-row">
-              <div className="filter-group-head">
-                <div className="detail-description-label">Genre</div>
-                <p className="detail-secondary-text">Start broad, then narrow into a stronger lane.</p>
-              </div>
-              <div className="mood-chip-row">
-                <button
-                  type="button"
-                  className={`mood-rail-chip${normalizedGenre === "all" ? " is-active" : ""}`}
-                  onClick={() => updateFilters({ genre: "all" })}
-                >
-                  <span className="mood-rail-chip-label">All genres</span>
+            <div className="tabs browse-tabs browse-tabs--library">
+              {BROWSE_VIEW_OPTIONS.map((option) => (
+                <button key={option.id} type="button" className={normalizedView === option.id ? "active" : ""} onClick={() => updateFilters({ view: option.id })}>
+                  {option.label}
                 </button>
-                {genres.map((genre) => (
-                  <button
-                    key={genre.id}
-                    type="button"
-                    className={`mood-rail-chip${normalizedGenre === String(genre.id) ? " is-active" : ""}`}
-                    onClick={() => updateFilters({ genre: genre.id })}
-                    disabled={genreLoading}
-                  >
-                    <span className="mood-rail-chip-label">{genre.name}</span>
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
+          </div>
 
-            <div className="filter-group-row">
-              <div className="filter-group-head">
-                <div className="detail-description-label">Runtime</div>
-                <p className="detail-secondary-text">Useful when time is the deciding factor.</p>
-              </div>
+          <div className="filter-group-row">
+            <div className="filter-group-head"><div className="detail-description-label">What are you in the mood for?</div></div>
+            <div className="mood-chip-row">
+              {MOOD_FILTERS.map((filter) => (
+                <button key={filter.id} type="button" className={`mood-rail-chip${normalizedMood === filter.id ? " is-active" : ""}`} onClick={() => updateFilters({ mood: filter.id })}>
+                  <span className="mood-rail-chip-label">{filter.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-group-row">
+            <div className="filter-group-head"><div className="detail-description-label">Genre</div></div>
+            <div className="mood-chip-row">
+              <button type="button" className={`mood-rail-chip${normalizedGenre === "all" ? " is-active" : ""}`} onClick={() => updateFilters({ genre: "all" })}>
+                <span className="mood-rail-chip-label">All genres</span>
+              </button>
+              {genres.map((genre) => (
+                <button key={genre.id} type="button" className={`mood-rail-chip${normalizedGenre === String(genre.id) ? " is-active" : ""}`} onClick={() => updateFilters({ genre: genre.id })} disabled={genreLoading}>
+                  <span className="mood-rail-chip-label">{genre.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <details className="library-advanced-filters">
+            <summary>Filters</summary>
+            <div className="library-advanced-filters-body">
+              <div className="filter-group-head"><div className="detail-description-label">Runtime</div></div>
               <div className="mood-chip-row">
                 {PICK_RUNTIME_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`mood-rail-chip${normalizedRuntime === option.id ? " is-active" : ""}`}
-                    onClick={() => updateFilters({ runtime: option.id })}
-                  >
+                  <button key={option.id} type="button" className={`mood-rail-chip${normalizedRuntime === option.id ? " is-active" : ""}`} onClick={() => updateFilters({ runtime: option.id })}>
                     <span className="mood-rail-chip-label">{option.label}</span>
                   </button>
                 ))}
               </div>
             </div>
-
-            <div className="filter-group-row">
-              <div className="filter-group-head">
-                <div className="detail-description-label">Mood</div>
-                <p className="detail-secondary-text">Tilt the grid toward the tone you want right now.</p>
-              </div>
-              <div className="mood-chip-row">
-                {MOOD_FILTERS.map((filter) => (
-                  <button
-                    key={filter.id}
-                    type="button"
-                    className={`mood-rail-chip${normalizedMood === filter.id ? " is-active" : ""}`}
-                    onClick={() => updateFilters({ mood: filter.id })}
-                  >
-                    <span className="mood-rail-chip-label">{filter.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          </details>
         </section>
 
-        <div className="browse-filter-summary-bar">
-          <div className="detail-description-label">Active filters</div>
-          <div className="browse-filter-summary-chips">
-            {activeFilterChips.map((chip) => (
-              <button key={chip.id} type="button" className="pick-summary-chip pick-summary-chip--dismissable" onClick={() => handleRemoveFilter(chip.id)} aria-label={`Remove ${chip.label}`}>
-                <span>{chip.label}</span>
-                <span className="pick-summary-chip-x" aria-hidden="true">×</span>
-              </button>
-            ))}
+        <div id="library-results" className="section-header section-header--stacked-mobile library-results-head">
+          <div>
+            <div className="detail-description-label">Browse results</div>
+            <h2 className="section-title">Library Results</h2>
+          </div>
+          <div className="library-results-actions">
+            <div className="results-count">{filteredMovies.length} movies</div>
+            <button type="button" className="browse-library-link browse-library-link--button" onClick={() => setShowReelbotPicker((current) => !current)} aria-expanded={showReelbotPicker} aria-controls="library-reelbot-picker">
+              Ask ReelBot to pick one <span aria-hidden="true">→</span>
+            </button>
           </div>
         </div>
 
-        <details className="pick-for-me-card library-reelbot-card library-reelbot-card--collapsed" open={Boolean(pickResult?.primary || pickError || pickLoading)}>
-          <summary className="library-reelbot-summary"><span>Let ReelBot choose from these filters</span><span className="library-reelbot-summary-cta">Ask ReelBot →</span></summary>
-          <div className="library-reelbot-body">
+        <div className="browse-filter-summary-chips" aria-label="Active filters">
+          {activeFilterChips.map((chip) => (
+            <button key={chip.id} type="button" className="pick-summary-chip pick-summary-chip--dismissable" onClick={() => handleRemoveFilter(chip.id)} aria-label={`Remove ${chip.label}`}>
+              <span>{chip.label}</span><span className="pick-summary-chip-x" aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+
+        {showReelbotPicker || pickResult?.primary || pickError || pickLoading ? (
+          <section id="library-reelbot-picker" className="pick-for-me-card library-reelbot-card library-reelbot-card--inline">
+            <div className="library-reelbot-body">
             <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
                 <h2 className="section-title">Let ReelBot choose</h2>
@@ -632,22 +614,9 @@ function BrowseLibrary() {
                 refreshDisabled={pickLoading}
               />
             </div>
-          </div>
-        </details>
-
-        <div id="library-results" className="section-header section-header--stacked-mobile">
-          <div>
-            <div className="detail-description-label">Browse results</div>
-            <h2 className="section-title">Library Results</h2>
-            <p className="section-subtitle">{selectedGenreLabel} • {selectedMoodConfig.label} • {PICK_RUNTIME_OPTIONS.find((option) => option.id === normalizedRuntime)?.label || "Any length"}</p>
-          </div>
-          <div className="mood-rail-actions">
-            <a href="#library-filters" className="browse-library-link browse-library-link--header">
-              Back to filters
-            </a>
-            <div className="results-count">{filteredMovies.length} titles</div>
-          </div>
-        </div>
+            </div>
+          </section>
+        ) : null}
 
         {loading && (
           <div className="loading-message">
@@ -680,17 +649,6 @@ function BrowseLibrary() {
                         <div className="no-poster">Poster unavailable</div>
                       )}
                     </Link>
-                    <div className="movie-hover-preview">
-                      <div className="movie-hover-actions">
-                        <Link
-                          to={getMoviePath(movie)}
-                          state={{ reelbotAction: "is_this_for_me", fromCard: true }}
-                          className="movie-card-ask-reelbot movie-card-ask-reelbot--overlay"
-                        >
-                          Ask ReelBot
-                        </Link>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="movie-card-content">
@@ -729,22 +687,14 @@ function BrowseLibrary() {
           </div>
         )}
 
-        <div className="pagination browse-pagination">
-          <button disabled={normalizedPage === 1} onClick={() => updateFilters({ page: normalizedPage - 1 })}>
-            ⬅ Previous
-          </button>
-          <span>
-            Page {normalizedPage} of {totalPages}
-          </span>
-          <button disabled={normalizedPage === totalPages} onClick={() => updateFilters({ page: normalizedPage + 1 })}>
-            Next ➡
-          </button>
-        </div>
+        {normalizedPage < totalPages ? (
+          <div className="browse-load-more">
+            <button type="button" className="reelbot-inline-button" onClick={() => updateFilters({ page: normalizedPage + 1 })} disabled={loadingMore}>
+              {loadingMore ? "Loading more…" : "Load more"}
+            </button>
+          </div>
+        ) : null}
       </div>
-
-      <a href="#library-filters" className="floating-filter-link">
-        Back to filters
-      </a>
     </div>
   );
 }

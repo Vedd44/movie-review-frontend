@@ -636,7 +636,7 @@ const getInitialFeedState = (view = "latest", page = 1) => {
   };
 };
 
-function Home({ routeView = "latest", isFeedRoute = false }) {
+function Home({ routeView = "popular", isFeedRoute = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, openAuthPrompt } = useAuth();
@@ -1231,7 +1231,8 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
 
   const hasVisibleFeedContent = displayedMovies.length > 0;
   const shouldShowFeedSkeletons = loading && !curatedMovies.length;
-  const heroPreviewLabel = "In theaters now";
+  const heroPreviewLabel = movieType === "popular" ? "Trending now" : movieType === "upcoming" ? "Coming soon" : "In theaters now";
+  const heroPreviewCopy = movieType === "popular" ? "Popular movies you can ask about." : movieType === "upcoming" ? "Upcoming movies you can ask about." : "Current releases you can ask about.";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
   const activePick = pickResult?.primary || null;
@@ -2039,7 +2040,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
               <div className="home-hero-now-playing-head">
                 <div>
                   <h2 className="home-hero-now-playing-heading">{heroPreviewLabel}</h2>
-                  <p className="home-hero-now-playing-copy">Current releases you can ask about.</p>
+                  <p className="home-hero-now-playing-copy">{heroPreviewCopy}</p>
                 </div>
               </div>
 
@@ -2158,8 +2159,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
               <div className="detail-description-label">Still browsing?</div>
-              <h2 className="section-title">Browse what’s out now</h2>
-              <p className="section-subtitle">Current releases, trending titles, and what’s coming soon.</p>
+              <h2 className="section-title">Browse movies</h2>
             </div>
             <Link to="/browse" className="browse-library-link browse-library-link--header">
               Browse Movies

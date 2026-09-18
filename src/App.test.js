@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from './App';
 
 test('renders the ReelBot tagline', () => {
@@ -10,13 +10,20 @@ test('renders the ReelBot tagline', () => {
 test('exposes the core navigation and global movie search', async () => {
   render(<App />);
 
-  expect(screen.getAllByRole('link', { name: 'Now Playing' }).length).toBeGreaterThan(0);
+  screen.getAllByRole('navigation', { name: 'Primary' }).forEach((navigation) => {
+    expect(within(navigation).queryByRole('link', { name: 'Now Playing' })).not.toBeInTheDocument();
+  });
   expect(screen.getAllByRole('link', { name: 'Browse' }).length).toBeGreaterThan(0);
   expect(screen.getAllByRole('link', { name: 'My Movies' }).length).toBeGreaterThan(0);
 
   fireEvent.click(screen.getByRole('button', { name: 'Search movies' }));
   expect(screen.getByRole('dialog', { name: 'Find a movie' })).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('searchbox', { name: 'Search movie titles' })).toHaveFocus());
+});
+
+test('defaults homepage discovery to Trending', () => {
+  render(<App />);
+  expect(screen.getByRole('button', { name: 'Trending' })).toHaveClass('active');
 });
 
 test('navigates to the Now Playing feed and its poster grid', async () => {

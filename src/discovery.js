@@ -147,13 +147,25 @@ export const slugifyMovieTitle = (title) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "movie";
 
+export const getMovieSlug = (movie = {}) => {
+  const titleSlug = slugifyMovieTitle(movie?.title);
+  const releaseYear = getReleaseYear(movie?.release_date);
+  return releaseYear === "TBA" ? titleSlug : `${titleSlug}-${releaseYear}`;
+};
+
 export const getMoviePath = (movieOrId, title) => {
   if (typeof movieOrId === "object" && movieOrId !== null) {
-    return `/movies/${movieOrId.id}/${slugifyMovieTitle(movieOrId.title)}`;
+    return `/movies/${getMovieSlug(movieOrId)}`;
   }
 
+  // Numeric calls are retained for legacy/internal lookups until movie data is
+  // available to construct the canonical title-and-year route.
   return `/movies/${movieOrId}/${slugifyMovieTitle(title)}`;
 };
+
+export const slugifyPersonName = (name) => slugifyMovieTitle(name || "person");
+
+export const getPersonPath = (person = {}) => `/people/${person?.canonical_slug || slugifyPersonName(person?.name)}`;
 
 export const formatMovieDate = (releaseDate) =>
   releaseDate

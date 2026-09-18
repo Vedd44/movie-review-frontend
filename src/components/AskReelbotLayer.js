@@ -96,7 +96,7 @@ function AskReelbotLayer() {
   const location = useLocation();
   const navigate = useNavigate();
   const { pageContext } = useAskReelbotContext();
-  const { behavioralMemory, getPickExcludedIds } = useTasteProfile();
+  const { behavioralMemory, getPickExcludedIds, actions: tasteActions } = useTasteProfile();
   const inputRef = useRef(null);
   const triggerRef = useRef(null);
   const sheetRef = useRef(null);
@@ -236,6 +236,14 @@ function AskReelbotLayer() {
       setAnswerResult(null);
       setResult(payload);
       setLastTurn({ prompt: normalizedPrompt, intent: response.data?.intent, movie_id: payload.primary.id, movie_title: payload.primary.title });
+      void tasteActions.recordPickResult({
+        prompt: normalizedPrompt,
+        source: "ask_reelbot",
+        view: context.activeFilters?.view || "popular",
+        mood: context.activeFilters?.mood || "all",
+        runtime: context.activeFilters?.runtime || "any",
+        genre: context.activeFilters?.genre || "all",
+      }, payload).catch(() => {});
       trackProductEvent("ask_reelbot_intent", { intent: response.data?.intent || "UNKNOWN", page: context.page || "general" });
       trackProductEvent("ask_reelbot_result", { kind: "recommendation", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
       setExcludedIds((current) => dedupeIds([...current, payload.primary.id]));
@@ -306,7 +314,7 @@ function AskReelbotLayer() {
                   </div>
                 </div>
                 <div className="ask-reelbot-answer-actions">
-                  <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => { closePanel(); navigate(getMoviePath(result.primary)); }}>View movie</button>
+                  <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => { closePanel(); navigate(getMoviePath(result.primary), { state: { source: "reelbot_pick" } }); }}>View movie</button>
                   <button type="button" className="reelbot-inline-button" disabled={loading} onClick={() => requestPick("Another one", { isSwap: true, extraExcludedIds: [result.primary.id] })}>{loading ? "Finding your pick…" : "Another option"}</button>
                   <TasteActionBar movie={result.primary} compact showSeenAction={false} showSkipAction={false} showVibeAction={false} />
                 </div>
