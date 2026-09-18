@@ -29,9 +29,29 @@ test("does not claim a direct visit was recommended", () => {
   });
   expect(take.heading).toBe("ReelBot’s Take");
   expect(take.hasReliableProvenance).toBe(false);
+  expect(take.assessment).toMatch(/temporarily unavailable/i);
 });
 
-test("uses recommendation-specific language only with stored prompt and intent", () => {
+test("renders validated generic Take content without reinterpreting it", () => {
+  const genericTake = {
+    assessment: "A warm, brisk family adventure whose comic complications keep returning to kindness and good company.",
+    good_fit_if: "You want an upbeat shared watch with wit for adults and clarity for younger viewers.",
+    maybe_not_if: "You want sharp-edged conflict, cynicism, or a demanding dramatic experience tonight.",
+  };
+  const take = buildReelbotTake({
+    movie: { title: "Paddington 2", runtime: 104, genre_names: ["Adventure", "Comedy", "Family"] },
+    genericTake,
+  });
+  expect(take).toMatchObject({
+    heading: "ReelBot’s Take",
+    assessment: genericTake.assessment,
+    goodFit: genericTake.good_fit_if,
+    maybeNot: genericTake.maybe_not_if,
+  });
+  expect(take.assessment).not.toMatch(/momentum|set pieces|sustained tension/i);
+});
+
+test("uses stored recommendation rationale only with active recommendation provenance", () => {
   const take = buildReelbotTake({
     movie: {
       title: "Aliens",
@@ -39,81 +59,35 @@ test("uses recommendation-specific language only with stored prompt and intent",
       genre_names: ["Action", "Thriller", "Science Fiction"],
       content_signals: { peril: 0.82, scariness: 0.6, stimulation_level: 0.53 },
     },
-    recommendationContext: { source: "reelbot_pick", prompt: "tense sci-fi", intent: { tone: ["tense"] } },
+    recommendationContext: {
+      source: "reelbot_pick",
+      prompt: "tense sci-fi",
+      intent: { tone: ["tense"] },
+      rationale: {
+        decisionSentence: "Aliens turns the requested tension into sustained siege pressure and propulsive action.",
+        whyRecommended: [
+          "Its escalating threat directly matches the tense science-fiction brief.",
+          "It is a poor fit if tonight calls for something calm or low-stress.",
+        ],
+      },
+    },
   });
   expect(take.heading).toBe("Why ReelBot Picked This");
-  expect(take.assessment).toContain("sustained tension matches");
+  expect(take.assessment).toContain("sustained siege pressure");
+  expect(take.goodFit).toContain("directly matches");
+  expect(take.maybeNot).toContain("poor fit");
 });
 
-test("prioritizes Paddington 2's family signals over its Adventure genre", () => {
+test("does not use historical recommendation data without active provenance", () => {
   const take = buildReelbotTake({
-    movie: {
-      title: "Paddington 2",
-      runtime: 104,
-      genre_names: ["Adventure", "Comedy", "Family"],
-      audience_signals: { kid_friendliness: 1, consensus_friendliness: 0.86 },
-      content_signals: { peril: 0.04, scariness: 0, stimulation_level: 0.31, emotional_intensity: 0.28 },
-      watch_signals: { warmth_score: 0.42 },
-    },
+    movie: { title: "Aliens", runtime: 137 },
     recommendationContext: null,
+    genericTake: {
+      assessment: "A pressure-cooker action film that keeps tactical competence and mounting dread in the same frame.",
+      good_fit_if: "You want tense, muscular science fiction that rewards full attention.",
+      maybe_not_if: "You need a calm, low-threat watch or something suitable for young children.",
+    },
   });
-  expect(take.assessment).toBe("A gentle, low-stress family watch with broad group appeal, running 104 minutes.");
-  expect(take.goodFit).not.toMatch(/set pieces|sustained tension|momentum/i);
-});
-
-test.each([
-  [
-    "Aliens",
-    {
-      title: "Aliens", runtime: 137, genre_names: ["Action", "Thriller", "Science Fiction"],
-      content_signals: { peril: 0.82, scariness: 0.6, stimulation_level: 0.53, emotional_intensity: 0.48 },
-    },
-    {
-      assessment: "A high-intensity science-fiction action watch built around sustained peril, running 137 minutes.",
-      goodFit: "You want sustained suspense and large-scale action, and you are comfortable with horror-level threat.",
-      maybeNot: "You need something calm, family-friendly, or easy to dip in and out of tonight.",
-    },
-  ],
-  [
-    "When Harry Met Sally...",
-    {
-      title: "When Harry Met Sally...", runtime: 96, genre_names: ["Comedy", "Romance", "Drama"],
-      content_signals: { peril: 0, scariness: 0, stimulation_level: 0.26, emotional_intensity: 0.39 },
-    },
-    {
-      assessment: "A relaxed, low-stress romantic comedy with some emotional pull, running 96 minutes.",
-      goodFit: "You want romance and humor in a low-intensity watch that fits comfortably into an evening.",
-      maybeNot: "You want suspense, spectacle, or a more plot-driven movie tonight.",
-    },
-  ],
-  [
-    "The Social Network",
-    {
-      title: "The Social Network", runtime: 121, genre_names: ["Drama"],
-      description: "A programmer's success leads to personal and legal complications.",
-      keyword_names: ["hacker", "social media", "legal drama", "based on true story"],
-      content_signals: { peril: 0.12, scariness: 0.08, stimulation_level: 0.35, emotional_intensity: 0.44 },
-      watch_signals: { warmth_score: 0.22 },
-    },
-    {
-      assessment: "A focused, idea-driven drama with low physical intensity, running 121 minutes.",
-      goodFit: "You want sharp interpersonal conflict built around ambition, ideas, and real-world consequences.",
-      maybeNot: "You want warmth, escapism, or something comfortable for distracted viewing.",
-    },
-  ],
-  [
-    "Paddington 2",
-    {
-      title: "Paddington 2", runtime: 104, genre_names: ["Adventure", "Comedy", "Family"],
-      audience_signals: { kid_friendliness: 1, consensus_friendliness: 0.86 },
-      content_signals: { peril: 0.04, scariness: 0, stimulation_level: 0.31, emotional_intensity: 0.28 },
-    },
-    {
-      assessment: "A gentle, low-stress family watch with broad group appeal, running 104 minutes.",
-      goodFit: "You want an easy shared watch with comedy and room for younger viewers.",
-      maybeNot: "You want adult-scale stakes, sharper tension, or something more demanding tonight.",
-    },
-  ],
-])("renders the approved deterministic Take for %s", (_title, movie, expected) => {
-  expect(buildReelbotTake({ movie, recommendationContext: null })).toMatchObject(expected);
+  expect(take.heading).toBe("ReelBot’s Take");
+  expect(take.assessment).not.toMatch(/picked|matched/i);
 });

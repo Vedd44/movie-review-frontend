@@ -140,6 +140,8 @@ function MovieDetails() {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [genericTake, setGenericTake] = useState(null);
+  const [genericTakeLoading, setGenericTakeLoading] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const { profile, actions: tasteActions, getRecommendationContextForMovie } = useTasteProfile();
 
@@ -188,7 +190,33 @@ function MovieDetails() {
     () => isActiveRecommendationMovieVisit(location.state, movie?.id) ? historicalRecommendationContext : null,
     [historicalRecommendationContext, location.state, movie?.id]
   );
-  const reelbotTake = useMemo(() => buildReelbotTake({ movie, recommendationContext }), [movie, recommendationContext]);
+  useEffect(() => {
+    let cancelled = false;
+    setGenericTake(null);
+
+    if (!movie?.id || recommendationContext) {
+      setGenericTakeLoading(false);
+      return () => { cancelled = true; };
+    }
+
+    setGenericTakeLoading(true);
+    axios.get(`${API_BASE_URL}/movies/${movie.id}/reelbot-take`)
+      .then((response) => {
+        if (!cancelled) setGenericTake(response.data?.take || null);
+      })
+      .catch(() => {
+        // The movie page remains useful and renders a restrained local fallback.
+      })
+      .finally(() => {
+        if (!cancelled) setGenericTakeLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [movie?.id, recommendationContext]);
+  const reelbotTake = useMemo(
+    () => buildReelbotTake({ movie, recommendationContext, genericTake }),
+    [genericTake, movie, recommendationContext]
+  );
   const homePickSession = tasteProfileService.loadHomePickSession();
   const sessionMovieIds = useMemo(() => new Set([
     homePickSession?.currentPick?.primary?.id,
@@ -316,11 +344,19 @@ function MovieDetails() {
 
         <section className="detail-info-card detail-reelbot-take">
           <div className="detail-section-head"><h2 className="detail-section-title">{reelbotTake.heading}</h2></div>
-          <p className="detail-take-assessment">{reelbotTake.assessment}</p>
-          <dl className="detail-take-fit">
-            <div><dt>Good fit if</dt><dd>{reelbotTake.goodFit}</dd></div>
-            <div><dt>Maybe not if</dt><dd>{reelbotTake.maybeNot}</dd></div>
-          </dl>
+          {genericTakeLoading && !reelbotTake.hasReliableProvenance ? (
+            <div className="detail-take-loading" aria-label="Loading ReelBot’s Take">
+              <span /><span /><span />
+            </div>
+          ) : (
+            <>
+              <p className="detail-take-assessment">{reelbotTake.assessment}</p>
+              <dl className="detail-take-fit">
+                <div><dt>Good fit if</dt><dd>{reelbotTake.goodFit}</dd></div>
+                <div><dt>Maybe not if</dt><dd>{reelbotTake.maybeNot}</dd></div>
+              </dl>
+            </>
+          )}
           <button type="button" className="detail-text-action detail-take-cta" onClick={() => openAskReelbot({ prompt: `What should I know about ${movie.title}?` })}>Ask ReelBot about {movie.title} <span aria-hidden="true">→</span></button>
         </section>
 

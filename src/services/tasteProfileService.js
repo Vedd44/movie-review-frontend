@@ -547,10 +547,20 @@ const recordPickResult = (profile, preferences, payload) => {
       return;
     }
 
+    const isPrimary = Number(movie.id) === Number(payload?.primary?.id);
+    const rationale = isPrimary
+      ? payload?.rationale || null
+      : {
+          summaryLine: String(movie.reason || "").trim(),
+          contextAnchor: String(payload?.rationale?.contextAnchor || "").trim(),
+          whyRecommended: [movie.reason].map((line) => String(line || "").trim()).filter(Boolean),
+          primary_reason: String(movie.reason || "").trim(),
+        };
     nextSessionContexts[movie.id] = {
       prompt,
       intent: resolvedIntent,
       source: "reelbot_pick",
+      rationale,
       saved_at: recommendationTimestamp,
     };
   });
@@ -642,6 +652,7 @@ const getRecommendationContextForMovie = (profile, movieId) => {
     prompt: String(recommendation.prompt || "").trim(),
     intent: recommendation.intent || null,
     source: recommendation.source || "",
+    rationale: recommendation.rationale || null,
     saved_at: recommendation.saved_at || null,
   };
 };

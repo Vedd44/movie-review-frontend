@@ -38,8 +38,16 @@ const movie = {
 
 const LocationProbe = () => <div data-testid="location">{useLocation().pathname}</div>;
 
+const generatedTake = {
+  assessment: "A pressure-cooker action film that keeps tactical competence and mounting dread in the same frame.",
+  good_fit_if: "You want tense, muscular science fiction that rewards full attention.",
+  maybe_not_if: "You need a calm, low-threat watch or something suitable for young children.",
+};
+
 beforeEach(() => {
-  axios.get.mockResolvedValue({ data: movie });
+  axios.get.mockImplementation((url) => Promise.resolve(
+    String(url).includes("/reelbot-take") ? { data: { take: generatedTake } } : { data: movie }
+  ));
   useTasteProfile.mockReturnValue({
     profile: { skipped: [] },
     actions: { addRecentMovie: jest.fn().mockResolvedValue(), recordDetailView: jest.fn().mockResolvedValue() },
@@ -60,6 +68,7 @@ test("presents one contextual ReelBot entry point and factual watch providers", 
   );
 
   expect(await screen.findByRole("heading", { name: "ReelBot’s Take" })).toBeInTheDocument();
+  expect(await screen.findByText(generatedTake.assessment)).toBeInTheDocument();
   expect(screen.queryByText("Decision help")).not.toBeInTheDocument();
   expect(screen.queryByText("Why ReelBot recommends this")).not.toBeInTheDocument();
   expect(screen.queryByText("Quick Take or deeper check?")).not.toBeInTheDocument();
@@ -120,6 +129,10 @@ test("uses historical context when the current history entry is an active recomm
       source: "reelbot_pick",
       prompt: "tense sci-fi",
       intent: { tone: ["tense"] },
+      rationale: {
+        decisionSentence: "Aliens turns the requested tension into sustained siege pressure and propulsive action.",
+        whyRecommended: ["Its escalating threat directly matches the tense science-fiction brief."],
+      },
     })),
     getMovieState: jest.fn(() => ({ inWatchlist: false, seen: false, skipped: false, likedVibe: false })),
     isCloudSyncing: false,
@@ -135,7 +148,24 @@ test("uses historical context when the current history entry is an active recomm
   );
 
   expect(await screen.findByRole("heading", { name: "Why ReelBot Picked This" })).toBeInTheDocument();
-  expect(screen.getByText(/sustained tension matches/i)).toBeInTheDocument();
+  expect(screen.getByText(/sustained siege pressure/i)).toBeInTheDocument();
+  expect(axios.get).not.toHaveBeenCalledWith(expect.stringContaining("/reelbot-take"));
+});
+
+test("keeps the movie page available when Take generation fails", async () => {
+  axios.get.mockImplementation((url) => String(url).includes("/reelbot-take")
+    ? Promise.reject(new Error("take unavailable"))
+    : Promise.resolve({ data: movie }));
+
+  render(
+    <MemoryRouter initialEntries={["/movies/aliens-1986"]}>
+      <Routes><Route path="/movies/:movieSlug" element={<MovieDetails />} /></Routes>
+    </MemoryRouter>
+  );
+
+  expect(await screen.findByRole("heading", { name: "Aliens" })).toBeInTheDocument();
+  expect(await screen.findByText(/fuller viewing read for Aliens is temporarily unavailable/i)).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Where to Watch" })).toBeInTheDocument();
 });
 
 test("links cast and director to canonical people routes and handles missing headshots", async () => {

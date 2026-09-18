@@ -257,163 +257,56 @@ const buildDetailVerdict = ({ movie, recommendationContext = null }) => {
   };
 };
 
-const GENRE_NAMES_BY_ID = {
-  12: "adventure", 16: "animation", 18: "drama", 28: "action", 35: "comedy",
-  80: "crime", 878: "science fiction", 9648: "mystery", 10749: "romance",
-  10751: "family", 10752: "war",
+const normalizeTake = (take) => {
+  if (!take || typeof take !== "object") return null;
+  const assessment = String(take.assessment || "").trim();
+  const goodFit = String(take.good_fit_if || take.goodFit || "").trim();
+  const maybeNot = String(take.maybe_not_if || take.maybeNot || "").trim();
+  return assessment && goodFit && maybeNot ? { assessment, goodFit, maybeNot } : null;
 };
 
-const getNumberSignal = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
-const joinNatural = (parts = []) => parts.length <= 1 ? (parts[0] || "") : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
-
-const buildWatchProfile = (movie = {}) => {
-  const safeMovie = movie && typeof movie === "object" ? movie : {};
-  const genres = Array.isArray(safeMovie.genre_names) ? safeMovie.genre_names : [];
-  const genreSet = new Set(genres);
-  const runtime = getNumberSignal(safeMovie.runtime);
-  const content = safeMovie.content_signals || {};
-  const audience = safeMovie.audience_signals || {};
-  const watch = safeMovie.watch_signals || {};
-  const searchableText = [safeMovie.description, safeMovie.tagline, ...(safeMovie.keyword_names || [])].join(" ").toLowerCase();
-  const peril = getNumberSignal(content.peril);
-  const scariness = getNumberSignal(content.scariness);
-  const stimulation = getNumberSignal(content.stimulation_level, 0.35);
-  const emotionalIntensity = getNumberSignal(content.emotional_intensity, 0.35);
-  const kidFriendliness = getNumberSignal(audience.kid_friendliness, 0.45);
-  const consensus = getNumberSignal(audience.consensus_friendliness, 0.35);
-  const warmth = getNumberSignal(watch.warmth_score, 0.22);
-  const practicalFit = new Set(Array.isArray(watch.practical_watch_fit) ? watch.practical_watch_fit : []);
-  const hasIntensitySignals = [content.peril, content.scariness, content.stimulation_level]
-    .every((value) => Number.isFinite(Number(value)));
-  const isFamily = genreSet.has("Family") || genreSet.has("Animation") || kidFriendliness >= 0.68;
-  const isRomanticComedy = genreSet.has("Romance") && genreSet.has("Comedy");
-  const isIdeaDriven = /hacker|technology|social media|legal drama|biograph|based on true story|journalis|politic|business|inventor|scientist/.test(searchableText);
-  const isHighThreat = peril >= 0.58 || scariness >= 0.55;
-  const isLowStress = hasIntensitySignals && peril <= 0.18 && scariness <= 0.18 && stimulation <= 0.4;
-  const runtimePhrase = runtime ? `, running ${runtime} minutes` : "";
-
-  if (isFamily && isLowStress) {
-    return {
-      lane: "family",
-      assessment: `A gentle, low-stress family watch with ${consensus >= 0.64 ? "broad group appeal" : "an easygoing tone"}${runtimePhrase}.`,
-      goodFit: "You want an easy shared watch with comedy and room for younger viewers.",
-      maybeNot: "You want adult-scale stakes, sharper tension, or something more demanding tonight.",
-    };
-  }
-
-  if (isRomanticComedy && isLowStress) {
-    return {
-      lane: "romantic_comedy",
-      assessment: `A relaxed, low-stress romantic comedy with ${emotionalIntensity >= 0.36 ? "some emotional pull" : "a light emotional touch"}${runtimePhrase}.`,
-      goodFit: "You want romance and humor in a low-intensity watch that fits comfortably into an evening.",
-      maybeNot: "You want suspense, spectacle, or a more plot-driven movie tonight.",
-    };
-  }
-
-  if (isIdeaDriven && genreSet.has("Drama")) {
-    return {
-      lane: "idea_driven",
-      assessment: `A focused, idea-driven drama with low physical intensity${runtimePhrase}.`,
-      goodFit: "You want sharp interpersonal conflict built around ambition, ideas, and real-world consequences.",
-      maybeNot: warmth <= 0.3
-        ? "You want warmth, escapism, or something comfortable for distracted viewing."
-        : "You want escapism or something comfortable for distracted viewing.",
-    };
-  }
-
-  if (isHighThreat && (genreSet.has("Action") || genreSet.has("Thriller") || genreSet.has("Science Fiction"))) {
-    return {
-      lane: "high_intensity",
-      assessment: `A high-intensity ${genreSet.has("Science Fiction") ? "science-fiction action" : "action-thriller"} watch built around sustained peril${runtimePhrase}.`,
-      goodFit: "You want sustained suspense and large-scale action, and you are comfortable with horror-level threat.",
-      maybeNot: "You need something calm, family-friendly, or easy to dip in and out of tonight.",
-    };
-  }
-
-  if (genreSet.has("Comedy") && isLowStress) {
-    return {
-      lane: "comedy",
-      assessment: `A low-stress comedy with an easygoing viewing rhythm${runtimePhrase}.`,
-      goodFit: "You want humor without a demanding or high-pressure watch.",
-      maybeNot: "You want heavier stakes, sustained suspense, or a more intense experience.",
-    };
-  }
-
-  const genreLabel = genres.slice(0, 2).join(" and ").toLowerCase() || "movie";
+const buildLocalTakeFallback = (movie = {}) => {
+  const title = String(movie?.title || "This movie").trim();
+  const runtime = Number(movie?.runtime || 0);
   return {
-    lane: "fallback",
-    assessment: `A ${stimulation >= 0.55 ? "high-energy" : stimulation <= 0.32 ? "measured" : "moderate-intensity"} ${genreLabel} watch${runtimePhrase}.`,
-    goodFit: practicalFit.has("full_attention")
-      ? "You want a movie to actively settle into and give your full attention."
-      : `You are in the mood for ${genreLabel} at this level of intensity.`,
-    maybeNot: runtime >= 145
-      ? `You need a short commitment; this runs ${runtime} minutes.`
-      : emotionalIntensity >= 0.58
-        ? "You need something emotionally light or easy to leave in the background."
-        : `You want a different mood or energy level from a ${genreLabel} watch.`,
+    assessment: `ReelBot’s fuller viewing read for ${title} is temporarily unavailable.${runtime ? ` It runs ${runtime} minutes, so use the premise and details below to judge whether that commitment fits tonight.` : " Use the premise and details below to judge whether it fits tonight."}`,
+    goodFit: "You already know the premise is the kind of experience you want tonight.",
+    maybeNot: "You need a more specific read on tone, intensity, or commitment before deciding.",
   };
 };
 
-const buildIntentMatchClauses = (movie = {}, intent = {}, profile = {}) => {
-  const clauses = [];
-  const runtime = getNumberSignal(movie.runtime);
-  const content = movie.content_signals || {};
-  const audience = movie.audience_signals || {};
-  const tone = new Set([...(intent.tone || []), ...(intent.tone_preferences || [])]);
-  const rubricKeys = new Set(intent.rubric_keys || []);
-  const maxRuntime = getNumberSignal(intent.runtime_commitment?.max_runtime_minutes || intent.runtime_commitment?.soft_target_minutes);
-  const wantsShort = rubricKeys.has("under_two_hours") || intent.constraints?.under_two_hours || intent.runtime_commitment?.preference === "short";
+const buildRecommendationTake = (movie = {}, recommendationContext = {}) => {
+  const rationale = recommendationContext.rationale || {};
+  const whyRecommended = Array.isArray(rationale.whyRecommended)
+    ? rationale.whyRecommended.map((line) => String(line || "").trim()).filter(Boolean)
+    : [];
+  const prompt = trimDisplayText(recommendationContext.prompt, 72);
+  const assessment = String(rationale.decisionSentence || rationale.summaryLine || movie.reason || "").trim()
+    || `ReelBot matched ${movie?.title || "this movie"} to “${prompt}.”`;
+  const goodFit = whyRecommended[0]
+    || String(rationale.primary_reason || rationale.contextAnchor || "").trim()
+    || `It was the strongest available match for “${prompt}.”`;
+  const maybeNot = whyRecommended[1]
+    || String(rationale.tradeoff || rationale.maybeNot || "").trim()
+    || "The match may be less useful if your priorities have changed since that request.";
 
-  if (runtime && ((maxRuntime && runtime <= maxRuntime) || (wantsShort && runtime <= 120))) {
-    clauses.push(`its ${runtime}-minute runtime meets your shorter-watch constraint`);
-  }
-  if (["toddler", "preschool", "young_kids", "broad_family"].includes(intent.audience_age) && getNumberSignal(audience.kid_friendliness) >= 0.68) {
-    clauses.push("its low-intensity family fit matches the audience you specified");
-  }
-  if ((tone.has("comforting") || tone.has("gentle") || tone.has("cozy") || intent.emotional_tolerance?.low_stress) && getNumberSignal(content.peril) <= 0.18) {
-    clauses.push("its low-peril tone matches your request for something gentle");
-  }
-  if ((tone.has("tense") || tone.has("dark")) && getNumberSignal(content.peril) >= 0.45) {
-    clauses.push("its sustained tension matches the darker, tenser lane you asked for");
-  }
-  if ((tone.has("idea-driven") || rubricKeys.has("smart_twisty")) && profile.lane === "idea_driven") {
-    clauses.push("its idea-driven conflict fits the smarter watch you requested");
-  }
-  if (tone.has("funny") && (movie.genre_names || []).includes("Comedy")) {
-    clauses.push("its comedy directly matches the lighter, funnier tone you requested");
-  }
-  if (intent.pacing_energy?.not_exhausting && getNumberSignal(content.stimulation_level, 0.35) <= 0.4) {
-    clauses.push("its measured energy stays within your not-too-exhausting preference");
-  }
-  if (clauses.length < 2 && Array.isArray(intent.preferred_genre_ids)) {
-    const movieGenreIds = new Set((movie.genres || []).map((genre) => Number(genre?.id)).filter(Boolean));
-    const matchedGenres = intent.preferred_genre_ids.filter((genreId) => movieGenreIds.has(Number(genreId))).map((genreId) => GENRE_NAMES_BY_ID[genreId]).filter(Boolean);
-    if (matchedGenres.length) clauses.push(`its ${joinNatural(matchedGenres.slice(0, 2))} lane matches your genre preference`);
-  }
-
-  return clauses.slice(0, 2);
+  return { assessment, goodFit, maybeNot };
 };
 
-const buildReelbotTake = ({ movie, recommendationContext = null }) => {
-  const profile = buildWatchProfile(movie);
+const buildReelbotTake = ({ movie, recommendationContext = null, genericTake = null }) => {
   const hasReliableProvenance = Boolean(
     recommendationContext?.source === "reelbot_pick"
     && recommendationContext?.intent
     && String(recommendationContext?.prompt || "").trim()
   );
-  const intentMatches = hasReliableProvenance ? buildIntentMatchClauses(movie, recommendationContext.intent, profile) : [];
-  const assessment = hasReliableProvenance
-    ? intentMatches.length
-      ? `ReelBot picked ${movie?.title || "this movie"} because ${joinNatural(intentMatches)}. ${profile.assessment}`
-      : `ReelBot matched ${movie?.title || "this movie"} to “${trimDisplayText(recommendationContext.prompt, 72)}.” ${profile.assessment}`
-    : profile.assessment;
+  const content = hasReliableProvenance
+    ? buildRecommendationTake(movie, recommendationContext)
+    : normalizeTake(genericTake) || buildLocalTakeFallback(movie);
 
   return {
     heading: hasReliableProvenance ? "Why ReelBot Picked This" : "ReelBot’s Take",
     hasReliableProvenance,
-    assessment,
-    goodFit: profile.goodFit,
-    maybeNot: profile.maybeNot,
+    ...content,
   };
 };
 
