@@ -19,6 +19,18 @@ test('exposes the core navigation and global movie search', async () => {
   await waitFor(() => expect(screen.getByRole('searchbox', { name: 'Search movie titles' })).toHaveFocus());
 });
 
+test('navigates to the Now Playing feed and its poster grid', async () => {
+  const scrollIntoView = jest.fn();
+  Element.prototype.scrollIntoView = scrollIntoView;
+
+  render(<App />);
+  fireEvent.click(screen.getAllByRole('link', { name: 'Now Playing' })[0]);
+
+  await waitFor(() => expect(window.location.pathname).toBe('/now-playing'));
+  expect(document.getElementById('movie-grid')).toBeInTheDocument();
+  await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+});
+
 test('frames account creation around remembered utility', () => {
   render(<App />);
   fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[0]);

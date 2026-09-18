@@ -2154,7 +2154,7 @@ function Home({ routeView = "latest", isFeedRoute = false }) {
         </section>
         ) : null}
 
-        <section className="home-browse-section">
+        <section id="movie-grid" className="home-browse-section">
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
               <div className="detail-description-label">Still browsing?</div>
