@@ -6,7 +6,7 @@ import TasteActionBar from "./components/TasteActionBar";
 import WatchAvailability from "./components/WatchAvailability";
 import TrailerModal from "./components/TrailerModal";
 import useTasteProfile from "./hooks/useTasteProfile";
-import { API_BASE_URL, getMoviePath, getPersonPath } from "./discovery";
+import { API_BASE_URL, getMoviePath, getPersonPath, isActiveRecommendationMovieVisit } from "./discovery";
 import { buildReelbotTake } from "./detailDecision";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl } from "./siteConfig";
@@ -180,9 +180,13 @@ function MovieDetails() {
   }, [location.state?.source, movie, tasteActions]);
 
   const previewMode = useMemo(() => isUpcomingMovie(movie), [movie]);
-  const recommendationContext = useMemo(
+  const historicalRecommendationContext = useMemo(
     () => getRecommendationContextForMovie(movie?.id),
     [getRecommendationContextForMovie, movie?.id]
+  );
+  const recommendationContext = useMemo(
+    () => isActiveRecommendationMovieVisit(location.state, movie?.id) ? historicalRecommendationContext : null,
+    [historicalRecommendationContext, location.state, movie?.id]
   );
   const reelbotTake = useMemo(() => buildReelbotTake({ movie, recommendationContext }), [movie, recommendationContext]);
   const homePickSession = tasteProfileService.loadHomePickSession();

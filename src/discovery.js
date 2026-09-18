@@ -167,6 +167,16 @@ export const slugifyPersonName = (name) => slugifyMovieTitle(name || "person");
 
 export const getPersonPath = (person = {}) => `/people/${person?.canonical_slug || slugifyPersonName(person?.name)}`;
 
+export const getRecommendationMovieState = (movie = {}) => ({
+  source: "reelbot_pick",
+  recommendationVisit: { movieId: Number(movie?.id) || null },
+});
+
+export const isActiveRecommendationMovieVisit = (locationState, movieId) => Boolean(
+  locationState?.source === "reelbot_pick"
+  && Number(locationState?.recommendationVisit?.movieId) === Number(movieId)
+);
+
 export const formatMovieDate = (releaseDate) =>
   releaseDate
     ? new Date(releaseDate).toLocaleDateString("en-US", {

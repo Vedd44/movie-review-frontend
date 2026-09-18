@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL, getMoviePath } from "../discovery";
+import { API_BASE_URL, getMoviePath, getRecommendationMovieState } from "../discovery";
 import { dedupeIds, normalizePickPayload } from "../reelbotSession";
 import { useAskReelbotContext } from "../context/AskReelbotContext";
 import useTasteProfile from "../hooks/useTasteProfile";
@@ -314,7 +314,7 @@ function AskReelbotLayer() {
                   </div>
                 </div>
                 <div className="ask-reelbot-answer-actions">
-                  <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => { closePanel(); navigate(getMoviePath(result.primary), { state: { source: "reelbot_pick" } }); }}>View movie</button>
+                  <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => { closePanel(); navigate(getMoviePath(result.primary), { state: getRecommendationMovieState(result.primary) }); }}>View movie</button>
                   <button type="button" className="reelbot-inline-button" disabled={loading} onClick={() => requestPick("Another one", { isSwap: true, extraExcludedIds: [result.primary.id] })}>{loading ? "Finding your pick…" : "Another option"}</button>
                   <TasteActionBar movie={result.primary} compact showSeenAction={false} showSkipAction={false} showVibeAction={false} />
                 </div>

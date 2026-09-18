@@ -5,7 +5,7 @@ import RecommendationRationale from "./RecommendationRationale";
 import TasteActionBar from "./TasteActionBar";
 import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
-import { getMoviePath, getReleaseYear } from "../discovery";
+import { getMoviePath, getRecommendationMovieState, getReleaseYear } from "../discovery";
 import { getBackupCardMeta } from "../recommendationInsights";
 import { pickLoadingQuote } from "../reelbotLoadingQuotes";
 
@@ -69,7 +69,7 @@ function PickResultPanel({
   const providerMap = useWatchProviderBadges(
     useMemo(() => [primaryMovie?.id, ...visibleBackupMovies.map((movie) => movie.id)].filter(Boolean), [primaryMovie, visibleBackupMovies])
   );
-  const reelbotPickLinkState = { source: "reelbot_pick", restorePickSession: true };
+  const reelbotPickLinkState = (movie) => ({ ...getRecommendationMovieState(movie), restorePickSession: true });
   const hasPrimaryMovie = Boolean(primaryMovie);
   const shouldShowStandaloneLoading = loading && !hasPrimaryMovie;
   const shouldShowFallbackState = !hasPrimaryMovie && (panelStatus === "exhausted" || panelStatus === "error");
@@ -95,7 +95,7 @@ function PickResultPanel({
       {hasPrimaryMovie ? (
         <>
           <article className="pick-primary-card pick-primary-card--hero">
-            <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="pick-primary-poster-link">
+            <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="pick-primary-poster-link">
               {primaryMovie.poster_path ? (
                 <img
                   src={`https://image.tmdb.org/t/p/w300${primaryMovie.poster_path}`}
@@ -108,7 +108,7 @@ function PickResultPanel({
             </Link>
             <div className="pick-primary-content">
               <h3 className="pick-primary-title">
-                <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="movie-title-link">
+                <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="movie-title-link">
                   {primaryMovie.title}
                 </Link>
               </h3>
@@ -167,7 +167,7 @@ function PickResultPanel({
                   ) : null}
                   {showDetailLink ? (
                     <div className="pick-primary-action-row pick-primary-action-row--detail">
-                      <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState} className="pick-primary-detail-link">
+                      <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="pick-primary-detail-link">
                         {detailActionLabel}
                       </Link>
                     </div>
@@ -225,7 +225,7 @@ function PickResultPanel({
 
                   return (
                     <article key={movie.id} className="pick-backup-card">
-                      <Link to={getMoviePath(movie)} state={reelbotPickLinkState} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`} onClick={() => trackProductEvent("alternate_clicked", { movie_id: Number(movie.id), alternate_index: index })}>
+                      <Link to={getMoviePath(movie)} state={reelbotPickLinkState(movie)} className="pick-backup-poster-link" aria-label={`Open ${movie.title}`} onClick={() => trackProductEvent("alternate_clicked", { movie_id: Number(movie.id), alternate_index: index })}>
                         {movie.poster_path ? (
                           <img
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
@@ -238,7 +238,7 @@ function PickResultPanel({
                       </Link>
                       <div className="pick-backup-meta">
                         <h4 className="pick-backup-title">
-                          <Link to={getMoviePath(movie)} state={reelbotPickLinkState} className="movie-title-link">
+                          <Link to={getMoviePath(movie)} state={reelbotPickLinkState(movie)} className="movie-title-link">
                             {movie.title}
                           </Link>
                         </h4>

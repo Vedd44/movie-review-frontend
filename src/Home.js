@@ -11,6 +11,7 @@ import {
   getReleaseYear,
   getViewLabel,
   getMoviePath,
+  getRecommendationMovieState,
 } from "./discovery";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
@@ -2118,7 +2119,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 setIsPickTrailerOpen(true);
                 return;
               }
-              navigate(getMoviePath(activePick), { state: { source: "reelbot_pick", restorePickSession: true } });
+              navigate(getMoviePath(activePick), { state: { ...getRecommendationMovieState(activePick), restorePickSession: true } });
             } : undefined}
             showDetailLink={false}
             refreshLabel={isSwapLoading ? "Swapping…" : "Get another pick"}

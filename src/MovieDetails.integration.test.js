@@ -20,6 +20,8 @@ const movie = {
   top_cast: ["Sigourney Weaver"],
   top_cast_credits: [{ id: 10205, name: "Sigourney Weaver", character: "Ripley", profile_path: null }],
   genre_names: ["Action", "Science Fiction"],
+  content_signals: { peril: 0.82, scariness: 0.6, stimulation_level: 0.53, emotional_intensity: 0.48 },
+  audience_signals: { kid_friendliness: 0, consensus_friendliness: 0.28 },
   rating: 8.0,
   poster_path: "/aliens.jpg",
   watch_providers: {
@@ -66,6 +68,55 @@ test("presents one contextual ReelBot entry point and factual watch providers", 
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot about Aliens/i }));
   expect(askListener).toHaveBeenCalled();
   window.removeEventListener("reelbot:open-ask", askListener);
+});
+
+test("does not reuse historical recommendation context for a direct, search, or browse visit", async () => {
+  useTasteProfile.mockReturnValue({
+    profile: { skipped: [] },
+    actions: { addRecentMovie: jest.fn().mockResolvedValue(), recordDetailView: jest.fn().mockResolvedValue() },
+    getRecommendationContextForMovie: jest.fn(() => ({
+      source: "reelbot_pick",
+      prompt: "tense sci-fi",
+      intent: { tone: ["tense"] },
+    })),
+    getMovieState: jest.fn(() => ({ inWatchlist: false, seen: false, skipped: false, likedVibe: false })),
+    isCloudSyncing: false,
+  });
+
+  render(
+    <MemoryRouter initialEntries={["/movies/aliens-1986"]}>
+      <Routes><Route path="/movies/:movieSlug" element={<MovieDetails />} /></Routes>
+    </MemoryRouter>
+  );
+
+  expect(await screen.findByRole("heading", { name: "ReelBot’s Take" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Why ReelBot Picked This" })).not.toBeInTheDocument();
+});
+
+test("uses historical context when the current history entry is an active recommendation visit", async () => {
+  useTasteProfile.mockReturnValue({
+    profile: { skipped: [] },
+    actions: { addRecentMovie: jest.fn().mockResolvedValue(), recordDetailView: jest.fn().mockResolvedValue() },
+    getRecommendationContextForMovie: jest.fn(() => ({
+      source: "reelbot_pick",
+      prompt: "tense sci-fi",
+      intent: { tone: ["tense"] },
+    })),
+    getMovieState: jest.fn(() => ({ inWatchlist: false, seen: false, skipped: false, likedVibe: false })),
+    isCloudSyncing: false,
+  });
+
+  render(
+    <MemoryRouter initialEntries={[{
+      pathname: "/movies/aliens-1986",
+      state: { source: "reelbot_pick", recommendationVisit: { movieId: 679 } },
+    }]}>
+      <Routes><Route path="/movies/:movieSlug" element={<MovieDetails />} /></Routes>
+    </MemoryRouter>
+  );
+
+  expect(await screen.findByRole("heading", { name: "Why ReelBot Picked This" })).toBeInTheDocument();
+  expect(screen.getByText(/sustained tension matches/i)).toBeInTheDocument();
 });
 
 test("links cast and director to canonical people routes and handles missing headshots", async () => {
