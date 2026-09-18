@@ -305,7 +305,7 @@ const isHighConfidenceCuratedMovie = (movie, view) => {
   return voteAverage >= 6.2 && (voteCount >= 80 || popularity >= 45);
 };
 
-const trimMoviesToDisplayCount = (items = [], view = "latest") => {
+export const trimMoviesToDisplayCount = (items = [], view = "latest") => {
   const expandedCandidates = items.slice(0, HOMEPAGE_EXPANDED_DISPLAY_COUNT);
   const highConfidenceExpandedCount = expandedCandidates.filter((movie) => isHighConfidenceCuratedMovie(movie, view)).length;
 
@@ -317,7 +317,12 @@ const trimMoviesToDisplayCount = (items = [], view = "latest") => {
     return items.slice(0, HOMEPAGE_BASE_DISPLAY_COUNT);
   }
 
-  const fallbackCount = Math.floor(items.length / HOMEPAGE_DESKTOP_COLUMNS) * HOMEPAGE_DESKTOP_COLUMNS;
+  // A partial final row is preferable to turning a small but valid API response
+  // into an empty feed.
+  const fallbackCount = Math.max(
+    Math.min(items.length, HOMEPAGE_DESKTOP_COLUMNS),
+    Math.floor(items.length / HOMEPAGE_DESKTOP_COLUMNS) * HOMEPAGE_DESKTOP_COLUMNS
+  );
   return items.slice(0, fallbackCount);
 };
 

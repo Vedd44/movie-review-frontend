@@ -3120,8 +3120,8 @@ body {
 .cookie-notice {
   position: fixed;
   right: 18px;
-  bottom: 18px;
-  z-index: 130;
+  bottom: calc(max(22px, env(safe-area-inset-bottom)) + 64px);
+  z-index: 730;
   width: min(360px, calc(100% - 24px));
   display: flex;
   align-items: center;
@@ -9633,7 +9633,7 @@ body {
   .cookie-notice {
     left: 10px;
     right: 10px;
-    bottom: 12px;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 58px);
     width: auto;
     transform: none;
   }
@@ -14792,3 +14792,12 @@ body {
     flex-basis: 38px;
   }
 }
+
+/* Shared clapper-R identity. Asset colours match the active theme tokens. */
+.reelbot-brand-logo, .reelbot-footer-logo { display: block; flex: 0 0 auto; object-fit: contain; }
+.reelbot-brand-logo { width: 134px; height: 52px; }
+.reelbot-footer-logo { width: 154px; height: 60px; }
+.reelbot-assistant-icon { display: block; width: 22px; height: 26px; flex: 0 0 auto; }
+.reelbot-assistant-label { display: flex; align-items: center; gap: 8px; }
+.reelbot-assistant-label img { display: block; flex: 0 0 auto; }
+@media (max-width: 600px) { .reelbot-brand-logo { width: 113px; height: 44px; } }

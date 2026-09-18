@@ -1,7 +1,7 @@
 export const SITE_NAME = "ReelBot";
 export const SITE_TAGLINE = "Find something worth watching. Faster.";
 export const SITE_DESCRIPTION = "Get one tailored movie pick, useful backups, and a faster way to decide what to watch.";
-export const DEFAULT_SOCIAL_IMAGE = "/logo512.png";
+export const DEFAULT_SOCIAL_IMAGE = "/brand/reelbot-social.png";
 const CANONICAL_SITE_ORIGIN = (process.env.REACT_APP_SITE_URL?.trim() || "https://reelbot.movie").replace(/\/$/, "");
 
 export const getSiteOrigin = () => {

@@ -263,14 +263,14 @@ function AskReelbotLayer() {
   return (
     <>
       <button ref={triggerRef} type="button" className="ask-reelbot-trigger" onClick={() => { setOpen(true); trackProductEvent("ask_reelbot_opened", { page: context.page || "general" }); }} aria-haspopup="dialog">
-        <span aria-hidden="true">✦</span> Ask ReelBot
+        <img className="reelbot-assistant-icon" src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="22" height="26" /> Ask ReelBot
       </button>
       {open ? (
         <div className="ask-reelbot-backdrop" role="presentation" onMouseDown={closePanel}>
           <section ref={sheetRef} className="ask-reelbot-sheet" role="dialog" aria-modal="true" aria-labelledby="ask-reelbot-sheet-title" onMouseDown={(event) => event.stopPropagation()}>
             <header className="ask-reelbot-sheet-head">
               <div>
-                <div className="detail-description-label">Decision help</div>
+                <div className="detail-description-label reelbot-assistant-label"><img src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="20" height="24" />Decision help</div>
                 <h2 id="ask-reelbot-sheet-title">{config.heading}</h2>
                 {!result && !answerResult ? <p>{config.prompt}</p> : null}
               </div>

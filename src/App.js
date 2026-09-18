@@ -94,16 +94,7 @@ function SiteHeader() {
       <div className="site-header-inner">
         <div className="site-header-left">
           <NavLink to="/" className="site-brand" onClick={handleBrandClick}>
-            <span className="site-brand-mark" aria-hidden="true">
-              <span className="site-brand-ring"></span>
-              <span className="site-brand-play"></span>
-              <span className="site-brand-ai-link"></span>
-              <span className="site-brand-ai-node"></span>
-            </span>
-            <span className="site-brand-copy">
-              <span className="site-brand-title">ReelBot</span>
-              <span className="site-brand-subtitle">Skip the scroll</span>
-            </span>
+            <img className="reelbot-brand-logo" src="/brand/reelbot-logo.svg" alt="ReelBot" width="134" height="52" />
           </NavLink>
         </div>
 
@@ -174,7 +165,7 @@ function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer-inner">
         <div className="site-footer-brand">
-          <div className="site-footer-title">ReelBot</div>
+          <NavLink to="/" aria-label="ReelBot home"><img className="reelbot-footer-logo" src="/brand/reelbot-logo.svg" alt="ReelBot" width="154" height="60" loading="lazy" /></NavLink>
           <p className="site-footer-copy">Find something worth watching. Faster.</p>
         </div>
 
