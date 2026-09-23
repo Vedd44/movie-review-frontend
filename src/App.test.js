@@ -54,7 +54,7 @@ test('frames account creation around remembered utility', () => {
   fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[0]);
 
   expect(screen.getByRole('heading', { name: 'Make ReelBot yours.' })).toBeInTheDocument();
-  expect(screen.getByText(/Save picks, keep track of what you’ve watched/i)).toBeInTheDocument();
+  expect(screen.getByText(/Save movies, remember what you’ve watched, and get better picks/i)).toBeInTheDocument();
 });
 
 test('opens contextual Ask ReelBot without replacing search', () => {

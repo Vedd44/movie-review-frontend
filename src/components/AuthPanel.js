@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { validateEmail, validatePassword } from "../authValidation";
 
@@ -32,6 +32,7 @@ function AuthPanel({
   const [loading, setLoading] = useState(false);
   const [successState, setSuccessState] = useState(null);
   const [error, setError] = useState("");
+  const emailInputRef = useRef(null);
 
   useEffect(() => {
     setError("");
@@ -48,18 +49,18 @@ function AuthPanel({
     }
 
     if (view === PASSWORD_LOGIN_VIEW) {
-      return "Use your email and password.";
+      return "Pick up where you left off.";
     }
 
     if (view === PASSWORD_SIGNUP_VIEW) {
-      return "Save your picks and pick up where you left off.";
+      return "Your picks and movie history will follow you across devices.";
     }
 
     if (view === FORGOT_PASSWORD_VIEW) {
       return "Enter your email and we’ll send you a reset link.";
     }
 
-    return subtitle || "Enter your email and we’ll send you a sign-in link.";
+    return subtitle || "We’ll send a secure sign-in link to your email.";
   }, [subtitle, user?.email, view]);
 
   const modeTitle = useMemo(() => {
@@ -75,8 +76,14 @@ function AuthPanel({
       return "Reset your password";
     }
 
-    return "Email sign-in";
+    return "Email me a sign-in link";
   }, [view]);
+
+  useEffect(() => {
+    if (!user && !successState) {
+      emailInputRef.current?.focus();
+    }
+  }, [successState, user, view]);
 
   const resetFormState = () => {
     setPassword("");
@@ -203,51 +210,25 @@ function AuthPanel({
     <div className={`auth-panel${compact ? " auth-panel--compact" : ""}`}>
       {title ? <div id={titleId || undefined} className="auth-panel-title">{title}</div> : null}
 
-      {!user ? (
-        <div className="auth-panel-switcher" role="tablist" aria-label="Sign-in options">
+      {!user && usingPasswordFlow && !isForgotPasswordView ? (
+        <div className="auth-panel-task-switcher" role="tablist" aria-label="Account task">
           <button
             type="button"
             role="tab"
-            aria-selected={usingPasswordFlow}
-            className={`auth-panel-switch${usingPasswordFlow ? " is-active" : ""}`}
-            onClick={() => handleViewChange(PASSWORD_LOGIN_VIEW)}
-          >
-            Password
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!usingPasswordFlow}
-            className={`auth-panel-switch${!usingPasswordFlow ? " is-active" : ""}`}
-            onClick={() => handleViewChange(EMAIL_LINK_VIEW)}
-          >
-            Email sign-in
-          </button>
-        </div>
-      ) : null}
-
-      {usingPasswordFlow && !user ? (
-        <div className="auth-panel-subnav" aria-label="Password account options">
-          <button
-            type="button"
-            className={`auth-panel-subnav-link${view === PASSWORD_LOGIN_VIEW ? " is-active" : ""}`}
+            aria-selected={view === PASSWORD_LOGIN_VIEW}
+            className={`auth-panel-task-switch${view === PASSWORD_LOGIN_VIEW ? " is-active" : ""}`}
             onClick={() => handleViewChange(PASSWORD_LOGIN_VIEW)}
           >
             Sign in
           </button>
           <button
             type="button"
-            className={`auth-panel-subnav-link${view === PASSWORD_SIGNUP_VIEW ? " is-active" : ""}`}
+            role="tab"
+            aria-selected={view === PASSWORD_SIGNUP_VIEW}
+            className={`auth-panel-task-switch${view === PASSWORD_SIGNUP_VIEW ? " is-active" : ""}`}
             onClick={() => handleViewChange(PASSWORD_SIGNUP_VIEW)}
           >
             Create account
-          </button>
-          <button
-            type="button"
-            className={`auth-panel-subnav-link${view === FORGOT_PASSWORD_VIEW ? " is-active" : ""}`}
-            onClick={() => handleViewChange(FORGOT_PASSWORD_VIEW)}
-          >
-            Forgot password
           </button>
         </div>
       ) : null}
@@ -274,6 +255,7 @@ function AuthPanel({
       ) : !user ? (
         <form className="auth-panel-form auth-panel-form--stacked" onSubmit={handleSubmit}>
           <input
+            ref={emailInputRef}
             type="email"
             value={email}
             onChange={(event) => {
@@ -284,8 +266,8 @@ function AuthPanel({
             }}
             placeholder="Email address"
             aria-label="Email address"
+            autoComplete="email"
             disabled={loading || authLoading}
-            autoFocus
           />
 
           {usingPasswordFlow && !isForgotPasswordView ? (
@@ -300,6 +282,7 @@ function AuthPanel({
               }}
               placeholder="Password"
               aria-label="Password"
+              autoComplete={isSignupView ? "new-password" : "current-password"}
               disabled={loading || authLoading}
             />
           ) : null}
@@ -316,6 +299,7 @@ function AuthPanel({
               }}
               placeholder="Confirm password"
               aria-label="Confirm password"
+              autoComplete="new-password"
               disabled={loading || authLoading}
             />
           ) : null}
@@ -330,11 +314,24 @@ function AuthPanel({
         <div className="auth-panel-actions auth-panel-actions--links">
           {view === EMAIL_LINK_VIEW ? (
             <button type="button" className="auth-panel-link" onClick={() => handleViewChange(PASSWORD_LOGIN_VIEW)}>
-              Use password instead
+              Back to password sign in
             </button>
+          ) : view === FORGOT_PASSWORD_VIEW ? (
+            <button type="button" className="auth-panel-link" onClick={() => handleViewChange(PASSWORD_LOGIN_VIEW)}>
+              Back to sign in
+            </button>
+          ) : view === PASSWORD_LOGIN_VIEW ? (
+            <>
+              <button type="button" className="auth-panel-link" onClick={() => handleViewChange(FORGOT_PASSWORD_VIEW)}>
+                Forgot password?
+              </button>
+              <button type="button" className="auth-panel-link" onClick={() => handleViewChange(EMAIL_LINK_VIEW)}>
+                Email me a sign-in link
+              </button>
+            </>
           ) : (
-            <button type="button" className="auth-panel-link" onClick={() => handleViewChange(EMAIL_LINK_VIEW)}>
-              Use email sign-in instead
+            <button type="button" className="auth-panel-link" onClick={() => handleViewChange(PASSWORD_LOGIN_VIEW)}>
+              Already have an account? Sign in
             </button>
           )}
         </div>

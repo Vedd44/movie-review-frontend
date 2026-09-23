@@ -6715,20 +6715,20 @@ body {
   padding: 0;
 }
 
-.auth-panel-switcher {
+.auth-panel-task-switcher {
   justify-self: center;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   min-height: 32px;
   padding: 3px;
-  margin: 16px auto 0;
+  margin: 18px auto 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.015);
   border: 1px solid rgba(129, 155, 190, 0.18);
 }
 
-.auth-panel-switch {
+.auth-panel-task-switch {
   border: 1px solid transparent;
   border-radius: 999px;
   min-height: 26px;
@@ -6736,26 +6736,19 @@ body {
   background: transparent;
   color: rgba(225, 234, 246, 0.58);
   font: inherit;
+  min-width: 104px;
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.auth-panel-switch.is-active {
+.auth-panel-task-switch.is-active {
   background: rgba(225, 194, 113, 0.09);
   border-color: rgba(225, 194, 113, 0.14);
   color: var(--text-primary);
 }
 
-.auth-panel-subnav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 16px 0 20px;
-}
-
-.auth-panel-subnav-link,
 .auth-panel-link {
   border: none;
   background: transparent;
@@ -6770,18 +6763,21 @@ body {
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-.auth-panel-subnav-link.is-active,
 .auth-panel-link:hover,
-.auth-panel-link:focus-visible,
-.auth-panel-subnav-link:hover,
-.auth-panel-subnav-link:focus-visible {
+.auth-panel-link:focus-visible {
   background: transparent;
   border-bottom-color: rgba(225, 194, 113, 0.3);
   color: var(--accent-warm);
 }
 
+.auth-panel-task-switch:hover,
+.auth-panel-task-switch:focus-visible {
+  border-color: rgba(225, 194, 113, 0.3);
+  color: var(--accent-warm);
+}
+
 .auth-panel-mode-title {
-  font-size: 1rem;
+  font-size: 1.18rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 12px;
@@ -6871,7 +6867,8 @@ body {
 }
 
 .auth-panel-actions--links {
-  margin-top: 12px;
+  margin-top: 14px;
+  gap: 14px 20px;
 }
 
 .auth-panel-actions--links .auth-panel-link {
@@ -14689,10 +14686,11 @@ body {
 }
 
 .auth-modal-shell {
-  width: min(840px, calc(100% - 28px));
+  width: min(760px, calc(100% - 28px));
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
-  gap: 28px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(300px, 1.1fr);
+  gap: 40px;
+  padding: 28px;
 }
 
 .auth-value-proposition h2 {
@@ -14705,30 +14703,6 @@ body {
   margin: 0;
   color: rgba(244, 239, 228, 0.7);
   line-height: 1.6;
-}
-
-.auth-value-proposition ul {
-  display: grid;
-  gap: 14px;
-  margin: 22px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.auth-value-proposition li {
-  display: grid;
-  gap: 3px;
-}
-
-.auth-value-proposition li strong {
-  color: rgba(255, 248, 233, 0.92);
-  font-size: 0.88rem;
-}
-
-.auth-value-proposition li span {
-  color: rgba(244, 239, 228, 0.56);
-  font-size: 0.8rem;
-  line-height: 1.45;
 }
 
 .home-hero-now-playing-rail--loading {
@@ -14809,8 +14783,8 @@ body {
     padding: 24px 18px 20px;
   }
 
-  .auth-value-proposition ul {
-    display: none;
+  .auth-value-proposition {
+    max-width: 48ch;
   }
 }
 
