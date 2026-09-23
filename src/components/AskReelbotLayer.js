@@ -19,20 +19,55 @@ const GENERAL_ACTIONS = [
   ["Surprise me", ""],
 ];
 
+const MOVIE_ACTIONS = [
+  ["Is it scary?", "Is it scary?"],
+  ["Is it slow?", "Is it slow?"],
+  ["What should I know before watching?", "What should I know before watching?"],
+  ["Is it good for a group?", "Is it good for a group?"],
+  ["How intense is it?", "How intense is it?"],
+  ["Explain the ending", "Explain the ending"],
+];
+
+const PERSON_ACTIONS = [
+  ["What are their best movies?", "What are their best movies?"],
+  ["Where should I start?", "Where should I start?"],
+  ["What should I know about them?", "What should I know about them?"],
+  ["What are they best known for?", "What are they best known for?"],
+];
+
+const REFINEMENT_ACTIONS = [
+  ["Something like this", "something like this"],
+  ["Something lighter", "something like this, but lighter"],
+  ["Something less intense", "something like this, but less intense"],
+  ["A more modern alternative", "a more modern alternative to this"],
+  ["What should I watch after this?", "what should I watch after this?"],
+  ["Good for a group", "is this good for a group?"],
+];
+
 export const getPanelConfig = (context = {}) => {
   if (context.page === "movie_detail") {
     const movieTitle = context.movie?.title || context.movieTitle || "this movie";
     return {
       heading: `Ask about ${movieTitle}`,
       prompt: "What do you want to know?",
-      actions: [
-        ["Something like this", "something like this"],
-        ["Something lighter", "something like this, but lighter"],
-        ["Something less intense", "something like this, but less intense"],
-        ["A more modern alternative", "a more modern alternative to this"],
-        ["What should I watch after this?", "what should I watch after this?"],
-        ["Good for a group", "is this good for a group?"],
-      ],
+      actions: MOVIE_ACTIONS,
+    };
+  }
+
+  if (context.page === "recommendation") {
+    return {
+      heading: "Refine this pick",
+      prompt: "Adjust this pick without starting over",
+      actions: REFINEMENT_ACTIONS,
+    };
+  }
+
+  if (context.page === "person") {
+    const personName = context.person?.name || context.personName || "this person";
+    return {
+      heading: `Ask about ${personName}`,
+      prompt: `What do you want to know about ${personName}?`,
+      actions: PERSON_ACTIONS,
     };
   }
 
@@ -72,19 +107,6 @@ export const getPanelConfig = (context = {}) => {
         ["Shortest good option", "the shortest good option from my saved movies"],
         ["Something easy tonight", "something easy tonight from my saved movies"],
         ["Surprise me from my list", "surprise me from my saved movies"],
-      ],
-    };
-  }
-
-  if (context.page === "recommendation") {
-    return {
-      heading: "Refine this pick",
-      prompt: "Adjust this pick without starting over",
-      actions: [
-        ["Something lighter", `${context.originalPrompt || "this request"}, but lighter`],
-        ["Something shorter", `${context.originalPrompt || "this request"}, but shorter`],
-        ["More like this", `something more like ${context.currentPick?.title || "this pick"}`],
-        ["Different angle", `${context.originalPrompt || "the same request"}, from a different angle`],
       ],
     };
   }

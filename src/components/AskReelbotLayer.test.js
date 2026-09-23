@@ -4,8 +4,21 @@ test("adapts Ask ReelBot actions to movie details", () => {
   const config = getPanelConfig({ page: "movie_detail", movieTitle: "Alien" });
 
   expect(config.heading).toBe("Ask about Alien");
-  expect(config.actions).toContainEqual(["Something less intense", "something like this, but less intense"]);
-  expect(config.actions).toContainEqual(["Good for a group", "is this good for a group?"]);
+  expect(config.actions).toContainEqual(["Is it scary?", "Is it scary?"]);
+  expect(config.actions).toContainEqual(["Explain the ending", "Explain the ending"]);
+  expect(config.actions).not.toContainEqual(["Something like this", "something like this"]);
+});
+
+test("keeps refinement, general, and person suggestions in their own contexts", () => {
+  const refinement = getPanelConfig({ page: "recommendation", currentPick: { title: "Alien" } });
+  const general = getPanelConfig({ page: "home" });
+  const person = getPanelConfig({ page: "person", personName: "Sigourney Weaver" });
+
+  expect(refinement.actions).toContainEqual(["Something like this", "something like this"]);
+  expect(general.actions).toContainEqual(["Find me something to watch", "something worth watching tonight"]);
+  expect(person.heading).toBe("Ask about Sigourney Weaver");
+  expect(person.actions).toContainEqual(["What are their best movies?", "What are their best movies?"]);
+  expect(person.actions).not.toContainEqual(["Is it scary?", "Is it scary?"]);
 });
 
 test("adapts Ask ReelBot to constrained page collections", () => {

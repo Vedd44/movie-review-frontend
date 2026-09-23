@@ -3,9 +3,15 @@ import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import AskReelbotLayer from "./AskReelbotLayer";
 import useTasteProfile from "../hooks/useTasteProfile";
+import { AskReelbotProvider, useAskReelbotPageContext } from "../context/AskReelbotContext";
 
 jest.mock("axios");
 jest.mock("../hooks/useTasteProfile");
+
+function ContextRegistration({ context }) {
+  useAskReelbotPageContext(context);
+  return null;
+}
 
 beforeEach(() => {
   useTasteProfile.mockReturnValue({
@@ -55,4 +61,23 @@ test("does not clear an empty Ask submission", () => {
   expect(screen.getByRole("button", { name: "Ask" })).toBeDisabled();
   expect(input).toHaveValue("");
   expect(axios.post).not.toHaveBeenCalled();
+});
+
+test("movie-detail question chips submit movie questions through the active movie context", async () => {
+  render(
+    <MemoryRouter>
+      <AskReelbotProvider>
+        <ContextRegistration context={{ page: "movie_detail", movieId: 679, movieTitle: "Alien" }} />
+        <AskReelbotLayer />
+      </AskReelbotProvider>
+    </MemoryRouter>
+  );
+  fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Is it scary?" }));
+
+  await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
+    expect.stringContaining("/reelbot/ask"),
+    expect.objectContaining({ prompt: "Is it scary?", page_context: expect.objectContaining({ movieId: 679 }) }),
+    expect.anything()
+  ));
 });

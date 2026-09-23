@@ -4,6 +4,7 @@ import axios from "axios";
 import "./App.css";
 import { API_BASE_URL, formatMovieDate, getMoviePath, getPersonPath, getReleaseYear } from "./discovery";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
+import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 
 const getCreditTime = (movie) => {
   const date = movie?.release_date ? new Date(movie.release_date) : null;
@@ -77,6 +78,13 @@ function PersonDetails() {
     () => sortCredits(person?.movie_credits || [], sortDirection),
     [person?.movie_credits, sortDirection]
   );
+
+  useAskReelbotPageContext(useMemo(() => ({
+    page: "person",
+    personId: person?.id || personId || null,
+    personName: person?.name || "",
+    person: person ? { id: person.id, name: person.name } : null,
+  }), [person, personId]));
 
   usePageMetadata({
     title: person?.name ? `${person.name} Filmography | ReelBot` : "Filmography | ReelBot",
