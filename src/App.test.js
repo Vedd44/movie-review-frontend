@@ -65,3 +65,17 @@ test('opens contextual Ask ReelBot without replacing search', () => {
   expect(screen.getByRole('button', { name: 'Pick for date night' })).toBeInTheDocument();
   expect(screen.getByRole('textbox', { name: 'Ask ReelBot' })).toBeInTheDocument();
 });
+
+test('logo always navigates home without restoring an active pick hash', async () => {
+  window.localStorage.setItem("reelbotSession", JSON.stringify({
+    originalPrompt: "smart thriller",
+    currentPick: { primary: { id: 393, title: "Knives Out" } },
+  }));
+  window.history.pushState({}, '', '/browse');
+  render(<App />);
+
+  fireEvent.click(screen.getAllByRole('link', { name: 'ReelBot' })[0]);
+
+  await waitFor(() => expect(window.location.pathname).toBe('/'));
+  expect(window.location.hash).toBe('');
+});

@@ -1722,18 +1722,20 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setIsPickTrailerOpen(false);
     setIsPickComposerOpen(false);
     replaceHomePickSession(null);
+    void tasteActions.clearActiveHomePick(getPickSessionMovieIds(pickResult)).catch(() => {});
 
     if (isNewHomepageUser) {
       clearOnboardingDismissal();
       clearOnboardingCompletion();
     }
 
+    navigate("/", { replace: true });
     scrollToSection("pick-for-me", { skipIfVisible: true });
 
     if (!isNewHomepageUser) {
       focusPickPromptComposer();
     }
-  }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, replaceHomePickSession, resetOnboardingSignals, scrollToSection]);
+  }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, navigate, pickResult, replaceHomePickSession, resetOnboardingSignals, scrollToSection, tasteActions]);
 
   const handleRefreshPick = async () => {
     if (isPickBusy || !pickResult?.primary) {
@@ -1955,11 +1957,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   };
 
   const askReelbotPageContext = useMemo(() => ({
-    page: isFeedRoute && movieType === "now_playing"
-      ? "now_playing"
-      : activePick
-        ? "recommendation"
-        : "home",
+    page: isFeedRoute && movieType === "now_playing" ? "now_playing" : "home",
     originalPrompt: originalPickPrompt || pickPrompt,
     currentPick: activePick ? { id: activePick.id, title: activePick.title } : null,
     alternateIds: visibleBackupPicks.map((movie) => movie.id).filter(Boolean),

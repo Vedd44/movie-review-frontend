@@ -309,6 +309,24 @@ const clearHomePickSession = () => {
   window.localStorage.removeItem(SESSION_HOME_PICK_STATE_KEY);
 };
 
+const clearActiveHomePick = (profile, movieIds = []) => {
+  if (canUseSessionStorage()) {
+    const activeIds = new Set(normalizeSessionMovieIds(movieIds));
+    const contexts = loadSessionRecommendationContexts();
+    const remainingContexts = Object.fromEntries(
+      Object.entries(contexts).filter(([movieId]) => !activeIds.has(Number(movieId)))
+    );
+    saveSessionRecommendationContexts(remainingContexts);
+  }
+
+  clearHomePickSession();
+  return rebuildProfile({
+    ...profile,
+    lastPickPreferences: null,
+    lastResolvedIntent: null,
+  });
+};
+
 const hasActiveHomePickSession = () => hasPrimaryPick(loadHomePickSession()?.currentPick);
 
 const save = (profile) => persist(migrateProfile(profile));
@@ -722,6 +740,7 @@ export const tasteProfileService = {
   hasActiveHomePickSession,
   saveHomePickSession,
   clearHomePickSession,
+  clearActiveHomePick,
   getMovieTasteState,
   toggleWatchlist,
   toggleSeen,

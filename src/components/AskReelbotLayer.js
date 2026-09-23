@@ -118,9 +118,23 @@ function AskReelbotLayer() {
   const config = useMemo(() => getPanelConfig(context), [context]);
   const [conversation, setConversation] = useState(() => createAskConversation(pageContext || fallbackContext));
   const contextRef = useRef(context);
+  const previousContextRef = useRef(context);
   contextRef.current = context;
 
   useEffect(() => {
+    const previousContext = previousContextRef.current;
+    if (previousContext?.currentPick?.id && !context.currentPick?.id && context.page === "home") {
+      setResult(null);
+      setAnswerResult(null);
+      setLastTurn(null);
+      setExcludedIds([]);
+      setError("");
+      setConversation(createAskConversation(context));
+      previousContextRef.current = context;
+      return;
+    }
+
+    previousContextRef.current = context;
     setConversation((current) => {
       if (!current.lastUserMessage) return createAskConversation(context);
       return {

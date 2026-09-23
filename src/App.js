@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./Home";
 import MovieDetails from "./MovieDetails";
 import PersonDetails from "./PersonDetails";
@@ -17,7 +17,6 @@ import { AskReelbotProvider } from "./context/AskReelbotContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath } from "./discovery";
 import { homeFeedService } from "./services/homeFeedService";
-import { tasteProfileService } from "./services/tasteProfileService";
 import "./App.css";
 
 const SITE_VERSION = "v1.3.1";
@@ -39,7 +38,6 @@ function LegacyFeedRedirect() {
 
 function SiteHeader() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, openAuthPrompt } = useAuth();
   const isAskReelbotActive = location.pathname === "/" && location.hash === "#pick-for-me";
@@ -71,28 +69,11 @@ function SiteHeader() {
       </NavLink>
     ));
 
-  const handleBrandClick = (event) => {
-    event.preventDefault();
-    const hasActivePickSession = tasteProfileService.hasActiveHomePickSession();
-
-    if (hasActivePickSession) {
-      navigate("/#your-pick", {
-        state: {
-          restorePickSession: true,
-          scrollToPickResult: true,
-        },
-      });
-      return;
-    }
-
-    navigate("/");
-  };
-
   return (
     <header className="site-header">
       <div className="site-header-inner">
         <div className="site-header-left">
-          <NavLink to="/" className="site-brand" onClick={handleBrandClick}>
+          <NavLink to="/" className="site-brand">
             <img className="reelbot-brand-logo" src="/brand/reelbot-logo.svg" alt="ReelBot" width="134" height="52" />
           </NavLink>
         </div>

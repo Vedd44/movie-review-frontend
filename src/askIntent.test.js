@@ -24,3 +24,12 @@ test("keeps pronoun follow-ups anchored to the current conversation movie", () =
   const conversation = { activeIntent: ASK_INTENTS.CURRENT_MOVIE_QUESTION, anchorMovie: { id: 1, title: "Coyote vs. Acme" } };
   expect(classifyAskIntent({ prompt: "What about for a 7 year old?", context: { page: "general" }, conversation })).toBe(ASK_INTENTS.CURRENT_MOVIE_QUESTION);
 });
+
+test("keeps homepage discovery general while allowing active-pick refinements", () => {
+  const context = { page: "home", currentPick: { id: 393, title: "Knives Out" } };
+  expect(classifyAskIntent({ prompt: "What movies are out now that I might like?", context })).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
+  expect(classifyAskIntent({ prompt: "Is this scary?", context })).toBe(ASK_INTENTS.GENERAL_INFORMATION_QUESTION);
+  expect(classifyAskIntent({ prompt: "Something gentler", context })).toBe(ASK_INTENTS.REFINE_RECOMMENDATION);
+  expect(classifyAskIntent({ prompt: "Find something like this", context })).toBe(ASK_INTENTS.REFINE_RECOMMENDATION);
+  expect(classifyAskIntent({ prompt: "I've already seen this", context })).toBe(ASK_INTENTS.REFINE_RECOMMENDATION);
+});

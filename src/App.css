@@ -12285,6 +12285,12 @@ body {
   flex-wrap: wrap;
 }
 
+.home-page .pick-primary-action-row--primary .pick-taste-actions .taste-action-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 14px;
+}
+
 .home-page .pick-primary-main-action {
   min-width: 150px;
 }

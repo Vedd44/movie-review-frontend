@@ -75,7 +75,7 @@ function useTasteProfile() {
     };
   }, [authReady, user]);
 
-  const commit = useCallback(async (updater) => {
+  const commit = useCallback(async (updater, options = {}) => {
     const previousProfile = profileRef.current;
     const previousInteractions = tasteProfileService.loadInteractions();
     const nextProfile = typeof updater === "function" ? updater(previousProfile) : updater;
@@ -92,7 +92,7 @@ function useTasteProfile() {
     setSyncLoading(true);
 
     try {
-      const snapshot = await reelbotCloudService.saveUserState(user.id, persistedProfile);
+      const snapshot = await reelbotCloudService.saveUserState(user.id, persistedProfile, options);
       profileRef.current = snapshot.profile;
       setProfile(snapshot.profile);
       setSyncError("");
@@ -119,6 +119,10 @@ function useTasteProfile() {
       addRecentMovie: (movie) => commit((currentProfile) => tasteProfileService.addRecentMovie(currentProfile, movie)),
       savePickPreferences: (preferences) => commit((currentProfile) => tasteProfileService.savePickPreferences(currentProfile, preferences)),
       recordPickResult: (preferences, payload) => commit((currentProfile) => tasteProfileService.recordPickResult(currentProfile, preferences, payload)),
+      clearActiveHomePick: (movieIds = []) => commit(
+        (currentProfile) => tasteProfileService.clearActiveHomePick(currentProfile, movieIds),
+        { homePickSession: null }
+      ),
       recordSwapFeedback: (movie, preferences, metadata) => commit((currentProfile) => tasteProfileService.recordSwapFeedback(currentProfile, movie, preferences, metadata)),
       recordDetailView: (movie, metadata) => commit((currentProfile) => tasteProfileService.recordDetailView(currentProfile, movie, metadata)),
       recordProviderClick: (movie, provider, metadata) => commit((currentProfile) => tasteProfileService.recordProviderClick(currentProfile, movie, provider, metadata)),

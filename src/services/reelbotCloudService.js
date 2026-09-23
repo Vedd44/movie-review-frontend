@@ -331,14 +331,18 @@ export const reelbotCloudService = {
       return {
         profile: tasteProfileService.rebuildProfile(profile || tasteProfileService.createEmptyProfile()),
         interactions: options.interactions || tasteProfileService.loadInteractions(),
-        homePickSession: options.homePickSession || tasteProfileService.loadHomePickSession(),
+        homePickSession: Object.prototype.hasOwnProperty.call(options, "homePickSession")
+          ? options.homePickSession
+          : tasteProfileService.loadHomePickSession(),
       };
     }
 
     return writeRemoteSnapshot(userId, {
       profile,
       interactions: options.interactions || tasteProfileService.loadInteractions(),
-      homePickSession: options.homePickSession || tasteProfileService.loadHomePickSession(),
+      homePickSession: Object.prototype.hasOwnProperty.call(options, "homePickSession")
+        ? options.homePickSession
+        : tasteProfileService.loadHomePickSession(),
     });
   },
   async bootstrapUserState(userId) {

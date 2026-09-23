@@ -18,16 +18,21 @@ const questionPattern = /^(?:is|are|does|do|will|would|can|could|should|how|what
 const nextPattern = /^(?:okay,?\s*)?(?:another|another one|next|next one|one more)(?:\s+please)?[.!?]*$/i;
 const refinementPattern = /^(?:no[, ]+|actually[, ]+|i meant\b|not\b)|\b(?:not that one|lighter|darker|shorter|funnier|less scary|less intense|more mainstream|rather than|instead of)\b/i;
 const initialRecommendationPattern = /\b(?:movie|watch|action|comedy|drama|thriller|horror|sci-?fi|funny|spooky|smart but easy|easy watch|date night|mainstream)\b/i;
+const homePickRefinementPattern = /^(?:something|anything)\s+(?:gentler|lighter|darker|shorter|funnier|less intense|less scary|more like this)|^(?:find|give me)\s+something\s+like\s+this|\b(?:i(?:'|’)ve already seen this|another one like this)\b/i;
+const homeDiscoveryPattern = /^(?:what(?:'s| is)?|anything|any|recommend|give me|find me)\b.*\b(?:movie|movies|film|films|out now|in theaters|under\s+\w+|date night)\b/i;
 
 export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = {}) => {
   const value = normalize(prompt);
   const page = normalize(context.page);
   const activeIntent = normalize(conversation.activeIntent);
-  const hasAnchor = Boolean(context.movie?.id || context.currentPick?.id || context.movieId || conversation.anchorMovie?.id);
+  const hasAnchor = Boolean(context.movie?.id || context.movieId || conversation.anchorMovie?.id);
   const hasRecommendation = /recommendation/.test(activeIntent) || Boolean(conversation.activeRequest);
+  const hasActiveHomePick = page === "home" && Boolean(context.currentPick?.id);
   if (!value) return ASK_INTENTS.UNKNOWN;
   if (comparisonPattern.test(value)) return ASK_INTENTS.MOVIE_COMPARISON;
   if (nextPattern.test(value) && hasRecommendation) return ASK_INTENTS.NEXT_RECOMMENDATION;
+  if (hasActiveHomePick && homePickRefinementPattern.test(value)) return ASK_INTENTS.REFINE_RECOMMENDATION;
+  if (page === "home" && homeDiscoveryPattern.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
   if (refinementPattern.test(value) && hasRecommendation) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (recommendationPattern.test(value)) {
     if (page === "my_movies") return ASK_INTENTS.ACCOUNT_LIBRARY_RECOMMENDATION;
@@ -35,10 +40,9 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
     if (page === "movie_detail" || context.movie?.id || context.movieId) return ASK_INTENTS.MOVIE_RECOMMENDATION;
     return ASK_INTENTS.GENERAL_RECOMMENDATION;
   }
-  if (page === "movie_detail" || hasAnchor) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
+  if (page === "movie_detail" || context.movie?.id || context.movieId || (hasAnchor && activeIntent === ASK_INTENTS.CURRENT_MOVIE_QUESTION.toLowerCase())) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (page === "browse" || page === "now_playing") return ASK_INTENTS.CURRENT_SET_RECOMMENDATION;
   if (page === "my_movies") return ASK_INTENTS.ACCOUNT_LIBRARY_RECOMMENDATION;
-  if (questionPattern.test(value) && /\b(?:scary|violent|violence|directed|director|runtime|appropriate|year old)\b/i.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (questionPattern.test(value)) return ASK_INTENTS.GENERAL_INFORMATION_QUESTION;
   if (initialRecommendationPattern.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
   return ASK_INTENTS.UNKNOWN;
