@@ -44,6 +44,13 @@ const REFINEMENT_ACTIONS = [
   ["Good for a group", "is this good for a group?"],
 ];
 
+export const normalizeAskFollowUps = (value) => (Array.isArray(value) ? value : [])
+  .filter((item) => typeof item === "string")
+  .map((item) => item.replace(/\s+/g, " ").trim())
+  .filter(Boolean)
+  .filter((item, index, items) => items.indexOf(item) === index)
+  .slice(0, 4);
+
 export const getPanelConfig = (context = {}) => {
   if (context.page === "movie_detail") {
     const movieTitle = context.movie?.title || context.movieTitle || "this movie";
@@ -307,6 +314,7 @@ function AskReelbotLayer() {
   const resultReason = rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.primary?.reason || result?.summary;
   const loadingCopy = getAskLoadingCopy(loadingIntent);
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
+  const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
 
   return (
     <>
@@ -339,8 +347,9 @@ function AskReelbotLayer() {
                 <div className="ask-reelbot-answer-label">About {answerMovieTitle}</div>
                 <p className="ask-reelbot-direct-copy">{answerResult.answer}</p>
                 <div className="ask-reelbot-answer-actions">
-                  <button type="button" className="reelbot-inline-button" onClick={() => { setDraft("something gentler than this"); requestPick("something gentler than this"); }}>Something gentler</button>
-                  <button type="button" className="reelbot-inline-button" onClick={() => { setDraft("find something like this"); requestPick("find something like this"); }}>Find something like this</button>
+                  {contextualFollowUps.map((followUp) => (
+                    <button key={followUp} type="button" className="reelbot-inline-button" onClick={() => requestPick(followUp)}>{followUp}</button>
+                  ))}
                 </div>
               </article>
             ) : result ? (
