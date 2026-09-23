@@ -8,6 +8,7 @@ function TasteActionBar({
   vibeLabel = "",
   compact = false,
   className = "",
+  buttonClassName = "",
   showSaveAction = true,
   showSeenAction = true,
   showSkipAction = true,
@@ -26,6 +27,7 @@ function TasteActionBar({
   const [actionError, setActionError] = useState("");
   const tasteState = getMovieState(movie?.id, vibeLabel);
   const classes = `taste-action-bar${compact ? " taste-action-bar--compact" : ""}${className ? ` ${className}` : ""}`;
+  const actionButtonClasses = `taste-action-button${buttonClassName ? ` ${buttonClassName}` : ""}`;
 
   useEffect(() => {
     if (!feedback) {
@@ -96,7 +98,7 @@ function TasteActionBar({
       {showSaveAction ? (
         <button
           type="button"
-          className={`taste-action-button${tasteState.inWatchlist ? " is-active" : ""}`}
+          className={`${actionButtonClasses}${tasteState.inWatchlist ? " is-active" : ""}`}
           onClick={() => handleAction("watchlist", () => actions.toggleWatchlist(movie))}
           disabled={isBusy}
           aria-pressed={tasteState.inWatchlist}
@@ -107,7 +109,7 @@ function TasteActionBar({
       {showSeenAction ? (
         <button
           type="button"
-          className={`taste-action-button${tasteState.seen ? " is-active" : ""}`}
+          className={`${actionButtonClasses}${tasteState.seen ? " is-active" : ""}`}
           onClick={() => handleAction("seen", () => actions.toggleSeen(movie))}
           disabled={isBusy}
           aria-pressed={tasteState.seen}
@@ -118,7 +120,7 @@ function TasteActionBar({
       {showSkipAction ? (
         <button
           type="button"
-          className={`taste-action-button${tasteState.skipped ? " is-active" : ""}`}
+          className={`${actionButtonClasses}${tasteState.skipped ? " is-active" : ""}`}
           onClick={() => handleAction("hidden", () => actions.toggleSkipped(movie))}
           disabled={isBusy}
           aria-pressed={tasteState.skipped}
@@ -129,7 +131,7 @@ function TasteActionBar({
       {showVibeAction && vibeLabel ? (
         <button
           type="button"
-          className={`taste-action-button${tasteState.likedVibe ? " is-active" : ""}`}
+          className={`${actionButtonClasses}${tasteState.likedVibe ? " is-active" : ""}`}
           onClick={() => handleAction("vibe", () => actions.toggleLikedVibe(movie, vibeLabel))}
           disabled={isBusy}
           aria-pressed={tasteState.likedVibe}

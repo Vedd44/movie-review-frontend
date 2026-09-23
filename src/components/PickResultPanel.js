@@ -139,7 +139,7 @@ function PickResultPanel({
                       </button>
                     ) : null}
                     {onRefreshChoices && !hideRefreshCta ? (
-                      <button type="button" className="reelbot-inline-button pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
+                      <button type="button" className="reelbot-inline-button pick-primary-secondary-action pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
                         {refreshLabel}
                       </button>
                     ) : null}
@@ -150,11 +150,12 @@ function PickResultPanel({
                       className="pick-taste-actions pick-taste-actions--inline"
                       showVibeAction={false}
                       {...tasteActionProps}
+                      buttonClassName="pick-primary-secondary-action"
                     />
                     {onResetChoices ? (
                       <button
                         type="button"
-                        className="reelbot-inline-button reelbot-inline-button--secondary pick-result-reset"
+                        className="reelbot-inline-button reelbot-inline-button--secondary pick-primary-secondary-action pick-result-reset"
                         onClick={onResetChoices}
                         disabled={resetDisabled}
                       >
