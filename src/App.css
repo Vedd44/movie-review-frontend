@@ -12303,6 +12303,10 @@ body {
   text-align: center;
 }
 
+.home-page .pick-primary-action-row--primary .pick-taste-actions--inline {
+  align-self: center;
+}
+
 .home-page .pick-primary-action-row--primary .pick-primary-secondary-action:hover:not(:disabled),
 .home-page .pick-primary-action-row--primary .pick-primary-secondary-action:focus-visible {
   border-color: rgba(183, 211, 246, 0.38);

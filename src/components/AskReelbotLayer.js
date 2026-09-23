@@ -210,6 +210,10 @@ function AskReelbotLayer() {
       return;
     }
 
+    // The normalized prompt is captured in the request payload and
+    // conversation state below. Clear only the visible composer once the
+    // request is accepted, leaving validation failures untouched.
+    setDraft("");
     const requestConversation = result && /^\s*(?:not that one|no,? not that|skip)/i.test(normalizedPrompt)
       ? addHistoryStatus(conversation, result.primary, "rejected")
       : conversation;

@@ -1,0 +1,58 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import axios from "axios";
+import AskReelbotLayer from "./AskReelbotLayer";
+import useTasteProfile from "../hooks/useTasteProfile";
+
+jest.mock("axios");
+jest.mock("../hooks/useTasteProfile");
+
+beforeEach(() => {
+  useTasteProfile.mockReturnValue({
+    behavioralMemory: {},
+    getPickExcludedIds: jest.fn(() => []),
+    actions: { recordPickResult: jest.fn().mockResolvedValue() },
+  });
+  axios.post.mockResolvedValue({
+    data: {
+      kind: "answer",
+      answer: "Sigourney Weaver stars in it.",
+      intent: "GENERAL_INFORMATION_QUESTION",
+      conversation_state: {
+        lastUserMessage: "who stars in this?",
+        lastAssistantMessage: "Sigourney Weaver stars in it.",
+        pageContext: "general",
+      },
+    },
+  });
+});
+
+test("clears Ask input after accepted submit while keeping the submitted message and response", async () => {
+  render(<MemoryRouter><AskReelbotLayer /></MemoryRouter>);
+  fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
+
+  const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
+  fireEvent.change(input, { target: { value: "who stars in this?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+  await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
+    expect.stringContaining("/reelbot/ask"),
+    expect.objectContaining({
+      prompt: "who stars in this?",
+      conversation_state: expect.anything(),
+    }),
+    expect.anything()
+  ));
+  expect(input).toHaveValue("");
+  expect(await screen.findByText("Sigourney Weaver stars in it.")).toBeInTheDocument();
+});
+
+test("does not clear an empty Ask submission", () => {
+  render(<MemoryRouter><AskReelbotLayer /></MemoryRouter>);
+  fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
+
+  const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
+  expect(screen.getByRole("button", { name: "Ask" })).toBeDisabled();
+  expect(input).toHaveValue("");
+  expect(axios.post).not.toHaveBeenCalled();
+});

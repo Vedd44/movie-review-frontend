@@ -1859,6 +1859,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       return;
     }
 
+    // Preserve the submitted value in request/session state, but make the
+    // visible composer ready for the next request as soon as submission starts.
+    setPickPrompt("");
     clearRestoreTimer();
     trackProductEvent("prompt_submitted", { prompt_category: getPromptCategory(pickPrompt), theaters_toggle: includeTheatrical });
     setOnboardingResultActive(false);
