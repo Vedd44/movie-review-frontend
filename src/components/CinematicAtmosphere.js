@@ -2,6 +2,11 @@ import React, { useEffect, useRef } from "react";
 
 function CinematicAtmosphere({ active = false, loading = false }) {
   const canvasRef = useRef(null);
+  const activeRef = useRef(active);
+  const loadingRef = useRef(loading);
+
+  activeRef.current = active;
+  loadingRef.current = loading;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -87,8 +92,8 @@ function CinematicAtmosphere({ active = false, loading = false }) {
 
       context.clearRect(0, 0, width, height);
 
-      const motionBoost = active ? 1 : 0;
-      const loadBoost = loading ? 1 : 0;
+      const motionBoost = activeRef.current ? 1 : 0;
+      const loadBoost = loadingRef.current ? 1 : 0;
       const glowX = width * (0.44 + (state.mouseX - 0.5) * 0.06);
       const glowY = height * (0.42 + (state.mouseY - 0.5) * 0.05);
       const beamOpacity = 0.2 + motionBoost * 0.08 + loadBoost * 0.08;
@@ -218,7 +223,7 @@ function CinematicAtmosphere({ active = false, loading = false }) {
         mobileQuery.removeListener(handleResize);
       }
     };
-  }, [active, loading]);
+  }, []);
 
   return (
     <div className={`page-atmosphere${active ? " is-active" : ""}${loading ? " is-loading" : ""}`} aria-hidden="true">

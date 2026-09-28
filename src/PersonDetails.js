@@ -133,6 +133,8 @@ function PersonDetails() {
               src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
               alt={person.name}
               className="person-profile-image"
+              width="185"
+              height="278"
             />
           ) : (
             <div className="person-profile-image person-profile-image--placeholder">No photo</div>
@@ -181,6 +183,8 @@ function PersonDetails() {
                         src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
                         alt={movie.title}
                         className="person-credit-poster"
+                        width="185"
+                        height="278"
                       />
                     ) : (
                       <div className="person-credit-poster person-credit-poster--placeholder">Poster unavailable</div>

@@ -84,7 +84,7 @@ function PersonCard({ person, role, featured = false }) {
   const content = (
     <>
       {person.profile_path ? (
-        <img src={`https://image.tmdb.org/t/p/w185${person.profile_path}`} alt={person.name} className="detail-person-image" loading="lazy" decoding="async" />
+        <img src={`https://image.tmdb.org/t/p/w185${person.profile_path}`} alt={person.name} className="detail-person-image" width="185" height="278" loading="lazy" decoding="async" />
       ) : (
         <div className="detail-person-image detail-person-image--placeholder" aria-hidden="true">{person.name.charAt(0)}</div>
       )}
@@ -324,8 +324,8 @@ function MovieDetails() {
           {canTryAnother ? <button type="button" className="detail-text-action detail-topbar-return" onClick={backToPick}>Back to your pick</button> : null}
         </nav>
 
-        <section className="detail-hero" style={movie.backdrop_path ? { backgroundImage: `linear-gradient(90deg, rgba(8, 11, 22, 0.92), rgba(8, 11, 22, 0.78)), url(https://image.tmdb.org/t/p/original${movie.backdrop_path})` } : undefined}>
-          <div className="detail-poster-column"><img src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : "/placeholder.jpg"} alt={`${movie.title} poster`} className="detail-poster" /></div>
+        <section className="detail-hero" style={movie.backdrop_path ? { backgroundImage: `linear-gradient(90deg, rgba(8, 11, 22, 0.92), rgba(8, 11, 22, 0.78)), url(https://image.tmdb.org/t/p/w1280${movie.backdrop_path})` } : undefined}>
+          <div className="detail-poster-column"><img src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : "/placeholder.jpg"} alt={`${movie.title} poster`} className="detail-poster" width="500" height="750" fetchPriority="high" decoding="async" /></div>
           <div className="detail-content-column">
             <div className="detail-eyebrow">{previewMode ? "Coming Soon" : "Movie Details"}</div>
             <h1 className="movie-title detail-title">{movie.title}</h1>
@@ -379,7 +379,7 @@ function MovieDetails() {
             <div className="similar-grid">
               {displayedSimilarMovies.map((similarMovie) => (
                 <Link key={similarMovie.id} to={getMoviePath(similarMovie)} className="similar-card">
-                  {similarMovie.poster_path ? <img src={`https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`} alt={`${similarMovie.title} poster`} className="similar-poster" loading="lazy" decoding="async" /> : <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>}
+                  {similarMovie.poster_path ? <img src={`https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`} alt={`${similarMovie.title} poster`} className="similar-poster" width="300" height="450" loading="lazy" decoding="async" /> : <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>}
                   <div className="similar-title">{similarMovie.title}</div>
                   <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
                 </Link>

@@ -1,14 +1,6 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./Home";
-import MovieDetails from "./MovieDetails";
-import PersonDetails from "./PersonDetails";
-import SearchResults from "./SearchResults";
-import BrowseLibrary from "./BrowseLibrary";
-import MyMovies from "./MyMovies";
-import HowReelbotWorks from "./HowReelbotWorks";
-import AccountSettings from "./AccountSettings";
-import ResetPassword from "./ResetPassword";
 import AuthModal from "./components/AuthModal";
 import ProfileMenu from "./components/ProfileMenu";
 import GlobalMovieSearch from "./components/GlobalMovieSearch";
@@ -16,17 +8,28 @@ import AskReelbotLayer from "./components/AskReelbotLayer";
 import { AskReelbotProvider } from "./context/AskReelbotContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath } from "./discovery";
-import { homeFeedService } from "./services/homeFeedService";
 import "./App.css";
 
 const SITE_VERSION = "v1.3.1";
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
-if (typeof window !== "undefined") {
-  homeFeedService.prefetchHomeFeed("popular", 1).catch((error) => {
-    console.error("Failed to prefetch homepage feed:", error);
-  });
+const BrowseLibrary = lazy(() => import("./BrowseLibrary"));
+const MyMovies = lazy(() => import("./MyMovies"));
+const AccountSettings = lazy(() => import("./AccountSettings"));
+const ResetPassword = lazy(() => import("./ResetPassword"));
+const SearchResults = lazy(() => import("./SearchResults"));
+const HowReelbotWorks = lazy(() => import("./HowReelbotWorks"));
+const MovieDetails = lazy(() => import("./MovieDetails"));
+const PersonDetails = lazy(() => import("./PersonDetails"));
+
+function RouteLoading() {
+  return (
+    <div className="loading-message" role="status">
+      <span className="status-glyph" aria-hidden="true"></span>
+      <span>Loading ReelBot...</span>
+    </div>
+  );
 }
 
 function LegacyFeedRedirect() {
@@ -210,24 +213,26 @@ function AppShell() {
       <div className="app-shell">
         <SiteHeader />
         <main className="site-main">
-          <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/now-playing" element={<Home routeView="latest" isFeedRoute />} />
-          <Route path="/trending" element={<Home routeView="popular" isFeedRoute />} />
-          <Route path="/coming-soon" element={<Home routeView="upcoming" isFeedRoute />} />
-          <Route path="/browse" element={<BrowseLibrary />} />
-          <Route path="/my-movies" element={<MyMovies />} />
-          <Route path="/account" element={<AccountSettings />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/search" element={<SearchResults />} />
-          <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
-          <Route path="/movie/:legacyMovieId" element={<MovieDetails />} />
-          <Route path="/movies/:legacyMovieId/:legacySlug" element={<MovieDetails />} />
-          <Route path="/movies/:movieSlug" element={<MovieDetails />} />
-          <Route path="/person/:personId" element={<PersonDetails />} />
-          <Route path="/people/:personSlug" element={<PersonDetails />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<RouteLoading />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/now-playing" element={<Home routeView="latest" isFeedRoute />} />
+              <Route path="/trending" element={<Home routeView="popular" isFeedRoute />} />
+              <Route path="/coming-soon" element={<Home routeView="upcoming" isFeedRoute />} />
+              <Route path="/browse" element={<BrowseLibrary />} />
+              <Route path="/my-movies" element={<MyMovies />} />
+              <Route path="/account" element={<AccountSettings />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
+              <Route path="/movie/:legacyMovieId" element={<MovieDetails />} />
+              <Route path="/movies/:legacyMovieId/:legacySlug" element={<MovieDetails />} />
+              <Route path="/movies/:movieSlug" element={<MovieDetails />} />
+              <Route path="/person/:personId" element={<PersonDetails />} />
+              <Route path="/people/:personSlug" element={<PersonDetails />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </main>
         <SiteFooter />
         <CookieNotice />

@@ -652,6 +652,8 @@ function BrowseLibrary() {
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                           alt={movie.title}
                           className="movie-poster"
+                          width="300"
+                          height="450"
                           loading="lazy"
                           decoding="async"
                         />

@@ -2055,6 +2055,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                           alt={movie.title}
                           className="home-hero-now-playing-poster"
+                          width="300"
+                          height="450"
                           loading="lazy"
                           decoding="async"
                         />
@@ -2227,6 +2229,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                             alt={movie.title}
                             className="movie-poster"
+                            width="300"
+                            height="450"
                             loading="lazy"
                             decoding="async"
                           />
