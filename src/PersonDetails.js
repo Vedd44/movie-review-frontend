@@ -166,9 +166,9 @@ function PersonDetails() {
           )}
 
           <div className="browse-copy">
-            <div className="browse-kicker">{person.known_for_department || "Filmography"}</div>
+            <div className="browse-kicker">Filmography</div>
             <h1 className="browse-title">{person.name}</h1>
-            <p className="browse-subtitle browse-subtitle--hero">Explore movie credits by role and release status.</p>
+            <p className="browse-subtitle browse-subtitle--hero">Movies featuring {person.name}, on screen and behind the camera.</p>
           </div>
         </section>
 
