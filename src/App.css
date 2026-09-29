@@ -18400,3 +18400,39 @@ body,
     justify-content: center;
   }
 }
+
+
+/* Collection decision helper */
+.collection-bottom-cta {
+  max-width: 820px;
+  margin: 58px auto 0;
+  padding: 34px 38px;
+  border: 1px solid var(--border-color, rgba(255,255,255,.1));
+  border-radius: 20px;
+  background: rgba(11,17,27,.58);
+  text-align: left;
+}
+.collection-bottom-cta > div {
+  max-width: 560px;
+}
+.collection-bottom-cta .section-title {
+  margin: 8px 0 6px;
+}
+.collection-bottom-cta .section-subtitle {
+  margin: 0;
+}
+.collection-bottom-cta .reelbot-inline-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .collection-bottom-cta {
+    max-width: none;
+    margin-top: 42px;
+    padding: 26px 22px;
+    text-align: center;
+  }
+  .collection-bottom-cta > div {
+    max-width: none;
+  }
+}
