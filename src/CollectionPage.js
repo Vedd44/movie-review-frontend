@@ -144,7 +144,7 @@ export default function CollectionPage() {
           <h1 className="browse-title">{collection.title}</h1>
           <p className="collection-dek">{collection.description}</p>
           <div className="collection-hero-actions">
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Find my pick</button>
+            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Pick one for me</button>
             <Link to="/collections" className="browse-library-link">See all collections</Link>
           </div>
         </section>
@@ -159,9 +159,9 @@ export default function CollectionPage() {
 
         <section className="collection-bottom-cta">
           <div>
-            <div className="detail-description-label">Still deciding?</div>
-            <h2 className="section-title">Let ReelBot pick from here.</h2>
-            <p className="section-subtitle">Start with this collection, then add anything else that matters tonight.</p>
+            <div className="detail-description-label">Need a recommendation?</div>
+            <h2 className="section-title">Pick one from this collection.</h2>
+            <p className="section-subtitle">ReelBot can choose from these movies, or refine the collection around another preference.</p>
           </div>
           <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Find my pick</button>
         </section>
