@@ -338,7 +338,9 @@ function AskReelbotLayer() {
 
   const closePanel = () => setOpen(false);
   const rationaleLines = result?.rationale?.whyRecommended || result?.rationale?.why_this_works || [];
-  const resultReason = decisionTake || rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.primary?.reason || result?.summary;
+  const resultReason = isCollection
+    ? decisionTake
+    : (decisionTake || rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.primary?.reason || result?.summary);
   const loadingCopy = getAskLoadingCopy(loadingIntent);
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
   const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
@@ -400,7 +402,7 @@ function AskReelbotLayer() {
                   {result.primary.poster_path ? <img src={`https://image.tmdb.org/t/p/w185${result.primary.poster_path}`} alt="" loading="lazy" decoding="async" /> : null}
                   <div>
                     <h3>{result.primary.title}</h3>
-                    <p>{resultReason}</p>
+                    {resultReason ? <p>{resultReason}</p> : <p className="ask-reelbot-take-loading">Loading ReelBot’s Take…</p>}
                   </div>
                 </div>
                 <div className="ask-reelbot-answer-actions">
