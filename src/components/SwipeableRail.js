@@ -40,9 +40,14 @@ function SwipeableRail({ className = "", ariaLabel = "Movies", children }) {
 
   const handleWheel = (event) => {
     const rail = railRef.current;
-    if (!rail || rail.scrollWidth <= rail.clientWidth || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    if (!rail || rail.scrollWidth <= rail.clientWidth) return;
+
+    // Keep vertical gestures scrolling the page. Only explicit horizontal
+    // wheel/trackpad movement should move the movie rail.
+    if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+
     event.preventDefault();
-    rail.scrollLeft += event.deltaY;
+    rail.scrollLeft += event.deltaX;
   };
 
   const handleKeyDown = (event) => {
