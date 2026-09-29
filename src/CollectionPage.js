@@ -143,10 +143,6 @@ export default function CollectionPage() {
           <div className="browse-kicker">{collection.eyebrow}</div>
           <h1 className="browse-title">{collection.title}</h1>
           <p className="collection-dek">{collection.description}</p>
-          <div className="collection-hero-actions">
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Pick one for me</button>
-            <Link to="/collections" className="browse-library-link">See all collections</Link>
-          </div>
         </section>
 
         {loading ? (
