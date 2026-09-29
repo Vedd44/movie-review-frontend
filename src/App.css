@@ -15423,3 +15423,145 @@ body,
     display: block;
   }
 }
+
+
+/* Premium composition pass — reduce boxes, strengthen hierarchy */
+.home-page .home-hero {
+  border-color: rgba(240, 189, 87, 0.085);
+  background:
+    radial-gradient(ellipse 70% 52% at 84% 0%, rgba(93, 37, 51, 0.16), transparent 66%),
+    radial-gradient(ellipse 48% 42% at 8% 8%, rgba(240, 189, 87, 0.055), transparent 68%),
+    linear-gradient(150deg, rgba(16, 15, 20, 0.91), rgba(9, 10, 14, 0.94) 62%, rgba(14, 10, 14, 0.92));
+  box-shadow:
+    0 34px 100px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 245, 222, 0.035);
+}
+
+.home-page .home-hero-copy {
+  padding-top: 8px;
+}
+
+.home-page .home-hero-title {
+  margin-top: 15px;
+  margin-bottom: 18px;
+  line-height: 0.93;
+}
+
+.home-page .browse-kicker,
+.home-page .prompt-composer-intro {
+  opacity: 0.72;
+  letter-spacing: 0.16em;
+}
+
+.home-page .home-hero-subtitle {
+  max-width: 36rem;
+  line-height: 1.62;
+  color: rgba(239, 230, 217, 0.67);
+}
+
+.home-page .home-hero-form {
+  margin-top: 27px;
+}
+
+.home-page .home-hero-now-playing {
+  margin-top: 4px;
+  padding: 22px 0 2px;
+  border: 0;
+  border-top: 1px solid rgba(240, 189, 87, 0.085);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-page .home-hero-now-playing::before,
+.home-page .home-hero-now-playing::after {
+  content: none;
+}
+
+.home-page .home-hero-now-playing .home-feed-heading,
+.home-page .home-hero-now-playing .home-feed-subtitle {
+  text-align: center;
+}
+
+.home-page .home-hero-now-playing .home-movie-grid,
+.home-page .home-hero-now-playing .home-movie-rail {
+  margin-top: 14px;
+}
+
+.home-page .home-hero-now-playing .home-movie-card {
+  border-color: rgba(255, 242, 219, 0.055);
+  background: rgba(10, 10, 14, 0.5);
+  box-shadow: none;
+}
+
+.home-page .home-browse-section {
+  position: relative;
+  margin-top: 10px;
+  padding-top: 34px;
+}
+
+.home-page .home-browse-section::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: min(920px, 92vw);
+  height: 420px;
+  left: 50%;
+  top: -170px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 28% 32%, rgba(93, 37, 51, 0.105), transparent 56%),
+    radial-gradient(ellipse at 72% 36%, rgba(64, 52, 86, 0.075), transparent 58%);
+}
+
+.home-page .home-browse-section .browse-kicker {
+  color: rgba(231, 173, 88, 0.78);
+}
+
+.home-page .home-browse-section .home-movie-card {
+  border-color: rgba(255, 242, 219, 0.055);
+  background: linear-gradient(180deg, rgba(17, 17, 21, 0.82), rgba(10, 11, 14, 0.9));
+  box-shadow: none;
+}
+
+.home-page .home-browse-section .home-movie-card:hover,
+.home-page .home-browse-section .home-movie-card:focus-within {
+  border-color: rgba(240, 189, 87, 0.18);
+  transform: translateY(-2px);
+}
+
+.home-page .home-browse-section .movie-card-meta,
+.home-page .home-browse-section .movie-card-date {
+  color: rgba(239, 230, 217, 0.48);
+}
+
+.home-page .site-footer {
+  margin-top: 72px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-page .site-footer-inner {
+  border-top: 1px solid rgba(240, 189, 87, 0.08);
+  background: transparent;
+}
+
+@media only screen and (max-width: 720px) {
+  .home-page .home-hero-copy {
+    padding-top: 0;
+  }
+
+  .home-page .home-hero-title {
+    line-height: 0.98;
+  }
+
+  .home-page .home-hero-now-playing {
+    padding-top: 18px;
+  }
+
+  .home-page .home-browse-section {
+    padding-top: 22px;
+  }
+}
