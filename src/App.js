@@ -22,6 +22,8 @@ const SearchResults = lazy(() => import("./SearchResults"));
 const HowReelbotWorks = lazy(() => import("./HowReelbotWorks"));
 const MovieDetails = lazy(() => import("./MovieDetails"));
 const PersonDetails = lazy(() => import("./PersonDetails"));
+const CollectionPage = lazy(() => import("./CollectionPage"));
+const CollectionsIndex = lazy(() => import("./CollectionPage").then((module) => ({ default: module.CollectionsIndex })));
 
 function RouteLoading() {
   return (
@@ -62,6 +64,7 @@ function SiteHeader() {
   const navItems = [
     { label: "Ask ReelBot", to: "/#pick-for-me", isActive: isAskReelbotActive },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
+    { label: "Collections", to: "/collections", isActive: location.pathname.startsWith("/collections") },
     { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
   ];
 
@@ -167,6 +170,7 @@ function SiteFooter() {
       <nav className="site-footer-nav" aria-label="Footer"><div className="site-footer-links">
         <NavLink to="/#pick-for-me" className="site-footer-link">Ask ReelBot</NavLink>
         <NavLink to="/browse" className="site-footer-link">Browse</NavLink>
+        <NavLink to="/collections" className="site-footer-link">Collections</NavLink>
         <NavLink to="/my-movies" className="site-footer-link">My Movies</NavLink>
         <NavLink to="/how-reelbot-works" className="site-footer-link site-footer-link--secondary">How it works</NavLink>
         <button type="button" className="site-footer-link site-footer-link--secondary site-footer-feedback" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback"><span className="site-footer-feedback-icon" aria-hidden="true">◌</span>Feedback</button>
@@ -221,6 +225,8 @@ function AppShell() {
               <Route path="/trending" element={<Home routeView="popular" isFeedRoute />} />
               <Route path="/coming-soon" element={<Home routeView="upcoming" isFeedRoute />} />
               <Route path="/browse" element={<BrowseLibrary />} />
+              <Route path="/collections" element={<CollectionsIndex />} />
+              <Route path="/collections/:collectionSlug" element={<CollectionPage />} />
               <Route path="/my-movies" element={<MyMovies />} />
               <Route path="/account" element={<AccountSettings />} />
               <Route path="/reset-password" element={<ResetPassword />} />
