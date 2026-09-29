@@ -2000,7 +2000,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div className="home-hero-copy">
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
-            <p className="home-hero-subtitle"><strong>What are you in the mood for?</strong><span>ReelBot will figure out the rest.</span></p>
+            <p className="home-hero-subtitle"><span>Whatever you're in the mood for, we'll find something that fits.</span></p>
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
@@ -2181,8 +2181,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         <section id="movie-grid" className="home-browse-section">
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-              <div className="detail-description-label">Still browsing?</div>
-              <h2 className="section-title">Browse movies</h2>
+              <div className="detail-description-label">Explore</div>
+              <h2 className="section-title">Movies worth finding</h2>
             </div>
             <Link to="/browse" className="browse-library-link browse-library-link--header">
               Browse Movies
@@ -2317,6 +2317,41 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             </button>
           </div>
         ) : null}
+        </section>
+
+        <section className="home-magic-section" aria-labelledby="home-magic-title">
+          <div className="home-magic-intro">
+            <div className="detail-description-label">More than a search</div>
+            <h2 id="home-magic-title" className="home-magic-title">Tell ReelBot the part you can't put into a filter.</h2>
+            <p>Be specific, contradictory, half-sure, or completely vague. That's the point.</p>
+          </div>
+          <div className="home-magic-grid">
+            <article className="home-magic-card home-magic-card--wide">
+              <div className="home-magic-card-art" style={{ backgroundImage: heroArtMovies[0]?.poster_path ? `url("https://image.tmdb.org/t/p/w500${heroArtMovies[0].poster_path}")` : "none" }} aria-hidden="true"></div>
+              <div className="home-magic-card-copy">
+                <span className="home-magic-prompt">“Something fun and stupid, but actually good.”</span>
+                <strong>Start with the feeling.</strong>
+                <p>No genre homework. Say it the way you'd say it to a friend.</p>
+              </div>
+            </article>
+            <article className="home-magic-card">
+              <div className="home-magic-card-art" style={{ backgroundImage: heroArtMovies[1]?.poster_path ? `url("https://image.tmdb.org/t/p/w500${heroArtMovies[1].poster_path}")` : "none" }} aria-hidden="true"></div>
+              <div className="home-magic-card-copy">
+                <span className="home-magic-prompt">“A thriller, but I don't want to be stressed for two hours.”</span>
+                <strong>Constraints are welcome.</strong>
+                <p>Runtime, mood, company, dealbreakers. ReelBot can work with all of it.</p>
+              </div>
+            </article>
+            <article className="home-magic-card">
+              <div className="home-magic-card-art" style={{ backgroundImage: heroArtMovies[2]?.poster_path ? `url("https://image.tmdb.org/t/p/w500${heroArtMovies[2].poster_path}")` : "none" }} aria-hidden="true"></div>
+              <div className="home-magic-card-copy">
+                <span className="home-magic-prompt">“My wife hates horror. I want something weird.”</span>
+                <strong>Messy is useful.</strong>
+                <p>ReelBot weighs the whole request instead of making you pick one filter at a time.</p>
+              </div>
+            </article>
+          </div>
+          <Link to="/ask" className="home-magic-cta">Ask ReelBot <span aria-hidden="true">→</span></Link>
         </section>
 
       </div>
