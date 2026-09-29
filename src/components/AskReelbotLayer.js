@@ -347,11 +347,14 @@ function AskReelbotLayer() {
 
   const openPanel = () => {
     setOpen(true);
-    setDraft(isCollection ? (context.collection?.prompt || "") : "");
+    setDraft("");
     setResult(null);
     setAnswerResult(null);
     setError("");
     trackProductEvent("ask_reelbot_opened", { page: context.page || "general" });
+    if (isCollection) {
+      window.setTimeout(() => requestPick(context.collection?.prompt || `pick one movie from ${context.collection?.title || "this collection"}`), 0);
+    }
   };
 
   return (
@@ -371,7 +374,7 @@ function AskReelbotLayer() {
               <button type="button" className="ask-reelbot-close" onClick={closePanel} aria-label="Close Ask ReelBot">×</button>
             </header>
 
-            {!result && !answerResult ? (
+            {!isCollection && !result && !answerResult ? (
               <div className="ask-reelbot-start">
                 <div className="ask-reelbot-suggestions">
                   {config.actions.map(([label, prompt]) => (
@@ -407,13 +410,15 @@ function AskReelbotLayer() {
                 </div>
               </article>
             ) : null}
-            <form className="ask-reelbot-form" onSubmit={submitDraft}>
-              <input ref={inputRef} value={draft} maxLength={500} onChange={(event) => setDraft(event.target.value)} placeholder={answerResult || result ? "Ask a follow-up…" : "Ask ReelBot…"} aria-label="Ask ReelBot" />
-              <button type="submit" disabled={loading || !draft.trim()}>{loading ? loadingCopy : "Ask"}</button>
-            </form>
+            {!isCollection ? (
+              <form className="ask-reelbot-form" onSubmit={submitDraft}>
+                <input ref={inputRef} value={draft} maxLength={500} onChange={(event) => setDraft(event.target.value)} placeholder={answerResult || result ? "Ask a follow-up…" : "Ask ReelBot…"} aria-label="Ask ReelBot" />
+                <button type="submit" disabled={loading || !draft.trim()}>{loading ? loadingCopy : "Ask"}</button>
+              </form>
+            ) : null}
             {loading ? (
               <div className="ask-reelbot-status" role="status">
-                <div>{loadingCopy}</div>
+                <div>{isCollection ? `Picking from ${context.collection?.title || "this collection"}…` : loadingCopy}</div>
                 {isRecommendationIntent(loadingIntent) && loadingQuote ? (
                   <div className="ask-reelbot-loading-quote">
                     <q>{loadingQuote.quote}</q>
