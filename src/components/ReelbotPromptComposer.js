@@ -44,20 +44,6 @@ function ReelbotPromptComposer({
       {label ? <div className="detail-description-label">{label}</div> : null}
       {helperText ? <p className="prompt-composer-copy detail-secondary-text">{helperText}</p> : null}
       {introText ? <div className="prompt-composer-intro">{introText}</div> : null}
-      {suggestions.length ? (
-        <div className="pick-prompt-suggestions">
-          {suggestions.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              className={`mood-rail-chip pick-prompt-chip${activeSuggestion === prompt ? " is-active" : ""}`}
-              onClick={() => handleSuggestionClick(prompt)}
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-      ) : null}
       <div ref={inputShellRef} className="pick-prompt-shell">
         <input
           id={inputId}
@@ -75,6 +61,20 @@ function ReelbotPromptComposer({
           aria-describedby={errorText ? "pick-prompt-validation" : undefined}
         />
       </div>
+      {suggestions.length ? (
+        <div className="pick-prompt-suggestions">
+          {suggestions.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              className={`mood-rail-chip pick-prompt-chip${activeSuggestion === prompt ? " is-active" : ""}`}
+              onClick={() => handleSuggestionClick(prompt)}
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {errorText ? (
         <p id="pick-prompt-validation" className="pick-prompt-validation" role="alert">
           {errorText}
