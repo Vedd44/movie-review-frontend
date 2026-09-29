@@ -337,6 +337,7 @@ function AskReelbotLayer() {
   };
 
   const closePanel = () => setOpen(false);
+  const isCollection = context.page === "collection";
   const rationaleLines = result?.rationale?.whyRecommended || result?.rationale?.why_this_works || [];
   const resultReason = isCollection
     ? decisionTake
@@ -344,7 +345,6 @@ function AskReelbotLayer() {
   const loadingCopy = getAskLoadingCopy(loadingIntent);
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
   const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
-  const isCollection = context.page === "collection";
   const triggerLabel = isCollection ? "Pick for me" : "Ask ReelBot";
 
   const openPanel = () => {
