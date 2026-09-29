@@ -17656,3 +17656,71 @@ body,
     padding-top:48px;
   }
 }
+
+/* Mobile home geometry: one clean viewport canvas */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero .pick-prompt-shell,
+  .home-page > .home-hero .pick-prompt-input {
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+  .home-page > .home-hero .pick-prompt-input {
+    appearance:none;
+    -webkit-appearance:none;
+    border:1px solid rgba(255,255,255,.1) !important;
+    outline:none !important;
+    box-shadow:0 14px 34px rgba(0,0,0,.28) !important;
+  }
+  .home-page > .home-hero .pick-prompt-input:focus,
+  .home-page > .home-hero .pick-prompt-input:focus-visible {
+    border-color:rgba(240,189,87,.38) !important;
+    outline:none !important;
+    box-shadow:0 0 0 3px rgba(240,189,87,.07),0 16px 38px rgba(0,0,0,.3) !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing {
+    box-sizing:border-box !important;
+    width:calc(100% + 32px) !important;
+    max-width:none !important;
+    margin:18px -16px -18px !important;
+    padding:38px 16px 30px !important;
+    background:linear-gradient(180deg,rgba(5,6,9,.96) 0%,#07080b 30%,#07080b 100%) !important;
+  }
+  .home-page > .home-hero .home-hero-now-playing::before {
+    content:none !important;
+  }
+
+  .home-page .home-shell {
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    padding-left:16px !important;
+    padding-right:16px !important;
+  }
+  .home-page .home-result-section,
+  .home-page .pick-result-stage,
+  .home-page .pick-primary-card--hero,
+  .home-page .pick-primary-content {
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+  }
+  .home-page .home-result-section {
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+  .home-page .pick-result-stage {
+    padding-left:0 !important;
+    padding-right:0 !important;
+    overflow:hidden;
+  }
+  .home-page .pick-primary-card--hero {
+    margin-left:0 !important;
+    margin-right:0 !important;
+    overflow:hidden;
+  }
+}
