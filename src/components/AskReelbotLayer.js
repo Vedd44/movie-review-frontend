@@ -83,7 +83,7 @@ export const getPanelConfig = (context = {}) => {
     const title = context.collection?.title || "this collection";
     return {
       heading: `Pick from ${title}`,
-      prompt: "Choose one from this collection, or add another preference.",
+      prompt: "One pick from the 15 movies in this collection.",
       actions: [
         ["Just pick one", context.collection?.prompt || `pick one movie from ${title}`],
       ],
@@ -342,11 +342,22 @@ function AskReelbotLayer() {
   const loadingCopy = getAskLoadingCopy(loadingIntent);
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
   const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
+  const isCollection = context.page === "collection";
+  const triggerLabel = isCollection ? "Pick for me" : "Ask ReelBot";
+
+  const openPanel = () => {
+    setOpen(true);
+    setDraft(isCollection ? (context.collection?.prompt || "") : "");
+    setResult(null);
+    setAnswerResult(null);
+    setError("");
+    trackProductEvent("ask_reelbot_opened", { page: context.page || "general" });
+  };
 
   return (
     <>
-      <button ref={triggerRef} type="button" className="ask-reelbot-trigger" onClick={() => { setOpen(true); trackProductEvent("ask_reelbot_opened", { page: context.page || "general" }); }} aria-haspopup="dialog">
-        <img className="reelbot-assistant-icon" src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="22" height="26" /> Ask ReelBot
+      <button ref={triggerRef} type="button" className={`ask-reelbot-trigger${isCollection ? " ask-reelbot-trigger--collection" : ""}`} onClick={openPanel} aria-haspopup="dialog">
+        <img className="reelbot-assistant-icon" src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="22" height="26" /> {triggerLabel}
       </button>
       {open ? (
         <div className="ask-reelbot-backdrop" role="presentation" onMouseDown={closePanel}>
