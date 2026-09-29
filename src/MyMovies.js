@@ -74,7 +74,7 @@ const normalizeSavedMovie = (movie = {}) => ({
 function MyMovies() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, openAuthPrompt } = useAuth();
-  const { profile, getSavedMoviesForBucket, savedCounts, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
+  const { profile, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
   const activeTab = TAB_CONFIG.some((tab) => tab.id === searchParams.get("tab")) ? searchParams.get("tab") : "watchlist";
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) || TAB_CONFIG[0];
 
