@@ -502,18 +502,21 @@ function BrowseLibrary() {
 
           <div className="filter-group-row">
             <div className="filter-group-head"><div className="detail-description-label">What are you in the mood for?</div></div>
-            <div className="mood-chip-row">
+            <div className="mood-chip-row browse-filter-chips--desktop">
               {MOOD_FILTERS.map((filter) => (
                 <button key={filter.id} type="button" className={`mood-rail-chip${normalizedMood === filter.id ? " is-active" : ""}`} onClick={() => updateFilters({ mood: filter.id })}>
                   <span className="mood-rail-chip-label">{filter.label}</span>
                 </button>
               ))}
             </div>
+            <select className="browse-mobile-filter-select" aria-label="Mood" value={normalizedMood} onChange={(event) => updateFilters({ mood: event.target.value })}>
+              {MOOD_FILTERS.map((filter) => <option key={filter.id} value={filter.id}>{filter.label}</option>)}
+            </select>
           </div>
 
           <div className="filter-group-row">
             <div className="filter-group-head"><div className="detail-description-label">Genre</div></div>
-            <div className="mood-chip-row">
+            <div className="mood-chip-row browse-filter-chips--desktop">
               <button type="button" className={`mood-rail-chip${normalizedGenre === "all" ? " is-active" : ""}`} onClick={() => updateFilters({ genre: "all" })}>
                 <span className="mood-rail-chip-label">All genres</span>
               </button>
@@ -523,6 +526,10 @@ function BrowseLibrary() {
                 </button>
               ))}
             </div>
+            <select className="browse-mobile-filter-select" aria-label="Genre" value={normalizedGenre} onChange={(event) => updateFilters({ genre: event.target.value })} disabled={genreLoading}>
+              <option value="all">All genres</option>
+              {genres.map((genre) => <option key={genre.id} value={String(genre.id)}>{genre.name}</option>)}
+            </select>
           </div>
 
           <details className="library-advanced-filters">
