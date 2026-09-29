@@ -32,6 +32,27 @@ import { getPromptCategory, trackProductEvent } from "./analytics";
 
 const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 
+const MAGIC_PROMPT_CARDS = [
+  {
+    title: "The Nice Guys",
+    posterPath: "/clq4So9spa9cXk3MZy2iMdqkxP2.jpg",
+    prompt: "“Something fun and stupid, but actually good.”",
+    note: "Say it the way you'd say it to a friend.",
+  },
+  {
+    title: "Knives Out",
+    posterPath: "/pThyQovXQrw2m0s9x82twj48Jq4.jpg",
+    prompt: "“A thriller, but I don't want to be stressed for two hours.”",
+    note: "Tone and commitment matter as much as genre.",
+  },
+  {
+    title: "Everything Everywhere All at Once",
+    posterPath: "/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg",
+    prompt: "“My wife hates horror. I want something weird.”",
+    note: "Dealbreakers count too.",
+  },
+];
+
 const HOMEPAGE_PROMPT_POOL = [
   "Date night",
   "Smart but easy",
@@ -2323,27 +2344,20 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             <p>Just say what you're looking for.</p>
           </div>
           <div className="home-magic-grid">
-            <article className="home-magic-card home-magic-card--wide">
-              <div className="home-magic-card-art" style={{ backgroundImage: heroArtMovies[0]?.poster_path ? `url("https://image.tmdb.org/t/p/w500${heroArtMovies[0].poster_path}")` : "none" }} aria-hidden="true"></div>
-              <div className="home-magic-card-copy">
-                <span className="home-magic-prompt">“Something fun and stupid, but actually good.”</span>
-                <p>Say it the way you'd say it to a friend.</p>
-              </div>
-            </article>
-            <article className="home-magic-card">
-              <div className="home-magic-card-art" style={{ backgroundImage: heroArtMovies[1]?.poster_path ? `url("https://image.tmdb.org/t/p/w500${heroArtMovies[1].poster_path}")` : "none" }} aria-hidden="true"></div>
-              <div className="home-magic-card-copy">
-                <span className="home-magic-prompt">“A thriller, but I don't want to be stressed for two hours.”</span>
-                <p>Runtime, mood, company, dealbreakers. It all counts.</p>
-              </div>
-            </article>
-            <article className="home-magic-card">
-              <div className="home-magic-card-art" style={{ backgroundImage: heroArtMovies[2]?.poster_path ? `url("https://image.tmdb.org/t/p/w500${heroArtMovies[2].poster_path}")` : "none" }} aria-hidden="true"></div>
-              <div className="home-magic-card-copy">
-                <span className="home-magic-prompt">“My wife hates horror. I want something weird.”</span>
-                <p>You don't have to make it fit a filter.</p>
-              </div>
-            </article>
+            {MAGIC_PROMPT_CARDS.map((card, index) => (
+              <article key={card.title} className={`home-magic-card${index === 0 ? " home-magic-card--wide" : ""}`}>
+                <div
+                  className="home-magic-card-art"
+                  style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w500${card.posterPath}")` }}
+                  role="img"
+                  aria-label={card.title}
+                ></div>
+                <div className="home-magic-card-copy">
+                  <span className="home-magic-prompt">{card.prompt}</span>
+                  <p>{card.note}</p>
+                </div>
+              </article>
+            ))}
           </div>
           <Link to="/ask" className="home-magic-cta">Try it with your own request <span aria-hidden="true">→</span></Link>
         </section>
