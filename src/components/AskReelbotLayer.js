@@ -78,6 +78,20 @@ export const getPanelConfig = (context = {}) => {
     };
   }
 
+  if (context.page === "collection") {
+    const title = context.collection?.title || "this collection";
+    return {
+      heading: `Pick from ${title}`,
+      prompt: "Choose one from this collection, or add another preference.",
+      actions: [
+        ["Just pick one", context.collection?.prompt || `pick one movie from ${title}`],
+        ["Something shorter", `${context.collection?.prompt || title}, but keep it on the shorter side`],
+        ["Something lighter", `${context.collection?.prompt || title}, but lighter`],
+        ["Something less obvious", `${context.collection?.prompt || title}, but give me a less obvious pick`],
+      ],
+    };
+  }
+
   if (context.page === "browse") {
     return {
       heading: "Ask ReelBot about these movies",
