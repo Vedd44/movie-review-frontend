@@ -1349,7 +1349,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     : "";
   const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")) : "";
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
-  const heroSubtext = "Tell ReelBot what kind of night it is. Get one movie worth watching.";
+  const heroSubtext = "Describe what you’re in the mood for. ReelBot gives you one movie worth watching.";
 
   const homeStructuredData = useMemo(() => {
     if (isFeedRoute) {
