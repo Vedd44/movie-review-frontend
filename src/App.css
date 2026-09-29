@@ -16063,3 +16063,100 @@ body,
   .saved-movies-shell { padding:22px 20px; }
   .saved-movies-sync-status { margin-top:8px; }
 }
+
+
+/* My Movies: use the hero space, keep taste secondary, and move card state controls out of the grid. */
+.my-movies-page .my-movies-hero {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:36px;
+}
+.my-movies-page .my-movies-taste-summary {
+  display:grid;
+  justify-items:end;
+  gap:8px;
+  max-width:330px;
+}
+.my-movies-page .my-movies-taste-label {
+  color:rgba(245,240,231,.48);
+  font-size:.72rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.my-movies-page .my-movies-taste-summary .taste-learning-chips {
+  justify-content:flex-end;
+  gap:5px;
+}
+.my-movies-page .my-movies-taste-summary .pick-summary-chip {
+  padding:5px 8px;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:999px;
+  color:rgba(245,240,231,.6);
+  background:rgba(255,255,255,.025);
+  font-size:.72rem;
+}
+.saved-movie-status-menu {
+  position:relative;
+  margin-top:7px;
+}
+.saved-movie-status-menu summary {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:9px;
+  color:rgba(245,240,231,.62);
+  background:rgba(255,255,255,.018);
+  font-size:.76rem;
+  cursor:pointer;
+  list-style:none;
+}
+.saved-movie-status-menu summary::-webkit-details-marker { display:none; }
+.saved-movie-status-menu summary::after {
+  content:"";
+  width:6px;
+  height:6px;
+  margin-left:8px;
+  border-right:1px solid currentColor;
+  border-bottom:1px solid currentColor;
+  transform:rotate(45deg) translateY(-2px);
+}
+.saved-movie-status-menu[open] summary {
+  color:#f3c66f;
+  border-color:rgba(240,189,87,.2);
+}
+.saved-movie-status-menu .saved-movie-taste-actions {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:4px;
+  margin-top:5px;
+  padding:6px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;
+  background:#0b111a;
+}
+.saved-movie-status-menu .taste-action-button {
+  width:100%;
+  min-height:31px;
+  justify-content:flex-start;
+  padding:6px 9px;
+  border:0;
+  border-radius:7px;
+  text-align:left;
+  background:transparent;
+}
+.saved-movie-status-menu .taste-action-button:hover {
+  background:rgba(255,255,255,.045);
+}
+.saved-movie-status-menu .taste-action-button.is-active {
+  color:#f3c66f;
+  background:rgba(240,189,87,.07);
+}
+@media only screen and (max-width:720px) {
+  .my-movies-page .my-movies-hero { grid-template-columns:1fr; gap:22px; }
+  .my-movies-page .my-movies-taste-summary { justify-items:start; max-width:none; }
+  .my-movies-page .my-movies-taste-summary .taste-learning-chips { justify-content:flex-start; }
+}
