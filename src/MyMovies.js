@@ -142,16 +142,24 @@ function MyMovies() {
   return (
     <div className="browse-page my-movies-page">
       <div className="container browse-shell">
-        <section className="browse-hero browse-hero--compact browse-hero--solo">
+        <section className="browse-hero browse-hero--compact browse-hero--solo my-movies-hero">
           <div className="browse-copy">
             <h1 className="browse-title">My movies</h1>
             {user ? <p className="browse-subtitle browse-subtitle--hero">Saved, watched, and hidden movies.</p> : null}
             {user && askCandidateIds.length ? (
-              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: "pick something I saved but have not watched" })}>
+              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: "choose a movie from my saved list that I have not watched" })}>
                 Pick from my movies
               </button>
             ) : null}
           </div>
+          {user && tasteSummary.length ? (
+            <aside className="my-movies-taste-summary" aria-label="Your taste">
+              <span className="my-movies-taste-label">Your taste</span>
+              <div className="taste-learning-chips">
+                {tasteSummary.map((item) => <span key={item} className="pick-summary-chip">{item}</span>)}
+              </div>
+            </aside>
+          ) : null}
         </section>
 
         {!user ? (
@@ -167,20 +175,6 @@ function MyMovies() {
           </section>
         ) : null}
 
-        {user && tasteSummary.length ? (
-          <section className="detail-info-card my-movies-taste-card">
-            <div className="section-header section-header--stacked-mobile section-header--compact">
-              <div>
-                <h2 className="section-title">Your taste</h2>
-              </div>
-            </div>
-            <div className="taste-learning-chips">
-              {tasteSummary.map((item) => (
-                <span key={item} className="pick-summary-chip">{item}</span>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         {user ? (
         <section className="saved-movies-shell detail-info-card">
@@ -252,7 +246,10 @@ function MyMovies() {
                       <Link to={getMoviePath(movie)} className="card-link saved-movie-open-link">
                         Open details
                       </Link>
-                      <TasteActionBar movie={movie} compact className="saved-movie-taste-actions" />
+                      <details className="saved-movie-status-menu">
+                        <summary>Change status</summary>
+                        <TasteActionBar movie={movie} compact className="saved-movie-taste-actions" />
+                      </details>
                     </div>
                   </div>
                 </article>
