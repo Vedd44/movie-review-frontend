@@ -16431,3 +16431,42 @@ body,
       linear-gradient(180deg, rgba(7,8,11,.68) 0%, rgba(7,8,11,.78) 42%, rgba(7,8,11,.98) 100%);
   }
 }
+
+/* Prompt shortcuts belong to the input, not the hero taxonomy */
+.home-page .home-hero .pick-control-group--prompt {
+  display: flex;
+  flex-direction: column;
+}
+.home-page .home-hero .pick-prompt-shell { order: 1; }
+.home-page .home-hero .pick-prompt-suggestions {
+  order: 2;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+.home-page .home-hero .pick-prompt-chip {
+  min-height: 32px;
+  padding: 5px 11px;
+  font-size: .78rem;
+  color: rgba(239,230,217,.62);
+  border-color: rgba(255,255,255,.075);
+  background: rgba(8,9,12,.34);
+}
+.home-page .home-hero .pick-prompt-chip:hover,
+.home-page .home-hero .pick-prompt-chip:focus-visible,
+.home-page .home-hero .pick-prompt-chip.is-active {
+  color: rgba(255,241,208,.92);
+  border-color: rgba(240,189,87,.24);
+  background: rgba(240,189,87,.065);
+}
+.home-page .home-hero .pick-prompt-validation { order: 3; }
+@media only screen and (max-width:720px) {
+  .home-page .home-hero .pick-prompt-suggestions {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .home-page .home-hero .pick-prompt-suggestions::-webkit-scrollbar { display:none; }
+  .home-page .home-hero .pick-prompt-chip { flex: 0 0 auto; }
+}
