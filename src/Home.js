@@ -1204,9 +1204,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
     return source.slice(0, 3);
   }, [curatedMovies, displayedMovies, filteredMovies]);
-  const heroArtMovie = useMemo(() => {
+  const heroArtMovies = useMemo(() => {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
-    return source.find((movie) => movie?.backdrop_path) || null;
+    return source.filter((movie) => movie?.backdrop_path).slice(0, 3);
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
@@ -1986,10 +1986,18 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           id="pick-for-me"
           className="home-hero"
           aria-labelledby="home-hero-title"
-          style={heroArtMovie?.backdrop_path ? {
-            "--home-hero-backdrop": `url("https://image.tmdb.org/t/p/w1280${heroArtMovie.backdrop_path}")`,
-          } : undefined}
         >
+          {heroArtMovies.length ? (
+            <div className="home-hero-art" aria-hidden="true">
+              {heroArtMovies.map((movie, index) => (
+                <div
+                  key={movie.id}
+                  className={`home-hero-art-panel home-hero-art-panel--${index + 1}`}
+                  style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w1280${movie.backdrop_path}")` }}
+                />
+              ))}
+            </div>
+          ) : null}
           <div className="home-hero-copy">
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
