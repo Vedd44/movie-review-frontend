@@ -148,7 +148,7 @@ function SiteFooter() {
         <NavLink to="/browse" className="site-footer-link">Browse</NavLink>
         <NavLink to="/my-movies" className="site-footer-link">My Movies</NavLink>
         <NavLink to="/how-reelbot-works" className="site-footer-link site-footer-link--secondary">How it works</NavLink>
-        <button type="button" className="site-footer-link site-footer-feedback" onClick={() => setFeedbackOpen(true)}>Send feedback</button>
+        <button type="button" className="site-footer-link site-footer-link--secondary site-footer-feedback" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback"><span className="site-footer-feedback-icon" aria-hidden="true">◌</span>Feedback</button>
       </div></nav>
       <div className="site-footer-bottom-bar"><p className="site-footer-credit">© 2026 ReelBot · Movie data by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a></p></div>
     </div></footer>
