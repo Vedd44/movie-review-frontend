@@ -29,6 +29,8 @@ import { homeFeedService } from "./services/homeFeedService";
 import { tasteProfileService } from "./services/tasteProfileService";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { getPromptCategory, trackProductEvent } from "./analytics";
+import { COLLECTIONS } from "./collections";
+import { CollectionPreviewCard } from "./CollectionPage";
 
 const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 
@@ -2381,6 +2383,22 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           </div>
         ) : null}
         </section>
+
+        {!isFeedRoute ? (
+          <section className="home-collections-section" aria-labelledby="home-collections-title">
+            <div className="section-header home-collections-head">
+              <div>
+                <div className="detail-description-label">Curated by ReelBot</div>
+                <h2 id="home-collections-title" className="section-title">Explore our latest collections</h2>
+                <p className="section-subtitle">A few useful places to start when you know the kind of movie you want.</p>
+              </div>
+              <Link to="/collections" className="home-collections-view-all">View all collections <span aria-hidden="true">→</span></Link>
+            </div>
+            <div className="home-collections-grid">
+              {COLLECTIONS.slice(0, 3).map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} compact />)}
+            </div>
+          </section>
+        ) : null}
 
         <section className="home-magic-section" aria-labelledby="home-magic-title">
           <div className="home-magic-intro">
