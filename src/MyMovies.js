@@ -144,11 +144,8 @@ function MyMovies() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="browse-kicker">My Movies</div>
             <h1 className="browse-title">My movies</h1>
-            <p className="browse-subtitle browse-subtitle--hero">
-              {user ? "Saved, watched, and not for me — useful context for your next decision." : "Sign in to keep picks and help ReelBot avoid repeats."}
-            </p>
+            {user ? <p className="browse-subtitle browse-subtitle--hero">Saved, watched, and not for me.</p> : null}
             {user ? <p className="my-movies-synced-note">Your picks are saved and synced across devices.</p> : null}
             {user && askCandidateIds.length ? (
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: "pick something I saved but have not watched" })}>
@@ -161,9 +158,8 @@ function MyMovies() {
         {!user ? (
           <section className="my-movies-empty-gate">
             <div className="my-movies-gate-copy">
-              <div className="browse-kicker">Your library</div>
-              <h2 className="section-title">Keep the movies you care about.</h2>
-              <p className="section-subtitle">Sign in to save picks, track what you’ve watched, and help ReelBot avoid repeats.</p>
+              <h2 className="section-title">Sign in to see your movies</h2>
+              <p className="section-subtitle">Save movies, track what you’ve watched, and keep them synced across devices.</p>
             </div>
             <div className="my-movies-gate-actions">
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAuthPrompt("my_movies_gate")}>Sign in</button>
