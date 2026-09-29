@@ -17118,3 +17118,138 @@ body,
   .home-magic-card,
   .home-magic-card--wide { flex-basis:88vw; }
 }
+
+/* ReelBot poster system — artwork first, useful data second */
+.movie-card,
+.home-movie-card,
+.movie-card--browse,
+.saved-movie-card,
+.search-result-card,
+.person-credit-card,
+.similar-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.movie-poster-shell,
+.home-movie-card-poster-shell,
+.movie-poster-link,
+.person-credit-poster-link,
+.similar-card {
+  border-radius: 14px;
+}
+.movie-poster-shell,
+.home-movie-card-poster-shell,
+.person-credit-poster-link,
+.similar-card {
+  overflow: hidden;
+  background: #101117;
+  box-shadow: 0 12px 30px rgba(0,0,0,.22);
+}
+.movie-poster,
+.person-credit-poster,
+.similar-poster {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.movie-card:hover .movie-poster,
+.home-movie-card:hover .movie-poster,
+.person-credit-card:hover .person-credit-poster,
+.similar-card:hover .similar-poster {
+  transform: scale(1.018);
+  filter: brightness(1.045);
+}
+.movie-card-content,
+.saved-movie-card-content,
+.person-credit-copy {
+  padding: 12px 2px 0;
+  text-align: left;
+}
+.movie-card-title,
+.person-credit-title,
+.similar-title {
+  margin: 0;
+  color: #f5f0e7;
+  font-weight: 650;
+  line-height: 1.24;
+}
+.movie-card-meta {
+  gap: 6px;
+  margin-bottom: 7px;
+}
+.movie-card-chip {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(239,230,217,.48);
+  font-size: .72rem;
+  line-height: 1.3;
+}
+.movie-card-chip + .movie-card-chip::before {
+  content: "·";
+  margin-right: 6px;
+  color: rgba(239,230,217,.24);
+}
+.movie-card-chip--availability,
+.movie-card-chip--seen,
+.movie-card-chip--accent {
+  padding: 3px 7px;
+  border: 1px solid rgba(240,189,87,.15);
+  border-radius: 999px;
+  color: rgba(240,189,87,.84);
+  background: rgba(240,189,87,.055);
+}
+.movie-card-chip--availability::before,
+.movie-card-chip--seen::before,
+.movie-card-chip--accent::before {
+  content: none !important;
+}
+.movie-card-date,
+.similar-year,
+.person-credit-role {
+  margin-top: 5px;
+  color: rgba(239,230,217,.4);
+  font-size: .76rem;
+}
+.home-page .home-poster-grid {
+  gap: 28px 18px;
+}
+.home-page .home-movie-card {
+  min-height: 0;
+}
+.home-page .home-movie-card-link {
+  height: auto;
+}
+.home-page .home-movie-card .movie-card-content {
+  min-height: 0;
+}
+.home-page > .home-hero .pick-prompt-input::placeholder {
+  text-align: center;
+}
+.home-page > .home-hero .pick-prompt-input:focus::placeholder {
+  text-align: left;
+}
+.home-magic-card-copy strong { display:none; }
+.home-magic-card-copy p {
+  color: rgba(239,230,217,.68);
+  font-size: .88rem;
+}
+@media (hover:hover) {
+  .movie-poster-link:focus-visible,
+  .home-movie-card-link:focus-visible,
+  .person-credit-poster-link:focus-visible,
+  .similar-card:focus-visible {
+    outline: 2px solid rgba(240,189,87,.72);
+    outline-offset: 4px;
+  }
+}
+@media only screen and (max-width:720px) {
+  .movie-card-content,
+  .saved-movie-card-content,
+  .person-credit-copy { padding-top:10px; }
+  .movie-card-meta { margin-bottom:5px; }
+  .home-page > .home-hero .pick-prompt-input::placeholder { text-align:center; }
+}
