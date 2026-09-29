@@ -1206,9 +1206,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const heroArtMovie = useMemo(() => {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
-    const candidates = source.filter((movie) => movie?.backdrop_path).slice(0, 10);
-    if (!candidates.length) return null;
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    return source.find((movie) => movie?.backdrop_path) || null;
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
