@@ -18265,3 +18265,138 @@ body,
   .collection-preview-copy p { font-size: .92rem; }
   .home-collections-section { margin-top: 52px; }
 }
+
+
+/* Collection detail + responsive polish */
+.collections-page .collection-hero {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+.collections-page .collection-hero .collection-dek {
+  margin-left: auto;
+  margin-right: auto;
+}
+.collections-page .collection-hero-actions {
+  justify-content: center;
+}
+.collection-breadcrumb {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+.collection-movie-card .movie-card-content {
+  min-height: 0;
+  padding-bottom: 10px;
+}
+.collection-movie-card .movie-card-date {
+  margin-bottom: 4px;
+}
+.collection-preview-shade {
+  background: linear-gradient(180deg, rgba(4,7,12,.36) 0%, rgba(4,7,12,.56) 38%, rgba(4,7,12,.97) 100%);
+}
+.collection-preview-poster {
+  opacity: .72;
+  filter: saturate(.78) contrast(.96);
+}
+.collection-preview-copy p {
+  color: rgba(245,248,252,.88);
+}
+.collection-bottom-cta {
+  align-items: center;
+}
+@media (max-width: 860px) {
+  .collections-page .collection-hero {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .collections-index-grid {
+    grid-template-columns: 1fr;
+  }
+  .collection-preview-card {
+    min-height: 315px;
+  }
+  .collection-bottom-cta {
+    text-align: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 18px;
+  }
+  .collection-bottom-cta .section-subtitle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+@media (max-width: 560px) {
+  .collections-page .browse-shell {
+    width: calc(100% - 28px);
+  }
+  .collections-page .collection-hero {
+    padding-top: 18px;
+    padding-bottom: 22px;
+  }
+  .collections-page .browse-title {
+    font-size: clamp(2rem, 10vw, 2.7rem);
+    line-height: 1.02;
+  }
+  .collections-page .collection-dek {
+    font-size: .98rem;
+    line-height: 1.55;
+  }
+  .collections-page .collection-hero-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .collections-page .collection-hero-actions .reelbot-inline-button,
+  .collections-page .collection-hero-actions .browse-library-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .collection-preview-card {
+    min-height: 290px;
+  }
+  .collection-preview-posters {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
+  .collection-preview-copy {
+    padding: 20px;
+  }
+  .collection-preview-copy h2 {
+    max-width: 15ch;
+    font-size: 1.55rem;
+  }
+  .collection-preview-copy p {
+    font-size: .9rem;
+    line-height: 1.5;
+  }
+  .collection-movie-list {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 14px 10px;
+  }
+  .collection-movie-card .movie-card-content {
+    padding: 10px 2px 4px;
+  }
+  .collection-movie-card .movie-card-meta {
+    gap: 5px;
+  }
+  .collection-movie-card .movie-card-chip {
+    font-size: .7rem;
+  }
+  .collection-movie-card .movie-card-title {
+    font-size: .94rem;
+  }
+  .collection-movie-card .movie-card-date {
+    font-size: .78rem;
+  }
+  .collection-bottom-cta {
+    margin-top: 48px;
+    padding: 28px 18px;
+  }
+  .collection-bottom-cta .reelbot-inline-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
