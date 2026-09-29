@@ -55,7 +55,7 @@ function CollectionCard({ movie }) {
         </div>
         <h2 className="movie-card-title"><Link to={getMoviePath(movie)} className="movie-title-link">{movie.title}</Link></h2>
         <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
-        <div className="movie-card-actions-row"><Link to={getMoviePath(movie)} className="card-link">View Details</Link></div>
+        
       </div>
     </article>
   );
@@ -144,7 +144,7 @@ export default function CollectionPage() {
           <h1 className="browse-title">{collection.title}</h1>
           <p className="collection-dek">{collection.description}</p>
           <div className="collection-hero-actions">
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Ask ReelBot for one</button>
+            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Find my pick</button>
             <Link to="/collections" className="browse-library-link">See all collections</Link>
           </div>
         </section>
@@ -159,11 +159,11 @@ export default function CollectionPage() {
 
         <section className="collection-bottom-cta">
           <div>
-            <div className="detail-description-label">Want a narrower answer?</div>
-            <h2 className="section-title">Tell ReelBot what tonight actually looks like.</h2>
-            <p className="section-subtitle">Add runtime, mood, company or whatever else matters and turn this list into one pick.</p>
+            <div className="detail-description-label">Still deciding?</div>
+            <h2 className="section-title">Let ReelBot pick from here.</h2>
+            <p className="section-subtitle">Start with this collection, then add anything else that matters tonight.</p>
           </div>
-          <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Narrow it down</button>
+          <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Find my pick</button>
         </section>
       </div>
     </div>
