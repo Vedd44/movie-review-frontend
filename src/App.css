@@ -16366,3 +16366,68 @@ body,
 @media only screen and (max-width:720px) {
   .home-page .home-hero { padding-top: 22px; }
 }
+
+/* Cinematic product canvas — live catalogue art, not a marketing-card hero */
+.home-page .home-hero {
+  isolation: isolate;
+  border: 0;
+  border-radius: 18px;
+  background: #090a0e;
+  box-shadow: none;
+}
+.home-page .home-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: auto;
+  aspect-ratio: auto;
+  border-radius: inherit;
+  background-image: var(--home-hero-backdrop);
+  background-position: center 28%;
+  background-size: cover;
+  opacity: .38;
+  filter: saturate(.78) contrast(1.06);
+  pointer-events: none;
+}
+.home-page .home-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  height: auto;
+  left: 0;
+  right: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(7,8,11,.88) 0%, rgba(7,8,11,.69) 24%, rgba(7,8,11,.66) 76%, rgba(7,8,11,.88) 100%),
+    linear-gradient(180deg, rgba(7,8,11,.62) 0%, rgba(7,8,11,.72) 48%, rgba(7,8,11,.97) 100%);
+  opacity: 1;
+  pointer-events: none;
+}
+.home-page .home-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+.home-page .prompt-composer-intro:empty {
+  display: none;
+}
+.home-page .home-hero-form {
+  margin-top: 24px;
+}
+.home-page .pick-prompt-suggestions {
+  margin-bottom: 10px;
+}
+@media only screen and (max-width: 720px) {
+  .home-page .home-hero {
+    border-radius: 14px;
+  }
+  .home-page .home-hero::before {
+    background-position: center top;
+    opacity: .3;
+  }
+  .home-page .home-hero::after {
+    background:
+      linear-gradient(180deg, rgba(7,8,11,.68) 0%, rgba(7,8,11,.78) 42%, rgba(7,8,11,.98) 100%);
+  }
+}
