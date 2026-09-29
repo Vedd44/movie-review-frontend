@@ -17428,3 +17428,29 @@ body,
     box-shadow:0 18px 50px rgba(0,0,0,.26) !important;
   }
 }
+
+/* Editorial prompt showcase: supporting proof, not a second hero */
+.home-magic-section .home-magic-intro {
+  max-width: 760px;
+  margin-left:auto;
+  margin-right:auto;
+}
+.home-magic-section .home-magic-title {
+  max-width: 720px;
+  margin-left:auto;
+  margin-right:auto;
+  font-size: clamp(2.35rem,4.8vw,4.65rem);
+  line-height:.94;
+  letter-spacing:-.045em;
+}
+.home-magic-card-art { background-position:center; }
+.home-magic-card-copy {
+  background: linear-gradient(180deg,transparent 5%,rgba(6,7,10,.2) 35%,rgba(6,7,10,.88) 100%);
+}
+.home-magic-card-copy p { max-width:28ch; }
+@media only screen and (max-width:720px) {
+  .home-magic-section .home-magic-title {
+    font-size:clamp(2.05rem,10vw,3rem);
+    line-height:.98;
+  }
+}
