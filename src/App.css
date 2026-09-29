@@ -17906,45 +17906,36 @@ body,
 }
 
 
-/* Mobile Trending Now: clean full-width stage; keep cinematic artwork in the hero only. */
+/* Mobile homepage architecture: artwork belongs to the picker only; Trending is a clean stage. */
 @media only screen and (max-width:720px) {
+  .home-page > .home-hero {
+    overflow:hidden !important;
+  }
+
+  .home-page > .home-hero .home-hero-art {
+    height:var(--mobile-picker-art-height, 610px) !important;
+    bottom:auto !important;
+    overflow:hidden !important;
+  }
+
   .home-page > .home-hero .home-hero-now-playing {
-    isolation:isolate !important;
-    z-index:3 !important;
+    position:relative !important;
+    z-index:4 !important;
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    box-sizing:border-box !important;
+    width:100vw !important;
+    max-width:none !important;
+    margin:20px 0 -20px !important;
+    padding:38px 24px 32px !important;
     background:#07080b !important;
     background-image:none !important;
+    overflow:hidden !important;
+    isolation:auto !important;
     box-shadow:none !important;
   }
 
   .home-page > .home-hero .home-hero-now-playing::before,
-  .home-page > .home-hero .home-hero-now-playing::after {
-    content:none !important;
-    display:none !important;
-    background:none !important;
-  }
-}
-
-
-/* Mobile Trending Now: paint the stage past the hero's visual gutters. */
-@media only screen and (max-width:720px) {
-  .home-page > .home-hero .home-hero-now-playing {
-    overflow:visible !important;
-    background:#07080b !important;
-  }
-
-  .home-page > .home-hero .home-hero-now-playing::before {
-    content:"" !important;
-    display:block !important;
-    position:absolute !important;
-    z-index:-1 !important;
-    top:0 !important;
-    bottom:0 !important;
-    left:-100vw !important;
-    right:-100vw !important;
-    background:#07080b !important;
-    pointer-events:none !important;
-  }
-
   .home-page > .home-hero .home-hero-now-playing::after {
     content:none !important;
     display:none !important;
@@ -17953,5 +17944,12 @@ body,
   .home-page > .home-hero .home-hero-now-playing-rail {
     overflow-x:auto !important;
     overflow-y:hidden !important;
+  }
+}
+
+@media only screen and (max-width:420px) {
+  .home-page > .home-hero .home-hero-now-playing {
+    padding-left:16px !important;
+    padding-right:16px !important;
   }
 }
