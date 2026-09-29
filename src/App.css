@@ -17621,3 +17621,38 @@ body,
     bottom:max(8px,env(safe-area-inset-bottom));
   }
 }
+
+/* Mobile recommendation stage: calmer cinema canvas and deliberate loading space */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero::after {
+    background:
+      radial-gradient(ellipse 78% 52% at 50% 28%,rgba(5,6,9,.9) 0%,rgba(5,6,9,.74) 54%,rgba(5,6,9,.5) 78%,rgba(5,6,9,.62) 100%),
+      linear-gradient(180deg,rgba(5,6,9,.5) 0%,rgba(5,6,9,.68) 62%,#07080b 100%) !important;
+  }
+  .home-page > .home-hero .home-hero-art-panel {
+    filter:saturate(.54) brightness(.7) contrast(1.02) !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing::before {
+    left:calc((100vw - 100%) / -2) !important;
+    right:calc((100vw - 100%) / -2) !important;
+    top:-40px !important;
+    bottom:-36px !important;
+    background:linear-gradient(180deg,rgba(5,6,9,.9),rgba(5,6,9,.98) 32%,#07080b 100%) !important;
+  }
+
+  .home-result-section:has(.reelbot-loading-state) {
+    min-height:clamp(460px,68svh,650px);
+    display:flex;
+    flex-direction:column;
+  }
+  .home-result-section:has(.reelbot-loading-state) .pick-result-stage {
+    flex:1;
+  }
+  .home-result-section:has(.reelbot-loading-state) .reelbot-loading-state {
+    min-height:280px;
+    display:flex;
+    align-items:flex-start;
+    padding-top:48px;
+  }
+}
