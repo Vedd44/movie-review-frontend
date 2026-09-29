@@ -139,7 +139,7 @@ function SiteHeader() {
 function MobileBottomNav() {
   const location = useLocation();
   const items = [
-    { label: "Ask", to: "/#pick-for-me", active: location.pathname === "/" && location.hash === "#pick-for-me" },
+    { label: "Pick for me", to: "/#pick-for-me", active: location.pathname === "/" },
     { label: "Browse", to: "/browse", active: location.pathname === "/browse" },
     { label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
   ];
