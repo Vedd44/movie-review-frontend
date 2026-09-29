@@ -2068,12 +2068,12 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               {heroPreviewMovies.length ? (
                 <SwipeableRail className="home-hero-now-playing-rail" ariaLabel="In theaters now">
                   {heroPreviewMovies.map((movie) => (
-                    <Link key={movie.id} to={getMoviePath(movie)} className="home-hero-now-playing-item" aria-label={`Open ${movie.title}`}>
+                    <Link key={movie.id} to={getMoviePath(movie)} className="home-hero-now-playing-item reelbot-poster-card reelbot-poster-card--compact" aria-label={`Open ${movie.title}`}>
                       {movie.poster_path ? (
                         <img
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                           alt={movie.title}
-                          className="home-hero-now-playing-poster"
+                          className="home-hero-now-playing-poster reelbot-poster-art"
                           width="300"
                           height="450"
                           loading="lazy"
@@ -2345,7 +2345,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               </div>
             </article>
           </div>
-          <Link to="/ask" className="home-magic-cta">Ask ReelBot <span aria-hidden="true">→</span></Link>
+          <Link to="/ask" className="home-magic-cta">Try it with your own request <span aria-hidden="true">→</span></Link>
         </section>
 
       </div>
