@@ -58,10 +58,29 @@ const HOMEPAGE_PROMPT_POOL = [
   "Smart but easy",
   "Family safe",
   "Under 100 minutes",
+  "Funny but not dumb",
+  "A great thriller",
+  "Comfort movie",
+  "Something weird",
+  "Big and cinematic",
+  "Easy Sunday watch",
+  "90s action",
+  "A clever mystery",
+  "Not too stressful",
+  "Good with friends",
+  "Something romantic",
+  "Dark but not bleak",
+  "Fast-paced",
+  "A hidden gem",
+  "Great sci-fi",
+  "Actually scary",
+  "Low commitment",
+  "Critically loved",
+  "Pure escapism",
+  "Something beautiful",
 ];
 
-const HOMEPAGE_PROMPT_COUNT = HOMEPAGE_PROMPT_POOL.length;
-const PROMPT_ROTATION_MS = 12000;
+const HOMEPAGE_PROMPT_COUNT = 6;
 const MIN_CURATED_FEED_SIZE = 8;
 const HOMEPAGE_DESKTOP_COLUMNS = 5;
 const HOMEPAGE_BASE_DISPLAY_COUNT = 8;
@@ -272,10 +291,18 @@ const writeSessionFlag = (key, value) => {
   window.sessionStorage.removeItem(key);
 };
 
-const pickPromptSuggestions = (pool, count, excludedItems = []) => {
-  const excludedSet = new Set(excludedItems);
-  const availableItems = pool.filter((item) => !excludedSet.has(item));
-  const workingPool = availableItems.length >= count ? availableItems : pool;
+const pickPromptSuggestions = (pool, count) => {
+  const workingPool = [...pool];
+
+  // Shuffle outside render so each page load gets a fresh, stable suggestion rail.
+  for (let index = workingPool.length - 1; index > 0; index -= 1) {
+    const randomValue = typeof window !== "undefined" && window.crypto?.getRandomValues
+      ? window.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296
+      : 0.5;
+    const swapIndex = Math.floor(randomValue * (index + 1));
+    [workingPool[index], workingPool[swapIndex]] = [workingPool[swapIndex], workingPool[index]];
+  }
+
   return workingPool.slice(0, count);
 };
 
@@ -1100,18 +1127,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
     return () => window.clearInterval(intervalId);
   }, [isPickBusy]);
-
-  useEffect(() => {
-    if (pickPrompt.trim() || activePromptSuggestion || isPickBusy) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setVisiblePromptSuggestions((currentSuggestions) => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT, currentSuggestions));
-    }, PROMPT_ROTATION_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [activePromptSuggestion, isPickBusy, pickPrompt]);
 
   useEffect(() => {
     setIsPickTrailerOpen(false);
