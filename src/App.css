@@ -17904,3 +17904,22 @@ body,
     margin-bottom:7px !important;
   }
 }
+
+
+/* Mobile Trending Now: clean full-width stage; keep cinematic artwork in the hero only. */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero .home-hero-now-playing {
+    isolation:isolate !important;
+    z-index:3 !important;
+    background:#07080b !important;
+    background-image:none !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing::before,
+  .home-page > .home-hero .home-hero-now-playing::after {
+    content:none !important;
+    display:none !important;
+    background:none !important;
+  }
+}
