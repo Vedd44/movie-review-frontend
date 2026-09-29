@@ -751,7 +751,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [pickStatus, setPickStatus] = useState(() => (initialPickSession.currentPick?.primary ? PICK_STATUS.RESTORING : PICK_STATUS.IDLE));
   const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
   const [pickTake, setPickTake] = useState(null);
-  const [visiblePromptSuggestions, setVisiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
+  const [visiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
   const restoreStatusTimeoutRef = useRef(null);
   const pickRequestVersionRef = useRef(0);
