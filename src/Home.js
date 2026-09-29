@@ -1239,7 +1239,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const hasVisibleFeedContent = displayedMovies.length > 0;
   const shouldShowFeedSkeletons = loading && !curatedMovies.length;
   const heroPreviewLabel = movieType === "popular" ? "Trending now" : movieType === "upcoming" ? "Coming soon" : "In theaters now";
-  const heroPreviewCopy = movieType === "popular" ? "Popular movies you can ask about." : movieType === "upcoming" ? "Upcoming movies you can ask about." : "Current releases you can ask about.";
+  const heroPreviewCopy = movieType === "popular" ? "Or start with what people are watching." : movieType === "upcoming" ? "See what’s coming next." : "See what’s playing now.";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
   const activePick = pickResult?.primary || null;
@@ -1349,7 +1349,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     : "";
   const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")) : "";
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
-  const heroSubtext = "Say the mood, the moment, or who’s watching. ReelBot will narrow it down.";
+  const heroSubtext = "Tell ReelBot what kind of night it is. Get one movie worth watching.";
 
   const homeStructuredData = useMemo(() => {
     if (isFeedRoute) {
@@ -1991,7 +1991,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
-                introText="Try one:"
+                introText="Need a starting point?"
                 suggestions={visiblePromptSuggestions}
                 activeSuggestion={activePromptSuggestion}
                 value={pickPrompt}
