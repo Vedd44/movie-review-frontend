@@ -175,7 +175,12 @@ function AuthPanel({
       }
     } catch (submitError) {
       console.error("Error with ReelBot auth flow:", submitError);
-      if (view === PASSWORD_LOGIN_VIEW) setError("That email and password didn’t work.");
+      if (view === PASSWORD_LOGIN_VIEW) {
+        const message = String(submitError?.message || "").toLowerCase();
+        if (message.includes("email not confirmed")) setError("Confirm your email before signing in.");
+        else if (message.includes("invalid login credentials")) setError("Incorrect email or password.");
+        else setError("We couldn’t sign you in. Try again.");
+      }
       else if (view === EMAIL_LINK_VIEW) setError("We couldn’t send the link. Try again.");
       else if (view === PASSWORD_SIGNUP_VIEW) setError("We couldn’t create that account. Try again.");
       else setError("We couldn’t send the reset link. Try again.");
@@ -257,6 +262,7 @@ function AuthPanel({
         <form className="auth-panel-form auth-panel-form--stacked" onSubmit={handleSubmit}>
           <input
             ref={emailInputRef}
+            aria-invalid={Boolean(error)}
             type="email"
             value={email}
             onChange={(event) => {
@@ -274,6 +280,7 @@ function AuthPanel({
           {usingPasswordFlow && !isForgotPasswordView ? (
             <input
               type="password"
+              aria-invalid={Boolean(error)}
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
