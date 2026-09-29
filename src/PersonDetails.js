@@ -32,6 +32,8 @@ function PersonDetails() {
   const location = useLocation();
   const [person, setPerson] = useState(null);
   const [sortDirection, setSortDirection] = useState("newest");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [releaseFilter, setReleaseFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -74,10 +76,33 @@ function PersonDetails() {
     };
   }, [location.pathname, navigate, personId, personSlug]);
 
-  const sortedCredits = useMemo(
-    () => sortCredits(person?.movie_credits || [], sortDirection),
-    [person?.movie_credits, sortDirection]
-  );
+  const roleOptions = useMemo(() => {
+    const roles = new Set();
+    (person?.movie_credits || []).forEach((movie) => {
+      (movie.roles || []).forEach((role) => {
+        const normalized = String(role || "");
+        if (/^Actor(?::|$)/i.test(normalized)) roles.add("Actor");
+        else if (/Director/i.test(normalized)) roles.add("Director");
+        else if (/Produc/i.test(normalized)) roles.add("Producer");
+        else if (/Writ|Screenplay|Story/i.test(normalized)) roles.add("Writer");
+      });
+    });
+    return ["Actor", "Director", "Producer", "Writer"].filter((role) => roles.has(role));
+  }, [person?.movie_credits]);
+
+  const sortedCredits = useMemo(() => {
+    const now = Date.now();
+    const filtered = (person?.movie_credits || []).filter((movie) => {
+      const roles = movie.roles || [];
+      const roleMatch = roleFilter === "all"
+        || roles.some((role) => roleFilter === "Actor" ? /^Actor(?::|$)/i.test(role) : new RegExp(roleFilter, "i").test(role));
+      const time = getCreditTime(movie);
+      const releaseMatch = releaseFilter === "all"
+        || (releaseFilter === "upcoming" ? time === null || time > now : time !== null && time <= now);
+      return roleMatch && releaseMatch;
+    });
+    return sortCredits(filtered, releaseFilter === "upcoming" ? "oldest" : sortDirection);
+  }, [person?.movie_credits, releaseFilter, roleFilter, sortDirection]);
 
   useAskReelbotPageContext(useMemo(() => ({
     page: "person",
@@ -143,7 +168,7 @@ function PersonDetails() {
           <div className="browse-copy">
             <div className="browse-kicker">{person.known_for_department || "Filmography"}</div>
             <h1 className="browse-title">{person.name}</h1>
-            <p className="browse-subtitle browse-subtitle--hero">Movies ordered by release date.</p>
+            <p className="browse-subtitle browse-subtitle--hero">Explore movie credits by role and release status.</p>
           </div>
         </section>
 
@@ -155,26 +180,29 @@ function PersonDetails() {
               <p className="section-subtitle">Movie roles and credits, with TV excluded for now.</p>
             </div>
 
-            <div className="person-sort-toggle" role="group" aria-label="Sort filmography">
-              <button
-                type="button"
-                className={sortDirection === "newest" ? "active" : ""}
-                onClick={() => setSortDirection("newest")}
-              >
-                Newest first
-              </button>
-              <button
-                type="button"
-                className={sortDirection === "oldest" ? "active" : ""}
-                onClick={() => setSortDirection("oldest")}
-              >
-                Oldest first
-              </button>
+            <div className="person-credit-controls">
+              <div className="person-filter-group" role="group" aria-label="Filter by release">
+                {["all", "upcoming", "past"].map((filter) => (
+                  <button key={filter} type="button" className={releaseFilter === filter ? "active" : ""} onClick={() => setReleaseFilter(filter)}>
+                    {filter === "all" ? "All" : filter === "upcoming" ? "Upcoming" : "Released"}
+                  </button>
+                ))}
+              </div>
+              {roleOptions.length > 1 ? (
+                <div className="person-filter-group" role="group" aria-label="Filter by role">
+                  <button type="button" className={roleFilter === "all" ? "active" : ""} onClick={() => setRoleFilter("all")}>All roles</button>
+                  {roleOptions.map((role) => <button key={role} type="button" className={roleFilter === role ? "active" : ""} onClick={() => setRoleFilter(role)}>{role}</button>)}
+                </div>
+              ) : null}
+              <div className="person-sort-toggle" role="group" aria-label="Sort filmography">
+                <button type="button" className={sortDirection === "newest" ? "active" : ""} onClick={() => setSortDirection("newest")}>Newest</button>
+                <button type="button" className={sortDirection === "oldest" ? "active" : ""} onClick={() => setSortDirection("oldest")}>Oldest</button>
+              </div>
             </div>
           </div>
 
           {sortedCredits.length ? (
-            <div className="person-credit-list">
+            <div className="person-credit-grid">
               {sortedCredits.map((movie) => (
                 <article key={movie.id} className="person-credit-card">
                   <Link to={getMoviePath(movie)} className="person-credit-poster-link" aria-label={`Open ${movie.title}`}>
