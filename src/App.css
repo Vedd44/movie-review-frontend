@@ -15938,3 +15938,24 @@ body,
   .how-it-works-section { padding:22px 20px; }
   .how-it-works-features { grid-template-columns:1fr 1fr; }
 }
+
+
+/* How it works: keep the source note attached to the content above it. */
+.how-it-works-page .browse-shell {
+  gap:18px;
+}
+.how-it-works-page .how-it-works-note {
+  margin-top:-8px;
+  padding:0 20px 18px;
+  text-align:left;
+}
+.how-it-works-page .how-it-works-note p {
+  margin:4px 0 0;
+  max-width:none;
+}
+@media only screen and (max-width:720px) {
+  .how-it-works-page .how-it-works-note {
+    margin-top:-6px;
+    padding:0 4px 12px;
+  }
+}
