@@ -15959,3 +15959,107 @@ body,
     padding:0 4px 12px;
   }
 }
+
+
+/* Pre-launch account + library cleanup */
+.auth-panel-form input[aria-invalid="true"] {
+  border-color:rgba(201,86,86,.58);
+}
+.auth-panel-error {
+  margin:10px 0 4px;
+  padding:11px 13px;
+  border-radius:11px;
+  font-size:.9rem;
+}
+
+.account-page .browse-hero--solo {
+  padding:26px 30px;
+}
+.account-page .account-settings-card {
+  padding:28px 30px;
+}
+.account-page .account-settings-form {
+  gap:18px;
+}
+.account-page .account-settings-password {
+  margin-top:26px;
+  padding-top:24px;
+}
+.account-page .account-settings-danger {
+  margin-top:24px;
+  padding-top:20px;
+}
+.account-page .account-settings-actions {
+  margin-top:16px;
+}
+
+.my-movies-page .browse-hero--solo {
+  padding:28px 30px;
+}
+.my-movies-page .my-movies-pick-action {
+  margin-top:14px;
+}
+.my-movies-taste-card {
+  padding:24px 28px;
+}
+.my-movies-taste-card .section-header {
+  margin-bottom:14px;
+}
+.taste-learning-chips {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.taste-learning-chips .pick-summary-chip {
+  padding:7px 11px;
+  border-radius:999px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.07);
+  color:rgba(245,240,231,.72);
+}
+.saved-movies-shell {
+  padding:26px 28px;
+}
+.saved-movies-sync-status {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  color:rgba(245,240,231,.46);
+  font-size:.78rem;
+}
+.saved-movie-tabs {
+  margin-top:16px;
+  gap:6px;
+}
+.saved-movie-tabs button {
+  padding:8px 13px;
+  border-radius:10px;
+}
+.saved-movies-tab-copy {
+  margin:18px 0 14px;
+  padding:0;
+  align-items:center;
+}
+.saved-movies-tab-copy .detail-secondary-text {
+  margin:0;
+}
+.saved-movies-tab-copy .results-count {
+  color:rgba(245,240,231,.5);
+  font-size:.82rem;
+}
+.saved-movie-card .saved-movie-overview {
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.saved-movie-card .saved-movie-actions {
+  margin-top:auto;
+}
+
+@media only screen and (max-width:720px) {
+  .account-page .account-settings-card,
+  .my-movies-taste-card,
+  .saved-movies-shell { padding:22px 20px; }
+  .saved-movies-sync-status { margin-top:8px; }
+}
