@@ -17745,3 +17745,45 @@ body,
     padding:72px 28px 48px !important;
   }
 }
+
+/* Mobile hero rail must escape the hero clipping boundary to reach the viewport edges. */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero {
+    overflow:visible !important;
+  }
+
+  .home-page > .home-hero .home-hero-art {
+    overflow:hidden !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing {
+    left:50% !important;
+    width:100vw !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    transform:translateX(-50%) !important;
+    background:#07080b !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-suggestions {
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    justify-content:flex-start !important;
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    white-space:nowrap;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .home-page > .home-hero .pick-prompt-suggestions::-webkit-scrollbar {
+    display:none;
+  }
+
+  .home-page > .home-hero .pick-prompt-chip {
+    flex:0 0 auto !important;
+    white-space:nowrap;
+  }
+}
