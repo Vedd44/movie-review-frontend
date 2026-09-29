@@ -1982,7 +1982,14 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     <div className="browse-page home-page">
       <CinematicAtmosphere active={isHeroInputFocused || isPickBusy} loading={isPickBusy} />
       <div className="container browse-shell home-shell">
-        <section id="pick-for-me" className="home-hero" aria-labelledby="home-hero-title">
+        <section
+          id="pick-for-me"
+          className="home-hero"
+          aria-labelledby="home-hero-title"
+          style={heroPreviewMovies[0]?.backdrop_path ? {
+            "--home-hero-backdrop": `url("https://image.tmdb.org/t/p/w1280${heroPreviewMovies[0].backdrop_path}")`,
+          } : undefined}
+        >
           <div className="home-hero-copy">
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
@@ -1990,7 +1997,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
-                introText="Start with a feeling:"
+                introText=""
                 suggestions={visiblePromptSuggestions}
                 activeSuggestion={activePromptSuggestion}
                 value={pickPrompt}
