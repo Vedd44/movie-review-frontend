@@ -15822,3 +15822,119 @@ body,
   font-size:.88rem;
   color:rgba(245,240,231,.46);
 }
+
+
+/* Final homepage preview sizing: this is a teaser rail, not the full movie grid. */
+.home-page .home-hero-now-playing-rail {
+  grid-auto-columns: 176px;
+  gap:14px;
+  justify-content:center;
+  padding-inline:2px;
+  mask-image:none;
+}
+.home-page .home-hero-now-playing-item {
+  width:176px;
+}
+.home-page .home-hero-now-playing-poster,
+.home-page .home-hero-now-playing-poster--placeholder {
+  width:176px;
+  height:264px;
+  aspect-ratio:auto;
+  border-radius:16px;
+}
+.home-page .home-hero-now-playing-title {
+  font-size:.84rem;
+}
+
+/* Signed-out My Movies: one message, one decision. */
+.my-movies-page .browse-hero--solo {
+  padding-bottom:22px;
+}
+.my-movies-page .my-movies-empty-gate {
+  margin-top:-8px;
+}
+
+/* How it works: product explanation, not a marketing deck. */
+.how-it-works-page .browse-hero--solo {
+  padding-block:28px;
+}
+.how-it-works-section {
+  padding:28px 30px;
+}
+.how-it-works-steps {
+  display:grid;
+  gap:0;
+  margin-top:20px;
+}
+.how-it-works-steps article {
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  gap:14px;
+  padding:18px 0;
+  border-top:1px solid rgba(255,255,255,.065);
+}
+.how-it-works-steps article > span {
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:rgba(240,189,87,.1);
+  color:#f0bd57;
+  font-size:.78rem;
+  font-weight:800;
+}
+.how-it-works-steps strong,
+.how-it-works-features strong,
+.how-it-works-note strong { color:var(--text-primary); }
+.how-it-works-steps p {
+  margin:5px 0 0;
+  color:var(--text-secondary);
+  line-height:1.55;
+}
+.how-it-works-actions { margin-top:18px; }
+.how-it-works-features {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin-top:20px;
+}
+.how-it-works-features > div {
+  display:grid;
+  gap:5px;
+  padding:16px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  background:rgba(255,255,255,.018);
+}
+.how-it-works-features span {
+  color:var(--text-secondary);
+  font-size:.88rem;
+  line-height:1.45;
+}
+.how-it-works-note {
+  padding:4px 4px 10px;
+  color:var(--text-secondary);
+  font-size:.88rem;
+}
+.how-it-works-note p {
+  margin:5px 0 0;
+  max-width:720px;
+  line-height:1.55;
+}
+
+@media only screen and (max-width:720px) {
+  .home-page .home-hero-now-playing-rail {
+    grid-auto-columns:142px;
+    justify-content:start;
+    overflow-x:auto;
+  }
+  .home-page .home-hero-now-playing-item { width:142px; }
+  .home-page .home-hero-now-playing-poster,
+  .home-page .home-hero-now-playing-poster--placeholder {
+    width:142px;
+    height:213px;
+  }
+  .how-it-works-section { padding:22px 20px; }
+  .how-it-works-features { grid-template-columns:1fr 1fr; }
+}
