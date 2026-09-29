@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./App.css";
-import TasteActionBar from "./components/TasteActionBar";
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
@@ -74,7 +73,7 @@ const normalizeSavedMovie = (movie = {}) => ({
 function MyMovies() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, openAuthPrompt } = useAuth();
-  const { profile, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
+  const { profile, actions, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
   const activeTab = TAB_CONFIG.some((tab) => tab.id === searchParams.get("tab")) ? searchParams.get("tab") : "watchlist";
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) || TAB_CONFIG[0];
 
@@ -155,8 +154,8 @@ function MyMovies() {
           {user && tasteSummary.length ? (
             <aside className="my-movies-taste-summary" aria-label="Your taste">
               <span className="my-movies-taste-label">Your taste</span>
-              <div className="taste-learning-chips">
-                {tasteSummary.map((item) => <span key={item} className="pick-summary-chip">{item}</span>)}
+              <div className="my-movies-taste-values">
+                {tasteSummary.map((item) => <span key={item}>{item}</span>)}
               </div>
             </aside>
           ) : null}
@@ -247,8 +246,13 @@ function MyMovies() {
                         Open details
                       </Link>
                       <details className="saved-movie-status-menu">
-                        <summary>Change status</summary>
-                        <TasteActionBar movie={movie} compact className="saved-movie-taste-actions" />
+                        <summary><span>Manage</span><span className="saved-movie-status-chevron" aria-hidden="true">⌄</span></summary>
+                        <div className="saved-movie-status-popover">
+                          <span className="saved-movie-status-heading">Movie status</span>
+                          <button type="button" className={activeTab === "watchlist" ? "is-active" : ""} onClick={() => actions.toggleWatchlist(movie)}>Saved</button>
+                          <button type="button" className={activeTab === "seen" ? "is-active" : ""} onClick={() => actions.toggleSeen(movie)}>Watched</button>
+                          <button type="button" className={activeTab === "hidden" ? "is-active" : ""} onClick={() => actions.toggleSkipped(movie)}>Not for me</button>
+                        </div>
                       </details>
                     </div>
                   </div>
