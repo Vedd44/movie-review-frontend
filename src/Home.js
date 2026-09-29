@@ -882,7 +882,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [routeView]);
 
   useEffect(() => {
-    if (isFeedRoute) {
+    const needsOnboardingPosterPool = !isFeedRoute
+      && !user
+      && !hasInitialLocalSession
+      && !hasCompletedOnboardingRef.current
+      && !hasDismissedOnboardingRef.current;
+
+    if (!needsOnboardingPosterPool) {
       return undefined;
     }
 
@@ -911,7 +917,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     return () => {
       cancelled = true;
     };
-  }, [isFeedRoute]);
+  }, [hasInitialLocalSession, isFeedRoute, user]);
 
   useEffect(() => {
     if (isFeedRoute) {
