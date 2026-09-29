@@ -166,9 +166,7 @@ function PersonDetails() {
           )}
 
           <div className="browse-copy">
-            <div className="browse-kicker">Filmography</div>
             <h1 className="browse-title">{person.name}</h1>
-            <p className="browse-subtitle browse-subtitle--hero">Movies featuring {person.name}, on screen and behind the camera.</p>
           </div>
         </section>
 
@@ -176,8 +174,8 @@ function PersonDetails() {
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
               <div className="detail-description-label">Filmography</div>
-              <h2 className="section-title">Movie Credits</h2>
-              <p className="section-subtitle">Movie roles and credits, with TV excluded for now.</p>
+              <h2 className="section-title">Filmography</h2>
+              <p className="section-subtitle">{sortedCredits.length} {sortedCredits.length === 1 ? "movie" : "movies"}</p>
             </div>
 
             <div className="person-credit-controls">
