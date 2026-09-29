@@ -1,0 +1,68 @@
+export const COLLECTIONS = [
+  {
+    slug: "best-90s-action-movies",
+    title: "Best 90s Action Movies",
+    eyebrow: "ReelBot Collection",
+    description: "Big stars, practical stunts, clean premises and movies that move. A starting lineup of 90s action films that still deliver.",
+    prompt: "Give me a great 90s action movie",
+    movies: ["terminator-2-judgment-day-1991","speed-1994","the-matrix-1999","the-rock-1996","face-off-1997","point-break-1991","true-lies-1994","con-air-1997","mission-impossible-1996","goldeneye-1995","the-long-kiss-goodnight-1996","air-force-one-1997"],
+  },
+  {
+    slug: "movies-like-heat",
+    title: "Movies Like Heat",
+    eyebrow: "If you liked Heat",
+    description: "Professional criminals, obsessive cops, hard choices and cities after dark. Crime movies that live in the same adult, high-stakes lane as Heat.",
+    prompt: "Something like Heat",
+    movies: ["thief-1981","collateral-2004","the-town-2010","inside-man-2006","ronin-1998","den-of-thieves-2018","training-day-2001","the-departed-2006","sicario-2015","drive-2011","to-live-and-die-in-la-1985","a-most-violent-year-2014"],
+  },
+  {
+    slug: "movies-like-interstellar",
+    title: "Movies Like Interstellar",
+    eyebrow: "If you liked Interstellar",
+    description: "Big science-fiction ideas with real emotional weight. Space, time, survival and awe without losing the human story.",
+    prompt: "Something like Interstellar",
+    movies: ["arrival-2016","contact-1997","the-martian-2015","2001-a-space-odyssey-1968","gravity-2013","sunshine-2007","ad-astra-2019","moon-2009","first-man-2018","solaris-2002","prospect-2018","aniara-2019"],
+  },
+  {
+    slug: "great-thrillers-under-2-hours",
+    title: "Great Thrillers Under 2 Hours",
+    eyebrow: "Shorter watches",
+    description: "Tense, sharp thrillers that get in and get out. For nights when you want a proper movie without giving up the whole evening.",
+    prompt: "A great thriller under two hours",
+    movies: ["run-lola-run-1998","phone-booth-2002","red-eye-2005","source-code-2011","a-simple-plan-1998","calibre-2018","the-guilty-2018","blue-ruin-2014","cop-car-2015","the-invitation-2015","green-room-2016","breakdown-1997"],
+  },
+  {
+    slug: "smart-sci-fi-movies",
+    title: "Smart Sci-Fi Movies",
+    eyebrow: "Ideas first",
+    description: "Science fiction with something on its mind. Big concepts, strong filmmaking and enough momentum to keep the ideas from becoming homework.",
+    prompt: "Smart sci-fi with a real payoff",
+    movies: ["arrival-2016","ex-machina-2015","children-of-men-2006","moon-2009","primer-2004","coherence-2013","annihilation-2018","minority-report-2002","district-9-2009","gattaca-1997","predestination-2014","upgrade-2018"],
+  },
+  {
+    slug: "great-90-minute-movies",
+    title: "Great 90-Minute Movies",
+    eyebrow: "No three-hour commitment",
+    description: "Movies that prove a night does not need an epic runtime. Fast, satisfying picks clustered around the 90-minute mark.",
+    prompt: "A great movie around 90 minutes",
+    movies: ["before-sunset-2004","run-lola-run-1998","toy-story-1995","the-iron-giant-1999","what-we-do-in-the-shadows-2014","frances-ha-2013","stand-by-me-1986","zombieland-2009","cloverfield-2008","phone-booth-2002","palm-springs-2020","the-guilty-2018"],
+  },
+  {
+    slug: "dark-crime-thrillers",
+    title: "Dark Crime Thrillers",
+    eyebrow: "After dark",
+    description: "Moral gray zones, bad decisions and pressure that keeps tightening. Crime thrillers for when polished and comfortable is not the mood.",
+    prompt: "A dark crime thriller",
+    movies: ["prisoners-2013","zodiac-2007","sicario-2015","no-country-for-old-men-2007","nightcrawler-2014","blue-ruin-2014","a-history-of-violence-2005","gone-baby-gone-2007","the-girl-with-the-dragon-tattoo-2011","wind-river-2017","memories-of-murder-2003","before-the-devil-knows-youre-dead-2007"],
+  },
+  {
+    slug: "comfort-movies-that-arent-rom-coms",
+    title: "Comfort Movies That Aren't Rom-Coms",
+    eyebrow: "Easy night",
+    description: "Warm, rewatchable and low-friction without defaulting to romance. Movies to put on when you want to enjoy yourself, not brace yourself.",
+    prompt: "A comfort movie that isn't a rom-com",
+    movies: ["chef-2014","the-martian-2015","school-of-rock-2003","paddington-2-2017","hunt-for-the-wilderpeople-2016","the-secret-life-of-walter-mitty-2013","o-brother-where-art-thou-2000","fantastic-mr-fox-2009","sing-street-2016","the-peanut-butter-falcon-2019","eddie-the-eagle-2016","the-princess-bride-1987"],
+  },
+];
+
+export const getCollection = (slug) => COLLECTIONS.find((collection) => collection.slug === slug);
