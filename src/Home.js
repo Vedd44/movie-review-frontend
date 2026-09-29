@@ -1815,6 +1815,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setSwapCount(nextSwapCount);
     setHasExpandedSwapPool(shouldExpandSearch);
 
+    // A replacement pick should enter the same clean loading state as the
+    // initial recommendation instead of leaving the previous movie on screen.
+    setPickResult(null);
+    setPickStatus(PICK_STATUS.LOADING);
+    setPickLoadingMessageOverride(shouldExpandSearch ? EXPANDED_SWAP_LOADING_MESSAGE : "Finding your pick…");
+    scrollToPickResults({ skipIfVisible: true });
+
     const eligibleSwapQueue = includeTheatrical
       ? swapQueue
       : swapQueue.filter((movie) => !movie?.availability_status?.theater_only);
@@ -1827,8 +1834,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       setPickResult(nextPayload);
       setSwapQueue(remainingQueue);
       setSwapHistory((currentHistory) => [...currentHistory, previousPick].slice(-10));
-      setPickStatus(PICK_STATUS.LOADING_SWAP);
-      setPickLoadingMessageOverride(shouldExpandSearch ? EXPANDED_SWAP_LOADING_MESSAGE : SWAP_LOADING_MESSAGE);
+      setPickStatus(PICK_STATUS.READY);
+      setPickLoadingMessageOverride("");
       void tasteActions.recordPickResult(swapPreferences, nextPayload).catch(() => {});
       scrollToPickResults({ skipIfVisible: true });
 
