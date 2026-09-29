@@ -17582,3 +17582,42 @@ body,
     font-size:.82rem !important;
   }
 }
+
+/* Mobile cinema contrast + assistant/nav separation */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero .home-hero-now-playing {
+    position:relative;
+    isolation:isolate;
+  }
+  .home-page > .home-hero .home-hero-now-playing::before {
+    content:"";
+    position:absolute;
+    z-index:-1;
+    top:-34px;
+    right:-24px;
+    bottom:-28px;
+    left:-24px;
+    background:linear-gradient(180deg,rgba(6,7,10,.82),rgba(6,7,10,.97) 34%,#07080b 100%);
+    pointer-events:none;
+  }
+  .home-page > .home-hero .home-hero-now-playing-heading,
+  .home-page > .home-hero .home-hero-now-playing-subtitle,
+  .home-page > .home-hero .home-hero-now-playing-title {
+    position:relative;
+    z-index:1;
+    text-shadow:0 1px 10px rgba(0,0,0,.65);
+  }
+
+  .ask-reelbot-trigger,
+  .detail-floating-reelbot {
+    right:18px !important;
+    bottom:calc(92px + env(safe-area-inset-bottom)) !important;
+    min-height:44px !important;
+    padding:8px 13px !important;
+    border-radius:999px !important;
+    box-shadow:0 10px 30px rgba(0,0,0,.42) !important;
+  }
+  .mobile-bottom-nav {
+    bottom:max(8px,env(safe-area-inset-bottom));
+  }
+}
