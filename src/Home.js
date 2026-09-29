@@ -1352,7 +1352,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     : "";
   const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")) : "";
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
-  const heroSubtext = "What are you in the mood for? ReelBot will figure out the rest.";
 
   const homeStructuredData = useMemo(() => {
     if (isFeedRoute) {
