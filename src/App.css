@@ -18436,3 +18436,26 @@ body,
     max-width: none;
   }
 }
+
+
+/* Collection page exit + contextual floating action */
+.collection-back-row {
+  display: flex;
+  justify-content: center;
+  margin: 54px 0 10px;
+}
+.collection-back-row .browse-library-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--border-color, rgba(255,255,255,.12));
+  border-radius: 999px;
+  text-decoration: none;
+}
+.ask-reelbot-trigger--collection {
+  border-color: rgba(242,197,86,.4);
+}
+@media (max-width: 560px) {
+  .collection-back-row { margin-top: 38px; }
+}
