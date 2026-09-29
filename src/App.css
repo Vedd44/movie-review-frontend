@@ -17953,3 +17953,152 @@ body,
     padding-right:16px !important;
   }
 }
+
+
+/* Mobile Browse: compact controls instead of a full-page wall of filter chips. */
+.browse-mobile-filter-select {
+  display:none;
+}
+
+@media only screen and (max-width:640px) {
+  .browse-page .browse-shell {
+    width:calc(100% - 24px);
+  }
+
+  .browse-page .browse-hero {
+    padding:16px 0 8px;
+    background:transparent;
+    border:0;
+  }
+
+  .browse-page .browse-kicker {
+    margin-bottom:4px;
+  }
+
+  .browse-page .browse-title {
+    font-size:clamp(1.8rem, 9vw, 2.35rem);
+  }
+
+  .library-discovery-controls {
+    gap:18px;
+    padding:10px 0 22px;
+  }
+
+  .library-discovery-controls .filter-group-row {
+    gap:8px;
+  }
+
+  .library-discovery-controls .browse-tabs--library {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    width:100%;
+    margin:0;
+    overflow:visible;
+    gap:6px;
+  }
+
+  .library-discovery-controls .browse-tabs--library button {
+    width:100%;
+    min-width:0;
+    min-height:40px;
+    padding:0 8px;
+    white-space:nowrap;
+    font-size:.76rem;
+  }
+
+  .library-discovery-controls .browse-filter-chips--desktop {
+    display:none;
+  }
+
+  .browse-mobile-filter-select {
+    display:block;
+    width:100%;
+    min-height:46px;
+    padding:0 42px 0 14px;
+    border:1px solid rgba(185,201,222,.16);
+    border-radius:12px;
+    color:#fff8e9;
+    background:#0b111b;
+    font:inherit;
+    font-size:.92rem;
+  }
+
+  .library-advanced-filters {
+    width:100%;
+  }
+
+  .library-advanced-filters > summary {
+    box-sizing:border-box;
+    width:100%;
+    min-height:44px;
+    padding:11px 14px;
+    border-color:rgba(185,201,222,.14);
+    border-radius:12px;
+    background:rgba(255,255,255,.025);
+  }
+
+  .library-advanced-filters-body {
+    padding:12px;
+  }
+
+  .library-advanced-filters-body .mood-chip-row {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    overflow:visible;
+  }
+
+  .library-advanced-filters-body .mood-rail-chip {
+    width:100%;
+    justify-content:center;
+  }
+
+  .library-results-head {
+    margin-top:26px;
+    margin-bottom:12px;
+    gap:6px;
+  }
+
+  .library-results-actions {
+    align-items:center;
+    gap:10px;
+  }
+
+  .browse-library-link--button {
+    text-align:right;
+  }
+
+  .browse-page .movie-list {
+    gap:18px 10px !important;
+  }
+
+  .browse-page .movie-card-content {
+    padding:10px 2px 0;
+  }
+
+  .browse-page .movie-card-meta {
+    display:none;
+  }
+
+  .browse-page .movie-card-title {
+    margin:0 0 3px;
+    font-size:.88rem;
+    line-height:1.25;
+  }
+
+  .browse-page .movie-card-date {
+    margin:0 0 8px;
+    font-size:.72rem;
+  }
+
+  .browse-page .movie-card-actions-row {
+    margin-top:0;
+  }
+
+  .browse-page .card-link {
+    box-sizing:border-box;
+    width:100%;
+    min-height:38px;
+    padding:8px 6px;
+    font-size:.76rem;
+  }
+}
