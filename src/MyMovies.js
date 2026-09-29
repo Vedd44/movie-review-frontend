@@ -145,11 +145,10 @@ function MyMovies() {
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
             <h1 className="browse-title">My movies</h1>
-            {user ? <p className="browse-subtitle browse-subtitle--hero">Saved, watched, and not for me.</p> : null}
-            {user ? <p className="my-movies-synced-note">Your picks are saved and synced across devices.</p> : null}
+            {user ? <p className="browse-subtitle browse-subtitle--hero">Saved, watched, and hidden movies.</p> : null}
             {user && askCandidateIds.length ? (
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: "pick something I saved but have not watched" })}>
-                Pick one for tonight
+                Pick from my movies
               </button>
             ) : null}
           </div>
@@ -172,9 +171,7 @@ function MyMovies() {
           <section className="detail-info-card my-movies-taste-card">
             <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
-                <div className="detail-description-label">Your taste so far</div>
-                <h2 className="section-title">What ReelBot is learning</h2>
-                <p className="section-subtitle">Signals from your saved, watched, and not-for-me choices.</p>
+                <h2 className="section-title">Your taste</h2>
               </div>
             </div>
             <div className="taste-learning-chips">
@@ -189,15 +186,11 @@ function MyMovies() {
         <section className="saved-movies-shell detail-info-card">
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
-              <h2 className="section-title">My lists</h2>
-              <p className="section-subtitle">Keep what interests you, remember what you watched, and rule out what doesn’t fit.</p>
+              <h2 className="section-title">Movies</h2>
             </div>
-            <div className="saved-movies-count-row">
-              <span className="results-count results-count--context">{isUsingCloudProfile ? "Synced to your account" : "Saved in this browser"}</span>
-              <span className="results-count results-count--context">{savedCounts.watchlist} saved</span>
-              <span className="results-count results-count--context">{savedCounts.seen} watched</span>
-              <span className="results-count results-count--context">{savedCounts.hidden} not for me</span>
-              {isCloudSyncing ? <span className="results-count results-count--context">Saving…</span> : null}
+            <div className="saved-movies-sync-status">
+              <span>{isUsingCloudProfile ? "Synced" : "Saved in this browser"}</span>
+              {isCloudSyncing ? <span>Saving…</span> : null}
             </div>
           </div>
           {cloudSyncError ? <p className="error-message my-movies-sync-error">{cloudSyncError}</p> : null}
@@ -217,10 +210,9 @@ function MyMovies() {
 
           <div className="saved-movies-tab-copy">
             <div>
-              <div className="detail-description-label">{activeTabConfig.label}</div>
               <p className="detail-secondary-text">{activeTabConfig.description}</p>
             </div>
-            <div className="results-count">{savedMovies.length} titles</div>
+            <div className="results-count">{savedMovies.length}</div>
           </div>
 
           {savedMovies.length ? (
