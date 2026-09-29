@@ -16359,3 +16359,10 @@ body,
 @media only screen and (max-width:480px) {
   .pick-backup-strip { grid-template-columns:1fr; }
 }
+
+/* Conversion hero: keep the proposition and prompt in one visual unit */
+.home-page .home-hero { padding-top: 24px; }
+.home-page .home-hero-title { margin-top: 6px; }
+@media only screen and (max-width:720px) {
+  .home-page .home-hero { padding-top: 22px; }
+}
