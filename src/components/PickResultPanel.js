@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
-import RecommendationRationale from "./RecommendationRationale";
 import TasteActionBar from "./TasteActionBar";
 import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
@@ -128,7 +127,6 @@ function PickResultPanel({
                 ) : null}
               </div>
               <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
-              <RecommendationRationale rationale={rationale} collapsible={!showExpandedReasoning} />
 
               <div className="pick-result-actions-block">
                 <div className="pick-primary-actions">
