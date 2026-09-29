@@ -108,12 +108,12 @@ export const getPanelConfig = (context = {}) => {
   if (context.page === "my_movies") {
     return {
       heading: "Pick from My Movies",
-      prompt: "Choose something I already saved",
+      prompt: "Choose from your saved movies",
       actions: [
-        ["Something I saved", "pick something I saved but have not watched"],
-        ["Shortest good option", "the shortest good option from my saved movies"],
-        ["Something easy tonight", "something easy tonight from my saved movies"],
-        ["Surprise me from my list", "surprise me from my saved movies"],
+        ["Pick for me", "choose one movie from my saved list that I have not watched"],
+        ["Shortest", "choose the shortest good movie from my saved list that I have not watched"],
+        ["Easy watch", "choose an easy-to-watch movie from my saved list that I have not watched"],
+        ["Surprise me", "surprise me with one movie from my saved list that I have not watched"],
       ],
     };
   }
