@@ -487,7 +487,7 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
       confidenceLabel: getConfidenceLabel(confidenceScore),
       confidenceStars: getConfidenceStars(confidenceScore),
       summaryLine: surpriseMode
-        ? "A wildcard from ReelBot — chosen to be worth a look, not to satisfy a rigid checklist."
+        ? decisionSentence
         : humanizeVisibleCopy(pickResult.rationale.summaryLine || getOverviewSummary(activePick)),
       fitLabel: surpriseMode ? "Surprise pick" : fitLabelText,
       tasteCue: getTasteCue(profile),
@@ -543,7 +543,7 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
     confidenceLabel: getConfidenceLabel(confidenceScore),
     confidenceStars: getConfidenceStars(confidenceScore),
     summaryLine: surpriseMode
-      ? "A wildcard from ReelBot — chosen to be worth a look, not to satisfy a rigid checklist."
+      ? decisionSentence
       : humanizeVisibleCopy(getOverviewSummary(activePick)),
     fitLabel: surpriseMode ? "Surprise pick" : fitLabelText,
     tasteCue: getTasteCue(profile),
