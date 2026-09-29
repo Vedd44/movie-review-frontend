@@ -5,6 +5,7 @@ import AuthModal from "./components/AuthModal";
 import ProfileMenu from "./components/ProfileMenu";
 import GlobalMovieSearch from "./components/GlobalMovieSearch";
 import AskReelbotLayer from "./components/AskReelbotLayer";
+import FeedbackModal from "./components/FeedbackModal";
 import { AskReelbotProvider } from "./context/AskReelbotContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath } from "./discovery";
@@ -136,44 +137,24 @@ function SiteHeader() {
 }
 
 function SiteFooter() {
-  const footerLinks = [
-    { label: "Ask ReelBot", to: "/#pick-for-me" },
-    { label: "Browse", to: "/browse" },
-    { label: "My Movies", to: "/my-movies" },
-    { label: "How it works", to: "/how-reelbot-works", secondary: true },
-  ];
-
-  return (
-    <footer className="site-footer">
-      <div className="site-footer-inner">
-        <div className="site-footer-brand">
-          <NavLink to="/" aria-label="ReelBot home"><img className="reelbot-footer-logo" src="/brand/reelbot-logo.svg" alt="ReelBot" width="154" height="60" loading="lazy" /></NavLink>
-          <p className="site-footer-copy">Find something worth watching. Faster.</p>
-        </div>
-
-        <nav className="site-footer-nav" aria-label="Footer">
-          <div className="site-footer-links" aria-label="Footer">
-            {footerLinks.map((link) => (
-              <NavLink
-                key={link.label}
-                to={link.to}
-                className={link.secondary ? "site-footer-link site-footer-link--secondary" : "site-footer-link"}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
-        </nav>
-
-        <div className="site-footer-bottom-bar">
-          <p className="site-footer-credit">
-            Built by <a href="https://jonnyegan.com" target="_blank" rel="noreferrer">Jonny Egan</a> using <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a> &amp; <a href="https://openai.com/" target="_blank" rel="noreferrer">OpenAI</a>
-          </p>
-          <div className="site-footer-version" aria-label={`Current site version ${SITE_VERSION}`}>{SITE_VERSION}</div>
-        </div>
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  return <>
+    <footer className="site-footer"><div className="site-footer-inner">
+      <div className="site-footer-brand">
+        <NavLink to="/" aria-label="ReelBot home"><img className="reelbot-footer-logo" src="/brand/reelbot-logo.svg" alt="ReelBot" width="154" height="60" loading="lazy" /></NavLink>
+        <p className="site-footer-copy">Stop browsing. Start watching.</p>
       </div>
-    </footer>
-  );
+      <nav className="site-footer-nav" aria-label="Footer"><div className="site-footer-links">
+        <NavLink to="/#pick-for-me" className="site-footer-link">Ask ReelBot</NavLink>
+        <NavLink to="/browse" className="site-footer-link">Browse</NavLink>
+        <NavLink to="/my-movies" className="site-footer-link">My Movies</NavLink>
+        <NavLink to="/how-reelbot-works" className="site-footer-link site-footer-link--secondary">How it works</NavLink>
+        <button type="button" className="site-footer-link site-footer-feedback" onClick={() => setFeedbackOpen(true)}>Send feedback</button>
+      </div></nav>
+      <div className="site-footer-bottom-bar"><p className="site-footer-credit">© 2026 ReelBot · Movie data by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a></p></div>
+    </div></footer>
+    <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+  </>;
 }
 
 function CookieNotice() {
