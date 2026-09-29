@@ -15618,3 +15618,68 @@ body,
   font-size: .78em;
   line-height: 1;
 }
+
+
+/* Pre-launch cleanup: auth, My Movies, person filmography */
+.auth-panel-success-block {
+  display:grid; justify-items:start; gap:10px; margin-top:10px; padding:22px;
+  border:1px solid rgba(240,189,87,.14); border-radius:18px;
+  background:rgba(240,189,87,.045);
+}
+.auth-panel-success-mark {
+  display:grid; place-items:center; width:32px; height:32px; border-radius:50%;
+  color:#101114; background:#f0bd57; font-weight:800;
+}
+.auth-panel-success-title { margin:0; color:#fff8ec; font-size:1.18rem; font-weight:700; }
+.auth-panel-success { margin:0; color:rgba(239,230,217,.68); line-height:1.55; }
+.auth-panel-success-block .reelbot-inline-button { margin-top:4px; min-height:40px; padding:0 15px; background:transparent; }
+
+.my-movies-empty-gate {
+  display:flex; align-items:center; justify-content:space-between; gap:28px;
+  padding:30px 32px; border:1px solid rgba(240,189,87,.11); border-radius:22px;
+  background:linear-gradient(145deg,rgba(14,18,25,.9),rgba(9,11,16,.92));
+}
+.my-movies-gate-copy { max-width:650px; }
+.my-movies-gate-copy .section-title { margin:7px 0 8px; }
+.my-movies-gate-copy .section-subtitle { margin:0; max-width:590px; }
+.my-movies-gate-actions { display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.my-movies-gate-actions .reelbot-inline-button { min-height:44px; padding:0 18px; border-radius:12px; }
+.my-movies-browse-action { background:transparent; color:rgba(245,240,231,.76); border-color:rgba(255,255,255,.1); }
+
+.person-filmography-section { padding:28px; }
+.person-credit-controls { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.person-filter-group, .person-sort-toggle { display:flex; flex-wrap:wrap; gap:5px; }
+.person-filter-group button, .person-sort-toggle button {
+  min-height:34px; padding:6px 11px; border:1px solid rgba(255,255,255,.08); border-radius:999px;
+  color:rgba(245,240,231,.62); background:rgba(255,255,255,.025); cursor:pointer;
+}
+.person-filter-group button.active, .person-sort-toggle button.active {
+  color:#fff1d0; border-color:rgba(240,189,87,.32); background:rgba(240,189,87,.09);
+}
+.person-credit-grid {
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:22px;
+}
+.person-credit-card {
+  display:grid; grid-template-columns:78px minmax(0,1fr); align-items:start; gap:14px;
+  min-height:118px; padding:12px; border:1px solid rgba(255,255,255,.055); border-radius:15px;
+  background:rgba(8,11,16,.46);
+}
+.person-credit-poster-link { width:78px; }
+.person-credit-poster { width:78px; height:117px; object-fit:cover; border-radius:9px; }
+.person-credit-copy { min-width:0; padding-top:2px; }
+.person-credit-title { margin:7px 0 4px; font-size:.98rem; line-height:1.2; }
+.person-credit-role { margin:7px 0 0; color:rgba(240,189,87,.68); font-size:.76rem; line-height:1.35; }
+
+.site-footer-feedback-icon { display:none; }
+
+@media only screen and (max-width:900px) {
+  .person-credit-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media only screen and (max-width:720px) {
+  .my-movies-empty-gate { align-items:flex-start; flex-direction:column; padding:24px 20px; }
+  .my-movies-gate-actions { width:100%; }
+  .my-movies-gate-actions .reelbot-inline-button { flex:1; justify-content:center; text-align:center; }
+  .person-filmography-section { padding:20px; }
+  .person-credit-controls { justify-content:flex-start; }
+  .person-credit-grid { grid-template-columns:1fr; }
+}
