@@ -17787,3 +17787,97 @@ body,
     white-space:nowrap;
   }
 }
+
+
+/* Mobile cleanup: full-bleed trending stage + compact browse controls */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero {
+    overflow:hidden !important;
+  }
+
+  .home-page > .home-hero .home-hero-copy {
+    width:100% !important;
+    max-width:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing {
+    position:relative !important;
+    left:auto !important;
+    transform:none !important;
+    box-sizing:border-box !important;
+    width:auto !important;
+    max-width:none !important;
+    margin:20px -24px -20px !important;
+    padding:34px 24px 30px !important;
+    background:#07080b !important;
+    overflow:hidden !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing::before,
+  .home-page > .home-hero .home-hero-now-playing::after {
+    content:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing-rail {
+    touch-action:pan-x pan-y !important;
+    overscroll-behavior-x:contain;
+  }
+
+  .home-page .home-browse-section .browse-tabs {
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:8px !important;
+    width:100% !important;
+    overflow:visible !important;
+  }
+
+  .home-page .home-browse-section .browse-tabs button {
+    min-width:0 !important;
+    padding:10px 6px !important;
+    font-size:.82rem !important;
+    white-space:nowrap;
+  }
+
+  .home-page .mood-rail--secondary {
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    gap:8px !important;
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .home-page .mood-rail--secondary::-webkit-scrollbar {
+    display:none;
+  }
+
+  .home-page .mood-rail--secondary .mood-rail-chip {
+    flex:0 0 auto !important;
+    white-space:nowrap;
+  }
+
+  .home-page .home-poster-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:12px !important;
+  }
+
+  .home-page .home-poster-grid .movie-card {
+    min-width:0 !important;
+  }
+}
+
+@media only screen and (max-width:420px) {
+  .home-page > .home-hero .home-hero-now-playing {
+    margin-left:-16px !important;
+    margin-right:-16px !important;
+    padding-left:16px !important;
+    padding-right:16px !important;
+  }
+
+  .home-page .home-poster-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
