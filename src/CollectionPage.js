@@ -120,7 +120,7 @@ export default function CollectionPage() {
           <h1 className="browse-title">{collection.title}</h1>
           <p className="collection-dek">{collection.description}</p>
           <div className="collection-hero-actions">
-            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot(collection.prompt)}>Ask ReelBot for one</button>
+            <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Ask ReelBot for one</button>
             <Link to="/collections" className="browse-library-link">See all collections</Link>
           </div>
         </section>
@@ -139,7 +139,7 @@ export default function CollectionPage() {
             <h2 className="section-title">Tell ReelBot what tonight actually looks like.</h2>
             <p className="section-subtitle">Add runtime, mood, company or whatever else matters and turn this list into one pick.</p>
           </div>
-          <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot(collection.prompt)}>Narrow it down</button>
+          <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Narrow it down</button>
         </section>
       </div>
     </div>
