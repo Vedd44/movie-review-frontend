@@ -487,7 +487,7 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
       confidenceLabel: getConfidenceLabel(confidenceScore),
       confidenceStars: getConfidenceStars(confidenceScore),
       summaryLine: surpriseMode
-        ? decisionSentence
+        ? getOverviewSummary(activePick)
         : humanizeVisibleCopy(pickResult.rationale.summaryLine || getOverviewSummary(activePick)),
       fitLabel: surpriseMode ? "Surprise pick" : fitLabelText,
       tasteCue: getTasteCue(profile),
@@ -543,7 +543,7 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
     confidenceLabel: getConfidenceLabel(confidenceScore),
     confidenceStars: getConfidenceStars(confidenceScore),
     summaryLine: surpriseMode
-      ? decisionSentence
+      ? getOverviewSummary(activePick)
       : humanizeVisibleCopy(getOverviewSummary(activePick)),
     fitLabel: surpriseMode ? "Surprise pick" : fitLabelText,
     tasteCue: getTasteCue(profile),
