@@ -1349,7 +1349,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     : "";
   const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")) : "";
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
-  const heroSubtext = "Describe what you’re in the mood for. ReelBot gives you one movie worth watching.";
+  const heroSubtext = "What are you in the mood for? ReelBot will figure out the rest.";
 
   const homeStructuredData = useMemo(() => {
     if (isFeedRoute) {
@@ -1998,7 +1998,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
-                introText="Or start with one:"
+                introText="Not sure? Start here:"
                 suggestions={visiblePromptSuggestions}
                 activeSuggestion={activePromptSuggestion}
                 value={pickPrompt}
