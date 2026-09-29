@@ -11,7 +11,6 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath } from "./discovery";
 import "./App.css";
 
-const SITE_VERSION = "v1.3.1";
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
