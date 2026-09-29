@@ -17724,3 +17724,24 @@ body,
     overflow:hidden;
   }
 }
+
+/* Mobile hero rail: break the section itself to the viewport, not an inner overlay */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero .home-hero-now-playing {
+    position:relative !important;
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    box-sizing:border-box !important;
+    width:100vw !important;
+    max-width:none !important;
+    margin:18px 0 -18px !important;
+    padding:38px 16px 30px !important;
+    background:#07080b !important;
+    overflow:hidden;
+  }
+
+  .home-page .home-result-section:has(.reelbot-loading-state) .reelbot-loading-state {
+    box-sizing:border-box;
+    padding:72px 28px 48px !important;
+  }
+}
