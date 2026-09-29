@@ -2145,8 +2145,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div id="pick-result" aria-hidden="true"></div>
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-              <div className="detail-description-label">Matched to your request</div>
-              <h2 className="section-title">ReelBot’s pick</h2>
+                <h2 className="section-title">ReelBot’s pick</h2>
             </div>
           </div>
 
