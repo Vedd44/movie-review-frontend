@@ -35,7 +35,7 @@ const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 const HOMEPAGE_PROMPT_POOL = [
   "Date night",
   "Smart but easy",
-  "Cozy night",
+  "Something cozy",
   "Crowd-pleaser",
   "Family safe",
   "Something weird",
@@ -1990,7 +1990,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
-                introText="Not sure? Start here:"
+                introText="Start with a feeling:"
                 suggestions={visiblePromptSuggestions}
                 activeSuggestion={activePromptSuggestion}
                 value={pickPrompt}
