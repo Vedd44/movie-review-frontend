@@ -1204,6 +1204,12 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
     return source.slice(0, 3);
   }, [curatedMovies, displayedMovies, filteredMovies]);
+  const heroArtMovie = useMemo(() => {
+    const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
+    const candidates = source.filter((movie) => movie?.backdrop_path).slice(0, 10);
+    if (!candidates.length) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
     [onboardingVibeId]
@@ -1983,14 +1989,14 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           id="pick-for-me"
           className="home-hero"
           aria-labelledby="home-hero-title"
-          style={heroPreviewMovies[0]?.backdrop_path ? {
-            "--home-hero-backdrop": `url("https://image.tmdb.org/t/p/w1280${heroPreviewMovies[0].backdrop_path}")`,
+          style={heroArtMovie?.backdrop_path ? {
+            "--home-hero-backdrop": `url("https://image.tmdb.org/t/p/w1280${heroArtMovie.backdrop_path}")`,
           } : undefined}
         >
           <div className="home-hero-copy">
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
-            <p className="home-hero-subtitle">{heroSubtext}</p>
+            <p className="home-hero-subtitle"><strong>What are you in the mood for?</strong><span>ReelBot will figure out the rest.</span></p>
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
