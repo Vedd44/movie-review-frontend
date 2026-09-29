@@ -48,7 +48,7 @@ const MAGIC_PROMPT_CARDS = [
   {
     title: "Everything Everywhere All at Once",
     posterPath: "/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg",
-    prompt: "“My wife hates horror. I want something weird.”",
+    prompt: "“My partner hates horror. I want something weird.”",
     note: "Dealbreakers count too.",
   },
 ];
@@ -1901,6 +1901,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   const handleSurprisePick = async () => {
     cancelRestoreState(PICK_STATUS.LOADING);
+    setPickResult(null);
+    setSwapQueue([]);
+    setCandidatePoolIds([]);
     trackProductEvent("surprise_me_clicked", { page: "home", theaters_toggle: includeTheatrical });
     clearRestoreTimer();
     setPickValidation("");
