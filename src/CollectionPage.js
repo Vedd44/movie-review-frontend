@@ -7,6 +7,37 @@ import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./d
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotContext";
 
+export function CollectionPreviewCard({ collection, compact = false }) {
+  const [previewMovies, setPreviewMovies] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.allSettled(collection.movies.slice(0, 3).map((slug) => axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
+      .then((results) => {
+        if (cancelled) return;
+        setPreviewMovies(results.filter((result) => result.status === "fulfilled" && result.value?.data?.poster_path).map((result) => result.value.data));
+      });
+    return () => { cancelled = true; };
+  }, [collection]);
+
+  return (
+    <Link to={`/collections/${collection.slug}`} className={`collection-preview-card${compact ? " collection-preview-card--compact" : ""}`}>
+      <div className="collection-preview-posters" aria-hidden="true">
+        {previewMovies.map((movie, index) => (
+          <img key={movie.id} src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt="" className={`collection-preview-poster collection-preview-poster--${index + 1}`} width="300" height="450" loading="lazy" decoding="async" />
+        ))}
+        <span className="collection-preview-shade"></span>
+      </div>
+      <div className="collection-preview-copy">
+        <span className="detail-description-label">{collection.eyebrow}</span>
+        <h2>{collection.title}</h2>
+        {!compact ? <p>{collection.description}</p> : null}
+        <span className="collection-preview-cta">Explore collection <span aria-hidden="true">→</span></span>
+      </div>
+    </Link>
+  );
+}
+
 function CollectionCard({ movie }) {
   return (
     <article className="movie-card movie-card--browse collection-movie-card">
@@ -52,14 +83,7 @@ export function CollectionsIndex() {
           <p className="collection-dek">Useful watchlists built around the way people actually look for a movie.</p>
         </section>
         <div className="collections-index-grid">
-          {COLLECTIONS.map((collection) => (
-            <Link key={collection.slug} to={`/collections/${collection.slug}`} className="collection-index-card">
-              <span className="detail-description-label">{collection.eyebrow}</span>
-              <h2>{collection.title}</h2>
-              <p>{collection.description}</p>
-              <span className="card-link">Explore collection →</span>
-            </Link>
-          ))}
+          {COLLECTIONS.map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} />)}
         </div>
       </div>
     </div>
