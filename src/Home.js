@@ -1981,8 +1981,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   return (
     <div className="browse-page home-page">
       <CinematicAtmosphere active={isHeroInputFocused || isPickBusy} loading={isPickBusy} />
-      <div className="container browse-shell home-shell">
-        <section
+      <section
           id="pick-for-me"
           className="home-hero"
           aria-labelledby="home-hero-title"
@@ -2096,6 +2095,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           </div>
         </section>
 
+      <div className="container browse-shell home-shell">
         {shouldRenderPickResultSection ? (
         <section id="your-pick" ref={pickResultSectionRef} className="pick-result-section home-result-section" aria-live="polite">
           <div id="pick-result" aria-hidden="true"></div>
