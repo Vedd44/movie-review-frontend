@@ -486,11 +486,13 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
       confidenceScore,
       confidenceLabel: getConfidenceLabel(confidenceScore),
       confidenceStars: getConfidenceStars(confidenceScore),
-      summaryLine: humanizeVisibleCopy(pickResult.rationale.summaryLine || getOverviewSummary(activePick)),
-      fitLabel: fitLabelText,
+      summaryLine: surpriseMode
+        ? "A wildcard from ReelBot — chosen to be worth a look, not to satisfy a rigid checklist."
+        : humanizeVisibleCopy(pickResult.rationale.summaryLine || getOverviewSummary(activePick)),
+      fitLabel: surpriseMode ? "Surprise pick" : fitLabelText,
       tasteCue: getTasteCue(profile),
       whyRecommended: Array.isArray(pickResult.rationale.whyRecommended) ? pickResult.rationale.whyRecommended.slice(0, 3) : [],
-      decisionVerdict: fitLabelText,
+      decisionVerdict: surpriseMode ? "Surprise pick" : fitLabelText,
       decisionSentence,
     };
   }
@@ -540,11 +542,13 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
     confidenceScore,
     confidenceLabel: getConfidenceLabel(confidenceScore),
     confidenceStars: getConfidenceStars(confidenceScore),
-    summaryLine: humanizeVisibleCopy(getOverviewSummary(activePick)),
-    fitLabel: fitLabelText,
+    summaryLine: surpriseMode
+      ? "A wildcard from ReelBot — chosen to be worth a look, not to satisfy a rigid checklist."
+      : humanizeVisibleCopy(getOverviewSummary(activePick)),
+    fitLabel: surpriseMode ? "Surprise pick" : fitLabelText,
     tasteCue: getTasteCue(profile),
     whyRecommended,
-    decisionVerdict: fitLabelText,
+    decisionVerdict: surpriseMode ? "Surprise pick" : fitLabelText,
     decisionSentence,
   };
 };
