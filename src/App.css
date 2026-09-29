@@ -17792,7 +17792,7 @@ body,
 /* Mobile cleanup: full-bleed trending stage + compact browse controls */
 @media only screen and (max-width:720px) {
   .home-page > .home-hero {
-    overflow:hidden !important;
+    overflow:visible !important;
   }
 
   .home-page > .home-hero .home-hero-copy {
@@ -17879,5 +17879,28 @@ body,
 
   .home-page .home-poster-grid {
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
+
+/* Final mobile trending geometry: true viewport stage, with deliberate inner spacing. */
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero .home-hero-now-playing {
+    position:relative !important;
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    box-sizing:border-box !important;
+    width:100vw !important;
+    max-width:none !important;
+    margin:20px 0 -20px !important;
+    padding:38px max(24px, calc((100vw - 100%) / 2 + 16px)) 32px !important;
+    background:#07080b !important;
+    overflow:hidden !important;
+  }
+  .home-page > .home-hero .home-hero-now-playing-head {
+    margin-bottom:24px !important;
+  }
+  .home-page > .home-hero .home-hero-now-playing-heading {
+    margin-bottom:7px !important;
   }
 }
