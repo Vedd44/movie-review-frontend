@@ -15683,3 +15683,76 @@ body,
   .person-credit-controls { justify-content:flex-start; }
   .person-credit-grid { grid-template-columns:1fr; }
 }
+
+
+/* Poster system sweep: keep movie art at the native 2:3 ratio and prevent card height drift. */
+.movie-poster,
+.no-poster,
+.home-page .home-movie-card .movie-poster,
+.home-page .home-movie-card .no-poster,
+.browse-page .movie-poster,
+.browse-page .no-poster,
+.search-result-card .movie-poster,
+.search-result-card .no-poster,
+.saved-movie-card .movie-poster,
+.saved-movie-card .no-poster,
+.pick-primary-poster,
+.pick-primary-poster--placeholder,
+.pick-backup-poster,
+.pick-backup-poster--placeholder,
+.similar-poster,
+.similar-poster-placeholder,
+.search-top-match-poster,
+.search-top-match-poster--placeholder {
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:2 / 3;
+  object-fit:cover;
+}
+
+.home-page .home-movie-card-poster-shell,
+.browse-page .movie-poster-shell {
+  aspect-ratio:2 / 3;
+  overflow:hidden;
+}
+.home-page .home-movie-card-poster-shell .movie-poster,
+.home-page .home-movie-card-poster-shell .no-poster,
+.browse-page .movie-poster-shell .movie-poster,
+.browse-page .movie-poster-shell .no-poster {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.detail-poster {
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:2 / 3;
+  object-fit:cover;
+}
+
+/* Movie detail actions: use consistent, intentional icon treatment. */
+.detail-text-action--hero {
+  gap:8px;
+}
+.detail-action-icon {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  font-size:0;
+}
+.detail-action-icon::before {
+  content:"";
+  display:block;
+  width:7px;
+  height:7px;
+  border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor;
+}
+.detail-action-icon--down::before { transform:rotate(45deg) translate(-1px,-1px); }
+.detail-action-icon--external::before { transform:rotate(-45deg); }
