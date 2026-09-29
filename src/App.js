@@ -135,6 +135,27 @@ function SiteHeader() {
   );
 }
 
+
+function MobileBottomNav() {
+  const location = useLocation();
+  const items = [
+    { label: "Ask", to: "/#pick-for-me", active: location.pathname === "/" && location.hash === "#pick-for-me" },
+    { label: "Browse", to: "/browse", active: location.pathname === "/browse" },
+    { label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
+  ];
+
+  return (
+    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+      {items.map((item) => (
+        <NavLink key={item.label} to={item.to} className={"mobile-bottom-nav-item" + (item.active ? " is-active" : "")}>
+          <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
+          <span>{item.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
 function SiteFooter() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   return <>
@@ -215,6 +236,7 @@ function AppShell() {
           </Suspense>
         </main>
         <SiteFooter />
+      <MobileBottomNav />
         <CookieNotice />
         <AuthModal />
         <AskReelbotLayer />
