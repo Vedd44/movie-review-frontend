@@ -138,13 +138,13 @@ function CinematicAtmosphere({ active = false, loading = false }) {
         context.fill();
       });
 
-      if (!state.reducedMotion && !state.mobile) {
-        state.rafId = window.requestAnimationFrame(render);
-      }
     };
 
     const scheduleDraw = () => {
-      window.cancelAnimationFrame(state.rafId);
+      if (state.rafId) {
+        window.cancelAnimationFrame(state.rafId);
+        state.rafId = 0;
+      }
       render(performance.now());
     };
 
@@ -171,8 +171,20 @@ function CinematicAtmosphere({ active = false, loading = false }) {
       render(time);
     };
 
+    let lastFrameTime = 0;
+    const FRAME_INTERVAL = 1000 / 30;
+
     const handleFrame = (time) => {
-      animate(time);
+      if (document.hidden) {
+        state.rafId = window.requestAnimationFrame(handleFrame);
+        return;
+      }
+
+      if (time - lastFrameTime >= FRAME_INTERVAL) {
+        lastFrameTime = time;
+        animate(time);
+      }
+
       if (!state.reducedMotion && !state.mobile) {
         state.rafId = window.requestAnimationFrame(handleFrame);
       }
@@ -180,10 +192,10 @@ function CinematicAtmosphere({ active = false, loading = false }) {
 
     const handleResize = () => {
       state.mobile = mobileQuery.matches;
+      state.reducedMotion = reducedMotionQuery.matches;
       resize();
       scheduleDraw();
       if (!state.reducedMotion && !state.mobile) {
-        window.cancelAnimationFrame(state.rafId);
         state.rafId = window.requestAnimationFrame(handleFrame);
       }
     };
@@ -199,7 +211,14 @@ function CinematicAtmosphere({ active = false, loading = false }) {
       canvas.addEventListener("touchend", handlePointerLeave);
     }
 
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !state.reducedMotion && !state.mobile && !state.rafId) {
+        state.rafId = window.requestAnimationFrame(handleFrame);
+      }
+    };
+
     window.addEventListener("resize", handleResize);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     if (typeof reducedMotionQuery.addEventListener === "function") {
       reducedMotionQuery.addEventListener("change", handleResize);
       mobileQuery.addEventListener("change", handleResize);
@@ -211,6 +230,7 @@ function CinematicAtmosphere({ active = false, loading = false }) {
     return () => {
       window.cancelAnimationFrame(state.rafId);
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerleave", handlePointerLeave);
       canvas.removeEventListener("touchmove", handlePointerMove);
