@@ -100,7 +100,7 @@ export default function CollectionPage() {
     if (!collection) return;
     let cancelled = false;
     setLoading(true);
-    Promise.allSettled(collection.movies.map((slug) => axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
+    Promise.allSettled(collection.movies.filter((slug) => slug !== collection.anchorMovie).map((slug) => axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
       .then((results) => {
         if (cancelled) return;
         setMovies(results.filter((result) => result.status === "fulfilled" && result.value?.data?.id).map((result) => result.value.data));
