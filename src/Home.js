@@ -731,7 +731,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [hasSeenFirstPickSummary, setHasSeenFirstPickSummary] = useState(() => readLocalFlag(FIRST_PICK_SUMMARY_SEEN_STORAGE_KEY));
   const [isFirstPickIntroActive, setIsFirstPickIntroActive] = useState(false);
   const [onboardingFeedMovies, setOnboardingFeedMovies] = useState([]);
-  const [trendingPreviewMovies, setTrendingPreviewMovies] = useState([]);
   const [, setOnboardingStep] = useState(() => (initialPickSession.currentPick?.primary ? "complete" : "intent"));
   const [onboardingVibeId, setOnboardingVibeId] = useState(() => String(initialPickSession.onboardingVibeId || ""));
   const [onboardingLikedIds, setOnboardingLikedIds] = useState(() => (Array.isArray(initialPickSession.onboardingLikedIds) ? initialPickSession.onboardingLikedIds : []));
@@ -1029,23 +1028,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   );
 
   useEffect(() => {
-    let cancelled = false;
-
-    homeFeedService.requestFeed("popular", 1)
-      .then((payload) => {
-        if (cancelled) return;
-        setTrendingPreviewMovies(normalizeFeedMovies(payload.results || [], "popular"));
-      })
-      .catch((previewError) => {
-        console.error("Error fetching homepage trending preview:", previewError);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
     if (pickStatus !== PICK_STATUS.RESTORING) {
       clearRestoreTimer();
       return undefined;
@@ -1256,13 +1238,10 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [curatedMovies, filteredMovies, movieType]);
 
   const heroPreviewMovies = useMemo(() => {
-    const source = trendingPreviewMovies.length
-      ? trendingPreviewMovies
-      : (displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies);
-    const browseIds = new Set(displayedMovies.slice(0, 8).map((movie) => movie.id));
-    const distinctMovies = source.filter((movie) => !browseIds.has(movie.id));
-    return (distinctMovies.length >= 3 ? distinctMovies : source).slice(0, 3);
-  }, [curatedMovies, displayedMovies, filteredMovies, trendingPreviewMovies]);
+    const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
+    const previewPool = source.slice(3, 10);
+    return (previewPool.length >= 3 ? previewPool : source).slice(0, 3);
+  }, [curatedMovies, displayedMovies, filteredMovies]);
   const heroArtMovies = useMemo(() => {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
     return source.filter((movie) => movie?.poster_path).slice(0, 7);
