@@ -35,10 +35,7 @@ const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 const HOMEPAGE_PROMPT_POOL = [
   "Date night",
   "Smart but easy",
-  "Something cozy",
-  "Crowd-pleaser",
   "Family safe",
-  "Something weird",
   "Under 100 minutes",
 ];
 
@@ -2022,7 +2019,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 onKeyDown={handlePromptKeyDown}
                 onFocus={() => { setIsHeroInputFocused(true); trackProductEvent("prompt_started", { page: "home" }); }}
                 onBlur={() => setIsHeroInputFocused(false)}
-                placeholder='Try “a smart thriller under two hours”'
+                placeholder='Try “something fun and stupid, but actually good”'
                 errorText={pickValidation}
               />
 
