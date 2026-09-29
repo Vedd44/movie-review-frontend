@@ -16565,3 +16565,89 @@ body,
     border-radius: 16px;
   }
 }
+
+/* Hero polish: compact decision surface over cinematic art */
+.home-page .home-hero {
+  padding-top: 34px;
+  padding-bottom: 18px;
+  min-height: auto;
+}
+.home-page .home-hero-copy {
+  width: min(100%, 900px);
+}
+.home-page .home-hero-title {
+  max-width: 11ch;
+  margin: 8px auto 10px;
+  font-size: clamp(3.25rem, 5.7vw, 5.25rem);
+  line-height: .91;
+}
+.home-page .home-hero-subtitle {
+  font-size: .94rem;
+}
+.home-page .home-hero-form {
+  width: min(100%, 660px);
+  margin-top: 22px;
+  gap: 12px;
+}
+.home-page .home-hero .pick-prompt-input {
+  height: 54px;
+  min-height: 54px;
+  border-radius: 15px;
+  background: rgba(8,9,13,.82);
+  box-shadow: 0 12px 34px rgba(0,0,0,.16);
+}
+.home-page .home-hero .pick-prompt-suggestions {
+  justify-content: flex-start;
+  width: 100%;
+  margin: 5px 0 2px;
+  padding-left: 4px;
+}
+.home-page .home-hero .pick-prompt-chip {
+  min-height: 26px;
+  padding: 3px 9px;
+  font-size: .7rem;
+  border-color: rgba(255,255,255,.055);
+  background: rgba(7,8,11,.18);
+}
+.home-page .home-hero-actions--primary {
+  margin-top: 8px;
+}
+.home-page .home-hero .reelbot-toggle-option.theatrical-toggle--quiet {
+  margin-top: 2px;
+  background: rgba(8,9,12,.28);
+  border-color: rgba(255,255,255,.055);
+}
+.home-page .home-hero-now-playing {
+  width: min(100%, 660px);
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top-color: rgba(255,255,255,.07);
+}
+.home-page .home-hero-now-playing-copy {
+  margin-top: 3px;
+  font-size: .82rem;
+  color: rgba(239,230,217,.48);
+}
+.home-page .home-hero::before {
+  opacity: .32;
+  background-position: center 38%;
+}
+.home-page .home-hero::after {
+  background:
+    linear-gradient(90deg, rgba(7,8,11,.78) 0%, rgba(7,8,11,.48) 28%, rgba(7,8,11,.48) 72%, rgba(7,8,11,.78) 100%),
+    linear-gradient(180deg, rgba(7,8,11,.58) 0%, rgba(7,8,11,.62) 52%, rgba(7,8,11,.9) 100%);
+}
+.home-page .home-browse-section {
+  margin-top: 0;
+  padding-top: 46px;
+}
+@media only screen and (max-width:720px) {
+  .home-page .home-hero { padding-top: 24px; padding-bottom: 16px; }
+  .home-page .home-hero-title {
+    font-size: clamp(2.5rem, 12vw, 3.35rem);
+    margin-bottom: 10px;
+  }
+  .home-page .home-hero-subtitle { font-size: .88rem; }
+  .home-page .home-hero-form { margin-top: 20px; }
+  .home-page .home-hero .pick-prompt-suggestions { padding-left: 0; }
+}
