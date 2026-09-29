@@ -15798,3 +15798,27 @@ body,
     font-size:clamp(2rem,10vw,3rem);
   }
 }
+
+
+/* Person page final simplification */
+.person-page .person-hero {
+  min-height:0;
+  padding:26px 30px;
+}
+.person-page .person-hero .browse-copy {
+  align-self:center;
+}
+.person-page .person-hero .browse-title {
+  margin:0;
+}
+.person-page .person-filmography-section .section-header {
+  align-items:flex-end;
+}
+.person-page .person-filmography-section .section-title {
+  margin-bottom:2px;
+}
+.person-page .person-filmography-section .section-subtitle {
+  margin:0;
+  font-size:.88rem;
+  color:rgba(245,240,231,.46);
+}
