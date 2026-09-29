@@ -723,6 +723,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [hasExpandedSwapPool, setHasExpandedSwapPool] = useState(() => Boolean(initialPickSession.hasExpandedSwapPool));
   const [pickStatus, setPickStatus] = useState(() => (initialPickSession.currentPick?.primary ? PICK_STATUS.RESTORING : PICK_STATUS.IDLE));
   const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
+  const [pickTake, setPickTake] = useState(null);
   const [visiblePromptSuggestions, setVisiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
   const restoreStatusTimeoutRef = useRef(null);
@@ -1270,6 +1271,24 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     () => buildRecommendationRationale({ pickResult, activePick, profile, surpriseMode: lastPickMode === "surprise" }),
     [pickResult, activePick, profile, lastPickMode]
   );
+  useEffect(() => {
+    let cancelled = false;
+    setPickTake(null);
+    if (!activePick?.id) return undefined;
+
+    axios.get(`${API_BASE_URL}/movies/${activePick.id}/reelbot-take`)
+      .then((response) => {
+        if (!cancelled) setPickTake(response.data?.take || null);
+      })
+      .catch(() => {
+        if (!cancelled) setPickTake(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activePick?.id]);
+
   const onboardingReasoning = useMemo(() => (
     onboardingResultActive && activePick
       ? buildOnboardingReasoningCopy({
@@ -1286,13 +1305,14 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       return recommendationRationale;
     }
 
-    return onboardingReasoning
-      ? {
-          ...recommendationRationale,
-          decisionSentence: onboardingReasoning || recommendationRationale.decisionSentence,
-        }
-      : recommendationRationale;
-  }, [onboardingReasoning, recommendationRationale]);
+    const takeAssessment = String(pickTake?.assessment || "").trim();
+    return {
+      ...recommendationRationale,
+      summaryLine: takeAssessment || recommendationRationale.summaryLine,
+      decisionSentence: takeAssessment || onboardingReasoning || recommendationRationale.decisionSentence,
+      contextAnchor: "",
+    };
+  }, [onboardingReasoning, pickTake, recommendationRationale]);
   const lastPickMeta = useMemo(() => {
     const title = activePick?.title || "";
     const reason =
