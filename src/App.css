@@ -15756,3 +15756,45 @@ body,
 }
 .detail-action-icon--down::before { transform:rotate(45deg) translate(-1px,-1px); }
 .detail-action-icon--external::before { transform:rotate(-45deg); }
+
+
+/* Person page: compact editorial identity block. */
+.person-page .person-hero {
+  grid-template-columns: 132px minmax(0,1fr);
+  gap:28px;
+  padding:28px 30px;
+}
+.person-page .person-profile-image {
+  display:block;
+  width:132px;
+  height:176px;
+  aspect-ratio:auto;
+  object-fit:cover;
+  object-position:center 18%;
+  border-radius:14px;
+}
+.person-page .person-hero .browse-title {
+  font-size:clamp(2.5rem,5vw,4.5rem);
+}
+.person-page .person-hero .browse-subtitle {
+  max-width:620px;
+  margin-top:10px;
+}
+.person-page .person-filmography-section .detail-description-label {
+  display:none;
+}
+@media only screen and (max-width:640px) {
+  .person-page .person-hero {
+    grid-template-columns:88px minmax(0,1fr);
+    gap:18px;
+    padding:22px 18px;
+  }
+  .person-page .person-profile-image {
+    width:88px;
+    height:118px;
+    border-radius:11px;
+  }
+  .person-page .person-hero .browse-title {
+    font-size:clamp(2rem,10vw,3rem);
+  }
+}
