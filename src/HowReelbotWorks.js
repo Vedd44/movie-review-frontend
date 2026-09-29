@@ -29,7 +29,7 @@ function HowReelbotWorks() {
           <div className="how-it-works-steps">
             <article>
               <span>1</span>
-              <div><strong>Tell ReelBot what you want</strong><p>Describe the mood, genre, pace, runtime, or whatever matters tonight.</p></div>
+              <div><strong>Tell ReelBot what you want</strong><p>Describe the mood, genre, pace, runtime, or whatever matters.</p></div>
             </article>
             <article>
               <span>2</span>
