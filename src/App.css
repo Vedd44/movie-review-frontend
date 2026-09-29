@@ -11948,7 +11948,7 @@ body {
   z-index: 0;
   pointer-events: none;
   opacity: 0.8;
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
 }
 
 .hero-atmosphere::before {
@@ -12590,9 +12590,7 @@ body {
 }
 
 .page-atmosphere-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
+  display: none;
 }
 
 .home-page .home-shell,
@@ -15216,4 +15214,11 @@ body {
     padding-inline: 12px;
     white-space: normal;
   }
+}
+
+
+/* Performance containment: defer below-fold homepage paint/layout until needed. */
+.home-page .home-browse-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1100px;
 }
