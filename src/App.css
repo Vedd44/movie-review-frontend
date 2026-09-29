@@ -16704,3 +16704,27 @@ body,
   }
   .home-page .home-hero-art-panel--3 { display:none; }
 }
+
+/* Emergency correction: keep hero in document flow and break out symmetrically */
+.home-page .home-hero {
+  left: auto !important;
+  transform: none !important;
+  width: 100vw !important;
+  margin-left: calc((100% - 100vw) / 2) !important;
+  margin-right: calc((100% - 100vw) / 2) !important;
+  overflow: hidden;
+}
+.home-page .home-hero-art {
+  inset: 0 !important;
+  width: 100%;
+  height: 100%;
+}
+@media only screen and (max-width:720px) {
+  .home-page .home-hero {
+    left: auto !important;
+    transform: none !important;
+    width: 100vw !important;
+    margin-left: calc((100% - 100vw) / 2) !important;
+    margin-right: calc((100% - 100vw) / 2) !important;
+  }
+}
