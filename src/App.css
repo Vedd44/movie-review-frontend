@@ -16841,3 +16841,78 @@ body,
       linear-gradient(180deg,rgba(5,6,9,.34),#07080b 100%);
   }
 }
+
+/* Cinema wall: recognizable poster art at the edges, protected spotlight for the product */
+.home-page > .home-hero {
+  min-height: 650px;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(240,189,87,.08), transparent 28%),
+    #07080b;
+}
+.home-page > .home-hero .home-hero-art {
+  display: block;
+  inset: 0 !important;
+  opacity: .72;
+  transform: scale(1.035);
+}
+.home-page > .home-hero .home-hero-art-panel {
+  top: auto;
+  bottom: auto;
+  width: 16.5%;
+  height: 52%;
+  aspect-ratio: 2 / 3;
+  border-radius: 9px;
+  background-size: cover;
+  background-position: center;
+  filter: saturate(.78) contrast(1.03) brightness(.68);
+  box-shadow: 0 18px 50px rgba(0,0,0,.38);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.home-page > .home-hero .home-hero-art-panel::after {
+  background: linear-gradient(180deg,rgba(4,5,7,.08),rgba(4,5,7,.34));
+}
+.home-page > .home-hero .home-hero-art-panel--1 { left:-2.5%; top:5%; transform:rotate(-5deg); }
+.home-page > .home-hero .home-hero-art-panel--2 { left:11%; top:48%; transform:rotate(3deg); }
+.home-page > .home-hero .home-hero-art-panel--3 { left:22%; top:-15%; transform:rotate(5deg); opacity:.72; }
+.home-page > .home-hero .home-hero-art-panel--4 { right:22%; top:-14%; transform:rotate(-4deg); opacity:.72; }
+.home-page > .home-hero .home-hero-art-panel--5 { right:10%; top:47%; transform:rotate(-3deg); }
+.home-page > .home-hero .home-hero-art-panel--6 { right:-2.5%; top:5%; transform:rotate(5deg); }
+.home-page > .home-hero .home-hero-art-panel--7 { left:42%; top:72%; width:16%; opacity:.22; transform:rotate(2deg); }
+.home-page > .home-hero::after {
+  background:
+    radial-gradient(ellipse 37% 72% at 50% 38%, rgba(5,6,9,.985) 0%, rgba(5,6,9,.96) 46%, rgba(5,6,9,.79) 68%, rgba(5,6,9,.22) 100%),
+    linear-gradient(90deg,rgba(5,6,9,.3) 0%,transparent 18%,transparent 82%,rgba(5,6,9,.3) 100%),
+    linear-gradient(180deg,rgba(5,6,9,.18) 0%,rgba(5,6,9,.24) 65%,#07080b 100%);
+}
+.home-page > .home-hero .home-hero-copy {
+  text-shadow: 0 2px 22px rgba(0,0,0,.46);
+}
+.home-page > .home-hero .home-hero-subtitle {
+  color: rgba(239,230,217,.78);
+}
+.home-page > .home-hero .home-hero-subtitle span {
+  color: rgba(239,230,217,.58);
+}
+@media only screen and (max-width:720px) {
+  .home-page > .home-hero { min-height: auto; }
+  .home-page > .home-hero .home-hero-art { opacity:.55; }
+  .home-page > .home-hero .home-hero-art-panel {
+    display:none;
+    width:35%;
+    height:42%;
+  }
+  .home-page > .home-hero .home-hero-art-panel--1,
+  .home-page > .home-hero .home-hero-art-panel--2,
+  .home-page > .home-hero .home-hero-art-panel--5,
+  .home-page > .home-hero .home-hero-art-panel--6 { display:block; }
+  .home-page > .home-hero .home-hero-art-panel--1 { left:-16%; top:4%; }
+  .home-page > .home-hero .home-hero-art-panel--2 { left:-13%; top:57%; }
+  .home-page > .home-hero .home-hero-art-panel--5 { right:-13%; top:57%; }
+  .home-page > .home-hero .home-hero-art-panel--6 { right:-16%; top:4%; }
+  .home-page > .home-hero::after {
+    background:
+      radial-gradient(ellipse 78% 72% at 50% 35%,rgba(5,6,9,.99) 0%,rgba(5,6,9,.94) 55%,rgba(5,6,9,.7) 78%,rgba(5,6,9,.28) 100%),
+      linear-gradient(180deg,rgba(5,6,9,.22),#07080b 100%);
+  }
+}
