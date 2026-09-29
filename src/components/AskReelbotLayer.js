@@ -10,6 +10,7 @@ import { getPromptCategory, trackProductEvent } from "../analytics";
 import { classifyAskIntent, getAskLoadingCopy, isRecommendationIntent } from "../askIntent";
 import { addHistoryStatus, createAskConversation } from "../askConversation";
 import { pickLoadingQuote } from "../reelbotLoadingQuotes";
+import { buildReelbotTake } from "../detailDecision";
 
 const GENERAL_ACTIONS = [
   ["Find me something to watch", "something worth watching tonight"],
@@ -85,9 +86,6 @@ export const getPanelConfig = (context = {}) => {
       prompt: "Choose one from this collection, or add another preference.",
       actions: [
         ["Just pick one", context.collection?.prompt || `pick one movie from ${title}`],
-        ["Something shorter", `${context.collection?.prompt || title}, but keep it on the shorter side`],
-        ["Something lighter", `${context.collection?.prompt || title}, but lighter`],
-        ["Something less obvious", `${context.collection?.prompt || title}, but give me a less obvious pick`],
       ],
     };
   }
@@ -153,6 +151,7 @@ function AskReelbotLayer() {
   const [loadingIntent, setLoadingIntent] = useState("");
   const [loadingQuote, setLoadingQuote] = useState(null);
   const [error, setError] = useState("");
+  const [decisionTake, setDecisionTake] = useState(null);
 
   const fallbackContext = useMemo(() => ({
     page: location.pathname === "/now-playing" ? "now_playing" : "general",
@@ -318,6 +317,20 @@ function AskReelbotLayer() {
     }
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    setDecisionTake(null);
+    if (!result?.primary?.id) return () => { cancelled = true; };
+    axios.get(`${API_BASE_URL}/movies/${result.primary.id}/reelbot-take`)
+      .then((response) => {
+        if (cancelled) return;
+        const take = buildReelbotTake({ movie: result.primary, genericTake: response.data?.take || null, recommendationContext: null });
+        setDecisionTake(take?.assessment || null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [result?.primary?.id]);
+
   const submitDraft = (event) => {
     event?.preventDefault();
     requestPick(draft);
@@ -325,7 +338,7 @@ function AskReelbotLayer() {
 
   const closePanel = () => setOpen(false);
   const rationaleLines = result?.rationale?.whyRecommended || result?.rationale?.why_this_works || [];
-  const resultReason = rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.primary?.reason || result?.summary;
+  const resultReason = decisionTake || rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.primary?.reason || result?.summary;
   const loadingCopy = getAskLoadingCopy(loadingIntent);
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
   const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
@@ -340,7 +353,7 @@ function AskReelbotLayer() {
           <section ref={sheetRef} className="ask-reelbot-sheet" role="dialog" aria-modal="true" aria-labelledby="ask-reelbot-sheet-title" onMouseDown={(event) => event.stopPropagation()}>
             <header className="ask-reelbot-sheet-head">
               <div>
-                <div className="detail-description-label reelbot-assistant-label"><img src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="20" height="24" />Decision help</div>
+                <div className="detail-description-label reelbot-assistant-label"><img src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="20" height="24" />Decision Helper</div>
                 <h2 id="ask-reelbot-sheet-title">{config.heading}</h2>
                 {!result && !answerResult ? <p>{config.prompt}</p> : null}
               </div>
