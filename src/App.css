@@ -17289,3 +17289,142 @@ body,
   border-color:rgba(240,189,87,.52);
   background:linear-gradient(135deg,rgba(240,189,87,.22),rgba(215,134,63,.12));
 }
+
+/* 2026 product finish — one restrained visual system across ReelBot */
+.movie-card,
+.home-movie-card,
+.movie-card--browse,
+.saved-movie-card,
+.search-result-card,
+.person-credit-card,
+.pick-backup-card {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.movie-poster-shell,
+.home-movie-card-poster-shell,
+.pick-backup-poster-link,
+.person-credit-poster-link,
+.similar-card {
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 13px;
+  background: #0e1015;
+  box-shadow: 0 10px 26px rgba(0,0,0,.24);
+}
+.movie-card-content,
+.saved-movie-card-content,
+.person-credit-copy,
+.pick-backup-meta {
+  padding-left: 1px !important;
+  padding-right: 1px !important;
+}
+.movie-card-title,
+.person-credit-title,
+.pick-backup-title,
+.similar-title {
+  letter-spacing: -.01em;
+}
+.movie-card-date,
+.person-credit-role,
+.pick-backup-reason,
+.similar-year {
+  color: rgba(239,230,217,.46);
+}
+.pick-primary-card--hero {
+  border: 1px solid rgba(255,255,255,.065) !important;
+  background:
+    radial-gradient(circle at 12% 0%,rgba(240,189,87,.055),transparent 28%),
+    #0b0e14 !important;
+  box-shadow: 0 22px 70px rgba(0,0,0,.28) !important;
+}
+.pick-primary-poster {
+  border-radius: 14px;
+  box-shadow: 0 16px 38px rgba(0,0,0,.32);
+}
+.pick-primary-fit-label {
+  border-color: rgba(240,189,87,.24);
+  background: rgba(240,189,87,.075);
+}
+.recommendation-rationale {
+  border-color: rgba(255,255,255,.055);
+  background: rgba(255,255,255,.018);
+}
+.site-header {
+  border-bottom-color: rgba(255,255,255,.055);
+  background: rgba(8,9,13,.94);
+}
+.mobile-bottom-nav { display:none; }
+
+@media only screen and (max-width:720px) {
+  body { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    z-index: 1190;
+    left: 10px;
+    right: 10px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    min-height: 58px;
+    padding: 5px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 18px;
+    background: rgba(10,11,16,.94);
+    box-shadow: 0 14px 42px rgba(0,0,0,.46);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .mobile-bottom-nav-item {
+    display:flex;
+    min-width:0;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    border-radius:13px;
+    color:rgba(239,230,217,.52);
+    font-size:.66rem;
+    font-weight:650;
+    line-height:1;
+    text-decoration:none;
+  }
+  .mobile-bottom-nav-item.is-active {
+    color:#f3c76c;
+    background:rgba(240,189,87,.075);
+  }
+  .mobile-bottom-nav-icon {
+    display:block;
+    height:16px;
+    font-size:15px;
+    line-height:16px;
+  }
+  .mobile-bottom-nav-item:nth-child(1) .mobile-bottom-nav-icon::before { content:"✦"; }
+  .mobile-bottom-nav-item:nth-child(2) .mobile-bottom-nav-icon::before { content:"▦"; }
+  .mobile-bottom-nav-item:nth-child(3) .mobile-bottom-nav-icon::before { content:"▤"; }
+
+  .ask-reelbot-trigger,
+  .detail-floating-reelbot {
+    bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+  }
+  .site-footer { margin-bottom: 18px; }
+
+  .movie-card,
+  .home-movie-card,
+  .movie-card--browse,
+  .saved-movie-card,
+  .search-result-card,
+  .person-credit-card {
+    min-height:0 !important;
+  }
+  .movie-card-content,
+  .saved-movie-card-content,
+  .person-credit-copy {
+    padding-top:9px !important;
+  }
+  .pick-primary-card--hero {
+    border-radius:18px !important;
+    box-shadow:0 18px 50px rgba(0,0,0,.26) !important;
+  }
+}
