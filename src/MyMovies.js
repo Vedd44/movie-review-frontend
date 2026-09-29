@@ -159,24 +159,15 @@ function MyMovies() {
         </section>
 
         {!user ? (
-          <section className="detail-info-card my-movies-empty-gate">
-            <div className="section-header section-header--stacked-mobile section-header--compact">
-              <div>
-                <h2 className="section-title">Sign in to see your picks</h2>
-                <p className="section-subtitle">Save your picks and pick up where you left off.</p>
-              </div>
+          <section className="my-movies-empty-gate">
+            <div className="my-movies-gate-copy">
+              <div className="browse-kicker">Your library</div>
+              <h2 className="section-title">Keep the movies you care about.</h2>
+              <p className="section-subtitle">Sign in to save picks, track what you’ve watched, and help ReelBot avoid repeats.</p>
             </div>
-            <div className="saved-empty-actions">
-              <button
-                type="button"
-                className="reelbot-inline-button reelbot-inline-button--solid"
-                onClick={() => openAuthPrompt("my_movies_gate")}
-              >
-                Sign in
-              </button>
-              <Link to="/browse" className="card-link">
-                Browse Movies
-              </Link>
+            <div className="my-movies-gate-actions">
+              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAuthPrompt("my_movies_gate")}>Sign in</button>
+              <Link to="/browse" className="reelbot-inline-button my-movies-browse-action">Browse movies</Link>
             </div>
           </section>
         ) : null}
