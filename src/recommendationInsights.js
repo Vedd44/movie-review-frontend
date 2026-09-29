@@ -413,7 +413,7 @@ const createEditorialBackupLine = (movie = {}, index = 0) => {
         ? "Muscular action that keeps momentum driving."
         : hasGenres(movie, ["Drama", "History", "Music"])
           ? "Character focus that lets you lean into the performances."
-          : "Takes a different tack to keep things fresh.";
+          : "A different option from the same request.";
 
   return `${lead} ${detail}`;
 };
@@ -431,7 +431,7 @@ export const getBackupRoleLabel = (movie = {}, index = 0) => {
     return "If you're in the mood for something steadier";
   }
 
-  return "Another angle";
+  return "Worth considering";
 };
 
 export const getBackupCardMeta = (movie, index = 0) => {
