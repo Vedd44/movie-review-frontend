@@ -335,8 +335,8 @@ function MovieDetails() {
             <div className="detail-hero-actions detail-hero-actions--simplified" role="group" aria-label="Movie actions">
               <button type="button" className="detail-trailer-cta" onClick={() => jumpTo("where-to-watch")}>Where to Watch</button>
               <TasteActionBar movie={movie} compact showSeenAction={false} showSkipAction={false} showVibeAction={false} />
-              <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => jumpTo("cast-and-details")}>Cast &amp; details <span aria-hidden="true">↓</span></button>
-              {movie.trailer?.key ? <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => { setIsTrailerOpen(true); trackProductEvent("trailer_clicked", { movie_id: Number(movie.id) }); }}>Watch trailer <span aria-hidden="true">↗</span></button> : null}
+              <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => jumpTo("cast-and-details")}>Cast &amp; details <span className="detail-action-icon detail-action-icon--down" aria-hidden="true"></span></button>
+              {movie.trailer?.key ? <button type="button" className="detail-text-action detail-text-action--hero" onClick={() => { setIsTrailerOpen(true); trackProductEvent("trailer_clicked", { movie_id: Number(movie.id) }); }}>Watch trailer <span className="detail-action-icon detail-action-icon--external" aria-hidden="true"></span></button> : null}
               {canTryAnother ? <button type="button" className="detail-text-action detail-text-action--hero" onClick={backToPick}>Try another</button> : null}
             </div>
           </div>
