@@ -53,7 +53,6 @@ function PickResultPanel({
   hasActiveSession = false,
   showEmptyState = true,
   showSessionPlaceholder = false,
-  showExpandedReasoning = false,
   refineStatusLabel = "",
   tasteActionProps = {},
 }) {
