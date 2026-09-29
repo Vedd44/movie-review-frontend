@@ -1987,11 +1987,18 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
             <p className="home-hero-subtitle">{heroSubtext}</p>
+            <div className="home-hero-how" aria-label="How ReelBot works">
+              <span><strong>1</strong> Describe it</span>
+              <i aria-hidden="true">→</i>
+              <span><strong>2</strong> Get one pick</span>
+              <i aria-hidden="true">→</i>
+              <span><strong>3</strong> Refine if needed</span>
+            </div>
 
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
-                introText="Need a starting point?"
+                introText="Or start with one:"
                 suggestions={visiblePromptSuggestions}
                 activeSuggestion={activePromptSuggestion}
                 value={pickPrompt}
@@ -2022,7 +2029,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
               <div className="home-hero-actions home-hero-actions--primary">
                 <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handlePickSubmit} disabled={isPickBusy}>
-                  {isPickLoading && lastPickMode === "prompt" ? "Getting a pick…" : "Get a pick"}
+                  {isPickLoading && lastPickMode === "prompt" ? "Getting a pick…" : "Find my movie"}
                 </button>
                 <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleSurprisePick} disabled={isPickBusy}>
                   {isPickLoading && lastPickMode === "surprise" ? "Surprising you…" : "Surprise me"}
@@ -2087,9 +2094,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div id="pick-result" aria-hidden="true"></div>
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-              <div className="detail-description-label">Recent pick</div>
-              <h2 className="section-title">Your pick</h2>
-              {activePick ? <p className="section-subtitle">One pick, with a few ways to adjust it.</p> : null}
+              <div className="detail-description-label">Matched to your request</div>
+              <h2 className="section-title">ReelBot’s pick</h2>
             </div>
           </div>
 
@@ -2133,8 +2139,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             showDetailLink={false}
             refreshLabel={isSwapLoading ? "Swapping…" : "Get another pick"}
             resetLabel="Start fresh"
-            backupTitle="Also worth considering"
-            backupCopy="If you want another angle."
+            backupTitle="Other strong matches"
+            backupCopy=""
             onRefreshChoices={pickResult?.primary ? () => {
               markFirstPickSummarySeen();
               return handleRefreshPick();
