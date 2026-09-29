@@ -239,6 +239,7 @@ function AuthPanel({
 
       {successState ? (
         <div className="auth-panel-success-block" aria-live="polite">
+          <div className="auth-panel-success-mark" aria-hidden="true">✓</div>
           <div className="auth-panel-success-title">{successState.title}</div>
           <p className="auth-panel-success">{successState.body}</p>
           <button
