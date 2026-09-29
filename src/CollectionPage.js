@@ -5,7 +5,7 @@ import "./App.css";
 import { COLLECTIONS, getCollection } from "./collections";
 import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
-import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotContext";
+import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 
 export function CollectionPreviewCard({ collection, compact = false }) {
   const [previewMovies, setPreviewMovies] = useState([]);
