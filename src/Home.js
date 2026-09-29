@@ -2233,8 +2233,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               showSeenAction: false,
               showSkipAction: false,
               showVibeAction: false,
-              skipLabel: "Save",
-              skipActiveLabel: "Saved",
+              saveLabel: "Save",
+              savedLabel: "Saved",
               onInteraction: markFirstPickSummarySeen,
             }}
             hideRefreshCta={refreshExhausted}
