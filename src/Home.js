@@ -1206,7 +1206,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const heroArtMovies = useMemo(() => {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
-    return source.filter((movie) => movie?.backdrop_path).slice(0, 3);
+    return source.filter((movie) => movie?.poster_path).slice(0, 7);
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
@@ -1992,7 +1992,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 <div
                   key={movie.id}
                   className={`home-hero-art-panel home-hero-art-panel--${index + 1}`}
-                  style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w1280${movie.backdrop_path}")` }}
+                  style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w500${movie.poster_path}")` }}
                 />
               ))}
             </div>
