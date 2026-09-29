@@ -1987,14 +1987,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
             <p className="home-hero-subtitle">{heroSubtext}</p>
-            <div className="home-hero-how" aria-label="How ReelBot works">
-              <span><strong>1</strong> Describe it</span>
-              <i aria-hidden="true">→</i>
-              <span><strong>2</strong> Get one pick</span>
-              <i aria-hidden="true">→</i>
-              <span><strong>3</strong> Refine if needed</span>
-            </div>
-
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
