@@ -60,17 +60,14 @@ function AccountSettings() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="browse-kicker">Account</div>
-            <h1 className="browse-title">Account settings</h1>
-            <p className="browse-subtitle browse-subtitle--hero">Manage your account details.</p>
+            <h1 className="browse-title">Account</h1>
           </div>
         </section>
 
         <section className="detail-info-card account-settings-card">
           <div className="section-header section-header--stacked-mobile section-header--compact">
             <div>
-              <h2 className="section-title">Your account</h2>
-              <p className="section-subtitle">Your picks stay tied to this account.</p>
+              <h2 className="section-title">Profile</h2>
             </div>
           </div>
 
@@ -78,8 +75,7 @@ function AccountSettings() {
             <label className="account-settings-field">
               <span>Email</span>
               <input type="email" value={user.email || ""} readOnly className="account-settings-input--readonly" />
-              <small className="account-settings-note">This is the email you use to sign in.</small>
-            </label>
+             </label>
             <label className="account-settings-field">
               <span>Display name</span>
               <input
@@ -136,7 +132,7 @@ function AccountSettings() {
             <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
                 <h2 className="section-title">Password</h2>
-                <p className="section-subtitle">Set a password if you want to sign in without email.</p>
+                <p className="section-subtitle">Change your password.</p>
               </div>
             </div>
 
@@ -224,7 +220,7 @@ function AccountSettings() {
           <div className="account-settings-danger">
             <div>
               <div className="detail-description-label">Danger zone</div>
-              <p className="detail-secondary-text">Delete your account and remove your saved picks.</p>
+              <p className="detail-secondary-text">Permanently delete your account and saved movies.</p>
             </div>
             <button
               type="button"
