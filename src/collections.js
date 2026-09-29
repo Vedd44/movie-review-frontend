@@ -13,6 +13,7 @@ export const COLLECTIONS = [
     eyebrow: "If you liked Heat",
     description: "Professional criminals, obsessive cops and cities after dark. Fifteen crime thrillers that hit the same tense, grown-up register as Heat.",
     prompt: "Something like Heat",
+    anchorMovie: "heat-1995",
     movies: ["thief-1981","collateral-2004","the-town-2010","inside-man-2006","ronin-1998","den-of-thieves-2018","training-day-2001","the-departed-2006","sicario-2015","drive-2011","to-live-and-die-in-la-1985","a-most-violent-year-2014","the-french-connection-1971","the-taking-of-pelham-one-two-three-1974","reservoir-dogs-1992"],
   },
   {
@@ -21,7 +22,8 @@ export const COLLECTIONS = [
     eyebrow: "If you liked Interstellar",
     description: "Big science-fiction ideas with real emotional weight. Fifteen films about space, time, survival and the people caught in the middle.",
     prompt: "Something like Interstellar",
-    movies: ["arrival-2016","contact-1997","the-martian-2015","2001-a-space-odyssey-1968","gravity-2013","sunshine-2007","ad-astra-2019","moon-2009","first-man-2018","solaris-2002","prospect-2018","aniara-2019","interstellar-2014","apollo-13-1995","high-life-2018"],
+    anchorMovie: "interstellar-2014",
+    movies: ["arrival-2016","contact-1997","the-martian-2015","2001-a-space-odyssey-1968","gravity-2013","sunshine-2007","ad-astra-2019","moon-2009","first-man-2018","solaris-2002","prospect-2018","aniara-2019","apollo-13-1995","high-life-2018","the-fountain-2006"],
   },
   {
     slug: "great-thrillers-under-2-hours",
