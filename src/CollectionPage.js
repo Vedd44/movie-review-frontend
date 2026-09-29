@@ -155,11 +155,11 @@ export default function CollectionPage() {
 
         <section className="collection-bottom-cta">
           <div>
-            <div className="detail-description-label">Need a recommendation?</div>
-            <h2 className="section-title">Pick one from this collection.</h2>
-            <p className="section-subtitle">ReelBot can choose from these movies, or refine the collection around another preference.</p>
+            <div className="detail-description-label">Can’t decide?</div>
+            <h2 className="section-title">Let ReelBot choose.</h2>
+            <p className="section-subtitle">One pick from the 15 movies above.</p>
           </div>
-          <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Find my pick</button>
+          <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAskReelbot({ prompt: collection.prompt })}>Just pick one for me</button>
         </section>
       </div>
     </div>
