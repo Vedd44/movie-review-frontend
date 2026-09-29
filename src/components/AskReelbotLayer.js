@@ -329,7 +329,7 @@ function AskReelbotLayer() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [result?.primary?.id]);
+  }, [result?.primary]);
 
   const submitDraft = (event) => {
     event?.preventDefault();
