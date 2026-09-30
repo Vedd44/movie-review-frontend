@@ -1,14 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/collections/:slug",
-      "destination": "/api/social-meta?path=/collections/:slug"
-    },
-    {
-      "source": "/movies/:slug",
-      "destination": "/api/social-meta?path=/movies/:slug"
-    },
-    {
       "source": "/sitemap.xml",
       "destination": "https://movie-review-backend-zevb.onrender.com/sitemap.xml"
     }
