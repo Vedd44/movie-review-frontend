@@ -19049,3 +19049,43 @@ body,
     background:linear-gradient(180deg,#050a11 0%,#07111d 72%,#080b11 100%) !important;
   }
 }
+
+
+/* Tablet hero v8: kill legacy Trending card, darken veil, make reel motion unmistakable */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-now-playing {
+    background:none !important;
+    background-image:none !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing::before {
+    border-radius:0 !important;
+    opacity:1 !important;
+  }
+
+  .home-page > .home-hero .home-hero-art {
+    opacity:.82 !important;
+    animation:reelbot-cinema-wall-obvious 16s linear infinite alternate !important;
+  }
+
+  .home-page > .home-hero .home-hero-art-panel {
+    filter:saturate(.74) contrast(1.08) brightness(.42) !important;
+  }
+
+  .home-page > .home-hero::after {
+    background:
+      radial-gradient(ellipse 56% 42% at 50% 23%,rgba(1,5,10,.99) 0%,rgba(2,7,13,.965) 45%,rgba(3,9,16,.92) 72%,rgba(4,12,21,.9) 100%),
+      linear-gradient(180deg,rgba(1,5,10,.9) 0%,rgba(2,7,13,.93) 58%,rgba(4,11,19,.96) 82%,#07111d 100%) !important;
+  }
+}
+
+@keyframes reelbot-cinema-wall-obvious {
+  0%   { transform:translate3d(-150px,-40px,0) scale(1.15); }
+  25%  { transform:translate3d(-55px,-145px,0) scale(1.15); }
+  50%  { transform:translate3d(105px,-255px,0) scale(1.15); }
+  75%  { transform:translate3d(155px,-370px,0) scale(1.15); }
+  100% { transform:translate3d(-120px,-500px,0) scale(1.15); }
+}
