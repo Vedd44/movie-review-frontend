@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
-import { COLLECTIONS, getCollection } from "./collections";
+import { COLLECTIONS, COLLECTION_CATEGORIES, getCollection } from "./collections";
 import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
@@ -62,6 +62,22 @@ function CollectionCard({ movie }) {
 }
 
 export function CollectionsIndex() {
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  const filteredCollections = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return COLLECTIONS.filter((collection) => {
+      const categoryMatch = activeCategory === "All" || collection.categories?.includes(activeCategory);
+      const searchMatch = !normalizedQuery || [collection.title, collection.description, collection.eyebrow]
+        .filter(Boolean).join(" ").toLowerCase().includes(normalizedQuery);
+      return categoryMatch && searchMatch;
+    });
+  }, [activeCategory, query]);
+
+  useEffect(() => { setVisibleCount(12); }, [activeCategory, query]);
+
   const structuredData = useMemo(() => [
     buildBreadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Collections", path: "/collections" }]),
     buildItemListJsonLd(COLLECTIONS.map((item) => ({ name: item.title, path: `/collections/${item.slug}` }))),
@@ -82,9 +98,31 @@ export function CollectionsIndex() {
           <h1 className="browse-title">Sometimes you just need somewhere to start.</h1>
           <p className="collection-dek">Movies grouped by mood, genre, era, and whatever else makes a good night in.</p>
         </section>
+        <section className="collections-discovery" aria-label="Find a collection">
+          <div className="collections-filter-row">
+            <div className="collections-filter-chips" role="group" aria-label="Filter collections">
+              {COLLECTION_CATEGORIES.map((category) => (
+                <button key={category} type="button" className={`collections-filter-chip${activeCategory === category ? " is-active" : ""}`} onClick={() => setActiveCategory(category)}>
+                  {category}
+                </button>
+              ))}
+            </div>
+            <label className="collections-search">
+              <span className="sr-only">Search collections</span>
+              <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search collections" />
+            </label>
+          </div>
+          <p className="collections-result-count">{filteredCollections.length} {filteredCollections.length === 1 ? "collection" : "collections"}</p>
+        </section>
         <div className="collections-index-grid">
-          {COLLECTIONS.map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} />)}
+          {filteredCollections.slice(0, visibleCount).map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} />)}
         </div>
+        {!filteredCollections.length ? <div className="collections-empty">No collections match that search.</div> : null}
+        {visibleCount < filteredCollections.length ? (
+          <div className="collections-load-more-row">
+            <button type="button" className="browse-library-link collections-load-more" onClick={() => setVisibleCount((count) => count + 12)}>Load more collections</button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
