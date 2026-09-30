@@ -18983,3 +18983,69 @@ body,
     pointer-events:none;
   }
 }
+
+
+/* Cinema wall final pass: four rows, deeper veil, stronger travel, no Trending color slab */
+.home-page .home-hero-now-playing,
+.home-page .home-hero-now-playing::before,
+.home-page .home-hero-now-playing::after {
+  background-color:transparent !important;
+}
+
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art {
+    inset:-180px -190px -760px !important;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-rows:repeat(4,minmax(350px,1fr));
+    opacity:.9 !important;
+    animation:reelbot-cinema-wall-wide 24s ease-in-out infinite alternate !important;
+  }
+
+  .home-page > .home-hero .home-hero-art-panel {
+    filter:saturate(.82) contrast(1.08) brightness(.5) !important;
+  }
+
+  .home-page > .home-hero::after {
+    inset:0 0 -700px !important;
+    background:
+      radial-gradient(ellipse 58% 42% at 50% 23%,rgba(2,7,13,.985) 0%,rgba(2,8,14,.95) 46%,rgba(3,10,18,.88) 72%,rgba(4,12,21,.84) 100%),
+      linear-gradient(180deg,rgba(2,7,13,.86) 0%,rgba(3,9,16,.9) 58%,rgba(4,12,21,.94) 82%,#07111d 100%) !important;
+  }
+
+  .home-page .home-hero-now-playing::before {
+    background:linear-gradient(180deg,rgba(4,12,21,0),rgba(4,12,21,.18) 24%,rgba(5,14,24,.5) 66%,rgba(7,17,29,.82)) !important;
+  }
+
+  .home-page .home-hero-now-playing::after {
+    background:linear-gradient(180deg,rgba(7,17,29,0),rgba(7,17,29,.72) 54%,#090b10 100%) !important;
+  }
+}
+
+@keyframes reelbot-cinema-wall-wide {
+  0%   { transform:translate3d(-125px,-70px,0) scale(1.12); }
+  20%  { transform:translate3d(-45px,-130px,0) scale(1.12); }
+  40%  { transform:translate3d(70px,-205px,0) scale(1.12); }
+  60%  { transform:translate3d(125px,-285px,0) scale(1.12); }
+  80%  { transform:translate3d(35px,-365px,0) scale(1.12); }
+  100% { transform:translate3d(-95px,-445px,0) scale(1.12); }
+}
+
+/* Mobile: remove the old Trending slab and let the hero fade naturally into the page */
+@media only screen and (max-width:720px) {
+  .home-page .home-hero-now-playing {
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+  }
+
+  .home-page .home-hero-now-playing::before,
+  .home-page .home-hero-now-playing::after {
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .home-hero {
+    background:linear-gradient(180deg,#050a11 0%,#07111d 72%,#080b11 100%) !important;
+  }
+}
