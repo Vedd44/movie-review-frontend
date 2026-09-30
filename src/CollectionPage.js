@@ -68,8 +68,8 @@ export function CollectionsIndex() {
   ], []);
 
   usePageMetadata({
-    title: "Movie Collections | ReelBot",
-    description: "Curated movie collections from ReelBot: movies like your favorites, genre essentials, shorter watches and mood-based picks.",
+    title: "Movie Collections by Mood, Genre & More | ReelBot",
+    description: "Browse movie collections for every kind of night, from ’90s action and sci-fi to thrillers, comfort movies and more. Find something worth watching with ReelBot.",
     path: "/collections",
     structuredData,
   });
@@ -79,8 +79,8 @@ export function CollectionsIndex() {
       <div className="container browse-shell">
         <section className="collection-hero">
           <div className="browse-kicker">ReelBot Collections</div>
-          <h1 className="browse-title">A better place to start.</h1>
-          <p className="collection-dek">Useful watchlists built around the way people actually look for a movie.</p>
+          <h1 className="browse-title">Sometimes you just need somewhere to start.</h1>
+          <p className="collection-dek">Movies grouped by mood, genre, era, and whatever else makes a good night in.</p>
         </section>
         <div className="collections-index-grid">
           {COLLECTIONS.map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} />)}
