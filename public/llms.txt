@@ -1,10 +1,18 @@
-Site: ReelBot
-Description: AI-powered movie discovery and recommendation engine.
+# ReelBot
 
-Key pages:
-/ - AI movie picker homepage
-/browse - browse movies currently playing
-/now-playing - movies now in theaters
-/coming-soon - upcoming movie releases
-/movies/* - movie insights, streaming options, and recommendation pages
-/how-reelbot-works - product and recommendation flow overview
+> ReelBot is a movie discovery and recommendation service for finding something worth watching quickly.
+
+## Key pages
+
+- [Home](https://reelbot.movie/) — ask ReelBot for a movie recommendation.
+- [Browse movies](https://reelbot.movie/browse) — browse current movie discovery feeds.
+- [Movie collections](https://reelbot.movie/collections) — curated collections by mood, genre, era, and occasion.
+- [Now playing](https://reelbot.movie/now-playing) — movies currently in theaters.
+- [Trending](https://reelbot.movie/trending) — movies currently trending.
+- [Coming soon](https://reelbot.movie/coming-soon) — upcoming movie releases.
+- [How ReelBot works](https://reelbot.movie/how-reelbot-works) — recommendation approach and product overview.
+- [Sitemap](https://reelbot.movie/sitemap.xml) — canonical discovery URLs for collections, movies, and people.
+
+## Content
+
+Movie detail pages use canonical `/movies/title-year` URLs. Person pages use canonical `/people/name` URLs. ReelBot provides spoiler-light movie discovery, recommendations, and curated collections.
