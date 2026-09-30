@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/collections/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp|Googlebot|bingbot).*"
+        }
+      ],
+      "destination": "/api/social-meta?path=/collections/:slug"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://movie-review-backend-zevb.onrender.com/sitemap.xml"
     }
@@ -34,6 +45,24 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/favicon.ico",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/favicon-:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }
