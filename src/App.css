@@ -20201,3 +20201,32 @@ body,
   from { transform:translate3d(0,0,0); }
   to   { transform:translate3d(0,-2640px,0); }
 }
+
+
+/* Homepage cinema wall v23 — preserve true 2:3 poster geometry at every viewport.
+   Rows derive from column width so TMDB poster art is never cropped into square/landscape tiles. */
+.home-page > .home-hero .home-hero-art-track {
+  grid-auto-rows:auto !important;
+  grid-auto-flow:row !important;
+  align-items:start !important;
+}
+.home-page > .home-hero .home-hero-art-panel,
+.home-page > .home-hero .home-hero-art-panel--1,
+.home-page > .home-hero .home-hero-art-panel--2,
+.home-page > .home-hero .home-hero-art-panel--3 {
+  aspect-ratio:2 / 3 !important;
+  height:auto !important;
+  min-height:0 !important;
+  background-size:cover !important;
+  background-position:center !important;
+}
+@media only screen and (min-width:1101px) {
+  .home-page > .home-hero .home-hero-art-track {
+    grid-auto-rows:auto !important;
+  }
+  .home-page > .home-hero .home-hero-art-panel {
+    height:auto !important;
+    min-height:0 !important;
+    aspect-ratio:2 / 3 !important;
+  }
+}
