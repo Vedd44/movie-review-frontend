@@ -2164,7 +2164,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                     <Link key={movie.id} to={getMoviePath(movie)} className="home-hero-now-playing-item reelbot-poster-card reelbot-poster-card--compact" aria-label={`Open ${movie.title}`}>
                       {movie.poster_path ? (
                         <img
-                          src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                          src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
                           alt={movie.title}
                           className="home-hero-now-playing-poster reelbot-poster-art"
                           width="300"
@@ -2334,7 +2334,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                         <span className="home-movie-card-label">{getHomepageCardLabel(movie, movieType)}</span>
                         {movie.poster_path ? (
                           <img
-                            src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                            src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
                             alt={movie.title}
                             className="movie-poster"
                             width="300"
