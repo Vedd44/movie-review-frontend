@@ -13,11 +13,8 @@ function readCollectionBlock(slug) {
   const at = source.indexOf(marker);
   if (at < 0) return null;
   const start = source.lastIndexOf("{", at);
-  const nextEntry = source.indexOf('
-  {
-    slug: "', at + marker.length);
-  const end = nextEntry >= 0 ? nextEntry : source.indexOf("
-];", at);
+  const nextEntry = source.indexOf("\n  {\n    slug: \"", at + marker.length);
+  const end = nextEntry >= 0 ? nextEntry : source.indexOf("\n];", at);
   return source.slice(start, end >= 0 ? end : source.length);
 }
 
