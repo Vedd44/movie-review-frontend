@@ -19458,3 +19458,11 @@ body,
     vertical-align:middle !important;
   }
 }
+
+
+/* Tablet cinema wall v14 — settled ambient pace */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art-track {
+    animation-duration:840s !important;
+  }
+}
