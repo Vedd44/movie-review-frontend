@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
 
 const TYPES = [["feature","Feature request"],["recommendation","Recommendation issue"],["bug","Bug report"],["other","Something else"]];
 
@@ -26,7 +26,8 @@ export default function FeedbackModal({ open, onClose }) {
     if(!cleanMessage||status==="submitting") return;
     setStatus("submitting");
     try {
-      if(!supabase) throw new Error("Feedback service unavailable.");
+      if(!isSupabaseConfigured) throw new Error("Feedback service unavailable.");
+      const supabase = await getSupabaseClient();
       const {error}=await supabase.from("feedback").insert({
         type,message:cleanMessage,email:email.trim()||null,page_url:window.location.href,user_agent:navigator.userAgent
       });
