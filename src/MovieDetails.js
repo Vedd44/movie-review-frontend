@@ -13,6 +13,7 @@ import { buildAbsoluteUrl } from "./siteConfig";
 import { tasteProfileService } from "./services/tasteProfileService";
 import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { trackProductEvent } from "./analytics";
+import { COLLECTIONS } from "./collections";
 
 const DETAIL_ANCHOR_OFFSET = 110;
 const TITLE_TOKEN_STOPWORDS = new Set(["about", "after", "before", "black", "dark", "first", "house", "movie", "night", "return", "story", "world"]);
@@ -223,6 +224,12 @@ function MovieDetails() {
     ...((homePickSession?.currentPick?.alternates || []).map((item) => item?.id)),
   ].filter(Boolean)), [homePickSession]);
   const canTryAnother = reelbotTake.hasReliableProvenance && sessionMovieIds.has(movie?.id);
+  const featuredCollections = useMemo(() => {
+    const slug = movieSlug || "";
+    return COLLECTIONS.filter((collection) =>
+      collection.movies?.includes(slug) || collection.anchorMovie === slug
+    ).slice(0, 6);
+  }, [movieSlug]);
   const displayedSimilarMovies = useMemo(
     () => selectDiverseSimilarMovies((movie?.similar || []).filter((item) => !(profile.skipped || []).some((hidden) => hidden.id === item.id)), 3),
     [movie, profile.skipped]
@@ -361,6 +368,16 @@ function MovieDetails() {
         </section>
 
         <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movie={movie} />
+        {featuredCollections.length ? (
+          <section className="detail-featured-collections" aria-labelledby="featured-in-heading">
+            <div id="featured-in-heading" className="detail-description-label">Featured in</div>
+            <div className="detail-featured-collection-links">
+              {featuredCollections.map((collection) => (
+                <Link key={collection.slug} to={`/collections/${collection.slug}`} className="detail-featured-collection-link">{collection.title}</Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
         <CastAndDetails movie={movie} />
 
         {showReviewSplit ? (
