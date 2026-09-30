@@ -18846,3 +18846,77 @@ body,
 @media (prefers-reduced-motion:reduce) {
   .home-page > .home-hero .home-hero-art { animation:none !important; }
 }
+
+
+/* Tablet hero v6: cinema marquee wall — continuous, deeper, more alive */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero {
+    background:#040a12 !important;
+    padding-bottom:0 !important;
+  }
+
+  .home-page > .home-hero .home-hero-art {
+    inset:-120px -170px -620px !important;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-rows:repeat(3,minmax(390px,1fr));
+    gap:14px;
+    opacity:.92 !important;
+    animation:reelbot-cinema-wall 34s ease-in-out infinite alternate !important;
+  }
+
+  .home-page > .home-hero .home-hero-art-panel {
+    border-radius:3px;
+    filter:saturate(.9) contrast(1.08) brightness(.58) !important;
+    transform:scale(1.02);
+  }
+
+  .home-page > .home-hero::after {
+    inset:0 0 -560px !important;
+    background:
+      radial-gradient(ellipse 54% 43% at 50% 24%,rgba(3,9,16,.97) 0%,rgba(3,9,16,.9) 48%,rgba(4,11,19,.78) 76%,rgba(5,14,24,.72) 100%),
+      linear-gradient(180deg,rgba(3,8,14,.76) 0%,rgba(4,11,19,.8) 52%,rgba(5,14,24,.9) 74%,#07111d 100%) !important;
+  }
+
+  .home-page .home-hero-now-playing {
+    margin-top:54px !important;
+    padding:42px 0 70px !important;
+  }
+
+  .home-page .home-hero-now-playing::before {
+    top:-44px !important;
+    bottom:-70px !important;
+    background:
+      linear-gradient(180deg,rgba(5,14,24,0) 0%,rgba(5,14,24,.42) 16%,rgba(6,16,27,.76) 44%,#07111d 100%) !important;
+  }
+
+  .home-page .home-hero-now-playing::after {
+    content:"";
+    position:absolute;
+    z-index:-1;
+    left:50%;
+    bottom:-70px;
+    width:100vw;
+    height:170px;
+    transform:translateX(-50%);
+    background:linear-gradient(180deg,rgba(7,17,29,0),#07111d 62%,#07111d);
+    pointer-events:none;
+  }
+
+  .home-page .home-hero-now-playing-list {
+    position:relative;
+    z-index:2;
+  }
+
+  .home-page + .home-feed-section,
+  .home-page .home-feed-section:first-of-type {
+    border-top:0 !important;
+  }
+}
+
+@keyframes reelbot-cinema-wall {
+  0%   { transform:translate3d(-70px,-34px,0) scale(1.09); }
+  25%  { transform:translate3d(-18px,-78px,0) scale(1.09); }
+  50%  { transform:translate3d(42px,-118px,0) scale(1.09); }
+  75%  { transform:translate3d(76px,-162px,0) scale(1.09); }
+  100% { transform:translate3d(18px,-210px,0) scale(1.09); }
+}
