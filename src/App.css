@@ -19694,3 +19694,51 @@ body,
   .collections-filter-chip { flex:0 0 auto; padding:9px 14px; }
   .collections-search { width:100%; }
 }
+
+
+/* Mobile home v20 — mirror the settled tablet canvas: no tinted Trending/Browse slabs */
+@media only screen and (max-width:720px) {
+  .home-page,
+  .home-page > .container.browse-shell.home-shell,
+  .home-page .browse-shell,
+  .home-page .home-shell,
+  .home-page .home-browse-section {
+    background:#07090d !important;
+    background-color:#07090d !important;
+    background-image:none !important;
+    box-shadow:none !important;
+    border-top:0 !important;
+  }
+
+  /* Trending belongs to the cinema wall, not a separate blue card. */
+  .home-page > .home-hero .home-hero-now-playing {
+    background:transparent !important;
+    background-image:none !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    filter:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing::before,
+  .home-page > .home-hero .home-hero-now-playing::after,
+  .home-page > .container.browse-shell.home-shell::before,
+  .home-page > .container.browse-shell.home-shell::after,
+  .home-page .home-browse-section::before,
+  .home-page .home-browse-section::after {
+    content:none !important;
+    display:none !important;
+    background:none !important;
+    background-image:none !important;
+    box-shadow:none !important;
+  }
+
+  .home-page .home-browse-section {
+    position:relative !important;
+    margin:0 !important;
+    padding-top:20px !important;
+    border:0 !important;
+    border-radius:0 !important;
+    filter:none !important;
+  }
+}
