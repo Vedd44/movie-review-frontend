@@ -13,8 +13,11 @@ function readCollectionBlock(slug) {
   const at = source.indexOf(marker);
   if (at < 0) return null;
   const start = source.lastIndexOf("{", at);
-  const nextEntry = source.indexOf('\n  {\n    slug: "', at + marker.length);
-  const end = nextEntry >= 0 ? nextEntry : source.indexOf("\n];", at);
+  const nextEntry = source.indexOf('
+  {
+    slug: "', at + marker.length);
+  const end = nextEntry >= 0 ? nextEntry : source.indexOf("
+];", at);
   return source.slice(start, end >= 0 ? end : source.length);
 }
 
@@ -39,15 +42,34 @@ function collectionMeta(slug) {
   };
 }
 
-async function personMeta(slug) {\n  try {\n    const response = await fetch(`${API}/people/resolve/${encodeURIComponent(slug)}`);\n    if (!response.ok) return null;\n    const person = await response.json();\n    const name = person.name || \"\";\n    if (!name) return null;\n    const credits = Array.isArray(person.movie_credits) ? person.movie_credits : [];\n    const count = credits.filter((movie) => movie.release_date).length || credits.length;\n    return {\n      title: `${name} Movies & Filmography`,\n      description: `Explore ${name}'s movie filmography on ReelBot, including ${count || \"their\"} film credits, roles, release dates, ratings, and movie details.`,\n      image: person.profile_path ? `https://image.tmdb.org/t/p/h632${person.profile_path}` : `${ORIGIN}/brand/reelbot-social.png`,\n      imageAlt: `${name} filmography on ReelBot`,\n      type: \"profile\",\n    };\n  } catch { return null; }\n}\n\nasync function movieMeta(slug) {
+async function personMeta(slug) {
+  try {
+    const response = await fetch(`${API}/people/resolve/${encodeURIComponent(slug)}`);
+    if (!response.ok) return null;
+    const person = await response.json();
+    const name = person.name || "";
+    if (!name) return null;
+    const credits = Array.isArray(person.movie_credits) ? person.movie_credits : [];
+    const count = credits.filter((movie) => movie.release_date).length || credits.length;
+    return {
+      title: `${name} Movies & Filmography`,
+      description: `Explore ${name}'s movie filmography on ReelBot, including ${count || "their"} film credits, roles, release dates, ratings, and movie details.`,
+      image: person.profile_path ? `https://image.tmdb.org/t/p/h632${person.profile_path}` : `${ORIGIN}/brand/reelbot-social.png`,
+      imageAlt: `${name} filmography on ReelBot`,
+      type: "profile",
+    };
+  } catch { return null; }
+}
+
+async function movieMeta(slug) {
   try {
     const response = await fetch(`${API}/movies/resolve/${encodeURIComponent(slug)}`);
     if (!response.ok) return null;
     const movie = await response.json();
     const year = movie.release_year || (movie.release_date || "").slice(0, 4);
     return {
-      title: `${movie.title}${year ? ` (${year})` : \"\"}: Cast, Where to Watch & More`,
-      description: `Explore ${movie.title}${year ? ` (${year})` : \"\"}, including ReelBot's take, cast, runtime, where to watch, and similar movies worth adding to your list.`,
+      title: `${movie.title}${year ? ` (${year})` : ""}: Cast, Where to Watch & More`,
+      description: `Explore ${movie.title}${year ? ` (${year})` : ""}, including ReelBot's take, cast, runtime, where to watch, and similar movies worth adding to your list.`,
       image: movie.backdrop_path
         ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
         : movie.poster_path
@@ -63,10 +85,12 @@ module.exports = async (req, res) => {
   const pagePath = String(req.query.path || "/");
   const collectionMatch = pagePath.match(/^\/collections\/([^/?#]+)/);
   const movieMatch = pagePath.match(/^\/movies\/([^/?#]+)/);
+  const personMatch = pagePath.match(/^\/people\/([^/?#]+)/);
   let meta = null;
 
   if (collectionMatch) meta = collectionMeta(decodeURIComponent(collectionMatch[1]));
-  else if (movieMatch) meta = await movieMeta(decodeURIComponent(movieMatch[1]));\n  else if (personMatch) meta = await personMeta(decodeURIComponent(personMatch[1]));
+  else if (movieMatch) meta = await movieMeta(decodeURIComponent(movieMatch[1]));
+  else if (personMatch) meta = await personMeta(decodeURIComponent(personMatch[1]));
 
   if (!meta) {
     meta = {
