@@ -85,7 +85,7 @@ async function render(collection) {
   </svg>`);
   composites.push({ input: overlay, left: 0, top: 0 });
 
-  const out = path.join(OUT, `${collection.slug}-v2.jpg`);
+  const out = path.join(OUT, `${collection.slug}-v3.jpg`);
   await sharp({ create: { width: 1200, height: 627, channels: 4, background: "#08101a" } })
     .composite(composites)
     .jpeg({ quality: 94, chromaSubsampling: "4:4:4", mozjpeg: true })
