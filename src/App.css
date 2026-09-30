@@ -19584,3 +19584,47 @@ body,
     background:#07090d !important;
   }
 }
+
+
+/* Tablet home v18 — one continuous neutral canvas below the cinema wall */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page,
+  .home-page > .container.browse-shell.home-shell,
+  .home-page .home-feed-section,
+  .home-page .browse-shell,
+  .home-page .home-shell,
+  .home-page .movie-section,
+  .home-page .browse-section,
+  .home-page .collections-section {
+    background:#07090d !important;
+    background-image:none !important;
+    box-shadow:none !important;
+    border-top:0 !important;
+  }
+
+  .home-page > .home-hero {
+    margin-bottom:0 !important;
+  }
+
+  .home-page > .home-hero::before {
+    height:180px !important;
+    background:linear-gradient(180deg,rgba(7,9,13,0) 0%,rgba(7,9,13,.72) 58%,#07090d 100%) !important;
+  }
+
+  .home-page > .container.browse-shell.home-shell {
+    margin-top:0 !important;
+    padding-top:28px !important;
+  }
+
+  /* Kill decorative section washes/pseudo layers that create the red/blue blocks. */
+  .home-page > .container.browse-shell.home-shell::before,
+  .home-page > .container.browse-shell.home-shell::after,
+  .home-page .home-feed-section::before,
+  .home-page .home-feed-section::after,
+  .home-page .browse-section::before,
+  .home-page .browse-section::after {
+    content:none !important;
+    display:none !important;
+    background:none !important;
+  }
+}
