@@ -1247,11 +1247,28 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const heroArtMovies = useMemo(() => {
     const source = [...displayedMovies, ...filteredMovies, ...curatedMovies];
     const seen = new Set();
-    return source.filter((movie) => {
+    const unique = source.filter((movie) => {
       if (!movie?.poster_path || seen.has(movie.id)) return false;
       seen.add(movie.id);
       return true;
-    }).slice(0, 32);
+    });
+
+    // Stable for the whole calendar day, then reshuffles automatically the next day.
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const hash = (value) => {
+      let result = 2166136261;
+      for (let index = 0; index < value.length; index += 1) {
+        result ^= value.charCodeAt(index);
+        result = Math.imul(result, 16777619);
+      }
+      return result >>> 0;
+    };
+
+    return unique
+      .map((movie) => ({ movie, order: hash(`${dayKey}:${movie.id}`) }))
+      .sort((left, right) => left.order - right.order)
+      .slice(0, 32)
+      .map(({ movie }) => movie);
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
