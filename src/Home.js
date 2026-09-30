@@ -1240,10 +1240,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [curatedMovies, filteredMovies, movieType]);
 
   const heroPreviewMovies = useMemo(() => {
-    const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
-    const previewPool = source.slice(3, 10);
-    return (previewPool.length >= 3 ? previewPool : source).slice(0, 3);
-  }, [curatedMovies, displayedMovies, filteredMovies]);
+    // Keep this rail distinct from the browse grid below it.
+    const gridIds = new Set(displayedMovies.slice(0, isCompactHeroPreview ? 6 : 8).map((movie) => movie.id));
+    const seen = new Set();
+    return [...curatedMovies, ...filteredMovies]
+      .filter((movie) => movie?.id && movie?.poster_path && !gridIds.has(movie.id) && !seen.has(movie.id) && seen.add(movie.id))
+      .slice(0, 3);
+  }, [curatedMovies, displayedMovies, filteredMovies, isCompactHeroPreview]);
   const heroArtMovies = useMemo(() => {
     const source = [...displayedMovies, ...filteredMovies, ...curatedMovies];
     const seen = new Set();
@@ -1301,8 +1304,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   const hasVisibleFeedContent = displayedMovies.length > 0;
   const shouldShowFeedSkeletons = loading && !curatedMovies.length;
-  const heroPreviewLabel = "Trending now";
-  const heroPreviewCopy = "Or start with what people are watching.";
+  const heroPreviewLabel = "Popular now";
+  const heroPreviewCopy = "A few popular picks beyond the grid below.";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
   const activePick = pickResult?.primary || null;
@@ -2150,7 +2153,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               </label>
             </div>
 
-            <div id="now-playing" className="home-hero-now-playing home-hero-now-playing--inline" aria-label="Trending movies">
+            <div id="now-playing" className="home-hero-now-playing home-hero-now-playing--inline" aria-label="Popular movies">
               <div className="home-hero-now-playing-head">
                 <div>
                   <h2 className="home-hero-now-playing-heading">{heroPreviewLabel}</h2>
@@ -2159,7 +2162,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               </div>
 
               {heroPreviewMovies.length ? (
-                <SwipeableRail className="home-hero-now-playing-rail" ariaLabel="Trending movies">
+                <SwipeableRail className="home-hero-now-playing-rail" ariaLabel="Popular movies">
                   {heroPreviewMovies.map((movie) => (
                     <Link key={movie.id} to={getMoviePath(movie)} className="home-hero-now-playing-item reelbot-poster-card reelbot-poster-card--compact" aria-label={`Open ${movie.title}`}>
                       {movie.poster_path ? (
