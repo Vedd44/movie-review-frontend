@@ -419,8 +419,14 @@ function AskReelbotLayer() {
               </form>
             ) : null}
             {loading ? (
-              <div className="ask-reelbot-status" role="status">
-                <div>{isCollection ? `Picking from ${context.collection?.title || "this collection"}…` : loadingCopy}</div>
+              <div className={`ask-reelbot-status ask-reelbot-status--loading${isCollection ? " ask-reelbot-status--collection" : ""}`} role="status" aria-live="polite">
+                <div className="ask-reelbot-status-progress">
+                  <span className="ask-reelbot-spinner" aria-hidden="true" />
+                  <div>
+                    <strong>{isCollection ? "Finding your pick" : loadingCopy}</strong>
+                    <span>{isCollection ? `Choosing from the ${context.collection?.movieIds?.length || 15} movies in ${context.collection?.title || "this collection"}…` : "ReelBot is working on it…"}</span>
+                  </div>
+                </div>
                 {isRecommendationIntent(loadingIntent) && loadingQuote ? (
                   <div className="ask-reelbot-loading-quote">
                     <q>{loadingQuote.quote}</q>
