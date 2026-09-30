@@ -20104,3 +20104,100 @@ body,
     to { transform:translate3d(0,calc(-50% - 4px),0); }
   }
 }
+
+
+/* Homepage cinema wall v22 — use the settled dark moving reel at desktop too.
+   Tablet/mobile already use this architecture; desktop had fallen through to legacy static art. */
+@media only screen and (min-width:1101px) {
+  .home-page > .home-hero {
+    isolation:isolate !important;
+    overflow:hidden !important;
+    background:#07090d !important;
+  }
+
+  .home-page > .home-hero .home-hero-art {
+    display:block !important;
+    position:absolute !important;
+    z-index:0 !important;
+    inset:0 !important;
+    width:100% !important;
+    height:100% !important;
+    opacity:.30 !important;
+    filter:brightness(.48) saturate(.78) !important;
+    transform:none !important;
+    animation:none !important;
+    overflow:hidden !important;
+    pointer-events:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-art-track {
+    display:grid !important;
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+    grid-auto-rows:330px !important;
+    gap:9px !important;
+    position:absolute !important;
+    left:-6% !important;
+    top:-170px !important;
+    width:112% !important;
+    min-height:5200px !important;
+    will-change:transform;
+    animation:reelbot-poster-reel-desktop 240s linear infinite !important;
+  }
+
+  .home-page > .home-hero .home-hero-art-panel {
+    position:relative !important;
+    inset:auto !important;
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:330px !important;
+    opacity:1 !important;
+    transform:none !important;
+    border-radius:2px !important;
+    background-size:cover !important;
+    background-position:center !important;
+    filter:none !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-art-panel::after {
+    background:rgba(1,4,8,.24) !important;
+  }
+
+  .home-page > .home-hero::after {
+    content:"" !important;
+    position:absolute !important;
+    z-index:1 !important;
+    inset:0 !important;
+    background:rgba(1,4,8,.68) !important;
+    opacity:1 !important;
+    pointer-events:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-copy,
+  .home-page > .home-hero .home-hero-now-playing {
+    position:relative !important;
+    z-index:2 !important;
+  }
+
+  .home-page > .home-hero::before {
+    content:"" !important;
+    display:block !important;
+    position:absolute !important;
+    z-index:3 !important;
+    left:0 !important;
+    right:0 !important;
+    bottom:-1px !important;
+    top:auto !important;
+    width:auto !important;
+    height:180px !important;
+    border-radius:0 !important;
+    background:linear-gradient(180deg,rgba(7,9,13,0) 0%,rgba(7,9,13,.72) 58%,#07090d 100%) !important;
+    pointer-events:none !important;
+  }
+}
+
+@keyframes reelbot-poster-reel-desktop {
+  from { transform:translate3d(0,0,0); }
+  to   { transform:translate3d(0,-2640px,0); }
+}
