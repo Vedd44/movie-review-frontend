@@ -144,6 +144,7 @@ function MobileBottomNav() {
   const items = [
     { label: "Pick for me", to: "/#pick-for-me", active: location.pathname === "/" },
     { label: "Browse", to: "/browse", active: location.pathname === "/browse" },
+    { label: "Collections", to: "/collections", active: location.pathname.startsWith("/collections") },
     { label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
   ];
 
