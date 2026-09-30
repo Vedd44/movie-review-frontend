@@ -24,7 +24,7 @@ export function CollectionPreviewCard({ collection, compact = false }) {
     <Link to={`/collections/${collection.slug}`} className={`collection-preview-card${compact ? " collection-preview-card--compact" : ""}`}>
       <div className="collection-preview-posters" aria-hidden="true">
         {previewMovies.map((movie, index) => (
-          <img key={movie.id} src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt="" className={`collection-preview-poster collection-preview-poster--${index + 1}`} width="300" height="450" loading="lazy" decoding="async" />
+          <img key={movie.id} src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`} alt="" className={`collection-preview-poster collection-preview-poster--${index + 1}`} width="300" height="450" loading="lazy" decoding="async" />
         ))}
         <span className="collection-preview-shade"></span>
       </div>
@@ -44,7 +44,7 @@ function CollectionCard({ movie }) {
       <div className="movie-poster-shell">
         <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
           {movie.poster_path ? (
-            <img src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt={movie.title} className="movie-poster" width="300" height="450" loading="lazy" decoding="async" />
+            <img src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`} alt={movie.title} className="movie-poster" width="300" height="450" loading="lazy" decoding="async" />
           ) : <div className="no-poster">Poster unavailable</div>}
         </Link>
       </div>
