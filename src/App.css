@@ -18597,3 +18597,40 @@ body,
     pointer-events: none;
   }
 }
+
+
+/* Richer tablet cinema wall: more real posters, more motion, same protected navy canvas */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art {
+    opacity: .95 !important;
+    transform: scale(1.02);
+  }
+  .home-page > .home-hero .home-hero-art-panel {
+    display:block !important;
+    width:19% !important;
+    height:38% !important;
+    opacity:.5 !important;
+    filter:saturate(.9) contrast(1.06) brightness(.7) !important;
+    box-shadow:0 18px 45px rgba(0,0,0,.3);
+  }
+  .home-page > .home-hero .home-hero-art-panel--1 { left:-4%; top:2%; transform:rotate(-7deg); }
+  .home-page > .home-hero .home-hero-art-panel--2 { left:9%; top:34%; transform:rotate(4deg); }
+  .home-page > .home-hero .home-hero-art-panel--3 { left:22%; top:68%; transform:rotate(-3deg); }
+  .home-page > .home-hero .home-hero-art-panel--4 { left:35%; top:-12%; transform:rotate(5deg); }
+  .home-page > .home-hero .home-hero-art-panel--5 { right:35%; top:70%; transform:rotate(-4deg); }
+  .home-page > .home-hero .home-hero-art-panel--6 { right:22%; top:-9%; transform:rotate(-5deg); }
+  .home-page > .home-hero .home-hero-art-panel--7 { right:9%; top:35%; transform:rotate(4deg); }
+  .home-page > .home-hero .home-hero-art-panel--8 { right:-4%; top:3%; transform:rotate(7deg); }
+  .home-page > .home-hero .home-hero-art-panel--9 { left:-1%; top:69%; transform:rotate(5deg); }
+  .home-page > .home-hero .home-hero-art-panel--10 { left:17%; top:-15%; transform:rotate(-4deg); }
+  .home-page > .home-hero .home-hero-art-panel--11 { right:17%; top:72%; transform:rotate(3deg); }
+  .home-page > .home-hero .home-hero-art-panel--12 { right:-2%; top:70%; transform:rotate(-5deg); }
+
+  .home-page .home-hero::after {
+    background:
+      radial-gradient(ellipse 54% 74% at 50% 35%,rgba(9,18,29,.98) 0%,rgba(9,18,29,.92) 47%,rgba(9,18,29,.78) 72%,rgba(9,18,29,.64) 100%) !important;
+  }
+  .home-page .home-hero-now-playing::before {
+    background:rgba(9,18,29,.9) !important;
+  }
+}
