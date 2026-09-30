@@ -31,7 +31,7 @@ export const COLLECTIONS = [
     eyebrow: "Shorter watches",
     description: "Tense, sharp and done before the two-hour mark. Fifteen thrillers that make every minute count.",
     prompt: "A great thriller under two hours",
-    movies: ["run-lola-run-1998","phone-booth-2002","red-eye-2005","source-code-2011","a-simple-plan-1998","calibre-2018","the-guilty-2018","blue-ruin-2014","cop-car-2015","the-invitation-2015","green-room-2016","breakdown-1997","identity-2003","the-gift-2015","unsane-2018"],
+    movies: ["run-lola-run-1998","phone-booth-2003","red-eye-2005","source-code-2011","a-simple-plan-1998","calibre-2018","the-guilty-2018","blue-ruin-2014","cop-car-2015","panic-room-2002","green-room-2016","breakdown-1997","identity-2003","the-gift-2015","unsane-2018"],
   },
   {
     slug: "smart-sci-fi-movies",
