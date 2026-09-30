@@ -129,3 +129,4 @@ module.exports = async (req, res) => {
 <link rel="canonical" href="${escapeHtml(url)}">
 </head><body></body></html>`);
 };
+
