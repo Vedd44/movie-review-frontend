@@ -35,7 +35,7 @@ function collectionMeta(slug) {
   return {
     title,
     description,
-    image: `${ORIGIN}/social/collections/${encodeURIComponent(slug)}.png`,
+    image: `${ORIGIN}/social/collections/${encodeURIComponent(slug)}-v2.jpg`,
   };
 }
 
@@ -94,9 +94,9 @@ module.exports = async (req, res) => {
 <meta property="og:url" content="${escapeHtml(url)}">
 <meta property="og:image" content="${escapeHtml(meta.image)}">
 <meta property="og:image:secure_url" content="${escapeHtml(meta.image)}">
-<meta property="og:image:type" content="image/png">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image:height" content="627">
 <meta property="og:image:alt" content="${escapeHtml(`${meta.title} — ReelBot collection`)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(title)}">
