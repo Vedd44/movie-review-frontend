@@ -20250,3 +20250,99 @@ body,
     animation:reelbot-poster-wall-unified 240s linear infinite !important;
   }
 }
+
+
+/* Decision Helper polish v2 — clearer progress and more breathing room */
+.ask-reelbot-sheet {
+  width:min(470px,calc(100vw - 40px));
+}
+.ask-reelbot-sheet-head {
+  padding:26px 26px 20px;
+}
+.ask-reelbot-start,
+.ask-reelbot-answer {
+  padding-left:26px;
+  padding-right:26px;
+  padding-bottom:26px;
+}
+.ask-reelbot-answer-label {
+  margin-bottom:16px;
+}
+.ask-reelbot-answer-main {
+  grid-template-columns:96px minmax(0,1fr);
+  gap:20px;
+}
+.ask-reelbot-answer-main img {
+  width:96px;
+}
+.ask-reelbot-answer h3 {
+  margin-bottom:11px;
+}
+.ask-reelbot-answer p {
+  font-size:.9rem;
+  line-height:1.62;
+}
+.ask-reelbot-answer-actions {
+  gap:10px;
+  margin-top:22px;
+}
+.ask-reelbot-sheet > .ask-reelbot-form {
+  padding:14px 26px 22px;
+}
+.ask-reelbot-status--loading {
+  margin:0 26px 24px;
+  padding:14px 16px;
+  border:1px solid rgba(232,180,91,.2);
+  border-radius:14px;
+  color:rgba(244,239,228,.78);
+  background:rgba(232,180,91,.055);
+}
+.ask-reelbot-status-progress {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.ask-reelbot-status-progress > div {
+  display:grid;
+  gap:2px;
+  min-width:0;
+}
+.ask-reelbot-status-progress strong {
+  color:#fff2d8;
+  font-size:.88rem;
+  font-weight:650;
+}
+.ask-reelbot-status-progress span:not(.ask-reelbot-spinner) {
+  color:rgba(244,239,228,.58);
+  font-size:.78rem;
+  line-height:1.35;
+}
+.ask-reelbot-spinner {
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  border:2px solid rgba(232,180,91,.22);
+  border-top-color:#e8b45b;
+  border-radius:50%;
+  animation:ask-reelbot-spin .75s linear infinite;
+}
+.ask-reelbot-status--collection {
+  margin-top:2px;
+}
+.ask-reelbot-status--loading .ask-reelbot-loading-quote {
+  margin:12px 0 0 30px;
+  padding-top:10px;
+  border-top:1px solid rgba(232,180,91,.12);
+}
+@keyframes ask-reelbot-spin { to { transform:rotate(360deg); } }
+
+@media only screen and (max-width:720px) {
+  .ask-reelbot-sheet-head { padding:20px 20px 16px; }
+  .ask-reelbot-start,
+  .ask-reelbot-answer { padding-left:20px; padding-right:20px; }
+  .ask-reelbot-sheet > .ask-reelbot-form { padding-left:20px; padding-right:20px; }
+  .ask-reelbot-status--loading { margin-left:20px; margin-right:20px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .ask-reelbot-spinner { animation:none; border-top-color:#e8b45b; }
+}
