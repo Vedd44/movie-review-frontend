@@ -1,5 +1,5 @@
 import { normalizeInteractions } from "../behavioralMemory";
-import { getSupabaseClient, isSupabaseConfigured, supabase } from "../lib/supabaseClient";
+import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
 import { tasteProfileService } from "./tasteProfileService";
 
 const REMOTE_SESSION_KEY = "reelbot_state";
@@ -184,7 +184,7 @@ const mirrorLocalCache = ({ profile, interactions, homePickSession }) => {
 };
 
 const fetchRemoteSnapshot = async (userId) => {
-  if (!isSupabaseConfigured || !supabase || !userId) {
+  if (!isSupabaseConfigured || !userId) {
     return {
       profile: tasteProfileService.createEmptyProfile(),
       interactions: [],
@@ -192,7 +192,7 @@ const fetchRemoteSnapshot = async (userId) => {
     };
   }
 
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const [{ rows: movieRows, includesMovieData }, { data: sessionRow, error: sessionError }] = await Promise.all([
     selectUserMovieRows(client, userId),
     client
@@ -250,7 +250,7 @@ const fetchRemoteSnapshot = async (userId) => {
 };
 
 const writeRemoteSnapshot = async (userId, snapshot) => {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const normalizedProfile = tasteProfileService.rebuildProfile(snapshot?.profile || tasteProfileService.createEmptyProfile());
   const movieRows = buildMovieRows(userId, normalizedProfile);
   const activeMovieIds = movieRows.map((row) => row.movie_id);
@@ -327,7 +327,7 @@ export const reelbotCloudService = {
     return fetchRemoteSnapshot(userId);
   },
   async saveUserState(userId, profile, options = {}) {
-    if (!isSupabaseConfigured || !supabase || !userId) {
+    if (!isSupabaseConfigured || !userId) {
       return {
         profile: tasteProfileService.rebuildProfile(profile || tasteProfileService.createEmptyProfile()),
         interactions: options.interactions || tasteProfileService.loadInteractions(),
