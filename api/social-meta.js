@@ -11,7 +11,7 @@ function collectionMeta(slug) {
   const start = source.lastIndexOf("{", at);
   const end = source.indexOf("\n  {", at + 10) > -1 ? source.indexOf("\n  {", at + 10) : source.indexOf("\n];", at);
   const block = source.slice(start, end);
-  const pick = (key) => block.match(new RegExp(`${key}:\\s*"([^"]+)"`))?.[1] || "";
+  const pick = (key) => block.match(new RegExp(`${key}:\\\\s*"([^"]+)"`))?.[1] || "";
   return { title: pick("title"), description: pick("description"), image: `${ORIGIN}/api/social-image?slug=${encodeURIComponent(slug)}` };
 }
 
@@ -47,13 +47,13 @@ module.exports = async (req, res) => {
   const url = `${ORIGIN}${pagePath.startsWith("/") ? pagePath : `/${pagePath}`}`;
   const title = meta.title.includes("ReelBot") ? meta.title : `${meta.title} | ReelBot`;
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader("Cache-Control", "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800");
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, must-revalidate");
   return res.status(200).send(`<!doctype html><html><head>
 <meta charset="utf-8"><title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(meta.description)}">
 <meta property="og:site_name" content="ReelBot"><meta property="og:type" content="website">
 <meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(meta.description)}">
-<meta property="og:url" content="${escapeHtml(url)}"><meta property="og:image" content="${escapeHtml(meta.image)}">
+<meta property="og:url" content="${escapeHtml(url)}"><meta property="og:image" content="${escapeHtml(meta.image)}"><meta property="og:image:secure_url" content="${escapeHtml(meta.image)}"><meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}">
 <meta name="twitter:description" content="${escapeHtml(meta.description)}"><meta name="twitter:image" content="${escapeHtml(meta.image)}">
