@@ -19938,3 +19938,74 @@ body,
     animation:none !important;
   }
 }
+
+
+/* Person page mobile controls v2 — compact filter toolbar, no nested sort container */
+@media only screen and (max-width:720px) {
+  .person-page .person-filmography-section {
+    padding:20px 16px !important;
+  }
+
+  .person-page .person-filmography-section .section-header {
+    align-items:flex-start !important;
+    gap:16px !important;
+  }
+
+  .person-page .person-credit-controls {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    justify-content:flex-start !important;
+    width:100% !important;
+    gap:10px !important;
+  }
+
+  .person-page .person-filter-group,
+  .person-page .person-sort-toggle {
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    gap:7px !important;
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .person-page .person-filter-group::-webkit-scrollbar,
+  .person-page .person-sort-toggle::-webkit-scrollbar {
+    display:none;
+  }
+
+  .person-page .person-filter-group button,
+  .person-page .person-sort-toggle button {
+    flex:0 0 auto !important;
+    min-height:38px !important;
+    padding:7px 12px !important;
+    border:1px solid rgba(255,255,255,.09) !important;
+    border-radius:999px !important;
+    background:rgba(255,255,255,.025) !important;
+    color:rgba(245,240,231,.62) !important;
+    font-size:.86rem !important;
+    line-height:1 !important;
+  }
+
+  .person-page .person-filter-group button.active,
+  .person-page .person-sort-toggle button.active {
+    color:#fff1d0 !important;
+    border-color:rgba(240,189,87,.32) !important;
+    background:rgba(240,189,87,.09) !important;
+  }
+
+  /* Sorting is the final filter row, not a segmented control/card of its own. */
+  .person-page .person-sort-toggle {
+    margin-top:0 !important;
+  }
+}
