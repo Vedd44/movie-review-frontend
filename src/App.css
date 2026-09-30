@@ -19492,3 +19492,53 @@ body,
     z-index:1002 !important;
   }
 }
+
+
+/* Tablet cinema wall v16 — perceptible reel + intentional hero → browse handoff */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  /* 480s was effectively static on a ~3kpx travel. Keep it ambient, but visibly alive. */
+  .home-page > .home-hero .home-hero-art-track {
+    animation-duration:180s !important;
+  }
+
+  /* Let the cinema wall disappear into the page rather than end as a hard black slab. */
+  .home-page > .home-hero::before {
+    z-index:3 !important;
+    height:340px !important;
+    bottom:-1px !important;
+    background:linear-gradient(
+      180deg,
+      rgba(7,9,13,0) 0%,
+      rgba(7,9,13,.20) 20%,
+      rgba(7,9,13,.62) 52%,
+      rgba(7,9,13,.92) 78%,
+      #07090d 100%
+    ) !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing {
+    padding-bottom:112px !important;
+  }
+
+  .home-page > .container.browse-shell.home-shell {
+    position:relative !important;
+    z-index:4 !important;
+    margin-top:-42px !important;
+    padding-top:74px !important;
+    background:linear-gradient(180deg,#07090d 0%,#080a0e 100%) !important;
+  }
+
+  /* Treat Ask ReelBot as a companion to the nav, not a loose page badge. */
+  .ask-reelbot-trigger,
+  .detail-floating-reelbot {
+    right:calc(50% - 380px + 8px) !important;
+    bottom:calc(104px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media only screen and (min-width:721px) and (max-width:800px) {
+  .ask-reelbot-trigger,
+  .detail-floating-reelbot {
+    right:18px !important;
+  }
+}
