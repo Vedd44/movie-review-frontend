@@ -1245,8 +1245,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     return (previewPool.length >= 3 ? previewPool : source).slice(0, 3);
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const heroArtMovies = useMemo(() => {
-    const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
-    return source.filter((movie) => movie?.poster_path).slice(0, 24);
+    const source = [...displayedMovies, ...filteredMovies, ...curatedMovies];
+    const seen = new Set();
+    return source.filter((movie) => {
+      if (!movie?.poster_path || seen.has(movie.id)) return false;
+      seen.add(movie.id);
+      return true;
+    }).slice(0, 32);
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
