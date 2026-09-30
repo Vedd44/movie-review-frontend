@@ -112,8 +112,8 @@ function PersonDetails() {
   }), [person, personId]));
 
   usePageMetadata({
-    title: person?.name ? `${person.name} Filmography | ReelBot` : "Filmography | ReelBot",
-    description: person?.name ? `Browse ${person.name}'s movie credits ordered by release date.` : "Browse movie credits ordered by release date.",
+    title: person?.name ? `${person.name} Movies & Filmography | ReelBot` : "Movie Filmography | ReelBot",
+    description: person?.name ? `Explore ${person.name}'s movie filmography on ReelBot, including film credits, roles, release dates, ratings, and movie details.` : "Explore movie filmographies, credits, roles, release dates, ratings, and movie details on ReelBot.",
     path: person ? getPersonPath(person) : "/people",
     image: person?.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : undefined,
     structuredData: [
