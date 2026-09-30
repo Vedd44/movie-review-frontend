@@ -1,6 +1,28 @@
 {
   "rewrites": [
     {
+      "source": "/collections/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(LinkedInBot|Twitterbot|facebookexternalhit|Slackbot|Discordbot|WhatsApp|TelegramBot).*"
+        }
+      ],
+      "destination": "/api/social-meta?path=/collections/:slug"
+    },
+    {
+      "source": "/movies/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(LinkedInBot|Twitterbot|facebookexternalhit|Slackbot|Discordbot|WhatsApp|TelegramBot).*"
+        }
+      ],
+      "destination": "/api/social-meta?path=/movies/:slug"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://movie-review-backend-zevb.onrender.com/sitemap.xml"
     }
