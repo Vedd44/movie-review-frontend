@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSupabaseClient, isSupabaseConfigured, supabase } from "../lib/supabaseClient";
+import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
 import { trackProductEvent } from "../analytics";
 import { tasteProfileService } from "../services/tasteProfileService";
 
@@ -108,18 +108,21 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       setLoading(false);
       return undefined;
     }
 
     let cancelled = false;
+    let subscription = null;
 
-    withAuthTimeout(getSupabaseClient().auth.getSession(), "Restoring the account session")
-      .then(({ data, error }) => {
-        if (cancelled) {
-          return;
-        }
+    const initializeAuth = async () => {
+      try {
+        const client = await getSupabaseClient();
+        if (cancelled) return;
+
+        const { data, error } = await withAuthTimeout(client.auth.getSession(), "Restoring the account session");
+        if (cancelled) return;
 
         if (error) {
           setAuthError(error.message || "Could not restore your account session.");
@@ -136,58 +139,59 @@ export function AuthProvider({ children }) {
           setSession(data?.session || null);
         }
         setLoading(false);
-      })
-      .catch((error) => {
-        if (cancelled) {
-          return;
-        }
 
+        const { data: listener } = client.auth.onAuthStateChange((event, nextSession) => {
+          if (event === "PASSWORD_RECOVERY") {
+            setPasswordRecoveryActive(true);
+            setPendingRecoverySession(nextSession || null);
+            if (!recoveryRedirectedRef.current) {
+              recoveryRedirectedRef.current = true;
+              navigate("/reset-password", { replace: true });
+            }
+          } else if (event === "SIGNED_OUT") {
+            setPasswordRecoveryActive(false);
+            setPendingRecoverySession(null);
+            recoveryRedirectedRef.current = false;
+          } else if (event === "SIGNED_IN" && !recoveryRedirectedRef.current && !isRecoveryUrl()) {
+            setPasswordRecoveryActive(false);
+          }
+
+          if (event === "PASSWORD_RECOVERY") {
+            setSession(null);
+          } else {
+            setPendingRecoverySession(null);
+            if (nextSession?.user) completePendingMovieSave();
+            setSession(nextSession || null);
+          }
+          setLoading(false);
+          if (nextSession?.user) closeAuthPrompt();
+        });
+        subscription = listener.subscription;
+      } catch (error) {
+        if (cancelled) return;
         setAuthError(error.message || "Could not restore your account session.");
         setLoading(false);
-      });
+      }
+    };
 
-      const { data: listener } = getSupabaseClient().auth.onAuthStateChange((event, nextSession) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setPasswordRecoveryActive(true);
-          setPendingRecoverySession(nextSession || null);
-          if (!recoveryRedirectedRef.current) {
-            recoveryRedirectedRef.current = true;
-            navigate("/reset-password", { replace: true });
-          }
-        } else if (event === "SIGNED_OUT") {
-          setPasswordRecoveryActive(false);
-          setPendingRecoverySession(null);
-          recoveryRedirectedRef.current = false;
-        } else if (event === "SIGNED_IN" && !recoveryRedirectedRef.current && !isRecoveryUrl()) {
-          setPasswordRecoveryActive(false);
-        }
-
-        if (event === "PASSWORD_RECOVERY") {
-          setSession(null);
-        } else {
-          setPendingRecoverySession(null);
-          if (nextSession?.user) completePendingMovieSave();
-          setSession(nextSession || null);
-        }
-        setLoading(false);
-        if (nextSession?.user) {
-          closeAuthPrompt();
-        }
-      });
+    // Let the first paint complete before loading the account SDK. Signed-in
+    // sessions are still restored immediately after the browser becomes idle.
+    const timer = window.setTimeout(initializeAuth, 0);
 
     return () => {
       cancelled = true;
-      listener.subscription.unsubscribe();
+      window.clearTimeout(timer);
+      subscription?.unsubscribe();
     };
   }, [closeAuthPrompt, navigate]);
 
   const sendMagicLink = useCallback(async (email) => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured.");
     }
 
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const response = await withAuthTimeout(getSupabaseClient().auth.signInWithOtp({
+    const response = await withAuthTimeout((await getSupabaseClient()).auth.signInWithOtp({
       email: normalizedEmail,
       options: { emailRedirectTo: getAuthRedirectUrl() },
     }), "Sending the sign-in link");
@@ -204,12 +208,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signInWithPassword = useCallback(async ({ email, password }) => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured.");
     }
 
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const response = await withAuthTimeout(getSupabaseClient().auth.signInWithPassword({
+    const response = await withAuthTimeout((await getSupabaseClient()).auth.signInWithPassword({
       email: normalizedEmail,
       password,
     }), "Signing in");
@@ -225,13 +229,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUpWithPassword = useCallback(async ({ email, password, displayName = "" }) => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured.");
     }
 
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedName = String(displayName || "").trim();
-    const response = await withAuthTimeout(getSupabaseClient().auth.signUp({
+    const response = await withAuthTimeout((await getSupabaseClient()).auth.signUp({
       email: normalizedEmail,
       password,
       options: {
@@ -252,7 +256,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const sendPasswordReset = useCallback(async (email) => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured.");
     }
 
@@ -261,7 +265,7 @@ export function AuthProvider({ children }) {
       ? `${window.location.origin}/reset-password`
       : undefined;
 
-    const response = await withAuthTimeout(getSupabaseClient().auth.resetPasswordForEmail(normalizedEmail, {
+    const response = await withAuthTimeout((await getSupabaseClient()).auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo,
     }), "Sending the reset link");
     const { error } = response;
@@ -276,11 +280,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const updatePassword = useCallback(async (password) => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured.");
     }
 
-    const response = await getSupabaseClient().auth.updateUser({
+    const response = await (await getSupabaseClient()).auth.updateUser({
       password,
     });
     const { data, error } = response;
@@ -300,11 +304,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       return;
     }
 
-    const { error } = await getSupabaseClient().auth.signOut();
+    const { error } = await (await getSupabaseClient()).auth.signOut();
     if (error) {
       setAuthError(error.message || "We couldn't log you out right now.");
       throw error;
@@ -316,12 +320,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const updateDisplayName = useCallback(async (displayName) => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured.");
     }
 
     const normalizedName = String(displayName || "").trim();
-    const { data, error } = await getSupabaseClient().auth.updateUser({
+    const { data, error } = await (await getSupabaseClient()).auth.updateUser({
       data: {
         display_name: normalizedName,
       },
@@ -341,7 +345,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const deleteAccount = useCallback(async () => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured.");
     }
 
@@ -366,7 +370,7 @@ export function AuthProvider({ children }) {
       throw new Error(message);
     }
 
-    await getSupabaseClient().auth.signOut();
+    await (await getSupabaseClient()).auth.signOut();
     setAuthError("");
     setLastMagicLinkEmail("");
     setPasswordRecoveryActive(false);
