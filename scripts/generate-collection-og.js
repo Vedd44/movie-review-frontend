@@ -54,47 +54,41 @@ async function render(collection) {
   const posterBuffers = (await Promise.all(collection.movies.slice(0, 3).map(posterFor))).filter(Boolean);
   const composites = [];
   const posterWidth = 400;
-  const posterHeight = 630;
+  const posterHeight = 627;
 
   for (let i = 0; i < posterBuffers.length; i++) {
     const poster = await sharp(posterBuffers[i])
-      .resize(posterWidth, posterHeight, { fit: "cover", position: "centre", kernel: sharp.kernel.lanczos3 })
+      .resize(posterWidth, posterHeight, { fit: "cover", position: "centre", kernel: sharp.kernel.lanczos3, withoutEnlargement: false })
       .toBuffer();
     composites.push({ input: poster, left: i * posterWidth, top: 0 });
   }
 
-  const lines = wrapTitle(collection.title, 28);
+  const lines = wrapTitle(collection.title, 32);
+  const titleStartY = 470 - ((lines.length - 1) * 70);
   const titleSvg = lines.map((line, i) =>
-    `<text x="72" y="${250 + i * 76}" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="66" font-weight="800">${escapeXml(line)}</text>`
+    `<text x="58" y="${titleStartY + i * 70}" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="62" font-weight="800">${escapeXml(line)}</text>`
   ).join("");
 
-  const overlay = Buffer.from(`<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  const overlay = Buffer.from(`<svg width="1200" height="627" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#05080d" stop-opacity=".20"/>
-        <stop offset=".38" stop-color="#05080d" stop-opacity=".46"/>
+        <stop offset="0" stop-color="#05080d" stop-opacity=".10"/>
+        <stop offset=".42" stop-color="#05080d" stop-opacity=".30"/>
         <stop offset="1" stop-color="#05080d" stop-opacity=".94"/>
       </linearGradient>
-      <linearGradient id="copy" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#05080d" stop-opacity=".82"/>
-        <stop offset=".48" stop-color="#05080d" stop-opacity=".46"/>
-        <stop offset=".78" stop-color="#05080d" stop-opacity=".10"/>
-        <stop offset="1" stop-color="#05080d" stop-opacity="0"/>
-      </linearGradient>
     </defs>
-    <rect width="1200" height="630" fill="url(#shade)"/>
-    <rect width="1200" height="630" fill="url(#copy)"/>
-    <text x="72" y="104" fill="#f4d98d" font-family="Arial,Helvetica,sans-serif" font-size="24" font-weight="700" letter-spacing="3">${escapeXml((collection.eyebrow || "REELBOT COLLECTION").toUpperCase())}</text>
+    <rect width="1200" height="627" fill="url(#shade)"/>
+    <text x="58" y="${titleStartY - 66}" fill="#f4d98d" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" letter-spacing="3">${escapeXml((collection.eyebrow || "REELBOT COLLECTION").toUpperCase())}</text>
     ${titleSvg}
-    <text x="72" y="560" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="800">REELBOT</text>
-    <text x="205" y="560" fill="#f4d98d" font-family="Arial,Helvetica,sans-serif" font-size="23" font-weight="700">COLLECTIONS</text>
+    <text x="58" y="575" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="800">REELBOT</text>
+    <text x="176" y="575" fill="#f4d98d" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700">COLLECTIONS</text>
   </svg>`);
   composites.push({ input: overlay, left: 0, top: 0 });
 
-  const out = path.join(OUT, `${collection.slug}.png`);
-  await sharp({ create: { width: 1200, height: 630, channels: 4, background: "#08101a" } })
+  const out = path.join(OUT, `${collection.slug}-v2.jpg`);
+  await sharp({ create: { width: 1200, height: 627, channels: 4, background: "#08101a" } })
     .composite(composites)
-    .png({ compressionLevel: 9 })
+    .jpeg({ quality: 94, chromaSubsampling: "4:4:4", mozjpeg: true })
     .toFile(out);
   console.log(`OG: ${collection.slug} (${posterBuffers.length} posters)`);
 }
