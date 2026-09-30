@@ -149,8 +149,75 @@ export const COLLECTIONS = [
     movies: ["the-godfather-1972","jaws-1975","star-wars-1977","raiders-of-the-lost-ark-1981","back-to-the-future-1985","goodfellas-1990","the-silence-of-the-lambs-1991","jurassic-park-1993","pulp-fiction-1994","the-matrix-1999","the-lord-of-the-rings-the-fellowship-of-the-ring-2001","the-dark-knight-2008","parasite-2019","mad-max-fury-road-2015","spirited-away-2001"],
   },
 
+  {
+    slug: "best-halloween-movies", title: "Best Halloween Movies", eyebrow: "Halloween season",
+    description: "Pumpkin-lit streets, ghosts, witches and just enough menace. Twenty movies that actually feel like Halloween.",
+    prompt: "Give me a great Halloween movie", categories: ["Seasonal", "Occasion"],
+    movies: ["halloween-1978","trick-r-treat-2007","hocus-pocus-1993","beetlejuice-1988","the-nightmare-before-christmas-1993","scream-1996","the-addams-family-1991","sleepy-hollow-1999","casper-1995","monster-house-2006","coraline-2009","the-craft-1996","practical-magic-1998","paranorman-2012","the-lost-boys-1987","the-witches-1990","edward-scissorhands-1990","ghostbusters-1984","the-crow-1994","donnie-darko-2001"],
+  },
+  {
+    slug: "scariest-movies", title: "Scariest Movies Ever", eyebrow: "Lights on",
+    description: "Dread, shocks and images that stick around after the credits. Twenty horror movies built to genuinely scare you.",
+    prompt: "Give me something genuinely scary", categories: ["Seasonal", "Genre", "Mood"],
+    movies: ["the-exorcist-1973","hereditary-2018","the-ring-2002","the-conjuring-2013","the-blair-witch-project-1999","the-shining-1980","the-witch-2015","the-grudge-2004","the-babadook-2014","the-descent-2005","sinister-2012","the-texas-chain-saw-massacre-1974","the-autopsy-of-jane-doe-2016","the-dark-and-the-wicked-2020","the-strangers-2008","the-wailing-2016","it-follows-2014","the-others-2001","the-omen-1976","rec-2007"],
+  },
+  {
+    slug: "goriest-horror-movies", title: "Goriest Horror Movies", eyebrow: "Not for the squeamish",
+    description: "Practical effects, body horror and absolutely no interest in looking away. Twenty horror movies for when subtle is not the assignment.",
+    prompt: "Give me a seriously gory horror movie", categories: ["Seasonal", "Genre"],
+    movies: ["the-substance-2024","evil-dead-2013","evil-dead-rise-2023","braindead-1992","the-fly-1986","the-thing-1982","terrifier-2-2022","terrifier-3-2024","saw-2004","hostel-2005","the-sadness-2021","bone-tomahawk-2015","green-room-2016","when-evil-lurks-2023","hellraiser-1987","re-animator-1985","day-of-the-dead-1985","the-hills-have-eyes-2006","inside-2007","tokyo-gore-police-2008"],
+  },
+  {
+    slug: "best-slasher-movies", title: "Best Slasher Movies", eyebrow: "Sharp objects",
+    description: "Final girls, masked killers and genre rules made to be broken. Twenty slashers worth surviving.",
+    prompt: "Give me a great slasher movie", categories: ["Seasonal", "Genre"],
+    movies: ["halloween-1978","psycho-1960","black-christmas-1974","the-texas-chain-saw-massacre-1974","scream-1996","a-nightmare-on-elm-street-1984","friday-the-13th-1980","childs-play-1988","candyman-1992","youre-next-2011","the-strangers-2008","x-2022","pearl-2022","happy-death-day-2017","the-burning-1981","sleepaway-camp-1983","my-bloody-valentine-1981","the-town-that-dreaded-sundown-1976","the-final-girls-2015","freaky-2020"],
+  },
+  {
+    slug: "family-halloween-movies", title: "Family-Friendly Halloween Movies", eyebrow: "Spooky, not terrifying",
+    description: "Ghosts, monsters and Halloween atmosphere without turning movie night into a nightmare. Twenty family-friendly seasonal picks.",
+    prompt: "Give me a family-friendly Halloween movie", categories: ["Seasonal", "Occasion"],
+    movies: ["hocus-pocus-1993","casper-1995","the-addams-family-1991","addams-family-values-1993","hotel-transylvania-2012","paranorman-2012","frankenweenie-2012","monster-house-2006","coraline-2009","the-nightmare-before-christmas-1993","halloweentown-1998","the-witches-1990","scooby-doo-2002","ghostbusters-1984","haunted-mansion-2023","goosebumps-2015","wallace-gromit-the-curse-of-the-were-rabbit-2005","corpse-bride-2005","the-little-vampire-2000","ernest-scared-stupid-1991"],
+  },
+  {
+    slug: "cozy-fall-movies", title: "Cozy Fall Movies", eyebrow: "Autumn watchlist",
+    description: "Crisp air, warm kitchens, changing leaves and movies made for staying in. Twenty films with peak fall atmosphere.",
+    prompt: "Give me a cozy fall movie", categories: ["Seasonal", "Mood"],
+    movies: ["when-harry-met-sally-1989","youve-got-mail-1998","good-will-hunting-1997","dead-poets-society-1989","fantastic-mr-fox-2009","knives-out-2019","practical-magic-1998","little-women-2019","october-sky-1999","rushmore-1998","mona-lisa-smile-2003","the-royal-tenenbaums-2001","mystic-pizza-1988","remember-the-titans-2000","rudy-1993","the-village-2004","planes-trains-and-automobiles-1987","dan-in-real-life-2007","silver-linings-playbook-2012","harry-potter-and-the-prisoner-of-azkaban-2004"],
+  },
+  {
+    slug: "best-christmas-movies", title: "Best Christmas Movies", eyebrow: "Christmas classics",
+    description: "Warm, funny, nostalgic and occasionally chaotic. Twenty Christmas movies worth making part of the tradition.",
+    prompt: "Give me a great Christmas movie", categories: ["Seasonal", "Occasion"],
+    movies: ["its-a-wonderful-life-1946","home-alone-1990","elf-2003","the-muppet-christmas-carol-1992","national-lampoons-christmas-vacation-1989","miracle-on-34th-street-1947","the-santa-clause-1994","klaus-2019","a-christmas-story-1983","love-actually-2003","the-holiday-2006","scrooged-1988","white-christmas-1954","arthur-christmas-2011","the-polar-express-2004","bad-santa-2003","the-holdovers-2023","gremlins-1984","die-hard-1988","the-nightmare-before-christmas-1993"],
+  },
+  {
+    slug: "family-christmas-movies", title: "Family Christmas Movies", eyebrow: "Christmas together",
+    description: "Big-hearted, funny and festive. Twenty Christmas movies that work for a family movie night.",
+    prompt: "Give me a family Christmas movie", categories: ["Seasonal", "Occasion"],
+    movies: ["home-alone-1990","elf-2003","klaus-2019","the-muppet-christmas-carol-1992","arthur-christmas-2011","the-santa-clause-1994","the-polar-express-2004","miracle-on-34th-street-1947","the-grinch-2018","how-the-grinch-stole-christmas-2000","jingle-all-the-way-1996","a-christmas-story-1983","the-christmas-chronicles-2018","noelle-2019","mickeys-christmas-carol-1983","prancer-1989","the-snowman-1982","nativity-2009","the-nightmare-before-christmas-1993","the-star-2017"],
+  },
+  {
+    slug: "christmas-movies-for-adults", title: "Christmas Movies for Adults", eyebrow: "After the kids go to bed",
+    description: "Romance, cynicism, crime and holiday dysfunction. Twenty Christmas movies that skew decidedly grown-up.",
+    prompt: "Give me a Christmas movie for adults", categories: ["Seasonal", "Occasion"],
+    movies: ["the-holdovers-2023","the-holiday-2006","love-actually-2003","bad-santa-2003","the-family-stone-2005","carol-2015","the-night-before-2015","scrooged-1988","trading-places-1983","the-apartment-1960","kiss-kiss-bang-bang-2005","die-hard-1988","the-ref-1994","eyes-wide-shut-1999","tangerine-2015","happiest-season-2020","the-best-man-holiday-2013","office-christmas-party-2016","the-ice-harvest-2005","just-friends-2005"],
+  },
+  {
+    slug: "christmas-horror-movies", title: "Christmas Horror Movies", eyebrow: "Season's screamings",
+    description: "Killer Santas, winter monsters and festive cheer gone very wrong. Twenty horror movies for a darker Christmas.",
+    prompt: "Give me a Christmas horror movie", categories: ["Seasonal", "Genre"],
+    movies: ["black-christmas-1974","gremlins-1984","krampus-2015","rare-exports-a-christmas-tale-2010","better-watch-out-2016","terrifier-3-2024","silent-night-deadly-night-1984","christmas-evil-1980","anna-and-the-apocalypse-2018","a-christmas-horror-story-2015","dead-end-2003","the-advent-calendar-2021","the-children-2008","p2-2007","christmas-bloody-christmas-2022","the-lodge-2019","jack-frost-1997","deadly-games-1989","the-nightmare-before-christmas-1993","the-day-of-the-beast-1995"],
+  },
+  {
+    slug: "best-winter-movies", title: "Best Winter Movies", eyebrow: "Cold outside",
+    description: "Snowbound thrillers, frozen landscapes and cozy escapes. Twenty movies that make winter part of the story.",
+    prompt: "Give me a great winter movie", categories: ["Seasonal", "Mood"],
+    movies: ["the-thing-1982","fargo-1996","the-shining-1980","the-revenant-2015","misery-1990","the-hateful-eight-2015","wind-river-2017","the-holdovers-2023","snowpiercer-2013","the-grey-2012","doctor-zhivago-1965","groundhog-day-1993","let-the-right-one-in-2008","inside-llewyn-davis-2013","the-grand-budapest-hotel-2014","the-girl-with-the-dragon-tattoo-2011","a-simple-plan-1998","frozen-2013","the-ice-storm-1997","little-women-2019"],
+  },
+
 ];
 
-export const COLLECTION_CATEGORIES = ["All", "Mood", "Genre", "Era", "Occasion"];
+export const COLLECTION_CATEGORIES = ["All", "Seasonal", "Mood", "Genre", "Era", "Occasion"];
 
 export const getCollection = (slug) => COLLECTIONS.find((collection) => collection.slug === slug);
