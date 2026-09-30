@@ -57,5 +57,6 @@ module.exports = async (req, res) => {
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}">
 <meta name="twitter:description" content="${escapeHtml(meta.description)}"><meta name="twitter:image" content="${escapeHtml(meta.image)}">
-<link rel="canonical" href="${escapeHtml(url)}"></head><body><p><a href="${escapeHtml(url)}">Open ${escapeHtml(title)}</a></p></body></html>`);
+<link rel="canonical" href="${escapeHtml(url)}">
+<script>window.location.replace(${JSON.stringify(url)});</script></head><body><p>Opening <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>…</p></body></html>`);
 };
