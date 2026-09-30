@@ -1246,7 +1246,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const heroArtMovies = useMemo(() => {
     const source = displayedMovies.length ? displayedMovies : filteredMovies.length ? filteredMovies : curatedMovies;
-    return source.filter((movie) => movie?.poster_path).slice(0, 7);
+    return source.filter((movie) => movie?.poster_path).slice(0, 12);
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
