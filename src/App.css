@@ -19282,3 +19282,71 @@ body,
     padding-top:58px !important;
   }
 }
+
+
+/* Tablet cinema wall v11 — slower, longer unique reel, darker/clearer, seamless Browse */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art-track {
+    /* 24 unique posters = six 4-wide rows; duplicated once for a seamless loop */
+    grid-auto-rows:360px !important;
+    min-height:4320px !important;
+    animation:reelbot-poster-reel-24 144s linear infinite !important;
+  }
+
+  .home-page > .home-hero::after {
+    background:
+      radial-gradient(ellipse 56% 43% at 50% 23%,rgba(1,4,8,.982) 0%,rgba(1,5,9,.968) 44%,rgba(2,6,11,.95) 70%,rgba(3,8,14,.965) 100%),
+      linear-gradient(180deg,rgba(1,4,8,.94) 0%,rgba(1,5,9,.955) 60%,rgba(2,7,12,.975) 86%,#07090d 100%) !important;
+  }
+
+  /* Foreground copy must stay comfortably readable over every poster frame. */
+  .home-page .home-hero-subtitle,
+  .home-page .home-hero-now-playing-subtitle,
+  .home-page .pick-theaters-toggle small,
+  .home-page .theater-toggle small {
+    color:rgba(248,244,238,.82) !important;
+    opacity:1 !important;
+    text-shadow:0 2px 14px rgba(0,0,0,.96) !important;
+  }
+
+  .home-page .pick-prompt-chip {
+    color:rgba(250,247,242,.88) !important;
+  }
+
+  /* Browse is one flat continuation of the hero canvas — no inherited card/shell treatment. */
+  .home-page > .container.browse-shell.home-shell,
+  .home-page .browse-shell,
+  .home-page .browse-shell.home-shell {
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding-left:14px !important;
+    padding-right:14px !important;
+    background:#07090d !important;
+    background-image:none !important;
+    border:0 !important;
+    border-top:0 !important;
+    border-right:0 !important;
+    border-bottom:0 !important;
+    border-left:0 !important;
+    border-radius:0 !important;
+    outline:0 !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .container.browse-shell.home-shell::before,
+  .home-page > .container.browse-shell.home-shell::after,
+  .home-page .browse-shell::before,
+  .home-page .browse-shell::after {
+    content:none !important;
+    display:none !important;
+    border:0 !important;
+    background:none !important;
+    box-shadow:none !important;
+  }
+}
+
+@keyframes reelbot-poster-reel-24 {
+  from { transform:translate3d(0,0,0); }
+  to   { transform:translate3d(0,-2220px,0); }
+}
