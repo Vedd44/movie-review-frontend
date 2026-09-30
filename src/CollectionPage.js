@@ -6,6 +6,7 @@ import { COLLECTIONS, COLLECTION_CATEGORIES, getCollection } from "./collections
 import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
+import { trackProductEvent } from "./analytics";
 
 export function CollectionPreviewCard({ collection, compact = false }) {
   const [previewMovies, setPreviewMovies] = useState([]);
@@ -149,6 +150,38 @@ export default function CollectionPage() {
     structuredData,
   });
 
+  const relatedCollections = useMemo(() => {
+    if (!collection) return [];
+    const movieSet = new Set(collection.movies || []);
+    return COLLECTIONS
+      .filter((candidate) => candidate.slug !== collection.slug)
+      .map((candidate) => ({
+        collection: candidate,
+        overlap: (candidate.movies || []).filter((slug) => movieSet.has(slug)).length,
+        categoryOverlap: (candidate.categories || []).filter((category) => collection.categories?.includes(category)).length,
+      }))
+      .filter((item) => item.overlap > 0 || item.categoryOverlap > 0)
+      .sort((a, b) => (b.overlap * 3 + b.categoryOverlap) - (a.overlap * 3 + a.categoryOverlap))
+      .slice(0, 3)
+      .map((item) => item.collection);
+  }, [collection]);
+
+  const shareCollection = async () => {
+    const url = window.location.href;
+    const shareData = { title: collection.title, text: collection.description, url };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        trackProductEvent("collection_shared", { collection: collection.slug, method: "native" });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        trackProductEvent("collection_shared", { collection: collection.slug, method: "clipboard" });
+      }
+    } catch (shareError) {
+      if (shareError?.name !== "AbortError") console.warn("Unable to share collection", shareError);
+    }
+  };
+
   const pageContext = useMemo(() => collection ? ({
     page: "collection",
     collection: { slug: collection.slug, title: collection.title, prompt: collection.prompt },
@@ -166,6 +199,9 @@ export default function CollectionPage() {
           <div className="browse-kicker">{collection.eyebrow}</div>
           <h1 className="browse-title">{collection.title}</h1>
           <p className="collection-dek">{collection.description}</p>
+          <button type="button" className="collection-share-button" onClick={shareCollection} aria-label={`Share ${collection.title}`}>
+            Share collection <span aria-hidden="true">↗</span>
+          </button>
         </section>
         {loading ? (
           <div className="loading-message"><span className="status-glyph" aria-hidden="true"></span><span>Building this collection...</span></div>
@@ -174,6 +210,14 @@ export default function CollectionPage() {
             {movies.map((movie) => <CollectionCard key={movie.id} movie={movie} />)}
           </div>
         )}
+        {relatedCollections.length ? (
+          <section className="related-collections" aria-labelledby="related-collections-heading">
+            <div className="detail-section-head"><h2 id="related-collections-heading" className="detail-section-title">Related Collections</h2></div>
+            <div className="related-collections-grid">
+              {relatedCollections.map((related) => <CollectionPreviewCard key={related.slug} collection={related} compact />)}
+            </div>
+          </section>
+        ) : null}
         <div className="collection-back-row">
           <Link to="/collections" className="browse-library-link">← Back to collections</Link>
         </div>
