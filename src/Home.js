@@ -2084,7 +2084,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                   <div
                     key={`${movie.id}-${index}`}
                     className={`home-hero-art-panel home-hero-art-panel--${(index % heroArtMovies.length) + 1}`}
-                    style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w500${movie.poster_path}")` }}
+                    style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w342${movie.poster_path}")` }}
                   />
                 ))}
               </div>
@@ -2435,7 +2435,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               <article key={card.title} className={`home-magic-card${index === 0 ? " home-magic-card--wide" : ""}`}>
                 <div
                   className="home-magic-card-art"
-                  style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w500${card.posterPath}")` }}
+                  style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w342${card.posterPath}")` }}
                   role="img"
                   aria-label={card.title}
                 ></div>
