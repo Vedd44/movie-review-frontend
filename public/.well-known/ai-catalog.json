@@ -1,0 +1,22 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "ReelBot",
+    "identifier": "did:web:reelbot.movie",
+    "documentationUrl": "https://reelbot.movie/how-reelbot-works"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:reelbot.movie:resource:movie-discovery",
+      "displayName": "ReelBot Movie Discovery",
+      "type": "text/markdown",
+      "url": "https://reelbot.movie/llms.txt",
+      "description": "Movie discovery, recommendations, curated collections, canonical movie pages, and people pages.",
+      "representativeQueries": [
+        "find a movie to watch tonight",
+        "browse curated movie collections",
+        "find movies like a movie I already enjoy"
+      ]
+    }
+  ]
+}
