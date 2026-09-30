@@ -19226,3 +19226,59 @@ body,
 @media only screen and (max-width:720px), only screen and (min-width:1101px) {
   .home-page > .home-hero .home-hero-art-track { display:contents; }
 }
+
+
+/* Tablet cinema wall v10 — slow infinite reel + seamless browse handoff */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art-track {
+    /* duplicated 4-row set travels exactly one set; second copy is already entering */
+    animation-duration:72s !important;
+    animation-timing-function:linear !important;
+    animation-iteration-count:infinite !important;
+  }
+
+  /* Darken artwork while retaining enough poster detail to feel cinematic. */
+  .home-page > .home-hero::after {
+    background:
+      radial-gradient(ellipse 56% 42% at 50% 23%,rgba(1,4,8,.965) 0%,rgba(2,6,11,.945) 46%,rgba(2,7,13,.93) 72%,rgba(3,8,14,.95) 100%),
+      linear-gradient(180deg,rgba(1,4,8,.91) 0%,rgba(2,6,11,.93) 62%,rgba(3,8,14,.97) 88%,#07090d 100%) !important;
+  }
+
+  /* Make the hero handoff land on the exact same neutral canvas as Browse. */
+  .home-page > .home-hero::before {
+    height:260px !important;
+    background:linear-gradient(180deg,rgba(7,9,13,0) 0%,rgba(7,9,13,.72) 48%,#07090d 86%,#07090d 100%) !important;
+  }
+
+  .home-page > .home-hero + .home-shell,
+  .home-page .home-shell,
+  .home-page .home-feed-section {
+    background:#07090d !important;
+    background-image:none !important;
+    border:0 !important;
+    border-top:0 !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .home-hero + .home-shell {
+    position:relative !important;
+    margin-top:0 !important;
+    padding-top:0 !important;
+  }
+
+  .home-page > .home-hero + .home-shell::before,
+  .home-page .home-feed-section::before,
+  .home-page .home-feed-section::after {
+    content:none !important;
+    display:none !important;
+    background:none !important;
+    border:0 !important;
+    box-shadow:none !important;
+  }
+
+  /* Remove inherited reddish decorative wash/rule around Browse. */
+  .home-page .home-feed-section {
+    margin-top:0 !important;
+    padding-top:58px !important;
+  }
+}
