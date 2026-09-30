@@ -19662,3 +19662,35 @@ body,
     box-shadow:none !important;
   }
 }
+
+
+/* Collections discovery hierarchy */
+.collections-discovery { margin: 10px 0 30px; }
+.collections-filter-row { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.collections-filter-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.collections-filter-chip {
+  appearance:none; border:1px solid rgba(255,242,219,.09); border-radius:999px;
+  background:#0d1118; color:rgba(245,239,230,.82); padding:10px 16px;
+  font:inherit; font-weight:650; cursor:pointer; transition:border-color .18s ease,background .18s ease,color .18s ease;
+}
+.collections-filter-chip:hover { border-color:rgba(240,189,87,.28); }
+.collections-filter-chip.is-active { background:linear-gradient(135deg,#f4c15e,#e9933d); color:#17130d; border-color:transparent; }
+.collections-search { width:min(290px,32vw); flex:0 0 auto; }
+.collections-search input {
+  box-sizing:border-box; width:100%; min-height:43px; border:1px solid rgba(255,242,219,.09);
+  border-radius:999px; background:#090c11; color:#f5efe6; padding:0 17px; font:inherit; outline:none;
+}
+.collections-search input:focus { border-color:rgba(240,189,87,.42); box-shadow:0 0 0 3px rgba(240,189,87,.06); }
+.collections-search input::placeholder { color:rgba(239,230,217,.42); }
+.collections-result-count { margin:12px 2px 0; color:rgba(239,230,217,.42); font-size:.78rem; }
+.collections-load-more-row { display:flex; justify-content:center; padding:30px 0 8px; }
+.collections-load-more { appearance:none; cursor:pointer; font:inherit; }
+.collections-empty { padding:48px 0; text-align:center; color:rgba(239,230,217,.55); }
+@media only screen and (max-width:720px) {
+  .collections-discovery { margin:6px 0 24px; }
+  .collections-filter-row { align-items:stretch; flex-direction:column; gap:12px; }
+  .collections-filter-chips { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-right:-18px; padding-right:18px; }
+  .collections-filter-chips::-webkit-scrollbar { display:none; }
+  .collections-filter-chip { flex:0 0 auto; padding:9px 14px; }
+  .collections-search { width:100%; }
+}
