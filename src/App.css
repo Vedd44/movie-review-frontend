@@ -20230,3 +20230,23 @@ body,
     aspect-ratio:2 / 3 !important;
   }
 }
+
+
+/* Homepage cinema wall v24 — compact poster rows + seamless duplicated reel.
+   v23 switched cards to intrinsic 2:3 geometry but desktop retained v22's 5200px
+   minimum track height, so CSS Grid stretched the auto rows and created large gaps. */
+.home-page > .home-hero .home-hero-art-track {
+  min-height:0 !important;
+  align-content:start !important;
+  animation-name:reelbot-poster-wall-unified !important;
+}
+@media only screen and (min-width:1101px) {
+  .home-page > .home-hero .home-hero-art-track {
+    /* 24 unique posters divides cleanly into six columns, so the duplicate begins
+       on a row boundary and the -50% loop remains seamless. */
+    grid-template-columns:repeat(6,minmax(0,1fr)) !important;
+    min-height:0 !important;
+    align-content:start !important;
+    animation:reelbot-poster-wall-unified 240s linear infinite !important;
+  }
+}
