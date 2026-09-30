@@ -14,7 +14,8 @@
     "react-markdown": "^10.0.0",
     "react-router-dom": "^6.30.3",
     "react-scripts": "^5.0.1",
-    "web-vitals": "^4.2.4"
+    "web-vitals": "^4.2.4",
+    "sharp": "^0.34.4"
   },
   "scripts": {
     "start": "react-scripts start",
