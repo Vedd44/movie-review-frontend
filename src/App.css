@@ -19628,3 +19628,37 @@ body,
     background:none !important;
   }
 }
+
+
+/* Tablet home v19 — definitive Browse reset. The tint lives on home-browse-section itself. */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page .home-browse-section {
+    position:relative !important;
+    margin:0 !important;
+    padding-top:28px !important;
+    background:#07090d !important;
+    background-color:#07090d !important;
+    background-image:none !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    filter:none !important;
+  }
+
+  .home-page .home-browse-section::before,
+  .home-page .home-browse-section::after {
+    content:none !important;
+    display:none !important;
+    background:none !important;
+    background-image:none !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .container.browse-shell.home-shell {
+    background:#07090d !important;
+    background-color:#07090d !important;
+    background-image:none !important;
+    border:0 !important;
+    box-shadow:none !important;
+  }
+}
