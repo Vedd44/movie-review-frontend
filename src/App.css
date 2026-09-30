@@ -18561,3 +18561,39 @@ body,
     grid-column: 1 / -1;
   }
 }
+
+
+/* Tablet portrait hero cleanup: deliberate header clearance + one calm canvas */
+@media only screen and (min-width: 721px) and (max-width: 1100px) {
+  .home-page .home-hero {
+    padding-top: 104px !important;
+    background: rgba(9, 18, 29, .94) !important;
+  }
+
+  .home-page .home-hero::after {
+    background: rgba(9, 18, 29, .78) !important;
+  }
+
+  .home-page .home-hero-art-panel {
+    opacity: .18 !important;
+    filter: saturate(.55) brightness(.52) !important;
+  }
+
+  .home-page .home-hero-copy,
+  .home-page .home-hero-now-playing {
+    position: relative;
+    z-index: 2;
+  }
+
+  .home-page .home-hero-now-playing::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -28px;
+    right: calc((100vw - 100%) / -2);
+    bottom: -44px;
+    left: calc((100vw - 100%) / -2);
+    background: rgba(9, 18, 29, .94);
+    pointer-events: none;
+  }
+}
