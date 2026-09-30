@@ -2057,13 +2057,15 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         >
           {heroArtMovies.length ? (
             <div className="home-hero-art" aria-hidden="true">
-              {heroArtMovies.map((movie, index) => (
-                <div
-                  key={movie.id}
-                  className={`home-hero-art-panel home-hero-art-panel--${index + 1}`}
-                  style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w500${movie.poster_path}")` }}
-                />
-              ))}
+              <div className="home-hero-art-track">
+                {[...heroArtMovies, ...heroArtMovies].map((movie, index) => (
+                  <div
+                    key={`${movie.id}-${index}`}
+                    className={`home-hero-art-panel home-hero-art-panel--${(index % heroArtMovies.length) + 1}`}
+                    style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w500${movie.poster_path}")` }}
+                  />
+                ))}
+              </div>
             </div>
           ) : null}
           <div className="home-hero-copy">
