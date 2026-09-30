@@ -11,8 +11,8 @@ function getCollection(slug) {
   const at = source.indexOf(marker);
   if (at < 0) return null;
   const start = source.lastIndexOf("{", at);
-  const end = source.indexOf("\n  },", at);
-  const block = source.slice(start, end + 4);
+  const end = source.indexOf("\n  {", at + 10) > -1 ? source.indexOf("\n  {", at + 10) : source.indexOf("\n];", at);
+  const block = source.slice(start, end);
   const pick = (key) => block.match(new RegExp(`${key}:\\s*"([^"]+)"`))?.[1] || "";
   const movies = [...block.matchAll(/"([a-z0-9][a-z0-9-]+-\\d{4})"/g)].map((m) => m[1]);
   return { title: pick("title"), eyebrow: pick("eyebrow"), movies };
