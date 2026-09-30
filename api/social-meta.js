@@ -2,17 +2,41 @@ const fs = require("fs");
 const path = require("path");
 const ORIGIN = "https://reelbot.movie";
 const API = "https://movie-review-backend-zevb.onrender.com";
-const escapeHtml = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-function collectionMeta(slug) {
+const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+}[char]));
+
+function readCollectionBlock(slug) {
   const source = fs.readFileSync(path.join(process.cwd(), "src", "collections.js"), "utf8");
-  const at = source.indexOf(`slug: "${slug}"`);
+  const marker = `slug: "${slug}"`;
+  const at = source.indexOf(marker);
   if (at < 0) return null;
   const start = source.lastIndexOf("{", at);
-  const end = source.indexOf("\n  {", at + 10) > -1 ? source.indexOf("\n  {", at + 10) : source.indexOf("\n];", at);
-  const block = source.slice(start, end);
-  const pick = (key) => block.match(new RegExp(key + ":\\s*\\\"([^\\\"]+)\\\""))?.[1] || "";
-  const description = pick("description");\n  return { title: pick("title"), description: description.length >= 100 ? description : `${description} Browse the full ReelBot collection and find your next movie.`, image: `${ORIGIN}/api/social-image?slug=${encodeURIComponent(slug)}` };
+  const nextEntry = source.indexOf('\n  {\n    slug: "', at + marker.length);
+  const end = nextEntry >= 0 ? nextEntry : source.indexOf("\n];", at);
+  return source.slice(start, end >= 0 ? end : source.length);
+}
+
+function pickString(block, key) {
+  const match = block.match(new RegExp(`${key}\\s*:\\s*"([^"]*)"`));
+  return match ? match[1] : "";
+}
+
+function collectionMeta(slug) {
+  const block = readCollectionBlock(slug);
+  if (!block) return null;
+  const title = pickString(block, "title");
+  const rawDescription = pickString(block, "description");
+  if (!title) return null;
+  const description = rawDescription.length >= 100
+    ? rawDescription
+    : `${rawDescription}${rawDescription ? " " : ""}Browse the full ReelBot collection and find your next movie.`;
+  return {
+    title,
+    description,
+    image: `${ORIGIN}/api/social-image?slug=${encodeURIComponent(slug)}`,
+  };
 }
 
 async function movieMeta(slug) {
@@ -20,43 +44,64 @@ async function movieMeta(slug) {
     const response = await fetch(`${API}/movies/resolve/${encodeURIComponent(slug)}`);
     if (!response.ok) return null;
     const movie = await response.json();
-    const year = movie.release_year || (movie.release_date || "").slice(0,4);
+    const year = movie.release_year || (movie.release_date || "").slice(0, 4);
     return {
       title: `${movie.title}${year ? ` (${year})` : ""}`,
       description: movie.description || `Decide whether ${movie.title} is right for you, see where to watch, and find similar movies.`,
-      image: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : `${ORIGIN}/brand/reelbot-social.png`,
+      image: movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+        : movie.poster_path
+          ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
+          : `${ORIGIN}/brand/reelbot-social.png`,
     };
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 module.exports = async (req, res) => {
   const pagePath = String(req.query.path || "/");
-  let meta = null;
   const collectionMatch = pagePath.match(/^\/collections\/([^/?#]+)/);
   const movieMatch = pagePath.match(/^\/movies\/([^/?#]+)/);
+  let meta = null;
+
   if (collectionMatch) meta = collectionMeta(decodeURIComponent(collectionMatch[1]));
   else if (movieMatch) meta = await movieMeta(decodeURIComponent(movieMatch[1]));
 
   if (!meta) {
     meta = {
-      title: "ReelBot — Find Something Worth Watching",
+      title: "ReelBot | Find Something Worth Watching",
       description: "Get one tailored movie pick, useful backups, and a faster way to decide what to watch.",
       image: `${ORIGIN}/brand/reelbot-social.png`,
     };
   }
+
   const url = `${ORIGIN}${pagePath.startsWith("/") ? pagePath : `/${pagePath}`}`;
-  const title = collectionMatch ? `${meta.title} | ReelBot Collections` : (meta.title.includes("ReelBot") ? meta.title : `${meta.title} | ReelBot`);
+  const title = collectionMatch
+    ? `${meta.title} | ReelBot Collections`
+    : meta.title.includes("ReelBot") ? meta.title : `${meta.title} | ReelBot`;
+
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, must-revalidate");
   return res.status(200).send(`<!doctype html><html><head>
-<meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<meta charset="utf-8">
+<title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(meta.description)}">
-<meta property="og:site_name" content="ReelBot"><meta property="og:type" content="website">
-<meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(meta.description)}">
-<meta property="og:url" content="${escapeHtml(url)}"><meta property="og:image" content="${escapeHtml(meta.image)}"><meta property="og:image:secure_url" content="${escapeHtml(meta.image)}"><meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}">
-<meta name="twitter:description" content="${escapeHtml(meta.description)}"><meta name="twitter:image" content="${escapeHtml(meta.image)}">
+<meta property="og:site_name" content="ReelBot">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(meta.description)}">
+<meta property="og:url" content="${escapeHtml(url)}">
+<meta property="og:image" content="${escapeHtml(meta.image)}">
+<meta property="og:image:secure_url" content="${escapeHtml(meta.image)}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${escapeHtml(`${meta.title} — ReelBot collection`)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(meta.description)}">
+<meta name="twitter:image" content="${escapeHtml(meta.image)}">
 <link rel="canonical" href="${escapeHtml(url)}">
-<script>window.location.replace(${JSON.stringify(url)});</script></head><body><p>Opening <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>…</p></body></html>`);
+</head><body></body></html>`);
 };
