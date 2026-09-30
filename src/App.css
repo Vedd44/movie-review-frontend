@@ -18634,3 +18634,61 @@ body,
     background:rgba(9,18,29,.9) !important;
   }
 }
+
+
+/* Tablet hero v3: Showtime-style poster grid + clean control/trending rhythm */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art {
+    display:grid !important;
+    grid-template-columns:repeat(4, 1fr);
+    grid-template-rows:repeat(3, 1fr);
+    gap:10px;
+    inset:-24px !important;
+    opacity:1 !important;
+    transform:none !important;
+  }
+
+  .home-page > .home-hero .home-hero-art-panel {
+    position:relative !important;
+    inset:auto !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0;
+    display:block !important;
+    border-radius:7px;
+    transform:none !important;
+    opacity:1 !important;
+    filter:saturate(1.08) contrast(1.05) brightness(.82) !important;
+    background-position:center !important;
+    box-shadow:none;
+  }
+
+  .home-page > .home-hero .home-hero-art-panel::after {
+    background:rgba(5,13,22,.08);
+  }
+
+  .home-page > .home-hero::after {
+    background:
+      radial-gradient(ellipse 62% 72% at 50% 33%,rgba(7,16,27,.94) 0%,rgba(7,16,27,.86) 48%,rgba(7,16,27,.68) 78%,rgba(7,16,27,.58) 100%),
+      linear-gradient(180deg,rgba(7,16,27,.56),rgba(7,16,27,.82)) !important;
+  }
+
+  .home-page .home-hero-now-playing {
+    margin-top:42px !important;
+    padding-top:0 !important;
+  }
+
+  .home-page .home-hero-now-playing::before {
+    top:-30px !important;
+  }
+
+  .home-page .home-hero-form {
+    margin-bottom:0 !important;
+  }
+
+  .home-page .pick-control-group--theaters,
+  .home-page .pick-theaters-toggle,
+  .home-page .theater-toggle {
+    margin-bottom:0 !important;
+  }
+}
