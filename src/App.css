@@ -19413,3 +19413,48 @@ body,
   from { transform:translate3d(0,0,0); }
   to   { transform:translate3d(0,-2880px,0); }
 }
+
+
+/* Tablet cinema wall v13 — final visual authority */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art-track {
+    animation-duration:1152s !important;
+  }
+
+  /* Darken the ART itself, not only the hero pseudo-overlay. This avoids stacking-context misses. */
+  .home-page > .home-hero .home-hero-art {
+    opacity:.30 !important;
+    filter:brightness(.48) saturate(.78) !important;
+  }
+  .home-page > .home-hero .home-hero-art-panel {
+    opacity:1 !important;
+  }
+  .home-page > .home-hero .home-hero-art-panel::after {
+    background:rgba(1,4,8,.24) !important;
+  }
+  .home-page > .home-hero::after {
+    background:rgba(1,4,8,.68) !important;
+    opacity:1 !important;
+  }
+
+  /* Footer nav: keep Feedback on the exact same row/baseline as its siblings. */
+  .site-footer-links {
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:wrap !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:8px !important;
+  }
+  .site-footer-link,
+  .site-footer-feedback {
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    min-height:40px !important;
+    margin:0 !important;
+    padding:0 10px !important;
+    line-height:1 !important;
+    vertical-align:middle !important;
+  }
+}
