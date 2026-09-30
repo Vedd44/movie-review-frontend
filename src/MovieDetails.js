@@ -295,11 +295,11 @@ function MovieDetails() {
   }, [movie, movieDescription]);
 
   usePageMetadata({
-    title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""} | ReelBot` : "Movie Details | ReelBot",
-    description: movie ? `Decide whether ${movie.title} is right for you, see where to watch, and find similar movies.` : "Movie details on ReelBot.",
+    title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
+    description: movie ? `Explore ${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.` : "Explore movie details, cast, runtime, where to watch, ReelBot’s take, and similar movies.",
     path: movie ? getMoviePath(movie) : "/",
     type: "video.movie",
-    image: movie?.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : undefined,
+    image: movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
     structuredData: detailStructuredData,
   });
 
