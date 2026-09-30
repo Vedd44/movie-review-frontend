@@ -19542,3 +19542,45 @@ body,
     right:18px !important;
   }
 }
+
+
+/* Tablet cinema wall v17 — 240s reel + remove hero/browse dead zone */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art-track {
+    animation-duration:240s !important;
+  }
+
+  /* The transition problem is spacing, not just color: collapse the empty band. */
+  .home-page > .home-hero {
+    padding-bottom:0 !important;
+    margin-bottom:0 !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing {
+    padding-bottom:48px !important;
+  }
+
+  .home-page > .home-hero::before {
+    height:220px !important;
+    bottom:-1px !important;
+    background:linear-gradient(
+      180deg,
+      rgba(7,9,13,0) 0%,
+      rgba(7,9,13,.34) 28%,
+      rgba(7,9,13,.78) 64%,
+      #07090d 100%
+    ) !important;
+  }
+
+  .home-page > .container.browse-shell.home-shell {
+    margin-top:0 !important;
+    padding-top:38px !important;
+    background:#07090d !important;
+  }
+
+  .home-page .home-feed-section {
+    padding-top:0 !important;
+    margin-top:0 !important;
+    background:#07090d !important;
+  }
+}
