@@ -6,10 +6,32 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp|Googlebot|bingbot).*"
+          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp).*"
         }
       ],
       "destination": "/api/social-meta?path=/collections/:slug"
+    },
+    {
+      "source": "/movies/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp).*"
+        }
+      ],
+      "destination": "/api/social-meta?path=/movies/:slug"
+    },
+    {
+      "source": "/people/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp).*"
+        }
+      ],
+      "destination": "/api/social-meta?path=/people/:slug"
     },
     {
       "source": "/sitemap.xml",
