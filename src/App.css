@@ -19350,3 +19350,66 @@ body,
   from { transform:translate3d(0,0,0); }
   to   { transform:translate3d(0,-2220px,0); }
 }
+
+
+/* Tablet cinema wall v12 — verified selectors: true slow reel, unique rows, hard legibility, clean Browse */
+@media only screen and (min-width:721px) and (max-width:1100px) {
+  .home-page > .home-hero .home-hero-art-track {
+    grid-auto-rows:360px !important;
+    min-height:5760px !important;
+    animation-name:reelbot-poster-reel-32 !important;
+    animation-duration:288s !important;
+    animation-timing-function:linear !important;
+    animation-iteration-count:infinite !important;
+  }
+
+  /* This is the actual full-hero veil sitting above the reel. */
+  .home-page > .home-hero::after {
+    opacity:1 !important;
+    background:rgba(2,6,11,.78) !important;
+  }
+
+  /* Keep every secondary line readable regardless of the poster underneath. */
+  .home-page .home-hero-subtitle,
+  .home-page .home-hero-now-playing-subtitle,
+  .home-page .home-hero-now-playing p,
+  .home-page .pick-theaters-toggle small,
+  .home-page .theater-toggle small {
+    color:rgba(248,245,240,.86) !important;
+    opacity:1 !important;
+    text-shadow:0 2px 16px #000,0 1px 3px #000 !important;
+  }
+
+  /* Actual direct child after hero: remove shell/card look but restore intentional page gutter. */
+  .home-page > .container.browse-shell.home-shell {
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding-left:28px !important;
+    padding-right:28px !important;
+    background:#07090d !important;
+    background-image:none !important;
+    border:none !important;
+    border-radius:0 !important;
+    outline:none !important;
+    box-shadow:none !important;
+  }
+
+  .home-page > .container.browse-shell.home-shell::before,
+  .home-page > .container.browse-shell.home-shell::after {
+    content:none !important;
+    display:none !important;
+  }
+
+  /* Remove any inherited separator at the top of the first Browse content block. */
+  .home-page > .container.browse-shell.home-shell > :first-child {
+    border-top:0 !important;
+    box-shadow:none !important;
+  }
+}
+
+@keyframes reelbot-poster-reel-32 {
+  from { transform:translate3d(0,0,0); }
+  to   { transform:translate3d(0,-2880px,0); }
+}
