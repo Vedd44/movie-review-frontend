@@ -12,7 +12,7 @@ function collectionMeta(slug) {
   const end = source.indexOf("\n  {", at + 10) > -1 ? source.indexOf("\n  {", at + 10) : source.indexOf("\n];", at);
   const block = source.slice(start, end);
   const pick = (key) => block.match(new RegExp(key + ":\\s*\\\"([^\\\"]+)\\\""))?.[1] || "";
-  return { title: pick("title"), description: pick("description"), image: `${ORIGIN}/api/social-image?slug=${encodeURIComponent(slug)}` };
+  const description = pick("description");\n  return { title: pick("title"), description: description.length >= 100 ? description : `${description} Browse the full ReelBot collection and find your next movie.`, image: `${ORIGIN}/api/social-image?slug=${encodeURIComponent(slug)}` };
 }
 
 async function movieMeta(slug) {
@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
     };
   }
   const url = `${ORIGIN}${pagePath.startsWith("/") ? pagePath : `/${pagePath}`}`;
-  const title = meta.title.includes("ReelBot") ? meta.title : `${meta.title} | ReelBot`;
+  const title = collectionMatch ? `${meta.title} | ReelBot Collections` : (meta.title.includes("ReelBot") ? meta.title : `${meta.title} | ReelBot`);
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, must-revalidate");
   return res.status(200).send(`<!doctype html><html><head>
