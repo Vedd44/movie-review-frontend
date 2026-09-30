@@ -11,7 +11,7 @@ function collectionMeta(slug) {
   const start = source.lastIndexOf("{", at);
   const end = source.indexOf("\n  {", at + 10) > -1 ? source.indexOf("\n  {", at + 10) : source.indexOf("\n];", at);
   const block = source.slice(start, end);
-  const pick = (key) => block.match(new RegExp(`${key}:\\\\s*"([^"]+)"`))?.[1] || "";
+  const pick = (key) => block.match(new RegExp(key + ":\\s*\\\"([^\\\"]+)\\\""))?.[1] || "";
   return { title: pick("title"), description: pick("description"), image: `${ORIGIN}/api/social-image?slug=${encodeURIComponent(slug)}` };
 }
 
