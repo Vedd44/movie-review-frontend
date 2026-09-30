@@ -1267,7 +1267,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     return unique
       .map((movie) => ({ movie, order: hash(`${dayKey}:${movie.id}`) }))
       .sort((left, right) => left.order - right.order)
-      .slice(0, 32)
+      .slice(0, 24)
       .map(({ movie }) => movie);
   }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
