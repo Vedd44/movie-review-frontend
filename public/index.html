@@ -26,12 +26,33 @@
     <meta name="twitter:title" content="ReelBot — AI Movie Picker | Find Something Worth Watching" />
     <meta name="twitter:description" content="Find something worth watching with ReelBot — fast recommendations, spoiler-light insights, and smarter next-watch picks." />
     <meta name="twitter:image" content="https://reelbot.movie/logo512.png" />
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M66HQLHV22"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-M66HQLHV22');
+
+      // Analytics is non-critical: keep event queuing available immediately, but
+      // load gtag after the initial render so it does not compete with the hero.
+      (function loadAnalyticsWhenIdle() {
+        var load = function () {
+          if (document.querySelector('script[data-reelbot-gtag]')) return;
+          var script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=G-M66HQLHV22';
+          script.setAttribute('data-reelbot-gtag', 'true');
+          document.head.appendChild(script);
+        };
+        var schedule = function () {
+          if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(load, { timeout: 2500 });
+          } else {
+            window.setTimeout(load, 1500);
+          }
+        };
+        if (document.readyState === 'complete') schedule();
+        else window.addEventListener('load', schedule, { once: true });
+      })();
     </script>
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>ReelBot — AI Movie Picker | Find Something Worth Watching</title>
