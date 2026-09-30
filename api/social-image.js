@@ -13,7 +13,7 @@ function getCollection(slug) {
   const start = source.lastIndexOf("{", at);
   const end = source.indexOf("\n  {", at + 10) > -1 ? source.indexOf("\n  {", at + 10) : source.indexOf("\n];", at);
   const block = source.slice(start, end);
-  const pick = (key) => block.match(new RegExp(`${key}:\\s*"([^"]+)"`))?.[1] || "";
+  const pick = (key) => block.match(new RegExp(`${key}:\\\\s*"([^"]+)"`))?.[1] || "";
   const movies = [...block.matchAll(/"([a-z0-9][a-z0-9-]+-\\d{4})"/g)].map((m) => m[1]);
   return { title: pick("title"), eyebrow: pick("eyebrow"), movies };
 }
@@ -53,6 +53,6 @@ module.exports = async (req, res) => {
   composites.push({ input: overlay, left: 0, top: 0 });
   const png = await base.composite(composites).png().toBuffer();
   res.setHeader("Content-Type", "image/png");
-  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000");
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, must-revalidate");
   return res.status(200).send(png);
 };
