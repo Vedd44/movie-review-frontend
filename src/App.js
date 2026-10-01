@@ -63,7 +63,7 @@ function SiteHeader() {
   }, []);
 
   const navItems = [
-    { label: "Pick for me", to: "/#pick-for-me", isActive: isAskReelbotActive },
+    { label: "Find a movie", to: "/#pick-for-me", isActive: isAskReelbotActive },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
     { label: "Collections", to: "/collections", isActive: location.pathname.startsWith("/collections") },
     { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
@@ -160,7 +160,7 @@ function MobileBottomNav() {
   }, [location.pathname]);
 
   const items = [
-    { label: "Pick for me", to: "/#pick-for-me", active: location.pathname === "/" },
+    { label: "Find a movie", to: "/#pick-for-me", active: location.pathname === "/" },
     { label: "Browse", to: "/browse", active: location.pathname === "/browse" },
     { label: "Collections", to: "/collections", active: location.pathname.startsWith("/collections") },
     { label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
