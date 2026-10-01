@@ -153,11 +153,9 @@ function BrowseLibrary() {
   }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
+    // Editing the next request should not erase the recommendation already on screen.
+    // A submitted pick, explicit refresh/refine, or Start fresh owns result replacement.
     setPickError(null);
-    setPickResult(null);
-    setSwapQueue([]);
-    setCandidatePoolIds([]);
-    setRefinementState(null);
   }, [includeTheatrical, normalizedGenre, normalizedMood, normalizedRuntime, normalizedView, pickPrompt]);
 
   const selectedMoodConfig = useMemo(
@@ -518,7 +516,7 @@ function BrowseLibrary() {
           <div className="library-results-actions">
             <div className="results-count" role="status">{loading ? "Loading movies…" : `${filteredMovies.length} movies`}</div>
             <button type="button" className="browse-library-link browse-library-link--button" onClick={() => setShowReelbotPicker((current) => !current)} aria-expanded={showReelbotPicker} aria-controls="library-reelbot-picker">
-              Ask ReelBot to pick one <span aria-hidden="true">→</span>
+              Ask ReelBot to pick one <span className="browse-picker-toggle-icon" aria-hidden="true">{showReelbotPicker ? "×" : "→"}</span>
             </button>
           </div>
         </div>
