@@ -56,6 +56,7 @@ function ProfileMenu() {
           <Link to="/account" className="profile-menu-link" role="menuitem" onClick={() => setOpen(false)}>
             Account settings
           </Link>
+          {user?.app_metadata?.role === "super_admin" ? <Link to="/admin" className="profile-menu-link profile-menu-link--admin" role="menuitem" onClick={() => setOpen(false)}>Admin console</Link> : null}
           <button
             type="button"
             className="profile-menu-link profile-menu-link--button"

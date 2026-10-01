@@ -17,6 +17,7 @@ const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 const BrowseLibrary = lazy(() => import("./BrowseLibrary"));
 const MyMovies = lazy(() => import("./MyMovies"));
 const AccountSettings = lazy(() => import("./AccountSettings"));
+const AdminPanel = lazy(() => import("./AdminPanel"));
 const ResetPassword = lazy(() => import("./ResetPassword"));
 const SearchResults = lazy(() => import("./SearchResults"));
 const HowReelbotWorks = lazy(() => import("./HowReelbotWorks"));
@@ -230,6 +231,7 @@ function AppShell() {
               <Route path="/collections/:collectionSlug" element={<CollectionPage />} />
               <Route path="/my-movies" element={<MyMovies />} />
               <Route path="/account" element={<AccountSettings />} />
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
