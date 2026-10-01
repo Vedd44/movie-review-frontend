@@ -142,6 +142,7 @@ function SiteHeader() {
 
 function MobileBottomNav() {
   const location = useLocation();
+  const { pageContext } = useAskReelbotContext();
   const [pastHero, setPastHero] = useState(location.pathname !== "/");
 
   useEffect(() => {
@@ -165,8 +166,11 @@ function MobileBottomNav() {
     { label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
   ];
 
+  const isCollectionContext = pageContext?.page === "collection";
+  const assistantLabel = isCollectionContext ? "Find a pick" : "Ask ReelBot";
+
   const openAskReelBot = () => {
-    window.dispatchEvent(new CustomEvent("reelbot:open-ask"));
+    window.dispatchEvent(new CustomEvent("reelbot:open-ask", { detail: { autoPick: isCollectionContext } }));
   };
 
   return (
