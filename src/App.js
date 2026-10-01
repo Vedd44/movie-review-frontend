@@ -164,9 +164,24 @@ function MobileBottomNav() {
     { label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
   ];
 
+  const openAskReelBot = () => {
+    window.dispatchEvent(new CustomEvent("reelbot:open-ask"));
+  };
+
   return (
     <nav className={`mobile-bottom-nav${pastHero ? " is-visible" : " is-hero-hidden"}`} aria-label="Mobile navigation">
-      {items.map((item) => (
+      {items.map((item, index) => index === 0 ? (
+        <button
+          key={item.label}
+          type="button"
+          className={"mobile-bottom-nav-item mobile-bottom-nav-item--ask" + (item.active ? " is-active" : "")}
+          onClick={openAskReelBot}
+          aria-label="Ask ReelBot"
+        >
+          <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
+          <span>Ask ReelBot</span>
+        </button>
+      ) : (
         <NavLink key={item.label} to={item.to} className={"mobile-bottom-nav-item" + (item.active ? " is-active" : "")}>
           <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
           <span>{item.label}</span>
@@ -270,7 +285,66 @@ function AppShell() {
           </Suspense>
         </main>
         <SiteFooter />
-      <MobileBottomNav />
+        <style>{`
+          /* Mobile/Fold interaction polish: one persistent assistant entry point,
+             slower nav reveal, and a cleaner editorial prompt field. */
+          @media (max-width: 900px) {
+            .ask-reelbot-trigger:not(.ask-reelbot-trigger--collection) {
+              display: none !important;
+            }
+
+            .mobile-bottom-nav {
+              transition:
+                opacity .42s cubic-bezier(.2,.72,.2,1),
+                transform .42s cubic-bezier(.2,.72,.2,1),
+                visibility .42s ease !important;
+            }
+
+            .mobile-bottom-nav.is-hero-hidden {
+              transform: translateY(28px) !important;
+            }
+
+            .mobile-bottom-nav-item--ask {
+              appearance: none;
+              -webkit-appearance: none;
+              font: inherit;
+              cursor: pointer;
+            }
+
+            .home-page .home-hero .pick-prompt-shell {
+              border-radius: 12px !important;
+              overflow: hidden;
+            }
+
+            .home-page .home-hero .pick-prompt-input {
+              border-radius: 11px !important;
+            }
+          }
+
+          @media (max-width: 599px) {
+            .mobile-bottom-nav {
+              left: max(12px, env(safe-area-inset-left)) !important;
+              right: max(12px, env(safe-area-inset-right)) !important;
+              width: auto !important;
+              max-width: none !important;
+            }
+
+            .mobile-bottom-nav-item {
+              min-width: 0 !important;
+            }
+
+            .mobile-bottom-nav-item--ask span:last-child {
+              white-space: nowrap;
+            }
+          }
+
+          @media (min-width: 600px) and (max-width: 900px) {
+            .mobile-bottom-nav {
+              width: min(calc(100% - 92px), 760px) !important;
+            }
+          }
+        `}</style>
+        <MobileBottomNav />
         <CookieNotice />
         <AuthModal />
         <AskReelbotLayer />
