@@ -142,6 +142,21 @@ function SiteHeader() {
 
 function MobileBottomNav() {
   const location = useLocation();
+  const [pastHero, setPastHero] = useState(location.pathname !== "/");
+
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      setPastHero(true);
+      return undefined;
+    }
+    const hero = document.getElementById("pick-for-me");
+    if (!hero) { setPastHero(false); return undefined; }
+    const update = () => setPastHero(window.scrollY > Math.max(140, hero.offsetHeight * 0.28));
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [location.pathname]);
   const items = [
     { label: "Pick for me", to: "/#pick-for-me", active: location.pathname === "/" },
     { label: "Browse", to: "/browse", active: location.pathname === "/browse" },
@@ -150,7 +165,7 @@ function MobileBottomNav() {
   ];
 
   return (
-    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+    <nav className={`mobile-bottom-nav${pastHero ? " is-visible" : " is-hero-hidden"}`} aria-label="Mobile navigation">
       {items.map((item) => (
         <NavLink key={item.label} to={item.to} className={"mobile-bottom-nav-item" + (item.active ? " is-active" : "")}>
           <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
