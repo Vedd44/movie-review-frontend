@@ -486,7 +486,7 @@ function BrowseLibrary() {
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
             <div className="browse-kicker">Explore</div>
-            <h1 className="browse-title">Find something worth your night.</h1>
+            <h1 className="browse-title">Find something worth watching.</h1>
             <p className="rb-page-dek">Follow your mood, revisit a favorite genre, or let ReelBot make the call.</p>
           </div>
         </section>
