@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./Home";
 import AuthModal from "./components/AuthModal";
