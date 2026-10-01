@@ -19,7 +19,7 @@ const GENERAL_ACTIONS = [
 ];
 
 const MOVIE_ACTIONS = [
-  ["What kind of night is it for?", "What kind of night is it for?"],
+  ["Give me the spoilers", "Give me the spoilers"],
   ["How intense is it?", "How intense is it?"],
   ["Is it a slow burn?", "Is it a slow burn?"],
 ];
