@@ -21120,3 +21120,43 @@ body,
     box-shadow: none;
   }
 }
+
+
+/* 2026-10-01 hero glass refinement: keep the picker integrated with the poster wall,
+   with the input as the single strong glass surface. */
+@media (min-width: 600px) and (max-width: 900px) {
+  .home-page > .home-hero .home-hero-form {
+    padding: 10px 12px 12px !important;
+    border-color: rgba(255,255,255,.035) !important;
+    background: linear-gradient(180deg, rgba(10,11,15,.16), rgba(8,9,13,.08)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.018) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-input {
+    border: 1px solid rgba(255,255,255,.10) !important;
+    outline: 0 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 10px 32px rgba(0,0,0,.14) !important;
+    background: rgba(7,9,13,.82) !important;
+    transition: border-color .16s ease, box-shadow .16s ease, background .16s ease !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-input:hover {
+    border-color: rgba(255,255,255,.16) !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-input:focus,
+  .home-page > .home-hero .pick-prompt-input:focus-visible {
+    outline: 0 !important;
+    border-color: rgba(229,182,79,.46) !important;
+    box-shadow: 0 0 0 1px rgba(229,182,79,.10), 0 12px 34px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.04) !important;
+    background: rgba(7,9,13,.92) !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-shell:focus-within {
+    outline: 0 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
