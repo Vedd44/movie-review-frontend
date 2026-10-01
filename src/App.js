@@ -167,7 +167,7 @@ function MobileBottomNav() {
   ];
 
   const isCollectionContext = pageContext?.page === "collection";
-  const assistantLabel = isCollectionContext ? "Find a pick" : "Ask ReelBot";
+  const assistantLabel = isCollectionContext ? "Pick for me" : "Ask ReelBot";
 
   const openAskReelBot = () => {
     window.dispatchEvent(new CustomEvent("reelbot:open-ask", { detail: { autoPick: isCollectionContext } }));
@@ -181,7 +181,7 @@ function MobileBottomNav() {
         onClick={openAskReelBot}
         aria-label="Ask ReelBot about this page"
       >
-        <span className="mobile-ask-launcher-mark" aria-hidden="true">R</span>
+        <img className="mobile-ask-launcher-mark" src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="15" height="18" />
         <span className="mobile-ask-launcher-label">{assistantLabel}</span>
       </button>
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
@@ -365,7 +365,10 @@ function AppShell() {
               box-shadow: 0 -8px 24px rgba(0,0,0,.2);
               backdrop-filter: blur(18px);
               -webkit-backdrop-filter: blur(18px);
-              font: 650 .78rem/1 inherit;
+              font-family: inherit;
+              font-size: .78rem;
+              font-weight: 650;
+              line-height: 1;
               letter-spacing: -.01em;
               cursor: pointer;
             }
@@ -381,8 +384,11 @@ function AppShell() {
             }
 
             .mobile-ask-launcher-mark {
-              font-size: .9rem;
-              line-height: 1;
+              display: block;
+              width: 15px;
+              height: 18px;
+              object-fit: contain;
+              flex: 0 0 auto;
             }
 
             .mobile-ask-launcher:focus-visible {

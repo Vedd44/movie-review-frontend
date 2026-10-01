@@ -21347,3 +21347,43 @@ body,
     max-height: calc(100dvh - 98px - env(safe-area-inset-bottom)) !important;
   }
 }
+
+
+/* Fold / small-tablet detail density: preserve the two-column movie hero instead of
+   spending the first viewport on a full-width poster stack. Phones still stack. */
+@media only screen and (min-width: 600px) and (max-width: 900px) {
+  .movie-details-page .detail-hero {
+    grid-template-columns: minmax(150px, 30%) minmax(0, 1fr) !important;
+    gap: 22px !important;
+    padding: 20px !important;
+    align-items: start !important;
+  }
+  .movie-details-page .detail-poster-column {
+    justify-content: flex-start !important;
+  }
+  .movie-details-page .detail-poster {
+    width: 100% !important;
+    max-width: 230px !important;
+  }
+  .movie-details-page .detail-content-column {
+    min-width: 0 !important;
+  }
+  .movie-details-page .detail-title {
+    font-size: clamp(2rem, 5vw, 3.25rem) !important;
+  }
+  .movie-details-page .detail-description {
+    line-height: 1.58 !important;
+  }
+}
+
+/* Person pages should begin immediately below the site header on mobile/tablet.
+   This also prevents legacy browse-hero sizing from creating a blank first viewport. */
+@media only screen and (max-width: 900px) {
+  .person-page .person-shell {
+    padding-top: 20px !important;
+  }
+  .person-page .person-hero {
+    min-height: 0 !important;
+    margin-top: 0 !important;
+  }
+}
