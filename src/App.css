@@ -14785,6 +14785,7 @@ body {
 @media only screen and (max-width: 360px) {
   .site-header-right {
     gap: 5px;
+    min-width: 0;
   }
 
   .global-search-trigger,
