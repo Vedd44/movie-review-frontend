@@ -51,3 +51,12 @@ test('most rated puts established films ahead of recent low-vote credits', async
   expect(await screen.findByRole('combobox',{name:'Sort filmography'})).toHaveValue('popular');
   expect(screen.getAllByRole('heading',{level:3}).map(e=>e.textContent)).toEqual(['Aliens','Recent Movie']);
 });
+
+test('a missing portrait and biography do not block a one-film filmography', async () => {
+  axios.get.mockResolvedValue({data:{...person,profile_path:null,biography:''}});
+  render(<MemoryRouter initialEntries={['/people/james-cameron']}><Routes><Route path="/people/:personSlug" element={<PersonDetails/>}/></Routes></MemoryRouter>);
+  expect(await screen.findByRole('heading',{name:'James Cameron'})).toBeInTheDocument();
+  expect(screen.getByRole('img',{name:'Artwork unavailable'})).toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'Read biography'})).not.toBeInTheDocument();
+  expect(screen.getByRole('link',{name:'Open Aliens'})).toBeInTheDocument();
+});

@@ -199,3 +199,21 @@ test("legacy movie URLs canonicalize to title and year", async () => {
   await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/movies/aliens-1986"));
   expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/movies/679"), expect.objectContaining({ signal: expect.anything() }));
 });
+
+test("partial movie data keeps identity and Save without inventing availability", async () => {
+  const title = "A Very Long Movie Title That Still Needs a Clear Identity and a Place to Save It";
+  axios.get.mockImplementation((url) => Promise.resolve(String(url).includes('/reelbot-take') ? {data:{take:generatedTake}} : {data:{...movie,title,poster_path:null,watch_providers:null,description:'A short premise.',runtime:null,trailer:null}}));
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/></Routes></MemoryRouter>);
+  expect(await screen.findByRole('heading',{name:title})).toBeInTheDocument();
+  expect(screen.getByRole('img',{name:'Artwork unavailable'})).toBeInTheDocument();
+  expect(screen.getByText(/options are not listed for this title right now/)).toBeInTheDocument();
+  expect(screen.queryByRole('link',{name:/See current viewing options/})).not.toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Save'})).toBeInTheDocument();
+});
+
+test.each([[404, 'Movie not found'], [503, 'Unable to load this movie']])('movie failure %i keeps the appropriate recovery state', async (status, title) => {
+  axios.get.mockRejectedValue({response:{status}});
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/></Routes></MemoryRouter>);
+  expect(await screen.findByRole('heading',{name:title})).toBeInTheDocument();
+  if (status === 503) expect(screen.getByRole('button',{name:'Try again'})).toBeInTheDocument();
+});

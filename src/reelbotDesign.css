@@ -97,7 +97,7 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .home-browse-section { margin: 36px 0 72px; }
 /* Film cards belong to a grid, rather than to bordered application cards. */
 .movie-list { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 36px 20px; margin: 24px 0 0; }
-.movie-card, .movie-card--browse, .saved-movie-card { display: block; min-width: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; text-align: left; overflow: visible; transition: none; }
+.movie-card, .movie-card--browse, .saved-movie-card { display: block; width: 100%; min-height: 0; min-width: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; text-align: left; overflow: visible; transition: none; }
 .movie-card:hover { transform: none; box-shadow: none; background: none; }
 .movie-poster-shell, .movie-poster-link { position: relative; display: block; width: 100%; margin: 0; overflow: hidden; border-radius: 6px; }
 .movie-poster, .movie-card .no-poster { display: block; width: 100%; height: auto; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; transition: transform .22s ease; }
@@ -222,12 +222,13 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .my-movies-taste-values { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; color: var(--rb-muted); font-size: .8rem; }
 .saved-movies-shell { padding: 0; border: 0; margin-top: 36px; }
 .rb-tab-count { margin-left: 6px; color: var(--rb-faint); font-size: .75rem; font-variant-numeric: tabular-nums; }
-.saved-movies-tab-copy { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0 0; border: 0; text-align: left; }
+.saved-movies-tab-copy { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0 0; border: 0; text-align: left; }
 .saved-movies-tab-copy p { color: var(--rb-muted); font-size: .8rem; margin: 0; }
 .rb-library-search input { width: 250px; min-height: 42px; border: 1px solid var(--rb-line); border-radius: 6px; background: var(--rb-surface); color: var(--rb-text); padding: 8px 12px; font-size: .85rem; }
-.saved-movie-card-content { padding-top: 14px; }
+.saved-movie-card-content { display: block; min-height: 0; padding: 14px 0 0; }
+.saved-movie-list { padding: 0; }
 .saved-movie-note { font-size: .7rem; color: var(--rb-faint); margin: 10px 0 0; }
-.saved-movie-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; padding: 0; }
+.saved-movie-actions { display: flex; min-height: 0; justify-content: flex-start; flex-wrap: wrap; gap: 12px; margin-top: 10px; padding: 0; }
 .saved-movie-open-link { display: none; }
 .saved-movie-status-menu { position: relative; width: 100%; }
 .saved-movie-status-menu summary { display: flex; justify-content: space-between; min-height: 44px; padding: 10px 0; border: 0; border-top: 1px solid var(--rb-line); border-radius: 0; color: var(--rb-muted); background: none; font-size: .8rem; cursor: pointer; }
@@ -282,7 +283,7 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .account-settings-password { padding-top: 32px; margin-top: 32px; border-top: 1px solid var(--rb-line); }
 .account-settings-danger { border-color: #f5a4a433; background: none; padding: 24px 0; }
 .account-settings-danger button { color: var(--rb-danger); }
-.admin-heading { align-items: end; margin-bottom: 24px; border-bottom: 0; padding: 0; }
+.admin-heading { display: flex; flex-direction: row; justify-content: space-between; text-align: left; align-items: end; margin-bottom: 24px; border-bottom: 0; padding: 0; }
 .admin-heading h1 { font: 650 clamp(2rem,4vw,3rem)/1.1 var(--rb-sans); margin: 12px 0; letter-spacing: -.04em; }
 .admin-heading p { font-size: .9rem; color: var(--rb-muted); }
 .admin-tabs { margin-bottom: 28px; }
@@ -621,4 +622,11 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 @media (max-width: 900px) {
   .site-header .site-auth-trigger { display: none; }
   .mobile-bottom-nav { position: static; inset: auto; transform: none; margin: 0; }
+}
+
+@media (min-width: 600px) and (max-width: 900px) {
+  .admin-stat-grid article:nth-child(odd) { padding-left: 0; }
+}
+@media (max-width: 599px) {
+  .admin-heading { flex-direction: column; align-items: flex-start; }
 }
