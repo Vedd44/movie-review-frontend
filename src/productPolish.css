@@ -140,6 +140,9 @@
 }
 .global-search-head h2 { font-family: inherit; font-size: 1.4rem; letter-spacing: -.02em; }
 .global-search-all { margin-left: 16px; }
+@media (min-width: 901px) {
+  .mobile-bottom-dock { display: none; }
+}
 body:has(.global-search-backdrop) :is(.mobile-ask-launcher, .mobile-bottom-nav, .ask-reelbot-trigger) { visibility: hidden !important; pointer-events: none !important; }
 @media (max-width: 599px) {
   .detail-reelbot-take .detail-section-head { flex-direction: row !important; align-items: center !important; text-align: left; }
