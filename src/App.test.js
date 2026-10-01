@@ -1,5 +1,11 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from './App';
+import axios from 'axios';
+jest.mock('axios');
+beforeEach(() => {
+  window.scrollTo = jest.fn();
+  axios.get.mockResolvedValue({ data: { results: [], total_pages: 1, total_results: 0 } });
+});
 
 test('renders the ReelBot tagline', () => {
   render(<App />);
@@ -17,8 +23,8 @@ test('exposes the core navigation and global movie search', async () => {
   expect(screen.getAllByRole('link', { name: 'My Movies' }).length).toBeGreaterThan(0);
 
   fireEvent.click(screen.getByRole('button', { name: 'Search movies' }));
-  expect(screen.getByRole('dialog', { name: 'Find a movie' })).toBeInTheDocument();
-  await waitFor(() => expect(screen.getByRole('searchbox', { name: 'Search movie titles' })).toHaveFocus());
+  expect(screen.getByRole('dialog', { name: 'Movies & people' })).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search movies and people' })).toHaveFocus());
 });
 
 test('keeps discovery modes out of the footer navigation', () => {

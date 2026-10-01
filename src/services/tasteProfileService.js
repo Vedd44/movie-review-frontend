@@ -87,7 +87,7 @@ const normalizeMovieEntry = (movie = {}, extra = {}) => ({
   ...extra,
 });
 
-const upsertMovieEntry = (items, movie, extra = {}, maxItems = 36) => {
+const upsertMovieEntry = (items, movie, extra = {}, maxItems = Infinity) => {
   if (!movie?.id) {
     return Array.isArray(items) ? items : [];
   }

@@ -38,7 +38,7 @@ beforeEach(() => {
 test("progressively discloses runtime and sends all selected filters to the existing picker", async () => {
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
 
-  expect(await screen.findByRole("heading", { name: "Library Results" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Movies" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Trending" })).toHaveClass("active");
   expect(screen.getByRole("button", { name: "Now Playing" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Coming Soon" })).toBeInTheDocument();

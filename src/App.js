@@ -1,15 +1,16 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import Home from "./Home";
 import NotFound from "./NotFound";
 import AuthModal from "./components/AuthModal";
 import ProfileMenu from "./components/ProfileMenu";
+import { TasteProfileProvider } from "./hooks/useTasteProfile";
 import GlobalMovieSearch from "./components/GlobalMovieSearch";
 import AskReelbotLayer from "./components/AskReelbotLayer";
 import FeedbackModal from "./components/FeedbackModal";
 import { AskReelbotProvider, useAskReelbotContext } from "./context/AskReelbotContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { getFeedPath, isContextualDetailPath } from "./discovery";
+import { getFeedPath, isContextualDetailPath, hasUsefulAskContext } from "./discovery";
 import "./App.css";
 import "./productPolish.css";
 
@@ -32,7 +33,7 @@ function RouteLoading() {
   return (
     <div className="loading-message" role="status">
       <span className="status-glyph" aria-hidden="true"></span>
-      <span>Loading ReelBot...</span>
+      <span>Loading…</span>
     </div>
   );
 }
@@ -177,7 +178,7 @@ function MobileBottomNav() {
 
   return (
     <div className={`mobile-bottom-dock${pastHero ? " is-visible" : " is-hero-hidden"}`}>
-      {isContextualDetailPath(location.pathname) ? <button
+      {isContextualDetailPath(location.pathname) && hasUsefulAskContext(pageContext) ? <button
         type="button"
         className="mobile-ask-launcher"
         onClick={openAskReelBot}
@@ -262,6 +263,11 @@ function CookieNotice() {
 }
 
 function AppShell() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  useEffect(() => {
+    if (navigationType !== "POP" && !location.hash) window.scrollTo({ top: 0, behavior: "instant" });
+  }, [location.pathname, location.hash, navigationType]);
   return (
     <AskReelbotProvider>
       <div className="app-shell">
@@ -543,7 +549,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <QueryRedirectGuard />
+        <TasteProfileProvider><QueryRedirectGuard /></TasteProfileProvider>
       </AuthProvider>
     </Router>
   );

@@ -25,7 +25,7 @@
     "generate:og": "node scripts/generate-collection-og.js",
     "prebuild": "npm run generate:og",
     "postbuild": "node scripts/prepare-pages.js",
-    "test:pages": "node --test server/pageData.test.js"
+    "test:pages": "node --test server/*.test.js"
   },
   "eslintConfig": {
     "extends": [

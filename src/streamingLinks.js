@@ -35,7 +35,7 @@ export const getProviderCtaLabel = (providerLink = {}) => {
 
 export const buildProviderLink = ({ provider, availabilityLink }) => {
   const directLink = String(provider?.direct_link || provider?.deep_link || "").trim();
-  if (directLink) {
+  if (isHttpsLink(directLink)) {
     return {
       kind: "direct_provider",
       href: directLink,
@@ -53,7 +53,13 @@ export const buildProviderLink = ({ provider, availabilityLink }) => {
   };
 };
 
+const isHttpsLink = value => {
+  try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; }
+  catch { return false; }
+};
+
 export const buildAvailabilityLink = (availabilityLink = "") => {
   const href = String(availabilityLink || "").trim();
+  if (!isHttpsLink(href) || !["www.themoviedb.org", "themoviedb.org"].includes(new URL(href).hostname)) return null;
   return href ? { kind: "tmdb_availability", href, label: "View availability" } : null;
 };

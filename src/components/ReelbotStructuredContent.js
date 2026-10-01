@@ -1,3 +1,4 @@
+import ArtworkFallback from "./ArtworkFallback";
 import React from "react";
 import { Link } from "react-router-dom";
 import { getMoviePath, getReleaseYear } from "../discovery";
@@ -96,7 +97,7 @@ function ReelbotStructuredContent({ action, result }) {
                         decoding="async"
                       />
                     ) : (
-                      <div className="reelbot-next-watch-poster reelbot-next-watch-poster--placeholder">Poster unavailable</div>
+                      <ArtworkFallback className="reelbot-next-watch-poster reelbot-next-watch-poster--placeholder" />
                     )}
                   </div>
                   <div className="reelbot-next-watch-copy">

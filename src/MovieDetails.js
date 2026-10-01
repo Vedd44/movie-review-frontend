@@ -1,3 +1,4 @@
+import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -149,6 +150,7 @@ function MovieDetails() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const numericRouteId = legacyMovieId || (/^\d+$/.test(movieSlug || "") ? movieSlug : "");
     const endpoint = numericRouteId
       ? `${API_BASE_URL}/movies/${numericRouteId}`
@@ -157,7 +159,7 @@ function MovieDetails() {
     setLoading(true);
     setError(null);
     setMovie(null);
-    axios.get(endpoint)
+    axios.get(endpoint, { signal: controller.signal })
       .then((response) => {
         if (cancelled) return;
         setMovie(response.data);
@@ -174,7 +176,7 @@ function MovieDetails() {
         if (!cancelled) setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [legacyMovieId, location.pathname, location.state, movieSlug, navigate]);
 
   useEffect(() => {
@@ -199,11 +201,12 @@ function MovieDetails() {
 
     if (!movie?.id) {
       setGenericTakeLoading(false);
-      return () => { cancelled = true; };
+      return undefined;
     }
 
     setGenericTakeLoading(true);
-    axios.get(`${API_BASE_URL}/movies/${movie.id}/reelbot-take`)
+    const controller = new AbortController();
+    axios.get(`${API_BASE_URL}/movies/${movie.id}/reelbot-take`, { signal: controller.signal })
       .then((response) => {
         if (!cancelled) setGenericTake(response.data?.take || null);
       })
@@ -214,8 +217,8 @@ function MovieDetails() {
         if (!cancelled) setGenericTakeLoading(false);
       });
 
-    return () => { cancelled = true; };
-  }, [movie?.id, recommendationContext]);
+    return () => { cancelled = true; controller.abort(); };
+  }, [movie?.id]);
   const reelbotTake = useMemo(
     () => buildReelbotTake({ movie, recommendationContext, genericTake }),
     [genericTake, movie, recommendationContext]
@@ -339,7 +342,7 @@ function MovieDetails() {
         </nav>
 
         <section className="detail-hero" style={movie.backdrop_path ? { backgroundImage: `linear-gradient(90deg, rgba(8, 11, 22, 0.92), rgba(8, 11, 22, 0.78)), url(https://image.tmdb.org/t/p/w1280${movie.backdrop_path})` } : undefined}>
-          <div className="detail-poster-column">{movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} srcSet={`https://image.tmdb.org/t/p/w185${movie.poster_path} 185w, https://image.tmdb.org/t/p/w500${movie.poster_path} 500w`} sizes="(max-width: 599px) 100px, (max-width: 900px) 230px, 260px" alt={`${movie.title} poster`} className="detail-poster" width="500" height="750" fetchPriority="high" decoding="async" /> : <div className="detail-poster no-poster">Poster unavailable</div>}</div>
+          <div className="detail-poster-column">{movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} srcSet={`https://image.tmdb.org/t/p/w185${movie.poster_path} 185w, https://image.tmdb.org/t/p/w500${movie.poster_path} 500w`} sizes="(max-width: 599px) 100px, (max-width: 900px) 230px, 260px" alt={`${movie.title} poster`} className="detail-poster" width="500" height="750" fetchPriority="high" decoding="async" /> : <ArtworkFallback className="detail-poster no-poster" />}</div>
           <div className="detail-content-column">
             <div className="detail-identity">
               {previewMode ? <div className="detail-eyebrow">Coming Soon</div> : null}
@@ -360,9 +363,9 @@ function MovieDetails() {
         </section>
 
         <section className="detail-info-card detail-reelbot-take">
-          <div className="detail-section-head"><h2 className="detail-section-title">{reelbotTake.heading}</h2></div>
+          <div className="detail-section-head"><img className="detail-take-mark" src="/brand/reelbot-icon.svg" width="24" height="28" alt="" aria-hidden="true" /><h2 className="detail-section-title">{reelbotTake.heading}</h2></div>
           {genericTakeLoading && !reelbotTake.hasReliableProvenance ? (
-            <div className="detail-take-loading" aria-label="Loading ReelBot’s Take">
+            <div className="detail-take-loading" role="status" aria-label="Loading ReelBot’s Take">
               <span /><span /><span />
             </div>
           ) : (
@@ -406,7 +409,7 @@ function MovieDetails() {
             <div className="similar-grid">
               {displayedSimilarMovies.map((similarMovie) => (
                 <Link key={similarMovie.id} to={getMoviePath(similarMovie)} className="similar-card">
-                  {similarMovie.poster_path ? <img src={`https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`} alt={`${similarMovie.title} poster`} className="similar-poster" width="300" height="450" loading="lazy" decoding="async" /> : <div className="similar-poster similar-poster-placeholder">Poster unavailable</div>}
+                  {similarMovie.poster_path ? <img src={`https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`} alt={`${similarMovie.title} poster`} className="similar-poster" width="300" height="450" loading="lazy" decoding="async" /> : <ArtworkFallback className="similar-poster similar-poster-placeholder" />}
                   <div className="similar-title">{similarMovie.title}</div>
                   <div className="similar-year">{similarMovie.release_date ? new Date(similarMovie.release_date).getFullYear() : "TBA"}</div>
                 </Link>

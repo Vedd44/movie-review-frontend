@@ -1,3 +1,4 @@
+import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
@@ -191,7 +192,7 @@ function SearchResults() {
                       width="300" height="450" decoding="async"
                     />
                   ) : (
-                    <div className="search-top-match-poster search-top-match-poster--placeholder">Poster unavailable</div>
+                    <ArtworkFallback className="search-top-match-poster search-top-match-poster--placeholder" />
                   )}
                 </Link>
 
@@ -254,7 +255,7 @@ function SearchResults() {
                             decoding="async"
                           />
                         ) : (
-                          <div className="no-poster">Poster unavailable</div>
+                          <ArtworkFallback className="no-poster" />
                         )}
                       </Link>
 

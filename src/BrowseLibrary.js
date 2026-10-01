@@ -1,3 +1,4 @@
+import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
@@ -482,7 +483,7 @@ function BrowseLibrary() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="browse-kicker">Browse Library</div>
+            <div className="browse-kicker">Explore</div>
             <h1 className="browse-title">Browse Movies</h1>
           </div>
         </section>
@@ -551,7 +552,7 @@ function BrowseLibrary() {
         <div id="library-results" className="section-header section-header--stacked-mobile library-results-head">
           <div>
             <div className="detail-description-label">Browse results</div>
-            <h2 className="section-title">Library Results</h2>
+            <h2 className="section-title">Movies</h2>
           </div>
           <div className="library-results-actions">
             <div className="results-count" role="status">{loading ? "Loading movies…" : `${filteredMovies.length} movies`}</div>
@@ -639,7 +640,7 @@ function BrowseLibrary() {
         {loading && (
           <div className="loading-message">
             <span className="status-glyph" aria-hidden="true"></span>
-            <span>Loading library results...</span>
+            <span>Loading movies…</span>
           </div>
         )}
         {error && <p className="error-message">{error}</p>}
@@ -666,7 +667,7 @@ function BrowseLibrary() {
                           decoding="async"
                         />
                       ) : (
-                        <div className="no-poster">Poster unavailable</div>
+                        <ArtworkFallback className="no-poster" />
                       )}
                     </Link>
                   </div>

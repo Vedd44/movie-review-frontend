@@ -1,3 +1,4 @@
+import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import axios from "axios";
@@ -19,7 +20,7 @@ function CollectionCard({ movie }) {
         <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
           {movie.poster_path ? (
             <img src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt={movie.title} className="movie-poster" width="300" height="450" loading="lazy" decoding="async" />
-          ) : <div className="no-poster">Poster unavailable</div>}
+          ) : <ArtworkFallback className="no-poster" />}
         </Link>
       </div>
       <div className="movie-card-content">

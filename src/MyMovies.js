@@ -1,3 +1,4 @@
+import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./App.css";
@@ -223,7 +224,7 @@ function MyMovies() {
                         decoding="async"
                       />
                     ) : (
-                      <div className="no-poster">Poster unavailable</div>
+                      <ArtworkFallback className="no-poster" />
                     )}
                   </Link>
 

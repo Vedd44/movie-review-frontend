@@ -1,3 +1,4 @@
+import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -36,15 +37,17 @@ function PersonDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const [person, setPerson] = useState(null);
-  const [sortDirection, setSortDirection] = useState("newest");
+  const [sortDirection, setSortDirection] = useState("popular");
   const [roleFilter, setRoleFilter] = useState("all");
   const [releaseFilter, setReleaseFilter] = useState("all");
+  const [includeAppearances, setIncludeAppearances] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     setLoading(true);
     setError(null);
@@ -56,7 +59,7 @@ function PersonDetails() {
       : `${API_BASE_URL}/people/resolve/${encodeURIComponent(personSlug)}`;
 
     axios
-      .get(endpoint)
+      .get(endpoint, { signal: controller.signal })
       .then((response) => {
         if (!cancelled) {
           setPerson(response.data);
@@ -67,6 +70,7 @@ function PersonDetails() {
         }
       })
       .catch((requestError) => {
+        if (cancelled || controller.signal.aborted) return;
         console.error("Error fetching person details:", requestError);
         if (!cancelled) {
           setError(requestError.response?.status === 404 ? "not-found" : "This filmography is temporarily unavailable.");
@@ -81,6 +85,7 @@ function PersonDetails() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [location.pathname, navigate, personId, personSlug]);
 
@@ -102,6 +107,8 @@ function PersonDetails() {
     const now = Date.now();
     const filtered = (person?.movie_credits || []).filter((movie) => {
       const roles = movie.roles || [];
+      const appearanceOnly = roles.length && roles.every(role => /^Actor:.*(?:\bSelf\b|\bHimself\b|\bHerself\b|archive footage)/i.test(role));
+      if (!includeAppearances && appearanceOnly) return false;
       const roleMatch = roleFilter === "all"
         || roles.some((role) => roleFilter === "Actor" ? /^Actor(?::|$)/i.test(role) : roleFilter === "Writer" ? /Writ|Screenplay|Story/i.test(role) : new RegExp(roleFilter, "i").test(role));
       const time = getCreditTime(movie);
@@ -110,14 +117,15 @@ function PersonDetails() {
       return roleMatch && releaseMatch;
     });
     return sortCredits(filtered, releaseFilter === "upcoming" ? "oldest" : sortDirection);
-  }, [person?.movie_credits, releaseFilter, roleFilter, sortDirection]);
+  }, [person?.movie_credits, releaseFilter, roleFilter, sortDirection, includeAppearances]);
 
   useAskReelbotPageContext(useMemo(() => ({
     page: "person",
     personId: person?.id || personId || null,
     personName: person?.name || "",
+    visibleMovieIds: sortedCredits.filter(movie => movie.release_date && movie.release_date <= new Date().toISOString().slice(0, 10)).slice(0, 50).map(movie => movie.id),
     person: person ? { id: person.id, name: person.name } : null,
-  }), [person, personId]));
+  }), [person, personId, sortedCredits]));
 
   usePageMetadata({
     title: person?.name ? `${person.name} Movies & Filmography | ReelBot` : "Movie Filmography | ReelBot",
@@ -173,7 +181,7 @@ function PersonDetails() {
               height="278"
             />
           ) : (
-            <div className="person-profile-image person-profile-image--placeholder">No photo</div>
+            <ArtworkFallback className="person-profile-image person-profile-image--placeholder" />
           )}
 
           <div className="browse-copy">
@@ -195,27 +203,19 @@ function PersonDetails() {
             </div>
 
             <div className="person-credit-controls">
-              <div className="person-filter-group" role="group" aria-label="Filter by release">
-                {["all", "upcoming", "past"].map((filter) => (
-                  <button key={filter} type="button" aria-pressed={releaseFilter === filter} className={releaseFilter === filter ? "active" : ""} onClick={() => setReleaseFilter(filter)}>
-                    {filter === "all" ? "All" : filter === "upcoming" ? "Upcoming" : "Released"}
-                  </button>
-                ))}
-              </div>
-              {roleOptions.length > 1 ? (
-                <div className="person-filter-group" role="group" aria-label="Filter by role">
-                  <button type="button" aria-pressed={roleFilter === "all"} className={roleFilter === "all" ? "active" : ""} onClick={() => setRoleFilter("all")}>All roles</button>
-                  {roleOptions.map((role) => <button key={role} type="button" aria-pressed={roleFilter === role} className={roleFilter === role ? "active" : ""} onClick={() => setRoleFilter(role)}>{role}</button>)}
-                </div>
-              ) : null}
-              <div className="person-sort-toggle" role="group" aria-label="Sort filmography">
-                <button type="button" disabled={releaseFilter === "upcoming"} aria-pressed={releaseFilter !== "upcoming" && sortDirection === "popular"} className={releaseFilter !== "upcoming" && sortDirection === "popular" ? "active" : ""} onClick={() => setSortDirection("popular")}>Most rated</button>
-                <button type="button" disabled={releaseFilter === "upcoming"} aria-pressed={releaseFilter === "upcoming" ? false : sortDirection === "newest"} className={releaseFilter !== "upcoming" && sortDirection === "newest" ? "active" : ""} onClick={() => setSortDirection("newest")}>Newest</button>
-                <button type="button" aria-pressed={releaseFilter === "upcoming" || sortDirection === "oldest"} className={releaseFilter === "upcoming" || sortDirection === "oldest" ? "active" : ""} onClick={() => setSortDirection("oldest")}>Oldest</button>
-              </div>
+              <label>Release<select aria-label="Filter by release" value={releaseFilter} onChange={event => setReleaseFilter(event.target.value)}>
+                <option value="all">All</option><option value="past">Released</option><option value="upcoming">Upcoming</option>
+              </select></label>
+              {roleOptions.length > 1 ? <label>Role<select aria-label="Filter by role" value={roleFilter} onChange={event => setRoleFilter(event.target.value)}>
+                <option value="all">All roles</option>{roleOptions.map(role => <option key={role}>{role}</option>)}
+              </select></label> : null}
+              <label>Sort<select aria-label="Sort filmography" value={releaseFilter === "upcoming" ? "oldest" : sortDirection} disabled={releaseFilter === "upcoming"} onChange={event => setSortDirection(event.target.value)}>
+                <option value="popular">Most rated</option><option value="newest">Newest first</option><option value="oldest">Oldest first</option>
+              </select></label>
             </div>
           </div>
 
+          <label className="person-appearances-toggle"><input type="checkbox" checked={includeAppearances} onChange={event => setIncludeAppearances(event.target.checked)} /> Include self appearances and archive footage</label>
           {sortedCredits.length ? (
             <div className="person-credit-grid">
               {sortedCredits.map((movie) => (
@@ -232,7 +232,7 @@ function PersonDetails() {
                         height="278"
                       />
                     ) : (
-                      <div className="person-credit-poster person-credit-poster--placeholder">Poster unavailable</div>
+                      <ArtworkFallback className="person-credit-poster person-credit-poster--placeholder" />
                     )}
                   </Link>
 

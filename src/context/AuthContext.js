@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
+import { API_BASE_URL } from "../discovery";
 import { trackProductEvent } from "../analytics";
-import { tasteProfileService } from "../services/tasteProfileService";
 
 export const PENDING_SAVE_KEY = "reelbotPendingMovieSave";
 const AUTH_TIMEOUT_MS = 15000;
@@ -26,22 +26,6 @@ const getAuthRedirectUrl = () => {
   return ["localhost", "127.0.0.1"].includes(window.location.hostname)
     ? `${window.location.origin}/`
     : "https://reelbot.movie/";
-};
-
-export const completePendingMovieSave = () => {
-  if (typeof window === "undefined") return null;
-  try {
-    const movie = JSON.parse(window.localStorage.getItem(PENDING_SAVE_KEY) || "null");
-    if (!movie?.id) return null;
-    const profile = tasteProfileService.load();
-    const state = tasteProfileService.getMovieTasteState(profile, movie.id);
-    if (!state.inWatchlist) tasteProfileService.save(tasteProfileService.toggleWatchlist(profile, movie));
-    window.localStorage.removeItem(PENDING_SAVE_KEY);
-    return movie;
-  } catch (error) {
-    console.error("Could not complete pending ReelBot save:", error);
-    return null;
-  }
 };
 
 const AuthContext = createContext({
@@ -99,6 +83,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const recoveryRedirectedRef = useRef(false);
 
   const clearPasswordRecovery = useCallback(() => {
@@ -130,12 +116,12 @@ export function AuthProvider({ children }) {
 
         const enteringRecovery = isRecoveryUrl();
         setPasswordRecoveryActive(enteringRecovery);
+        recoveryRedirectedRef.current = enteringRecovery;
         if (enteringRecovery) {
           setPendingRecoverySession(data?.session || null);
           setSession(null);
         } else {
           setPendingRecoverySession(null);
-          if (data?.session?.user) completePendingMovieSave();
           setSession(data?.session || null);
         }
         setLoading(false);
@@ -146,7 +132,7 @@ export function AuthProvider({ children }) {
             setPendingRecoverySession(nextSession || null);
             if (!recoveryRedirectedRef.current) {
               recoveryRedirectedRef.current = true;
-              navigate("/reset-password", { replace: true });
+              navigateRef.current("/reset-password", { replace: true });
             }
           } else if (event === "SIGNED_OUT") {
             setPasswordRecoveryActive(false);
@@ -156,11 +142,11 @@ export function AuthProvider({ children }) {
             setPasswordRecoveryActive(false);
           }
 
-          if (event === "PASSWORD_RECOVERY") {
+          if (event !== "SIGNED_OUT" && (event === "PASSWORD_RECOVERY" || recoveryRedirectedRef.current)) {
+            setPendingRecoverySession(nextSession || null);
             setSession(null);
           } else {
             setPendingRecoverySession(null);
-            if (nextSession?.user) completePendingMovieSave();
             setSession(nextSession || null);
           }
           setLoading(false);
@@ -183,7 +169,7 @@ export function AuthProvider({ children }) {
       window.clearTimeout(timer);
       subscription?.unsubscribe();
     };
-  }, [closeAuthPrompt, navigate]);
+  }, [closeAuthPrompt]);
 
   const sendMagicLink = useCallback(async (email) => {
     if (!isSupabaseConfigured) {
@@ -296,10 +282,10 @@ export function AuthProvider({ children }) {
 
     setAuthError("");
     setPasswordRecoveryActive(false);
-    setSession((currentSession) => ({
-      ...(currentSession || {}),
-      user: data.user || currentSession?.user || null,
-    }));
+    recoveryRedirectedRef.current = false;
+    setPendingRecoverySession(null);
+    const restored = await (await getSupabaseClient()).auth.getSession();
+    setSession(restored.data?.session || null);
     return data.user;
   }, []);
 
@@ -349,12 +335,14 @@ export function AuthProvider({ children }) {
       throw new Error("Supabase is not configured.");
     }
 
-    const accessToken = session?.access_token;
+    const client = await getSupabaseClient();
+    const { data: { session: currentSession } } = await client.auth.getSession();
+    const accessToken = currentSession?.access_token;
     if (!accessToken) {
       throw new Error("No active session.");
     }
 
-    const apiBaseUrl = process.env.REACT_APP_API_URL || "";
+    const apiBaseUrl = API_BASE_URL;
     const response = await fetch(`${apiBaseUrl}/auth/delete-account`, {
       method: "POST",
       headers: {
@@ -375,7 +363,7 @@ export function AuthProvider({ children }) {
     setLastMagicLinkEmail("");
     setPasswordRecoveryActive(false);
     closeAuthPrompt();
-  }, [closeAuthPrompt, session?.access_token]);
+  }, [closeAuthPrompt]);
 
   const maybePromptToSavePicks = useCallback((source = "general") => {
     if (typeof window === "undefined" || session?.user) {

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL, getMoviePath, getReleaseYear } from "../discovery";
+import ArtworkFallback from "./ArtworkFallback";
 import { trackProductEvent } from "../analytics";
 
 const SEARCH_DELAY_MS = 180;
@@ -94,14 +95,19 @@ function GlobalMovieSearch() {
       return undefined;
     }
 
+    setResults([]);
+    setActiveIndex(-1);
+    setLoading(true);
+    setError("");
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
       setLoading(true);
       setError("");
       trackProductEvent("movie_search_submitted", { query_length: normalizedQuery.length });
       axios
-        .get(`${API_BASE_URL}/search?query=${encodeURIComponent(normalizedQuery)}`, { signal: controller.signal })
+        .get(`${API_BASE_URL}/search/suggest?query=${encodeURIComponent(normalizedQuery)}`, { signal: controller.signal })
         .then((response) => {
+          if (controller.signal.aborted) return;
           setResults((response.data?.results || []).slice(0, 7));
           setActiveIndex(-1);
         })
@@ -127,7 +133,7 @@ function GlobalMovieSearch() {
     closeSearch(false);
     setQuery("");
     trackProductEvent("movie_search_result_clicked", { movie_id: Number(movie.id), result_index: results.findIndex((item) => item.id === movie.id) });
-    navigate(getMoviePath(movie));
+    navigate(movie.media_type === "person" ? `/person/${movie.id}` : getMoviePath(movie));
   };
 
   const handleInputKeyDown = (event) => {
@@ -141,6 +147,8 @@ function GlobalMovieSearch() {
       event.preventDefault();
       if (activeIndex >= 0 && results[activeIndex]) {
         openMovie(results[activeIndex]);
+      } else if (results.length && !loading) {
+        openMovie(results[0]);
       } else if (query.trim()) {
         closeSearch(false);
         navigate(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -175,8 +183,8 @@ function GlobalMovieSearch() {
           >
             <div className="global-search-head">
               <div>
-                <div className="detail-description-label">Movie search</div>
-                <h2 id="global-search-title">Find a movie</h2>
+                <div className="detail-description-label">Search</div>
+                <h2 id="global-search-title">Movies & people</h2>
               </div>
               <button type="button" className="global-search-close" onClick={() => closeSearch()} aria-label="Close movie search">×</button>
             </div>
@@ -187,10 +195,13 @@ function GlobalMovieSearch() {
                 ref={inputRef}
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => { setQuery(event.target.value); setResults([]); setActiveIndex(-1); setError(""); setLoading(event.target.value.trim().length >= 2); }}
                 onKeyDown={handleInputKeyDown}
-                placeholder="Search movie titles"
-                aria-label="Search movie titles"
+                placeholder="Search movies and people"
+                aria-label="Search movies and people"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={open}
                 aria-controls="global-search-results"
                 aria-activedescendant={activeIndex >= 0 ? `global-search-result-${activeIndex}` : undefined}
                 autoComplete="off"
@@ -198,14 +209,14 @@ function GlobalMovieSearch() {
               {query ? <button type="button" className="global-search-clear" onClick={() => setQuery("")}>Clear</button> : null}
             </div>
 
-            <div id="global-search-results" className="global-search-results" role="listbox" aria-label="Movie results">
+            <div id="global-search-results" className="global-search-results" role="listbox" aria-label="Search results">
               {loading ? <div className="global-search-status">Searching…</div> : null}
               {!loading && error ? <div className="global-search-status global-search-status--error">{error}</div> : null}
               {!loading && !error && query.trim().length < 2 ? <div className="global-search-status">Type at least two characters.</div> : null}
-              {!loading && !error && query.trim().length >= 2 && !results.length ? <div className="global-search-status">No matching movies found.</div> : null}
+              {!loading && !error && query.trim().length >= 2 && !results.length ? <div className="global-search-status">No matching movies or people.</div> : null}
               {!loading && !error ? results.map((movie, index) => (
                 <button
-                  key={movie.id}
+                  key={`${movie.media_type}-${movie.id}`}
                   id={`global-search-result-${index}`}
                   type="button"
                   role="option"
@@ -214,15 +225,16 @@ function GlobalMovieSearch() {
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => openMovie(movie)}
                 >
-                  {movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`} alt="" loading="lazy" decoding="async" /> : <span className="global-search-poster-placeholder" aria-hidden="true" />}
+                  {(movie.poster_path || movie.profile_path) ? <img src={`https://image.tmdb.org/t/p/w92${movie.poster_path || movie.profile_path}`} alt="" loading="lazy" decoding="async" /> : <ArtworkFallback className="global-search-poster-placeholder" />}
                   <span className="global-search-result-copy">
-                    <strong>{movie.title}</strong>
-                    <span>{getReleaseYear(movie.release_date) || "Release date unavailable"}</span>
+                    <strong>{movie.title || movie.name}</strong>
+                    <span>{movie.media_type === "person" ? movie.known_for_department : `Movie · ${getReleaseYear(movie.release_date) || "Year unavailable"}`}</span>
                   </span>
                   <span className="global-search-open-label">Open</span>
                 </button>
               )) : null}
             </div>
+            {query.trim().length >= 2 ? <Link className="global-search-all" to={`/search?q=${encodeURIComponent(query.trim())}`} onClick={() => closeSearch(false)}>See all movie results</Link> : null}
           </section>
         </div>
       ) : null}

@@ -150,7 +150,7 @@ test("preserves active recommendation provenance alongside the movie-specific ta
 
   expect(await screen.findByRole("heading", { name: "Why ReelBot Picked This" })).toBeInTheDocument();
   expect(await screen.findByText(generatedTake.assessment)).toBeInTheDocument();
-  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/reelbot-take"));
+  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/reelbot-take"), expect.objectContaining({ signal: expect.anything() }));
 });
 
 test("keeps the movie page available when Take generation fails", async () => {
@@ -182,7 +182,7 @@ test("links cast and director to canonical people routes and handles missing hea
   expect(screen.getByRole("link", { name: /Sigourney Weaver/i })).toHaveAttribute("href", "/people/sigourney-weaver");
   fireEvent.click(screen.getByRole("button", { name: /Cast & details/i }));
   expect(window.scrollTo).toHaveBeenCalled();
-  await waitFor(() => expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/movies/resolve/aliens-1986")));
+  await waitFor(() => expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/movies/resolve/aliens-1986"), expect.objectContaining({ signal: expect.anything() })));
 });
 
 test("legacy movie URLs canonicalize to title and year", async () => {
@@ -197,5 +197,5 @@ test("legacy movie URLs canonicalize to title and year", async () => {
 
   expect(await screen.findByRole("heading", { name: "Aliens" })).toBeInTheDocument();
   await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/movies/aliens-1986"));
-  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/movies/679"));
+  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/movies/679"), expect.objectContaining({ signal: expect.anything() }));
 });

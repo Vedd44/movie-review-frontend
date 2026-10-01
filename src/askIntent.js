@@ -16,7 +16,7 @@ const recommendationPattern = /\b(?:something|anything)\s+(?:like|lighter|darker
 const comparisonPattern = /\b(?:better than|compare|which should i watch|this or|it or|versus|vs\.?|should i watch (?:this|it) or)\b/i;
 const questionPattern = /^(?:is|are|does|do|will|would|can|could|should|how|what|who|when|where|why)\b|\b(?:scary|violent|violence|gore|jump scare|sad|funny|confusing|slow|appropriate|good for|happy ending|runtime|how long|toddler|kid|child|group|date movie)\b/i;
 const nextPattern = /^(?:okay,?\s*)?(?:another|another one|next|next one|one more)(?:\s+please)?[.!?]*$/i;
-const refinementPattern = /^(?:no[, ]+|actually[, ]+|i meant\b|not\b)|\b(?:not that one|lighter|darker|shorter|funnier|less scary|less intense|more mainstream|rather than|instead of)\b/i;
+const refinementPattern = /^(?:no[, ]+|actually[, ]+|i meant\b|not\b)|\b(?:not that one|lighter|darker|shorter|funnier|less scary|less intense|less violent|newer|more recent|more mainstream|i(?:[’']ve| have) (?:already )?seen (?:that|this|it)|rather than|instead of)\b/i;
 const initialRecommendationPattern = /\b(?:movie|watch|action|comedy|drama|thriller|horror|sci-?fi|funny|spooky|smart but easy|easy watch|date night|mainstream)\b/i;
 const homePickRefinementPattern = /^(?:something|anything)\s+(?:gentler|lighter|darker|shorter|funnier|less intense|less scary|more like this)|^(?:find|give me)\s+something\s+like\s+this|\b(?:i(?:'|’)ve already seen this|another one like this)\b/i;
 const homeDiscoveryPattern = /^(?:what(?:'s| is)?|anything|any|recommend|give me|find me)\b.*\b(?:movie|movies|film|films|out now|in theaters|under\s+\w+|date night)\b/i;
@@ -34,6 +34,8 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
   if (hasActiveHomePick && homePickRefinementPattern.test(value)) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (page === "home" && homeDiscoveryPattern.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
   if (refinementPattern.test(value) && hasRecommendation) return ASK_INTENTS.REFINE_RECOMMENDATION;
+  if (hasRecommendation && hasAnchor && /^(?:why|is|was|does|how|what).*(?:this|that|it|one|pick)/i.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
+  if (page === "person" || page === "collection") return ASK_INTENTS.CURRENT_SET_RECOMMENDATION;
   if (recommendationPattern.test(value)) {
     if (page === "my_movies") return ASK_INTENTS.ACCOUNT_LIBRARY_RECOMMENDATION;
     if (page === "browse" || page === "now_playing") return ASK_INTENTS.CURRENT_SET_RECOMMENDATION;

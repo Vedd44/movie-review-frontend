@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import ArtworkFallback from "./ArtworkFallback";
+import React, { useMemo } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
 import TasteActionBar from "./TasteActionBar";
@@ -6,7 +7,6 @@ import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getRecommendationMovieState, getReleaseYear } from "../discovery";
 import { getBackupCardMeta } from "../recommendationInsights";
-import { pickLoadingQuote } from "../reelbotLoadingQuotes";
 
 const getAvailabilityStatus = (movie, providerEntry) =>
   movie?.availability_status || providerEntry?.availability_status || null;
@@ -56,10 +56,6 @@ function PickResultPanel({
   refineStatusLabel = "",
   tasteActionProps = {},
 }) {
-  const [loadingQuote, setLoadingQuote] = useState(() => pickLoadingQuote());
-  useEffect(() => {
-    if (loading) setLoadingQuote(pickLoadingQuote());
-  }, [loading]);
   const visibleBackupMovies = useMemo(
     () => (Array.isArray(backupMovies) ? backupMovies.slice(0, 3) : []),
     [backupMovies]
@@ -82,11 +78,10 @@ function PickResultPanel({
       {!hasPrimaryMovie && error && !shouldShowFallbackState ? <p className="error-message">{error}</p> : null}
 
       {!error && shouldShowStandaloneLoading ? (
-        <div className="reelbot-loading-state">
+        <div className="reelbot-loading-state" role="status">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
             <p className="reelbot-loading-title">Finding your pick…</p>
-            <p className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></p>
           </div>
         </div>
       ) : null}
@@ -98,7 +93,6 @@ function PickResultPanel({
               <span className="reelbot-loading-dot" aria-hidden="true"></span>
               <div className="reelbot-loading-copy">
                 <p className="reelbot-loading-title">{refineStatusLabel || recoveryMessage || "Finding your next pick…"}</p>
-                <p className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></p>
               </div>
             </div>
           ) : null}
@@ -111,7 +105,7 @@ function PickResultPanel({
                   className="pick-primary-poster"
                 />
               ) : (
-                <div className="pick-primary-poster pick-primary-poster--placeholder">Poster unavailable</div>
+                <ArtworkFallback className="pick-primary-poster pick-primary-poster--placeholder" />
               )}
             </Link>
             <div className="pick-primary-content">
@@ -236,7 +230,7 @@ function PickResultPanel({
                             className="pick-backup-poster"
                           />
                         ) : (
-                          <div className="pick-backup-poster pick-backup-poster--placeholder">Poster unavailable</div>
+                          <ArtworkFallback className="pick-backup-poster pick-backup-poster--placeholder" />
                         )}
                       </Link>
                       <div className="pick-backup-meta">
@@ -295,7 +289,7 @@ function PickResultPanel({
       {!loading && shouldShowFallbackState ? (
         <div className="pick-empty-state pick-empty-state--result pick-empty-state-soft">
           {fallbackTitle ? <h3 className="pick-empty-title">{fallbackTitle}</h3> : null}
-          {fallbackCopy ? <p className="pick-result-copy detail-secondary-text">{fallbackCopy}</p> : null}
+          {error || fallbackCopy ? <p className="pick-result-copy detail-secondary-text" role={error ? "status" : undefined}>{error || fallbackCopy}</p> : null}
           <div className="pick-empty-actions">
             {onFallbackAction && fallbackActionLabel ? (
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={onFallbackAction}>

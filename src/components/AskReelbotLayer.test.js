@@ -16,8 +16,8 @@ test("keeps refinement, general, and person suggestions in their own contexts", 
 
   expect(refinement.actions).toContainEqual(["Something like this", "something like this"]);
   expect(general.actions).toContainEqual(["Find me something to watch", "something worth watching tonight"]);
-  expect(person.heading).toBe("Ask about Sigourney Weaver");
-  expect(person.actions).toContainEqual(["What are their best movies?", "What are their best movies?"]);
+  expect(person.heading).toBe("Choose a Sigourney Weaver movie");
+  expect(person.actions).toContainEqual(["Where should I start?", "Pick a good starting point from this filmography"]);
   expect(person.actions).not.toContainEqual(["Is it scary?", "Is it scary?"]);
 });
 

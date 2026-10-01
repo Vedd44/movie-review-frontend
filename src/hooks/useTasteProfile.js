@@ -1,114 +1,123 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PENDING_SAVE_KEY, useAuth } from "../context/AuthContext";
 import { reelbotCloudService } from "../services/reelbotCloudService";
 import { TASTE_PROFILE_UPDATED_EVENT, tasteProfileService } from "../services/tasteProfileService";
 
-function useTasteProfile() {
-  const [profile, setProfile] = useState(() => tasteProfileService.load());
+const TasteProfileContext = createContext(null);
+
+function useSharedTasteProfile() {
+  const { user, authReady } = useAuth();
+  const userId = user?.id || "";
+  const activeUser = useRef(userId);
+  activeUser.current = userId;
+  const [profile, setProfile] = useState(() => reelbotCloudService.getLocalProfileOwner()
+    ? tasteProfileService.createEmptyProfile() : tasteProfileService.load());
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState("");
-  const { user, authReady } = useAuth();
   const profileRef = useRef(profile);
+  const queue = useRef(Promise.resolve());
+  const ready = useRef(false);
+  const generation = useRef(0);
+
+  const applyProfile = useCallback(next => {
+    profileRef.current = next;
+    setProfile(next);
+  }, []);
 
   useEffect(() => {
-    profileRef.current = profile;
-  }, [profile]);
-
-  useEffect(() => {
-    const syncProfile = () => {
-      if (user) {
-        return;
+    if (!authReady) return;
+    const version = ++generation.current;
+    ready.current = false;
+    setSyncError("");
+    if (!userId || !reelbotCloudService.isConfigured) {
+      reelbotCloudService.clearLocalAccountCache();
+      applyProfile(tasteProfileService.load());
+      ready.current = true;
+      setSyncLoading(false);
+      queue.current = Promise.resolve();
+      return;
+    }
+    // Never display the previous account's library during restoration.
+    applyProfile(tasteProfileService.createEmptyProfile());
+    setSyncLoading(true);
+    const isCurrent = () => generation.current === version && activeUser.current === userId;
+    queue.current = reelbotCloudService.bootstrapUserState(userId).then(async snapshot => {
+      if (!isCurrent()) return;
+      let pending = null;
+      try { pending = JSON.parse(window.localStorage.getItem(PENDING_SAVE_KEY) || "null"); } catch {}
+      if (pending?.id) {
+        const previousProfile = snapshot.profile;
+        const state = tasteProfileService.getMovieTasteState(previousProfile, pending.id);
+        if (!state.inWatchlist) {
+          snapshot = await reelbotCloudService.saveUserState(userId,
+            tasteProfileService.toggleWatchlist(previousProfile, pending), { ...snapshot, previousProfile });
+        }
+        if (!isCurrent()) return;
+        window.localStorage.removeItem(PENDING_SAVE_KEY);
       }
+      reelbotCloudService.activateLocalCache(snapshot, userId);
+      applyProfile(snapshot.profile);
+      ready.current = true;
+    }).catch(error => {
+      if (isCurrent()) setSyncError(error.message || "Your movies could not be loaded. Refresh to try again.");
+    }).finally(() => {
+      if (isCurrent()) setSyncLoading(false);
+    });
+    return () => { generation.current += 1; };
+  }, [authReady, userId, applyProfile]);
 
-      setProfile(tasteProfileService.load());
+  useEffect(() => {
+    const syncProfile = event => {
+      // Own commits already update this shared provider. Storage events from
+      // other tabs are safe only when the cache belongs to this same account.
+      if (event.type !== "storage" && userId) return;
+      if (reelbotCloudService.getLocalProfileOwner() !== userId) return;
+      applyProfile(tasteProfileService.load());
     };
-
     window.addEventListener("storage", syncProfile);
     window.addEventListener(TASTE_PROFILE_UPDATED_EVENT, syncProfile);
-
     return () => {
       window.removeEventListener("storage", syncProfile);
       window.removeEventListener(TASTE_PROFILE_UPDATED_EVENT, syncProfile);
     };
-  }, [user]);
+  }, [userId, applyProfile]);
 
-  useEffect(() => {
-    if (!authReady) {
-      return;
-    }
-
-    if (!user || !reelbotCloudService.isConfigured) {
-      setProfile(tasteProfileService.load());
-      setSyncLoading(false);
-      setSyncError("");
-      return;
-    }
-
-    let cancelled = false;
-    setSyncLoading(true);
-    setSyncError("");
-
-    reelbotCloudService.bootstrapUserState(user.id)
-      .then((snapshot) => {
-        if (cancelled) {
-          return;
+  const commit = useCallback((updater, options = {}) => {
+    const version = generation.current;
+    const perform = async () => {
+      if (activeUser.current !== userId || generation.current !== version) return profileRef.current;
+      if (userId && !ready.current) throw new Error("Your movies haven't finished syncing. Refresh to try again.");
+      const previousProfile = profileRef.current;
+      const previousInteractions = tasteProfileService.loadInteractions();
+      const nextProfile = typeof updater === "function" ? updater(previousProfile) : updater;
+      const persisted = tasteProfileService.save(nextProfile);
+      applyProfile(persisted);
+      if (!userId || !reelbotCloudService.isConfigured) return persisted;
+      setSyncLoading(true);
+      try {
+        const snapshot = await reelbotCloudService.saveUserState(userId, persisted, { ...options, previousProfile });
+        if (activeUser.current !== userId || generation.current !== version) return snapshot.profile;
+        reelbotCloudService.activateLocalCache(snapshot, userId);
+        applyProfile(snapshot.profile);
+        setSyncError("");
+        return snapshot.profile;
+      } catch (error) {
+        if (activeUser.current === userId && generation.current === version) {
+          tasteProfileService.save(previousProfile);
+          tasteProfileService.saveInteractions(previousInteractions);
+          applyProfile(previousProfile);
+          setSyncError(error.message || "That change couldn't be saved. Please try again.");
         }
-
-        setProfile(snapshot.profile);
-      })
-      .catch((error) => {
-        if (cancelled) {
-          return;
-        }
-
-        console.error("Error bootstrapping ReelBot cloud state:", error);
-        setSyncError(error.message || "Could not sync your ReelBot data.");
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setSyncLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
+        throw error;
+      } finally {
+        if (activeUser.current === userId && generation.current === version) setSyncLoading(false);
+      }
     };
-  }, [authReady, user]);
-
-  const commit = useCallback(async (updater, options = {}) => {
-    const previousProfile = profileRef.current;
-    const previousInteractions = tasteProfileService.loadInteractions();
-    const nextProfile = typeof updater === "function" ? updater(previousProfile) : updater;
-    const persistedProfile = tasteProfileService.save(nextProfile);
-
-    profileRef.current = persistedProfile;
-    setProfile(persistedProfile);
-
-    if (!user || !reelbotCloudService.isConfigured) {
-      setSyncError("");
-      return persistedProfile;
-    }
-
-    setSyncLoading(true);
-
-    try {
-      const snapshot = await reelbotCloudService.saveUserState(user.id, persistedProfile, options);
-      profileRef.current = snapshot.profile;
-      setProfile(snapshot.profile);
-      setSyncError("");
-      return snapshot.profile;
-    } catch (error) {
-      console.error("Error saving ReelBot cloud state:", error);
-      tasteProfileService.save(previousProfile);
-      tasteProfileService.saveInteractions(previousInteractions);
-      profileRef.current = previousProfile;
-      setProfile(previousProfile);
-      setSyncError(error.message || "Could not sync your latest ReelBot changes.");
-      throw error;
-    } finally {
-      setSyncLoading(false);
-    }
-  }, [user]);
+    // One queue for every Save button, route and recommendation interaction.
+    const operation = queue.current.then(perform, perform);
+    queue.current = operation.catch(() => {});
+    return operation;
+  }, [userId, applyProfile]);
 
   const actions = useMemo(
     () => ({
@@ -168,4 +177,13 @@ function useTasteProfile() {
   };
 }
 
-export default useTasteProfile;
+export function TasteProfileProvider({ children }) {
+  const value = useSharedTasteProfile();
+  return <TasteProfileContext.Provider value={value}>{children}</TasteProfileContext.Provider>;
+}
+
+export default function useTasteProfile() {
+  const value = useContext(TasteProfileContext);
+  if (!value) throw new Error("useTasteProfile requires TasteProfileProvider");
+  return value;
+}

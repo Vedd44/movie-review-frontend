@@ -1,3 +1,4 @@
+import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -753,11 +754,12 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [hasExpandedSwapPool, setHasExpandedSwapPool] = useState(() => Boolean(initialPickSession.hasExpandedSwapPool));
   const [pickStatus, setPickStatus] = useState(() => (initialPickSession.currentPick?.primary ? PICK_STATUS.RESTORING : PICK_STATUS.IDLE));
   const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
-  const [pickTake, setPickTake] = useState(null);
   const [visiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
   const restoreStatusTimeoutRef = useRef(null);
   const pickRequestVersionRef = useRef(0);
+  const pickControllerRef = useRef(null);
+  useEffect(() => () => { pickControllerRef.current?.abort(); pickRequestVersionRef.current += 1; }, []);
   const restoreVersionRef = useRef(0);
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -1306,7 +1308,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const hasVisibleFeedContent = displayedMovies.length > 0;
   const shouldShowFeedSkeletons = loading && !curatedMovies.length;
   const heroPreviewLabel = "Popular now";
-  const heroPreviewCopy = "A few popular picks beyond the grid below.";
   const browseLibraryPath = `/browse${selectedMood !== "all" ? `?mood=${selectedMood}` : ""}`;
   const browseLibraryResultsPath = `${browseLibraryPath}${browseLibraryPath.includes("?") ? "&" : "?"}view=${movieType}#library-results`;
   const activePick = pickResult?.primary || null;
@@ -1315,23 +1316,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     () => buildRecommendationRationale({ pickResult, activePick, profile, surpriseMode: lastPickMode === "surprise" }),
     [pickResult, activePick, profile, lastPickMode]
   );
-  useEffect(() => {
-    let cancelled = false;
-    setPickTake(null);
-    if (!activePick?.id) return undefined;
-
-    axios.get(`${API_BASE_URL}/movies/${activePick.id}/reelbot-take`)
-      .then((response) => {
-        if (!cancelled) setPickTake(response.data?.take || null);
-      })
-      .catch(() => {
-        if (!cancelled) setPickTake(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activePick?.id]);
 
   const onboardingReasoning = useMemo(() => (
     onboardingResultActive && activePick
@@ -1349,14 +1333,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       return recommendationRationale;
     }
 
-    const takeAssessment = String(pickTake?.assessment || "").trim();
     return {
       ...recommendationRationale,
-      summaryLine: takeAssessment || recommendationRationale.summaryLine,
-      decisionSentence: takeAssessment || onboardingReasoning || recommendationRationale.decisionSentence,
+      summaryLine: recommendationRationale.decisionSentence || recommendationRationale.summaryLine,
+      decisionSentence: onboardingReasoning || recommendationRationale.decisionSentence,
       contextAnchor: "",
     };
-  }, [onboardingReasoning, pickTake, recommendationRationale]);
+  }, [onboardingReasoning, recommendationRationale]);
   const lastPickMeta = useMemo(() => {
     const title = activePick?.title || "";
     const reason =
@@ -1550,6 +1533,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     }
 
     const response = await axios.post(`${API_BASE_URL}/reelbot/pick`, requestPayload, {
+      signal: options.signal, timeout: 90000,
       headers: {
         "X-ReelBot-Trigger": "user_click",
       },
@@ -1558,6 +1542,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     const normalizedPayload = normalizePickPayload(response.data, requestPayload.excluded_ids);
     if (normalizedPayload) {
       return normalizedPayload;
+    }
+
+    if (response.data?.no_pick_reason) {
+      const noPickError = new Error("No matching pick.");
+      noPickError.code = PICK_STATUS.EXHAUSTED;
+      noPickError.userMessage = response.data.user_message;
+      throw noPickError;
     }
 
     if (retryCount >= 1) {
@@ -1581,7 +1572,10 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   const requestPick = async (nextPreferences, options = {}) => {
     const startedAt = Date.now();
-    const previousPick = pickResult;
+    const previousPick = options.isSwap ? pickResult : null;
+    pickControllerRef.current?.abort();
+    const controller = new AbortController();
+    pickControllerRef.current = controller;
     const requestVersion = pickRequestVersionRef.current + 1;
     pickRequestVersionRef.current = requestVersion;
 
@@ -1596,7 +1590,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         scrollToPickResults();
       }
 
-      const nextPayload = await runPickRequest(nextPreferences, options);
+      const nextPayload = await runPickRequest(nextPreferences, { ...options, signal: controller.signal });
       if (requestVersion !== pickRequestVersionRef.current) {
         return null;
       }
@@ -1640,7 +1634,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       } else {
         setPickResult(previousPick || null);
         setPickStatus(previousPick?.primary ? PICK_STATUS.ERROR : nextStatus);
-        setPickError(nextStatus === PICK_STATUS.EXHAUSTED ? PICK_REQUEST_FALLBACK_MESSAGE : PICK_REQUEST_ERROR_MESSAGE);
+        setPickError(requestError.userMessage || (nextStatus === PICK_STATUS.EXHAUSTED ? PICK_REQUEST_FALLBACK_MESSAGE : PICK_REQUEST_ERROR_MESSAGE));
       }
 
       return null;
@@ -1655,7 +1649,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     const requestVersion = pickRequestVersionRef.current;
 
     try {
-      const refillPayload = await runPickRequest(nextPreferences, options);
+      const refillPayload = await runPickRequest(nextPreferences, { ...options, signal: pickControllerRef.current?.signal });
       if (requestVersion !== pickRequestVersionRef.current) {
         return;
       }
@@ -1716,7 +1710,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       view: movieType,
       mood: "all",
       runtime: "any",
-      source: "feed",
+      source: "library",
       company: "any",
       prompt: pickPrompt,
       include_theatrical: includeTheatrical,
@@ -1740,6 +1734,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     }
 
     if (!options.isSwap) {
+      setPickResult(null);
       const nextPrompt = String(nextPreferences.prompt || "").trim();
 
       clearRestoreTimer();
@@ -1756,7 +1751,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         currentPick: pickResult,
         swapHistory: [],
         swapQueue: [],
-        lastPickMode: nextPreferences.source === "library" ? "surprise" : "prompt",
+        lastPickMode: nextPreferences.prompt?.trim() ? "prompt" : "surprise",
         swapCount: 0,
         candidatePool: [],
         refinementState: null,
@@ -1785,6 +1780,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   const handleStartFresh = useCallback(() => {
     trackProductEvent("start_fresh_clicked", { page: "home" });
+    pickControllerRef.current?.abort();
     pickRequestVersionRef.current += 1;
     clearRestoreTimer();
     setPickPrompt("");
@@ -1838,7 +1834,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       view: movieType,
       mood: "all",
       runtime: "any",
-      source: lastPickMode === "surprise" ? "library" : "feed",
+      source: "library",
       company: "any",
       prompt: originalPickPrompt || pickPrompt,
       include_theatrical: includeTheatrical,
@@ -2097,7 +2093,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div className="home-hero-copy">
             <div className="browse-kicker">Skip the endless scroll</div>
             <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
-            <p className="home-hero-subtitle"><span>Tell ReelBot what you're in the mood for.</span></p>
+            <p className="home-hero-subtitle"><span>A movie for your mood, your time, your kind of night.</span></p>
             <div className="home-hero-form">
               <ReelbotPromptComposer
                 inputId="pick-prompt-input"
@@ -2149,7 +2145,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 <span className="reelbot-toggle-option-control" aria-hidden="true"></span>
                 <span className="reelbot-toggle-option-copy">
                   <span className="reelbot-toggle-option-title">Include movies in theaters</span>
-                  <span className="reelbot-toggle-option-subtitle">Include current theatrical releases in your picks.</span>
+                  <span className="reelbot-toggle-option-subtitle"></span>
                 </span>
               </label>
             </div>
@@ -2158,7 +2154,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               <div className="home-hero-now-playing-head">
                 <div>
                   <h2 className="home-hero-now-playing-heading">{heroPreviewLabel}</h2>
-                  <p className="home-hero-now-playing-copy">{heroPreviewCopy}</p>
                 </div>
               </div>
 
@@ -2177,7 +2172,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                           decoding="async"
                         />
                       ) : (
-                        <div className="home-hero-now-playing-poster home-hero-now-playing-poster--placeholder">Poster unavailable</div>
+                        <ArtworkFallback className="home-hero-now-playing-poster home-hero-now-playing-poster--placeholder" />
                       )}
                       <span className="home-hero-now-playing-title">{movie.title}</span>
                     </Link>
@@ -2242,7 +2237,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             showDetailLink={false}
             refreshLabel={isSwapLoading ? "Swapping…" : "Get another pick"}
             resetLabel="Start fresh"
-            backupTitle="Other strong matches"
+            backupTitle="More to consider"
             backupCopy=""
             onRefreshChoices={pickResult?.primary ? () => {
               markFirstPickSummarySeen();
@@ -2347,7 +2342,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                             decoding="async"
                           />
                         ) : (
-                          <div className="no-poster">Poster unavailable</div>
+                          <ArtworkFallback className="no-poster" />
                         )}
                         <span className="home-movie-card-overlay" aria-hidden="true"></span>
                       </div>

@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 test("clears Ask input after accepted submit while keeping the submitted message and response", async () => {
-  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotLayer /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotProvider><ContextRegistration context={{ page: "movie_detail", movieId: 679, movieTitle: "Aliens" }} /><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
 
   const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
@@ -54,7 +54,7 @@ test("clears Ask input after accepted submit while keeping the submitted message
 });
 
 test("does not clear an empty Ask submission", () => {
-  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotLayer /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotProvider><ContextRegistration context={{ page: "movie_detail", movieId: 679, movieTitle: "Aliens" }} /><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
 
   const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
@@ -137,4 +137,18 @@ test("malformed follow-ups render no chips", () => {
 test("does not restore a generic homepage floating assistant",()=>{
   render(<MemoryRouter initialEntries={["/"]}><AskReelbotLayer/></MemoryRouter>);
   expect(screen.queryByRole("button",{name:/Ask ReelBot/i})).not.toBeInTheDocument();
+});
+
+test('closing Ask cancels the pending request and ignores a late answer', async () => {
+  let finish;
+  axios.post.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  render(<MemoryRouter initialEntries={['/movies/aliens-1986']}><AskReelbotProvider><ContextRegistration context={{ page: 'movie_detail', movieId: 679, movieTitle: 'Aliens' }} /><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: /Ask ReelBot/i }));
+  fireEvent.click(screen.getByRole('button', { name: 'Is it scary?' }));
+  const signal = axios.post.mock.calls[0][2].signal;
+  fireEvent.click(screen.getByRole('button', { name: 'Close Ask ReelBot' }));
+  expect(signal.aborted).toBe(true);
+  finish({ data: { kind: 'answer', answer: 'A stale answer' } });
+  fireEvent.click(screen.getByRole('button', { name: /Ask ReelBot/i }));
+  await waitFor(() => expect(screen.queryByText('A stale answer')).not.toBeInTheDocument());
 });

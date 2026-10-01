@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.REACT_APP_API_URL;
+export const API_BASE_URL = process.env.REACT_APP_API_URL || "https://movie-review-backend-zevb.onrender.com";
 
 export const VIEW_OPTIONS = [
   { id: "latest", label: "Now Playing" },
@@ -187,3 +187,9 @@ export const formatMovieDate = (releaseDate) =>
     : "Release date unavailable";
 
 export const isContextualDetailPath = (pathname = "") => /^\/(?:movies|movie|people|person|collections)\/[^/]+/.test(pathname);
+export const hasUsefulAskContext = (context = {}) => {
+  if (!context) return false;
+  if (["person", "collection"].includes(context.page)) return Boolean(context.visibleMovieIds?.length);
+  if (context.page === "movie_detail") return Boolean(context.movieId || context.movie?.id);
+  return false;
+};

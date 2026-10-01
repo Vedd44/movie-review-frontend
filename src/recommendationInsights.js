@@ -63,8 +63,7 @@ const humanizeVisibleCopy = (value = "") => {
 
   text = stripSystemLanguage(text);
 
-  const firstSentence = text.match(/[^.!?]+[.!?]/)?.[0]?.trim() || text;
-  return ensureSentence(firstSentence);
+  return text;
 };
 
 const stripSystemLanguage = (text = "") =>
@@ -367,7 +366,9 @@ const getFitLabel = (fitTier = "strong_fit", validation = {}, timeConstraintStat
     return "Fallback pick";
   }
 
-  if (fitTier === "strong_fit" || fitTier === "exact_fit" || fitTier === "decent_fit" || fitTier === "weak_fit") {
+  if (fitTier === "weak_fit") return "Worth considering";
+  if (fitTier === "decent_fit") return "A possible fit";
+  if (fitTier === "strong_fit" || fitTier === "exact_fit") {
     return "Best fit";
   }
 
@@ -469,13 +470,13 @@ export const buildRecommendationRationale = ({ pickResult, activePick, profile, 
           .filter((reason) => reason && !isPromptEcho(reason) && !isSystemReason(reason))
           .slice(0, 2)
       : [];
-    const decisionSentence = groundedReasons.length === 2
+    const decisionSentence = pickResult.rationale.primary_reason || activePick.reason || (groundedReasons.length === 2
       ? groundedReasons.join(" ")
       : buildRecommendationSentence({
           baseReason: groundedReasons[0] || pickResult.rationale.primary_reason || activePick.reason || pickResult.rationale.summaryLine,
           movie: activePick,
           timeConstraintState,
-        });
+        }));
 
     return {
       title: "Your Pick",

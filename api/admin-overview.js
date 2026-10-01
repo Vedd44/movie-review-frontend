@@ -1,6 +1,234 @@
-const{createClient}=require("@supabase/supabase-js");
-const normalizeSupabaseUrl=value=>String(value||"").trim().replace(/\/(?:rest\/v1)?\/?$/,"");
-const url=normalizeSupabaseUrl(process.env.SUPABASE_URL||process.env.REACT_APP_SUPABASE_URL),key=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;
-const send=(res,status,payload)=>{res.status(status);res.setHeader("Cache-Control","private, no-store");res.json(payload)},safe=async q=>{try{const x=await q;return x.error?[]:(x.data||[])}catch{return[]}};
-module.exports=async(req,res)=>{if(!url||!key)return send(res,503,{error:"Admin server credentials are not configured."});const token=String(req.headers.authorization||"").replace(/^Bearer\s+/i,""),db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}}),check=await db.auth.getUser(token),sessionUser=check.data?.user;if(!sessionUser)return send(res,403,{error:"Authenticated session required."});const fresh=await db.auth.admin.getUserById(sessionUser.id),me=fresh.data?.user;if(fresh.error||!me||me.app_metadata?.role!=="super_admin")return send(res,403,{error:"Super administrator access required."});
-if(req.method==="POST"){const target=String(req.body?.user_id||""),action=String(req.body?.action||"");if(!target||target===me.id)return send(res,400,{error:"That account cannot be modified here."});let result;if(action==="suspend")result=await db.auth.admin.updateUserById(target,{ban_duration:"876000h"});else if(action==="restore")result=await db.auth.admin.updateUserById(target,{ban_duration:"none"});else return send(res,400,{error:"Unsupported admin action."});return result.error?send(res,400,{error:result.error.message}):send(res,200,{ok:true});}if(req.method!=="GET")return send(res,405,{error:"Method not allowed"});const list=await db.auth.admin.listUsers({page:1,perPage:1000});if(list.error)return send(res,500,{error:list.error.message});const raw=list.data?.users||[],byId=Object.fromEntries(raw.map(x=>[x.id,x]));const[movies,sessions,feedback]=await Promise.all([safe(db.from("user_movies").select("user_id,status,created_at")),safe(db.from("user_sessions").select("user_id,last_prompt,last_pick_id,payload,updated_at").order("updated_at",{ascending:false}).limit(250)),safe(db.from("feedback").select("id,type,message,email,created_at").order("created_at",{ascending:false}).limit(100))]);const counts={};movies.forEach(x=>counts[x.user_id]=(counts[x.user_id]||0)+1);const users=raw.map(x=>({id:x.id,email:x.email||"",display_name:x.user_metadata?.display_name||"",created_at:x.created_at,last_sign_in_at:x.last_sign_in_at,banned_until:x.banned_until||null,movie_count:counts[x.id]||0,is_admin:x.app_metadata?.role==="super_admin"})).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));const activity=[];sessions.forEach(row=>{const email=byId[row.user_id]?.email||"";activity.push({id:"sync-"+row.user_id,user_id:row.user_id,email,label:"Profile synced",detail:row.last_prompt||"Cloud state updated",created_at:row.updated_at});(Array.isArray(row.payload?.interactions)?row.payload.interactions:[]).slice(0,25).forEach((e,i)=>activity.push({id:row.user_id+"-"+i,user_id:row.user_id,email,label:String(e.type||"Activity").replaceAll("_"," "),detail:e.movie?.title||e.metadata?.prompt||"",created_at:e.timestamp||row.updated_at}))});activity.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));const week=Date.now()-604800000;return send(res,200,{stats:{total_users:users.length,new_users_7d:users.filter(x=>new Date(x.created_at).getTime()>=week).length,active_users_7d:users.filter(x=>new Date(x.last_sign_in_at||0).getTime()>=week).length,saved_movies:movies.filter(x=>x.status==="saved").length,seen_movies:movies.filter(x=>x.status==="seen").length,feedback_count:feedback.length,feedback_7d:feedback.filter(x=>new Date(x.created_at||0).getTime()>=week).length},users,activity:activity.slice(0,200),feedback})};
+const { createClient } = require("@supabase/supabase-js");
+const normalizeSupabaseUrl = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\/(?:rest\/v1)?\/?$/, "");
+const send = (res, status, payload) => {
+  res.status(status);
+  res.setHeader("Cache-Control", "private, no-store");
+  return res.json(payload);
+};
+const suspended = (user) =>
+  new Date(user?.banned_until || 0).getTime() > Date.now();
+
+function createAdminHandler({ getClient } = {}) {
+  return async (req, res) => {
+    try {
+      const url = normalizeSupabaseUrl(
+        process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL,
+      );
+      const key =
+        process.env.SUPABASE_SECRET_KEY ||
+        process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!getClient && (!url || !key))
+        return send(res, 503, {
+          error: "Admin server credentials are not configured.",
+        });
+      const authorization = String(req.headers.authorization || "");
+      if (!/^Bearer\s+\S+$/i.test(authorization))
+        return send(res, 401, { error: "Authenticated session required." });
+      const db = getClient
+        ? getClient()
+        : createClient(url, key, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+      const check = await db.auth.getUser(
+        authorization.replace(/^Bearer\s+/i, ""),
+      );
+      const sessionUser = check.data?.user;
+      if (check.error || !sessionUser)
+        return send(res, 401, { error: "Authenticated session required." });
+      // Read the current server-owned role. JWT metadata alone can be stale.
+      const fresh = await db.auth.admin.getUserById(sessionUser.id);
+      const me = fresh.data?.user;
+      if (
+        fresh.error ||
+        !me ||
+        me.app_metadata?.role !== "super_admin" ||
+        suspended(me)
+      ) {
+        return send(res, 403, {
+          error: "Super administrator access required.",
+        });
+      }
+      if (req.method === "POST") {
+        const target = String(req.body?.user_id || "");
+        const action = String(req.body?.action || "");
+        if (!["suspend", "restore"].includes(action))
+          return send(res, 400, { error: "Unsupported admin action." });
+        if (!target || target === me.id)
+          return send(res, 400, {
+            error: "That account cannot be modified here.",
+          });
+        const targetResult = await db.auth.admin.getUserById(target);
+        if (targetResult.error || !targetResult.data?.user)
+          return send(res, 404, { error: "Account not found." });
+        if (targetResult.data.user.app_metadata?.role === "super_admin")
+          return send(res, 403, {
+            error: "Administrator accounts cannot be modified here.",
+          });
+        const result = await db.auth.admin.updateUserById(target, {
+          ban_duration: action === "suspend" ? "876000h" : "none",
+        });
+        return result.error
+          ? send(res, 400, { error: "That account could not be updated." })
+          : send(res, 200, { ok: true });
+      }
+      if (req.method !== "GET") {
+        res.setHeader("Allow", "GET, POST");
+        return send(res, 405, { error: "Method not allowed." });
+      }
+      const warnings = [];
+      const raw = [];
+      for (let page = 1; page <= 20; page += 1) {
+        const list = await db.auth.admin.listUsers({ page, perPage: 1000 });
+        if (list.error) throw list.error;
+        raw.push(...(list.data?.users || []));
+        if ((list.data?.users || []).length < 1000) break;
+        if (page === 20)
+          warnings.push("The user directory is limited to 20,000 accounts.");
+      }
+      const read = async (label, query) => {
+        try {
+          const result = await query;
+          if (result.error) throw result.error;
+          return result;
+        } catch {
+          warnings.push(`${label} could not be loaded. Refresh to try again.`);
+          return { data: null, count: null };
+        }
+      };
+      const weekDate = new Date(Date.now() - 604800000).toISOString();
+      const [
+        moviesResult,
+        sessionsResult,
+        feedbackResult,
+        savedResult,
+        seenResult,
+        feedbackCount,
+        weekFeedback,
+      ] = await Promise.all([
+        read(
+          "Per-user movie counts",
+          db.from("user_movies").select("user_id,status").limit(1000),
+        ),
+        read(
+          "Recent activity",
+          db
+            .from("user_sessions")
+            .select("user_id,last_prompt,payload,updated_at")
+            .order("updated_at", { ascending: false })
+            .limit(250),
+        ),
+        read(
+          "Recent feedback",
+          db
+            .from("feedback")
+            .select("id,type,message,email,created_at")
+            .order("created_at", { ascending: false })
+            .limit(100),
+        ),
+        read(
+          "Saved-movie total",
+          db
+            .from("user_movies")
+            .select("id", { count: "exact", head: true })
+            .or("status.eq.saved,movie_data->>saved_to_watchlist.eq.true"),
+        ),
+        read(
+          "Seen-movie total",
+          db
+            .from("user_movies")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "seen"),
+        ),
+        read(
+          "Feedback total",
+          db.from("feedback").select("id", { count: "exact", head: true }),
+        ),
+        read(
+          "Weekly feedback",
+          db
+            .from("feedback")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", weekDate),
+        ),
+      ]);
+      const movies = moviesResult.data || [];
+      const countsComplete = moviesResult.data !== null && movies.length < 1000;
+      if (movies.length >= 1000)
+        warnings.push(
+          "Per-user movie counts are unavailable above 1,000 rows; overall movie totals remain exact.",
+        );
+      const counts = {};
+      movies.forEach((row) => {
+        counts[row.user_id] = (counts[row.user_id] || 0) + 1;
+      });
+      const users = raw
+        .map((user) => ({
+          id: user.id,
+          email: user.email || "",
+          display_name: user.user_metadata?.display_name || "",
+          created_at: user.created_at,
+          last_sign_in_at: user.last_sign_in_at,
+          banned_until: user.banned_until || null,
+          is_suspended: suspended(user),
+          movie_count: countsComplete ? counts[user.id] || 0 : null,
+          is_admin: user.app_metadata?.role === "super_admin",
+        }))
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const byId = new Map(users.map((user) => [user.id, user]));
+      const activity = (sessionsResult.data || [])
+        .flatMap((row) => [
+          {
+            id: `sync-${row.user_id}`,
+            user_id: row.user_id,
+            email: byId.get(row.user_id)?.email || "",
+            label: "Profile synced",
+            detail: row.last_prompt || "",
+            created_at: row.updated_at,
+          },
+          ...(Array.isArray(row.payload?.interactions)
+            ? row.payload.interactions
+            : []
+          )
+            .slice(0, 25)
+            .map((entry, i) => ({
+              id: `${row.user_id}-${i}`,
+              user_id: row.user_id,
+              email: byId.get(row.user_id)?.email || "",
+              label: String(entry.type || "Activity").replaceAll("_", " "),
+              detail: entry.movie?.title || entry.metadata?.prompt || "",
+              created_at: entry.timestamp || row.updated_at,
+            })),
+        ])
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      return send(res, 200, {
+        stats: {
+          total_users: users.length,
+          new_users_7d: users.filter((user) => user.created_at >= weekDate)
+            .length,
+          active_users_7d: users.filter(
+            (user) => user.last_sign_in_at >= weekDate,
+          ).length,
+          saved_movies: savedResult.count,
+          seen_movies: seenResult.count,
+          feedback_count: feedbackCount.count,
+          feedback_7d: weekFeedback.count,
+        },
+        users,
+        activity: activity.slice(0, 200),
+        feedback: feedbackResult.data || [],
+        warnings,
+        limits: { activity: 200, profiles: 250, feedback: 100 },
+      });
+    } catch (error) {
+      console.error("Admin overview failed:", error?.message);
+      return send(res, 503, {
+        error: "Admin data is temporarily unavailable. Please try again.",
+      });
+    }
+  };
+}
+module.exports = createAdminHandler();
+module.exports.createAdminHandler = createAdminHandler;
