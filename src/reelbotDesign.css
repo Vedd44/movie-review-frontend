@@ -275,6 +275,8 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .global-search-result strong { font-size: .95rem; }
 .global-search-input-shell { border-radius: 6px; background: var(--rb-surface); box-shadow: none; }
 .global-search-input-shell input { border: 0; background: none; box-shadow: none; font-size: 16px; }
+.global-search-input-shell input:focus-visible { outline: none; box-shadow: none; }
+.global-search-input-shell input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 .account-settings-card { max-width: 800px; padding: 28px 0; margin: 0; }
 .account-settings-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
 .account-settings-field { display: grid; gap: 8px; color: var(--rb-muted); font-size: .8rem; text-align: left; }
