@@ -163,7 +163,9 @@ test("a failed question can be retried without losing its text", async () => {
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
   fireEvent.change(screen.getByRole("textbox", { name: "Ask ReelBot" }), { target: { value: "Is it suitable for teens?" } });
   fireEvent.click(screen.getByRole("button", { name: "Ask" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+  const retry = await screen.findByRole("button", { name: "Try again" });
+  expect(screen.getByText("Is it suitable for teens?")).toBeInTheDocument();
+  fireEvent.click(retry);
   await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
   expect(axios.post.mock.calls[1][1].prompt).toBe("Is it suitable for teens?");
   expect(await screen.findByText("Sigourney Weaver stars in it.")).toBeInTheDocument();

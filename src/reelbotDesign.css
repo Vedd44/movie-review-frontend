@@ -165,7 +165,7 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .collection-preview-card h2 { font-size: clamp(1.4rem,2.3vw,2.1rem); line-height: 1.1; }
 .collection-preview-card p { line-height: 1.6; font-size: .875rem; }
 .collection-breadcrumb, .detail-breadcrumb { color: var(--rb-faint); font-size: .8rem; text-align: left; overflow-wrap: anywhere; }
-.collection-breadcrumb { margin: 0 0 28px; }
+.collection-breadcrumb { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 10px; margin: 0 0 28px; }
 .collection-share-status:empty { display: none; }
 .collection-movie-list { margin-top: 32px; }
 .related-collections { border-top: 1px solid var(--rb-line); padding-top: 40px; margin-top: 56px; }

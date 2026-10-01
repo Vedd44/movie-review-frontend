@@ -425,13 +425,13 @@ function AskReelbotLayer() {
             </header>
 
             <div className="rb-conversation-body">
-            {turns.slice(0, loading ? undefined : -1).map((turn, index) => <article className="rb-conversation-turn" key={index}>
+            {turns.slice(0, loading || error ? undefined : -1).map((turn, index) => <article className="rb-conversation-turn" key={index}>
               <p className="rb-conversation-question">{turn.question}</p>
               {turn.movie ? <a className="rb-conversation-film" href={getMoviePath(turn.movie)}>{turn.movie.title}</a> : null}
               <p>{turn.answer}</p>
             </article>)}
-            {pendingQuestion || lastTurn?.prompt ? <p className="rb-conversation-question">{pendingQuestion || lastTurn.prompt}</p> : null}
-            {!isCollection && !result && !answerResult && !loading ? (
+            {pendingQuestion || (error ? retryPrompt.current : lastTurn?.prompt) ? <p className="rb-conversation-question">{pendingQuestion || (error ? retryPrompt.current : lastTurn.prompt)}</p> : null}
+            {!isCollection && !result && !answerResult && !loading && !error ? (
               <div className="ask-reelbot-start">
                 <div className="ask-reelbot-suggestions">
                   {config.actions.map(([label, prompt]) => (
@@ -440,7 +440,7 @@ function AskReelbotLayer() {
                 </div>
               </div>
             ) : null}
-            {!loading && answerResult ? (
+            {!loading && !error && answerResult ? (
               <article className="ask-reelbot-answer ask-reelbot-answer--direct" aria-live="polite">
                 <div className="ask-reelbot-answer-label">About {answerMovieTitle}</div>
                 <p className="ask-reelbot-direct-copy">{answerResult.answer}</p>
@@ -450,7 +450,7 @@ function AskReelbotLayer() {
                   ))}
                 </div>
               </article>
-            ) : !loading && result ? (
+            ) : !loading && !error && result ? (
               <article className="ask-reelbot-answer">
                 <div className="ask-reelbot-answer-label">Your pick</div>
                 <div className="ask-reelbot-answer-main">
