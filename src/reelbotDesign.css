@@ -150,7 +150,7 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .pick-refine-button { min-height: 40px; padding: 6px 0; border: 0; background: none; font-size: .8rem; font-weight: 500; color: var(--rb-muted); }
 .pick-backups-block { padding: 32px 0 0; margin: 32px 0 0; border-top: 1px solid var(--rb-line); }
 .pick-backups-title { font: 550 1rem/1.3 var(--rb-sans); }
-.pick-backup-strip { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 28px; }
+.pick-backup-strip { display: grid; grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 28px; }
 .pick-backup-card { display: grid; grid-template-columns: 64px minmax(0,1fr); align-items: start; gap: 14px; padding: 0; border: 0; border-radius: 0; background: none; }
 .pick-backup-card img { width: 64px; height: 96px; object-fit: cover; border-radius: 4px; }
 .pick-backup-card h4 { font-size: 1rem; line-height: 1.35; }
@@ -365,6 +365,9 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
   .pick-primary-poster-link, .pick-primary-poster { width: 180px; max-width: 180px; }
   .pick-primary-poster { height: 270px; }
   .pick-primary-title { font-size: 2.35rem; }
+  .pick-primary-action-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; gap: 8px; }
+  .pick-primary-action-row .pick-taste-actions { display: contents; }
+  .pick-primary-action-row button { width: 100%; min-width: 0; white-space: nowrap; }
   .pick-backup-strip { gap: 22px; grid-template-columns: 1fr; }
   .pick-backup-card { grid-template-columns: 64px minmax(0,1fr); }
   .collections-index-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
@@ -453,8 +456,8 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
   .pick-primary-fit-row { grid-column: 1 / -1; grid-row: 3; margin: 4px 0 0; }
   .pick-primary-hook { font-size: .95rem; line-height: 1.75; }
   .pick-primary-content > .provider-badge-row, .pick-result-actions-block { grid-column: 1 / -1; }
-  .pick-primary-action-row { gap: 8px; margin-top: 0; }
-  .pick-primary-action-row button { font-size: .8rem; padding: 10px 12px; }
+  .pick-primary-action-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; gap: 8px; margin-top: 0; }
+  .pick-primary-action-row button { width: 100%; min-width: 0; white-space: nowrap; font-size: .8rem; padding: 10px 12px; }
   .pick-primary-main-action { flex: 1; }
   .pick-refine-panel { gap: 0 16px; margin-top: 18px; }
   .pick-refine-grid { gap: 18px; }
