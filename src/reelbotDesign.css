@@ -804,3 +804,61 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 @media (max-width: 820px) {
   .library-reelbot-card .section-subtitle { white-space: normal; }
 }
+
+
+/* Browse picker acceptance fixes: composer clear, result rhythm, refine alignment. */
+.library-reelbot-card .pick-prompt-shell {
+  position: relative;
+}
+.library-reelbot-card .pick-prompt-input {
+  padding-right: 56px;
+}
+.library-reelbot-card .pick-prompt-clear {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  left: auto;
+  bottom: auto;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+#library-reelbot-result:has(.pick-result-stage.is-live),
+#library-reelbot-result:has(.reelbot-loading-state) {
+  margin-top: 36px;
+}
+.library-reelbot-card .pick-refine-panel {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.library-reelbot-card .pick-refine-label {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  white-space: nowrap;
+}
+.library-reelbot-card .pick-refine-grid {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+}
+.library-reelbot-card .pick-refine-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+}
+@media (max-width: 599px) {
+  .library-reelbot-card .pick-refine-panel {
+    display: block;
+  }
+  .library-reelbot-card .pick-refine-label {
+    min-height: 0;
+    margin-bottom: 6px;
+  }
+}
