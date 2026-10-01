@@ -5,7 +5,7 @@ import "./App.css";
 import NotFound from "./NotFound";
 import { buildAbsoluteUrl } from "./siteConfig";
 import MovieCardMeta from "./components/MovieCardMeta";
-import { API_BASE_URL, formatMovieDate, getMoviePath, getPersonPath, } from "./discovery";
+import { API_BASE_URL, formatMovieDate, getMoviePath, getPersonPath } from "./discovery";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 

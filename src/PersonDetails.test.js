@@ -41,3 +41,13 @@ test('writer filter includes screenplay credits and exposes its selected state',
   expect(screen.getByRole('link',{name:'Open A Screenplay'})).toBeInTheDocument();
   expect(screen.queryByRole('link',{name:'Open Aliens'})).not.toBeInTheDocument();
 });
+
+test('most rated puts established films ahead of recent low-vote credits', async () => {
+  axios.get.mockResolvedValue({data:{...person,movie_credits:[
+    {...person.movie_credits[0],vote_count:9000},
+    {id:680,title:'Recent Movie',release_date:'2026-01-01',vote_count:10,roles:['Director']},
+  ]}});
+  render(<MemoryRouter initialEntries={['/people/james-cameron']}><Routes><Route path="/people/:personSlug" element={<PersonDetails/>}/></Routes></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button',{name:'Most rated'}));
+  expect(screen.getAllByRole('heading',{level:3}).map(e=>e.textContent)).toEqual(['Aliens','Recent Movie']);
+});
