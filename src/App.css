@@ -20564,3 +20564,32 @@ body,
     font-size: .76rem;
   }
 }
+
+
+/* Fold / small-tablet viewport pass: keep horizontal rails from trapping vertical page scroll,
+   and use the available width for denser movie grids. */
+@media (min-width: 600px) and (max-width: 900px) {
+  .home-page > .home-hero .home-hero-now-playing-rail {
+    touch-action: pan-y pinch-zoom !important;
+    overscroll-behavior-x: auto !important;
+    scroll-snap-type: none !important;
+  }
+
+  .home-page > .home-hero .home-hero-now-playing-item {
+    touch-action: pan-y pinch-zoom !important;
+  }
+
+  .home-page .home-poster-grid,
+  .browse-page .movie-grid,
+  .browse-page .browse-movie-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 18px 14px !important;
+  }
+}
+
+/* Phone-width rails still swipe horizontally, while vertical gestures remain page scroll. */
+@media (max-width: 599px) {
+  .home-page > .home-hero .home-hero-now-playing-rail {
+    touch-action: pan-x pan-y pinch-zoom !important;
+  }
+}
