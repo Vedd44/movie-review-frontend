@@ -21319,3 +21319,31 @@ body,
     border-radius: 20px !important;
   }
 }
+
+
+/* Mobile assistant sheet v3: viewport-safe dialog above the navigation dock. */
+@media only screen and (max-width: 900px) {
+  .ask-reelbot-backdrop {
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    padding: 12px 12px calc(92px + env(safe-area-inset-bottom)) !important;
+    overflow: hidden !important;
+  }
+  .ask-reelbot-sheet {
+    box-sizing: border-box !important;
+    width: min(100%, 560px) !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 116px - env(safe-area-inset-bottom)) !important;
+    margin: 0 auto !important;
+    transform: none !important;
+  }
+}
+@media only screen and (max-width: 430px) {
+  .ask-reelbot-backdrop {
+    padding: 8px 8px calc(82px + env(safe-area-inset-bottom)) !important;
+  }
+  .ask-reelbot-sheet {
+    max-height: calc(100dvh - 98px - env(safe-area-inset-bottom)) !important;
+  }
+}
