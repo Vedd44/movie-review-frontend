@@ -862,3 +862,17 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
     margin-bottom: 6px;
   }
 }
+
+
+/* Homepage browse should use the available canvas, not inherit the narrower utility grid. */
+@media (min-width: 901px) {
+  .home-page .home-browse-section .movie-list {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 36px 20px;
+  }
+
+  .home-page .home-browse-section .home-movie-card {
+    width: auto;
+    max-width: none;
+  }
+}
