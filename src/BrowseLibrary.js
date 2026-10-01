@@ -153,15 +153,6 @@ function BrowseLibrary() {
   }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
-    // Fill the initial browse surface with enough real titles to occupy the desktop grid.
-    // The API page is intentionally preserved as the unit of pagination; this simply
-    // advances through additional pages until we have a full 3-row desktop surface.
-    if (loading || loadingMore || error || normalizedPage >= totalPages || filteredMovies.length >= 12) return;
-    setLoadingMore(true);
-    updateFilters({ page: normalizedPage + 1 });
-  }, [error, filteredMovies.length, loading, loadingMore, normalizedPage, totalPages]);
-
-  useEffect(() => {
     // Editing the next request should not erase the recommendation already on screen.
     // A submitted pick, explicit refresh/refine, or Start fresh owns result replacement.
     setPickError(null);
@@ -206,6 +197,19 @@ function BrowseLibrary() {
         }),
     [behavioralMemory, movies, normalizedView, selectedMoodConfig, suppressedMovieIds]
   );
+
+  useEffect(() => {
+    // Fill the initial browse surface with enough real titles to occupy the desktop grid.
+    // Run after filteredMovies and updateFilters are defined so CI lint does not see
+    // use-before-define / unstable dependency ordering.
+    if (loading || loadingMore || error || normalizedPage >= totalPages || filteredMovies.length >= 12) return;
+    setLoadingMore(true);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(normalizedPage + 1));
+    if (!nextParams.get("view")) nextParams.set("view", normalizedView);
+    setSearchParams(nextParams);
+  }, [error, filteredMovies.length, loading, loadingMore, normalizedPage, normalizedView, searchParams, setSearchParams, totalPages]);
 
   const libraryRationale = useMemo(
     () => buildRecommendationRationale({ pickResult, activePick: pickResult?.primary, profile }),
