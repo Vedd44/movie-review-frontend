@@ -42,6 +42,7 @@ function ProfileMenu() {
       <button
         type="button"
         className="profile-menu-trigger"
+        aria-label="Your account"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}

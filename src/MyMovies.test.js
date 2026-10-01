@@ -1,0 +1,74 @@
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import MyMovies from "./MyMovies";
+import { TasteProfileProvider } from "./hooks/useTasteProfile";
+import { reelbotCloudService } from "./services/reelbotCloudService";
+import { tasteProfileService } from "./services/tasteProfileService";
+
+const mockUser = { id: "library-owner" };
+jest.mock("./context/AuthContext", () => ({ useAuth: () => ({ user: mockUser, authReady: true }), PENDING_SAVE_KEY: "pending-save" }));
+jest.mock("./context/AskReelbotContext", () => ({ useAskReelbotPageContext: jest.fn(), openAskReelbot: jest.fn() }));
+jest.mock("./seo", () => ({ usePageMetadata: jest.fn(), buildBreadcrumbJsonLd: jest.fn() }));
+jest.mock("./services/reelbotCloudService", () => ({ reelbotCloudService: {
+  isConfigured: true, getLocalProfileOwner: jest.fn(() => ""), clearLocalAccountCache: jest.fn(),
+  bootstrapUserState: jest.fn(), saveUserState: jest.fn(), activateLocalCache: jest.fn(),
+} }));
+
+const movie = { id: 23168, title: "The Town", release_date: "2010-09-15" };
+const snapshot = (profile) => ({ profile, interactions: [], homePickSession: null });
+const renderLibrary = () => render(
+  <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <TasteProfileProvider><MyMovies /></TasteProfileProvider>
+  </MemoryRouter>
+);
+const lists = () => within(screen.getByRole("group", { name: "Saved movie lists" }));
+const statuses = () => {
+  const card = screen.getByRole("article");
+  fireEvent.click(within(card).getByText("Manage"));
+  return within(card);
+};
+
+beforeEach(() => {
+  localStorage.clear();
+  jest.clearAllMocks();
+  let profile = tasteProfileService.toggleWatchlist(tasteProfileService.createEmptyProfile(), movie);
+  profile = tasteProfileService.toggleSeen(profile, movie);
+  reelbotCloudService.bootstrapUserState.mockResolvedValue(snapshot(profile));
+  reelbotCloudService.saveUserState.mockImplementation(async (id, next) => snapshot(next));
+});
+
+test("Manage shows both saved and watched states across lists and preserves Saved when unwatching", async () => {
+  renderLibrary();
+  await screen.findByText("Synced");
+  let menu = statuses();
+  expect(menu.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
+  expect(menu.getByRole("button", { name: "Watched" })).toHaveAttribute("aria-pressed", "true");
+  expect(menu.getByRole("button", { name: "Not for me" })).toHaveAttribute("aria-pressed", "false");
+  fireEvent.click(lists().getByRole("button", { name: "Watched" }));
+  menu = statuses();
+  expect(menu.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(menu.getByRole("button", { name: "Watched" }));
+  await screen.findByText("Nothing marked as watched yet.");
+  await screen.findByText("Synced");
+  fireEvent.click(lists().getByRole("button", { name: "Saved" }));
+  menu = statuses();
+  expect(menu.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
+  expect(menu.getByRole("button", { name: "Watched" })).toHaveAttribute("aria-pressed", "false");
+  expect(reelbotCloudService.saveUserState.mock.calls.at(-1)[1].watchlist).toHaveLength(1);
+});
+
+test("a pending mutation never claims Synced, and a failed mutation restores the movie with an error", async () => {
+  let rejectSave;
+  reelbotCloudService.saveUserState.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectSave = reject; }));
+  renderLibrary();
+  await screen.findByText("Synced");
+  fireEvent.click(statuses().getByRole("button", { name: "Saved" }));
+  await screen.findByText("Syncing…");
+  expect(screen.queryByText("Synced")).not.toBeInTheDocument();
+  await waitFor(() => expect(rejectSave).toBeDefined());
+  await act(async () => { rejectSave(new Error("Could not save. Try again.")); });
+  expect(await screen.findByRole("heading", { name: "The Town" })).toBeInTheDocument();
+  expect(screen.getByText("Sync unavailable")).toBeInTheDocument();
+  expect(screen.getByText("Could not save. Try again.")).toBeInTheDocument();
+  expect(screen.queryByText("Synced")).not.toBeInTheDocument();
+});

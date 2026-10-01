@@ -9,24 +9,8 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { getSupabaseClient } from "./lib/supabaseClient";
 import { usePageMetadata } from "./seo";
+import { formatAdminDate as fmt, adminTimeAgo as ago } from "./adminTime";
 import "./App.css";
-const fmt = (v) =>
-  v
-    ? new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      }).format(new Date(v))
-    : "—";
-const ago = (v) => {
-  if (!v) return "Never";
-  const m = Math.max(0, Math.floor((Date.now() - new Date(v)) / 60000));
-  if (m < 60) return m < 2 ? "Just now" : m + "m ago";
-  const h = Math.floor(m / 60);
-  return h < 48 ? h + "h ago" : Math.floor(h / 24) + "d ago";
-};
 export default function AdminPanel() {
   const { user, authReady } = useAuth();
   const [data, setData] = useState(null),
@@ -212,7 +196,7 @@ export default function AdminPanel() {
                       <strong>{x.display_name || x.email}</strong>
                       <small>{x.email}</small>
                     </div>
-                    <time>{ago(x.last_sign_in_at)}</time>
+                    <time dateTime={x.last_sign_in_at} title={fmt(x.last_sign_in_at)}>{ago(x.last_sign_in_at)}</time>
                   </div>
                 ))}
               </section>
@@ -234,7 +218,7 @@ export default function AdminPanel() {
                       <strong>{x.label}</strong>
                       <small>{x.detail || x.email}</small>
                     </div>
-                    <time>{ago(x.created_at)}</time>
+                    <time dateTime={x.created_at} title={fmt(x.created_at)}>{ago(x.created_at)}</time>
                   </div>
                 ))}
               </section>
@@ -256,7 +240,7 @@ export default function AdminPanel() {
                 placeholder="Search email, name or UID"
               />
             </div>
-            <div className="admin-table-wrap">
+            <div className="admin-table-wrap" role="region" aria-label="User directory" tabIndex={0}>
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -344,7 +328,7 @@ export default function AdminPanel() {
                     <p>{x.detail || "ReelBot activity"}</p>
                     <small>{x.email || x.user_id}</small>
                   </div>
-                  <time>{fmt(x.created_at)}</time>
+                  <time dateTime={x.created_at}>{fmt(x.created_at)}</time>
                 </article>
               ))}
             </div>
@@ -369,7 +353,7 @@ export default function AdminPanel() {
                       <span className="admin-feedback-type">
                         {x.type || "feedback"}
                       </span>
-                      <time>{fmt(x.created_at)}</time>
+                      <time dateTime={x.created_at}>{fmt(x.created_at)}</time>
                     </div>
                     <p>{x.message}</p>
                     <small>{x.email || "No reply email"}</small>

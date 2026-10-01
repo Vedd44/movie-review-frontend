@@ -16210,7 +16210,7 @@ body,
   display:flex;
   align-items:center;
   justify-content:space-between;
-  min-height:38px;
+  min-height:44px;
   padding:0 12px;
   border:0;
   border-top:1px solid rgba(255,255,255,.055);
@@ -16239,7 +16239,7 @@ body,
   z-index:8;
   left:0;
   right:0;
-  bottom:42px;
+  bottom:48px;
   display:grid;
   gap:2px;
   padding:7px;
@@ -16248,6 +16248,7 @@ body,
   background:#101722;
   box-shadow:0 14px 36px rgba(0,0,0,.38);
 }
+.my-movies-page .saved-movie-status-menu { width:100%; }
 .saved-movie-status-heading {
   padding:5px 8px 7px;
   color:rgba(245,240,231,.4);
@@ -16257,8 +16258,11 @@ body,
   text-transform:uppercase;
 }
 .saved-movie-status-popover button {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
   width:100%;
-  min-height:34px;
+  min-height:44px;
   padding:7px 9px;
   border:0;
   border-radius:8px;
@@ -16268,7 +16272,10 @@ body,
   font-size:.76rem;
   text-align:left;
   cursor:pointer;
+  box-shadow:none;
+  transform:none;
 }
+.saved-movie-status-menu summary:focus-visible { outline:2px solid #e5b64f; outline-offset:2px; }
 .saved-movie-status-popover button:hover { background:rgba(255,255,255,.05); color:#fff; }
 .saved-movie-status-popover button.is-active {
   color:#f3c66f;
@@ -20535,6 +20542,16 @@ body,
 .reelbot-inline-button--solid{box-shadow:none!important}.account-settings-card{padding:24px!important}.account-settings-password,.account-settings-danger{border-color:rgba(255,255,255,.07)!important}
 .detail-hero{border-radius:16px!important;box-shadow:none!important}.detail-info-card{border-radius:14px!important}.detail-fact-item,.detail-compact-fact,.review-split-card,.similar-card{background:#0d141d!important;border-color:rgba(255,255,255,.065)!important;border-radius:10px!important}
 .admin-user-action{border:1px solid rgba(255,255,255,.12);background:#111923;color:#dfe6ee;border-radius:8px;padding:7px 10px;cursor:pointer}.admin-owner-badge{font-size:.7rem;font-weight:800;color:#d9b65e}.admin-table{min-width:1040px}
+.admin-tabs button,.admin-refresh,.admin-card-head button,.admin-user-action{min-height:44px}
+.admin-card--full>.detail-secondary-text{padding:0 20px}
+.admin-table-wrap:focus-visible{outline:2px solid var(--rb-ui-gold);outline-offset:-2px}
+@media(max-width:560px){
+  .admin-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}
+  .admin-tabs button{padding:8px 4px;font-size:.78rem}
+  .admin-activity-feed article{grid-template-columns:10px minmax(0,1fr)}
+  .admin-activity-feed time{grid-column:2}
+  .admin-activity-feed small,.admin-feedback-grid small{overflow-wrap:anywhere}
+}
 @media(max-width:720px){.browse-page .browse-hero,.account-page .browse-hero--solo,.my-movies-page .browse-hero--solo{padding:22px 0 18px}.my-movies-page .my-movies-hero{display:block}.my-movies-page .my-movies-taste-summary{margin-top:22px;padding:16px 0 0;border-left:0;border-top:1px solid rgba(255,255,255,.07);justify-items:start}.my-movies-page .my-movies-taste-values{justify-content:flex-start}.saved-movies-shell>.section-header{padding:18px 18px 8px}.saved-movie-tabs{padding:0 18px 12px;overflow-x:auto}.saved-movies-tab-copy{padding:13px 18px 8px}.saved-movie-list{padding:0 18px 20px}}
 
 

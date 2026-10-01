@@ -75,7 +75,7 @@ const normalizeSavedMovie = (movie = {}) => ({
 function MyMovies() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, openAuthPrompt } = useAuth();
-  const { profile, actions, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
+  const { profile, actions, getMovieState, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
   const activeTab = TAB_CONFIG.some((tab) => tab.id === searchParams.get("tab")) ? searchParams.get("tab") : "watchlist";
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) || TAB_CONFIG[0];
 
@@ -183,19 +183,19 @@ function MyMovies() {
             <div>
               <h2 className="section-title">Movies</h2>
             </div>
-            <div className="saved-movies-sync-status">
-              <span>{isUsingCloudProfile ? "Synced" : "Saved in this browser"}</span>
-              {isCloudSyncing ? <span>Saving…</span> : null}
+            <div className="saved-movies-sync-status" role="status">
+              <span>{isCloudSyncing ? "Syncing…" : cloudSyncError ? "Sync unavailable" : isUsingCloudProfile ? "Synced" : "Saved in this browser"}</span>
             </div>
           </div>
           {cloudSyncError ? <p className="error-message my-movies-sync-error">{cloudSyncError}</p> : null}
 
-          <div className="tabs saved-movie-tabs" role="tablist" aria-label="Saved movie lists">
+          <div className="tabs saved-movie-tabs" role="group" aria-label="Saved movie lists">
             {TAB_CONFIG.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 className={activeTab === tab.id ? "active" : ""}
+                aria-pressed={activeTab === tab.id}
                 onClick={() => setSearchParams({ tab: tab.id })}
               >
                 {tab.label}
@@ -212,7 +212,9 @@ function MyMovies() {
 
           {savedMovies.length ? (
             <div className="movie-list saved-movie-list">
-              {savedMovies.map((movie) => (
+              {savedMovies.map((movie) => {
+                const movieState = getMovieState(movie.id);
+                return (
                 <article key={`${activeTab}-${movie.id}`} className="movie-card saved-movie-card">
                   <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
                     {movie.poster_path ? (
@@ -249,15 +251,32 @@ function MyMovies() {
                         <summary><span>Manage</span><span className="saved-movie-status-chevron" aria-hidden="true">⌄</span></summary>
                         <div className="saved-movie-status-popover">
                           <span className="saved-movie-status-heading">Movie status</span>
-                          <button type="button" className={activeTab === "watchlist" ? "is-active" : ""} onClick={() => actions.toggleWatchlist(movie)}>Saved</button>
-                          <button type="button" className={activeTab === "seen" ? "is-active" : ""} onClick={() => actions.toggleSeen(movie)}>Watched</button>
-                          <button type="button" className={activeTab === "hidden" ? "is-active" : ""} onClick={() => actions.toggleSkipped(movie)}>Not for me</button>
+                          {[
+                            { label: "Saved", active: movieState.inWatchlist, toggle: actions.toggleWatchlist },
+                            { label: "Watched", active: movieState.seen, toggle: actions.toggleSeen },
+                            { label: "Not for me", active: movieState.skipped, toggle: actions.toggleSkipped },
+                          ].map(({ label, active, toggle }) => (
+                            <button
+                              key={label}
+                              type="button"
+                              className={active ? "is-active" : ""}
+                              aria-pressed={active}
+                              onClick={() => {
+                                // The shared profile rolls back and displays failed saves above.
+                                toggle(movie).catch(() => {});
+                              }}
+                            >
+                              <span>{label}</span>
+                              <span aria-hidden="true">{active ? "✓" : ""}</span>
+                            </button>
+                          ))}
                         </div>
                       </details>
                     </div>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="empty-state saved-movie-empty-state">
