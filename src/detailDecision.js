@@ -299,9 +299,18 @@ const buildReelbotTake = ({ movie, recommendationContext = null, genericTake = n
     && recommendationContext?.intent
     && String(recommendationContext?.prompt || "").trim()
   );
-  const content = hasReliableProvenance
+  const movieSpecificTake = normalizeTake(genericTake);
+  const recommendationTake = hasReliableProvenance
     ? buildRecommendationTake(movie, recommendationContext)
-    : normalizeTake(genericTake) || buildLocalTakeFallback(movie);
+    : null;
+
+  // A recommendation explains why ReelBot surfaced the movie, but it should
+  // not replace the richer movie-specific editorial read. Prefer the dedicated
+  // take whenever it is available and retain provenance through the heading
+  // and the recommendation context elsewhere on the page.
+  const content = movieSpecificTake
+    || recommendationTake
+    || buildLocalTakeFallback(movie);
 
   return {
     heading: hasReliableProvenance ? "Why ReelBot Picked This" : "ReelBot’s Take",
