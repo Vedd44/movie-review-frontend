@@ -69,6 +69,7 @@ function PickResultPanel({
   );
   const reelbotPickLinkState = (movie) => ({ ...getRecommendationMovieState(movie), restorePickSession: true });
   const hasPrimaryMovie = Boolean(primaryMovie);
+  const isActivePickLoading = hasPrimaryMovie && (loading || panelStatus === "loading_swap");
   const shouldShowStandaloneLoading = loading && !hasPrimaryMovie;
   const shouldShowFallbackState = !hasPrimaryMovie && (panelStatus === "exhausted" || panelStatus === "error");
   const shouldShowInlineRecovery = hasPrimaryMovie && Boolean(recoveryTitle || recoveryMessage);
@@ -92,6 +93,15 @@ function PickResultPanel({
 
       {hasPrimaryMovie ? (
         <>
+          {isActivePickLoading ? (
+            <div className="reelbot-loading-state pick-active-loading-state" role="status" aria-live="polite">
+              <span className="reelbot-loading-dot" aria-hidden="true"></span>
+              <div className="reelbot-loading-copy">
+                <p className="reelbot-loading-title">{refineStatusLabel || recoveryMessage || "Finding your next pick…"}</p>
+                <p className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></p>
+              </div>
+            </div>
+          ) : null}
           <article className="pick-primary-card pick-primary-card--hero">
             <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="pick-primary-poster-link">
               {primaryMovie.poster_path ? (
@@ -187,12 +197,7 @@ function PickResultPanel({
                           </button>
                         ))}
                       </div>
-                      {refineStatusLabel ? (
-                        <div className="pick-refine-status detail-secondary-text">
-                          <div>Finding your pick…</div>
-                          {loading ? <div className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></div> : null}
-                        </div>
-                      ) : null}
+
                     </div>
                   ) : null}
                 </div>
