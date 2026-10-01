@@ -182,7 +182,7 @@ function MobileBottomNav() {
         aria-label="Ask ReelBot about this page"
       >
         <span className="mobile-ask-launcher-mark" aria-hidden="true">R</span>
-        <span className="mobile-ask-launcher-label">Find a pick</span>
+        <span className="mobile-ask-launcher-label">{assistantLabel}</span>
       </button>
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
         {items.map((item) => (
