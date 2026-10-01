@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL, getMoviePath, getReleaseYear } from "../discovery";
@@ -171,7 +172,7 @@ function GlobalMovieSearch() {
         <span className="global-search-shortcut" aria-hidden="true">⌘K</span>
       </button>
 
-      {open ? (
+      {open ? createPortal(
         <div className="global-search-backdrop" role="presentation" onMouseDown={() => closeSearch()}>
           <section
             ref={panelRef}
@@ -236,7 +237,8 @@ function GlobalMovieSearch() {
             </div>
             {query.trim().length >= 2 ? <Link className="global-search-all" to={`/search?q=${encodeURIComponent(query.trim())}`} onClick={() => closeSearch(false)}>See all movie results</Link> : null}
           </section>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </>
   );

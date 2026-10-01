@@ -21,6 +21,17 @@ function open() {
   return screen.getByRole("combobox");
 }
 beforeEach(() => jest.clearAllMocks());
+test("search escapes the header containing block and restores keyboard focus", async () => {
+  render(<MemoryRouter><header style={{backdropFilter: "blur(12px)"}}><GlobalMovieSearch /></header></MemoryRouter>);
+  const trigger = screen.getByRole("button", { name: "Search movies" });
+  fireEvent.click(trigger);
+  const dialog = screen.getByRole("dialog", { name: "Movies & people" });
+  expect(dialog.closest("header")).toBeNull();
+  expect(dialog.parentElement.parentElement).toBe(document.body);
+  fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+  await waitFor(() => expect(trigger).toHaveFocus());
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
 test("partial person results work with keyboard selection", async () => {
   axios.get.mockResolvedValue({
     data: {
