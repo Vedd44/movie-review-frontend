@@ -196,6 +196,10 @@ function AskReelbotLayer() {
       setAnswerResult(null);
       setError("");
       trackProductEvent("ask_reelbot_opened", { page: window.location.pathname });
+      if (event.detail?.autoPick && contextRef.current?.page === "collection") {
+        const collection = contextRef.current.collection;
+        window.setTimeout(() => requestPick(collection?.prompt || `pick one movie from ${collection?.title || "this collection"}`), 0);
+      }
     };
     window.addEventListener("reelbot:open-ask", handleOpen);
     return () => window.removeEventListener("reelbot:open-ask", handleOpen);
