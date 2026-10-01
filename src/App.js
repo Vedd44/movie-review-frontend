@@ -177,8 +177,8 @@ function MobileBottomNav() {
         onClick={openAskReelBot}
         aria-label="Ask ReelBot about this page"
       >
-        <span className="mobile-ask-launcher-mark" aria-hidden="true">✦</span>
-        <span className="mobile-ask-launcher-label">Ask ReelBot</span>
+        <span className="mobile-ask-launcher-mark" aria-hidden="true">R</span>
+        <span className="mobile-ask-launcher-label">Find a pick</span>
       </button>
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
         {items.map((item) => (
