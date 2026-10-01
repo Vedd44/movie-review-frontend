@@ -147,6 +147,7 @@ function AskReelbotLayer() {
   const [turns, setTurns] = useState([]);
   const [pendingQuestion, setPendingQuestion] = useState("");
   const retryPrompt = useRef("");
+  const returnFocusRef = useRef(null);
   const conversationEnd = useRef(null);
   const requestController = useRef(null);
   const requestVersion = useRef(0);
@@ -191,6 +192,7 @@ function AskReelbotLayer() {
 
   useEffect(() => {
     const handleOpen = (event) => {
+      returnFocusRef.current = document.activeElement;
       requestController.current?.abort();
       requestVersion.current += 1;
       setLoading(false);
@@ -218,7 +220,7 @@ function AskReelbotLayer() {
   useEffect(() => {
     if (!open) return undefined;
     const previousOverflow = document.body.style.overflow;
-    const triggerElement = triggerRef.current;
+    const triggerElement = returnFocusRef.current || triggerRef.current;
     const handleEscape = (event) => {
       if (event.key === "Escape") { requestController.current?.abort(); requestVersion.current += 1; setLoading(false); setOpen(false); }
       if (event.key !== "Tab" || !sheetRef.current) return;
@@ -236,11 +238,12 @@ function AskReelbotLayer() {
     };
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleEscape);
-    window.setTimeout(() => inputRef.current?.focus(), 120);
+    const focusTimer = window.setTimeout(() => (inputRef.current || sheetRef.current?.querySelector("button"))?.focus(), 120);
     return () => {
+      window.clearTimeout(focusTimer);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleEscape);
-      window.setTimeout(() => triggerElement?.focus(), 0);
+      window.setTimeout(() => { if (triggerElement?.isConnected) triggerElement.focus({ preventScroll: true }); }, 0);
     };
   }, [open]);
 
@@ -386,6 +389,7 @@ function AskReelbotLayer() {
   }, [location.pathname]);
 
   const openPanel = () => {
+    returnFocusRef.current = document.activeElement;
     setConversation(createAskConversation(context));
     setLastTurn(null);
       setTurns([]);

@@ -267,7 +267,7 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .ask-reelbot-form button { flex-shrink: 0; min-width: 64px; padding: 10px 14px; border: 0; border-radius: 6px; background: var(--rb-gold); color: #201b10; font-size: .875rem; font-weight: 600; }
 .ask-reelbot-status { padding: 18px 0; margin: 0; border: 0; background: none; box-shadow: none; }
 .ask-reelbot-status--loading { color: var(--rb-muted); }
-.ask-reelbot-trigger { bottom: 24px; right: 24px; min-height: 48px; padding: 12px 20px; border: 1px solid #e9c46b66; border-radius: 8px; background: var(--rb-surface); color: var(--rb-gold); box-shadow: 0 6px 24px #0005; font-size: .875rem; }
+.ask-reelbot-trigger { z-index: 120; bottom: 24px; right: 24px; min-height: 48px; padding: 12px 20px; border: 1px solid #e9c46b66; border-radius: 8px; background: var(--rb-surface); color: var(--rb-gold); box-shadow: 0 6px 24px #0005; font-size: .875rem; }
 /* Search, account and operations share the same type and controls. */
 .global-search-panel { width: min(720px,100%); max-height: calc(100dvh - 56px); border: 1px solid var(--rb-line); border-radius: 12px; background: var(--rb-bg); box-shadow: 0 30px 90px #0008; padding: 24px; }
 .global-search-head h2 { font: 600 1.5rem/1.2 var(--rb-sans); }

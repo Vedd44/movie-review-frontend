@@ -168,3 +168,14 @@ test("a failed question can be retried without losing its text", async () => {
   expect(axios.post.mock.calls[1][1].prompt).toBe("Is it suitable for teens?");
   expect(await screen.findByText("Sigourney Weaver stars in it.")).toBeInTheDocument();
 });
+
+
+test("Escape returns focus to the actual contextual launcher", async () => {
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotProvider><ContextRegistration context={{page:"movie_detail",movieId:679,movieTitle:"Aliens"}}/><button onClick={() => window.dispatchEvent(new CustomEvent("reelbot:open-ask"))}>Movie question</button><AskReelbotLayer/></AskReelbotProvider></MemoryRouter>);
+  const launcher = screen.getByRole('button',{name:'Movie question'});
+  launcher.focus(); fireEvent.click(launcher);
+  await waitFor(() => expect(screen.getByRole('textbox',{name:'Ask ReelBot'})).toHaveFocus());
+  fireEvent.keyDown(window,{key:'Escape'});
+  await waitFor(() => expect(launcher).toHaveFocus());
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
