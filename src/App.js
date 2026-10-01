@@ -63,7 +63,7 @@ function SiteHeader() {
   }, []);
 
   const navItems = [
-    { label: "Ask ReelBot", to: "/#pick-for-me", isActive: isAskReelbotActive },
+    { label: "Pick for me", to: "/#pick-for-me", isActive: isAskReelbotActive },
     { label: "Browse", to: "/browse", isActive: location.pathname === "/browse" },
     { label: "Collections", to: "/collections", isActive: location.pathname.startsWith("/collections") },
     { label: "My Movies", to: "/my-movies", isActive: location.pathname === "/my-movies" },
@@ -318,6 +318,10 @@ function AppShell() {
 
             .mobile-bottom-nav {
               position: relative !important;
+              left: auto !important;
+              right: auto !important;
+              top: auto !important;
+              bottom: auto !important;
               inset: auto !important;
               display: grid !important;
               grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
@@ -387,6 +391,69 @@ function AppShell() {
 
             .home-page .home-hero .pick-prompt-input {
               border-radius: 11px !important;
+            }
+
+            .site-header .site-auth-trigger {
+              display: none !important;
+            }
+
+            .reelbot-brand-logo {
+              width: 102px !important;
+              height: 40px !important;
+              transform: translateY(-3px);
+            }
+
+            .site-menu-toggle {
+              border-color: rgba(255,255,255,.09) !important;
+              background: rgba(12,18,28,.72) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+            }
+
+            .site-menu-toggle.is-open {
+              border-color: rgba(240,189,87,.2) !important;
+              background: rgba(17,22,31,.96) !important;
+            }
+
+            .site-nav-shell {
+              top: calc(100% + 8px) !important;
+              left: 8px !important;
+              right: 8px !important;
+              padding: 10px !important;
+              border: 1px solid rgba(255,255,255,.08) !important;
+              border-radius: 18px !important;
+              background: rgba(8,11,17,.985) !important;
+              box-shadow: 0 24px 70px rgba(0,0,0,.5) !important;
+              backdrop-filter: blur(24px);
+              -webkit-backdrop-filter: blur(24px);
+            }
+
+            .site-nav--mobile {
+              display: grid !important;
+              gap: 2px !important;
+            }
+
+            .site-nav--mobile .site-nav-link {
+              min-height: 48px;
+              padding: 0 14px !important;
+              border: 0 !important;
+              border-radius: 11px !important;
+              color: rgba(239,230,217,.68) !important;
+              background: transparent !important;
+              font-size: .92rem;
+              font-weight: 620;
+            }
+
+            .site-nav--mobile .site-nav-link.is-active {
+              color: #f3c76c !important;
+              background: rgba(240,189,87,.07) !important;
+            }
+
+            .site-nav--mobile .site-nav-account-link {
+              margin-top: 6px;
+              justify-content: center !important;
+              color: #171108 !important;
+              background: linear-gradient(135deg,#f2c55f,#dfa13d) !important;
+              font-weight: 750;
             }
           }
 
