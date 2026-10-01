@@ -160,6 +160,7 @@ function AskReelbotLayer() {
   const config = useMemo(() => getPanelConfig(context), [context]);
   const [conversation, setConversation] = useState(() => createAskConversation(pageContext || fallbackContext));
   const contextRef = useRef(context);
+  const requestPickRef = useRef(null);
   const previousContextRef = useRef(context);
   contextRef.current = context;
 
@@ -198,7 +199,7 @@ function AskReelbotLayer() {
       trackProductEvent("ask_reelbot_opened", { page: window.location.pathname });
       if (event.detail?.autoPick && contextRef.current?.page === "collection") {
         const collection = contextRef.current.collection;
-        window.setTimeout(() => requestPick(collection?.prompt || `pick one movie from ${collection?.title || "this collection"}`), 0);
+        window.setTimeout(() => requestPickRef.current?.(collection?.prompt || `pick one movie from ${collection?.title || "this collection"}`), 0);
       }
     };
     window.addEventListener("reelbot:open-ask", handleOpen);
@@ -335,7 +336,7 @@ function AskReelbotLayer() {
     return () => { cancelled = true; };
   }, [result?.primary]);
 
-  const submitDraft = (event) => {
+  requestPickRef.current = requestPick;\n\n  const submitDraft = (event) => {
     event?.preventDefault();
     requestPick(draft);
   };
