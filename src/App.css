@@ -21279,3 +21279,43 @@ body,
     font-size: .86rem !important;
   }
 }
+
+
+/* Mobile assistant sheet: keep the complete decision flow above browser chrome and the nav dock. */
+@media only screen and (max-width: 900px) {
+  .ask-reelbot-backdrop {
+    box-sizing: border-box !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 12px 12px calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+  .ask-reelbot-sheet {
+    width: 100% !important;
+    max-width: 560px !important;
+    max-height: calc(100dvh - 108px - env(safe-area-inset-bottom)) !important;
+    margin: 0 !important;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+  }
+  .ask-reelbot-sheet-head {
+    flex: 0 0 auto;
+  }
+  .ask-reelbot-start,
+  .ask-reelbot-answer {
+    overscroll-behavior: contain;
+  }
+  .reelbot-assistant-label {
+    letter-spacing: .11em;
+  }
+}
+@media only screen and (max-width: 430px) {
+  .ask-reelbot-backdrop {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+  }
+  .ask-reelbot-sheet {
+    max-height: calc(100dvh - 92px - env(safe-area-inset-bottom)) !important;
+    border-radius: 20px !important;
+  }
+}
