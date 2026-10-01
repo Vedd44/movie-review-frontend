@@ -212,7 +212,7 @@ export default function CollectionPage() {
           </button>
         </section>
         {loading ? (
-          <div className="loading-message"><span className="status-glyph" aria-hidden="true"></span><span>Building this collection...</span></div>
+          <div className="loading-message"><span className="status-glyph" aria-hidden="true"></span><span>Loading collection...</span></div>
         ) : (
           <div className="movie-list collection-movie-list">
             {movies.map((movie) => <CollectionCard key={movie.id} movie={movie} />)}

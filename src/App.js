@@ -175,7 +175,7 @@ function MobileBottomNav() {
 
   return (
     <div className={`mobile-bottom-dock${pastHero ? " is-visible" : " is-hero-hidden"}`}>
-      <button
+      {location.pathname !== "/" ? <button
         type="button"
         className="mobile-ask-launcher"
         onClick={openAskReelBot}
@@ -183,7 +183,7 @@ function MobileBottomNav() {
       >
         <img className="mobile-ask-launcher-mark" src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="15" height="18" />
         <span className="mobile-ask-launcher-label">{assistantLabel}</span>
-      </button>
+      </button> : null}
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
         {items.map((item) => (
           <NavLink key={item.label} to={item.to} className={"mobile-bottom-nav-item" + (item.active ? " is-active" : "")}>
