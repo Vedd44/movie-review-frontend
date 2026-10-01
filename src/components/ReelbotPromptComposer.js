@@ -21,19 +21,20 @@ function ReelbotPromptComposer({
   const inputShellRef = useRef(null);
 
   const handleSuggestionClick = (prompt) => {
+    // Choosing a suggestion should fill the field without summoning a software keyboard.
+    inputRef.current?.blur();
     onSuggestionSelect?.(prompt);
 
     window.requestAnimationFrame(() => {
       if (window.matchMedia("(max-width: 720px)").matches) {
         inputShellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
-
-      if (inputRef.current) {
-        inputRef.current.focus();
-        const nextLength = prompt.length;
-        inputRef.current.setSelectionRange(nextLength, nextLength);
-      }
     });
+  };
+
+  const handleClear = () => {
+    onInputChange?.("");
+    inputRef.current?.blur();
   };
 
   const handleInputChange = (event) => {
@@ -60,6 +61,17 @@ function ReelbotPromptComposer({
           aria-invalid={errorText ? "true" : "false"}
           aria-describedby={errorText ? "pick-prompt-validation" : undefined}
         />
+        {value ? (
+          <button
+            type="button"
+            className="pick-prompt-clear"
+            aria-label="Clear prompt"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleClear}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        ) : null}
       </div>
       {suggestions.length ? (
         <div className="pick-prompt-suggestions">
