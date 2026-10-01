@@ -4,6 +4,7 @@ const sharp = require("sharp");
 
 const API = "https://movie-review-backend-zevb.onrender.com";
 const OUT = path.join(process.cwd(), "public", "social", "collections");
+const MANIFEST_OUT = path.join(process.cwd(), "src", "generatedCollectionMovies.json");
 const source = fs.readFileSync(path.join(process.cwd(), "src", "collections.js"), "utf8");
 
 function collectionsFromSource() {
@@ -23,11 +24,20 @@ async function fetchWithTimeout(url, ms = 12000) {
   finally { clearTimeout(timer); }
 }
 
+const movieCache = new Map();
+async function resolveMovie(slug) {
+  if (!movieCache.has(slug)) movieCache.set(slug, (async () => {
+    try {
+      const res = await fetchWithTimeout(`${API}/movies/resolve/${encodeURIComponent(slug)}`);
+      return res.ok ? await res.json() : null;
+    } catch { return null; }
+  })());
+  return movieCache.get(slug);
+}
+
 async function posterFor(slug) {
   try {
-    const movieRes = await fetchWithTimeout(`${API}/movies/resolve/${encodeURIComponent(slug)}`);
-    if (!movieRes.ok) return null;
-    const movie = await movieRes.json();
+    const movie = await resolveMovie(slug);
     if (!movie.poster_path) return null;
     const imageRes = await fetchWithTimeout(`https://image.tmdb.org/t/p/original${movie.poster_path}`);
     return imageRes.ok ? Buffer.from(await imageRes.arrayBuffer()) : null;
@@ -96,6 +106,11 @@ async function render(collection) {
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const collections = collectionsFromSource();
+  const uniqueSlugs = [...new Set(collections.flatMap((collection) => collection.movies))];
+  const resolved = await Promise.all(uniqueSlugs.map(async (slug) => [slug, await resolveMovie(slug)]));
+  const manifest = Object.fromEntries(resolved.filter(([, movie]) => movie?.id).map(([slug, movie]) => [slug, movie]));
+  fs.writeFileSync(MANIFEST_OUT, JSON.stringify(manifest));
+  console.log(`Collection manifest: ${Object.keys(manifest).length}/${uniqueSlugs.length} movies resolved.`);
   for (const collection of collections) await render(collection);
   console.log(`Generated ${collections.length} collection OG images.`);
 }
