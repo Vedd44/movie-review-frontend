@@ -345,7 +345,7 @@ function AskReelbotLayer() {
   const loadingCopy = getAskLoadingCopy(loadingIntent);
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
   const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
-  const triggerLabel = isCollection ? "Pick for me" : "Ask ReelBot";
+  const triggerLabel = isCollection ? "Find a pick" : "Ask ReelBot";
   const [pastHomeHero, setPastHomeHero] = useState(location.pathname !== "/");
 
   useEffect(() => {
@@ -381,7 +381,7 @@ function AskReelbotLayer() {
           <section ref={sheetRef} className="ask-reelbot-sheet" role="dialog" aria-modal="true" aria-labelledby="ask-reelbot-sheet-title" onMouseDown={(event) => event.stopPropagation()}>
             <header className="ask-reelbot-sheet-head">
               <div>
-                <div className="detail-description-label reelbot-assistant-label"><img src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="20" height="24" />Decision Helper</div>
+                <div className="detail-description-label reelbot-assistant-label"><img src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="20" height="24" />{isCollection ? "ReelBot Collection Pick" : "Ask ReelBot"}</div>
                 <h2 id="ask-reelbot-sheet-title">{config.heading}</h2>
                 {!result && !answerResult ? <p>{config.prompt}</p> : null}
               </div>
