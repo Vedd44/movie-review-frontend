@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import MovieCardMeta from "./components/MovieCardMeta";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import ReelbotSignatureStrip from "./components/ReelbotSignatureStrip";
@@ -19,7 +20,6 @@ import {
   VIEW_OPTIONS,
   formatMovieDate,
   getMoviePath,
-  getReleaseYear,
   getViewLabel,
 } from "./discovery";
 import { passesSignalFloor } from "./movieSignals";
@@ -470,9 +470,10 @@ function BrowseLibrary() {
   );
 
   usePageMetadata({
-    title: "Browse Movies | ReelBot",
+    title: normalizedPage > 1 ? `Browse Movies — Page ${normalizedPage} | ReelBot` : "Browse Movies | ReelBot",
     description: "Browse movies currently playing, trending, and coming soon, then ask ReelBot to narrow the choice.",
-    path: "/browse",
+    path: normalizedPage > 1 && normalizedMood === "all" && normalizedGenre === "all" && normalizedRuntime === "any" && normalizedView === "popular" ? `/browse?page=${normalizedPage}` : "/browse",
+    robots: normalizedMood !== "all" || normalizedGenre !== "all" || normalizedRuntime !== "any" || normalizedView !== "popular" ? "noindex,follow" : "index,follow",
     structuredData: browseStructuredData,
   });
 
@@ -493,7 +494,7 @@ function BrowseLibrary() {
             </div>
             <div className="tabs browse-tabs browse-tabs--library">
               {BROWSE_VIEW_OPTIONS.map((option) => (
-                <button key={option.id} type="button" className={normalizedView === option.id ? "active" : ""} onClick={() => updateFilters({ view: option.id })}>
+                <button key={option.id} type="button" aria-pressed={normalizedView === option.id} className={normalizedView === option.id ? "active" : ""} onClick={() => updateFilters({ view: option.id })}>
                   {option.label}
                 </button>
               ))}
@@ -504,7 +505,7 @@ function BrowseLibrary() {
             <div className="filter-group-head"><div className="detail-description-label">What are you in the mood for?</div></div>
             <div className="mood-chip-row browse-filter-chips--desktop">
               {MOOD_FILTERS.map((filter) => (
-                <button key={filter.id} type="button" className={`mood-rail-chip${normalizedMood === filter.id ? " is-active" : ""}`} onClick={() => updateFilters({ mood: filter.id })}>
+                <button key={filter.id} type="button" aria-pressed={normalizedMood === filter.id} className={`mood-rail-chip${normalizedMood === filter.id ? " is-active" : ""}`} onClick={() => updateFilters({ mood: filter.id })}>
                   <span className="mood-rail-chip-label">{filter.label}</span>
                 </button>
               ))}
@@ -553,7 +554,7 @@ function BrowseLibrary() {
             <h2 className="section-title">Library Results</h2>
           </div>
           <div className="library-results-actions">
-            <div className="results-count">{filteredMovies.length} movies</div>
+            <div className="results-count" role="status">{loading ? "Loading movies…" : `${filteredMovies.length} movies`}</div>
             <button type="button" className="browse-library-link browse-library-link--button" onClick={() => setShowReelbotPicker((current) => !current)} aria-expanded={showReelbotPicker} aria-controls="library-reelbot-picker">
               Ask ReelBot to pick one <span aria-hidden="true">→</span>
             </button>
@@ -671,23 +672,21 @@ function BrowseLibrary() {
                   </div>
 
                   <div className="movie-card-content">
-                    <div className="movie-card-meta">
-                      <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-                      {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                    <MovieCardMeta movie={movie}>
                       {shouldShowAvailabilityChip(getAvailabilityStatus(movie)) ? (
                         <span className="movie-card-chip movie-card-chip--availability">{getAvailabilityStatus(movie).label}</span>
                       ) : null}
                       {seenMovieIds.has(movie.id) ? (
                         <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
                       ) : null}
-                    </div>
+                    </MovieCardMeta>
 
                     <h3 className="movie-card-title">
                       <Link to={getMoviePath(movie)} className="movie-title-link">
                         {movie.title}
                       </Link>
                     </h3>
-                    <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
+                    {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
 
                     <div className="movie-card-actions-row">
                       <Link to={getMoviePath(movie)} className="card-link">
@@ -708,13 +707,15 @@ function BrowseLibrary() {
 
         {normalizedPage < totalPages ? (
           <div className="browse-load-more">
-            <button type="button" className="reelbot-inline-button" onClick={() => {
+            <Link to={`?${new URLSearchParams({ ...Object.fromEntries(searchParams), page: String(normalizedPage + 1) })}`} className="reelbot-inline-button" rel="next" aria-disabled={loading || loadingMore} onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
               if (loading || loadingMore) return;
               setLoadingMore(true);
               updateFilters({ page: normalizedPage + 1 });
-            }} disabled={loading || loadingMore}>
+            }}>
               {loadingMore ? "Loading more…" : "Load more"}
-            </button>
+            </Link>
           </div>
         ) : null}
       </div>

@@ -40,9 +40,9 @@ beforeEach(() => {
 test("clears the homepage picker after accepting a prompt while preserving the request prompt", async () => {
   render(<MemoryRouter><Home /></MemoryRouter>);
 
-  const input = await screen.findByPlaceholderText(/smart thriller under two hours/i);
+  const input = await screen.findByPlaceholderText(/something fun and stupid/i);
   fireEvent.change(input, { target: { value: "Under 100 minutes" } });
-  fireEvent.click(screen.getByRole("button", { name: "Get a pick" }));
+  fireEvent.click(screen.getByRole("button", { name: "Find my movie" }));
 
   await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
     expect.stringContaining("/reelbot/pick"),
@@ -55,11 +55,19 @@ test("clears the homepage picker after accepting a prompt while preserving the r
 test("does not clear an invalid homepage prompt", async () => {
   render(<MemoryRouter><Home /></MemoryRouter>);
 
-  const input = await screen.findByPlaceholderText(/smart thriller under two hours/i);
+  const input = await screen.findByPlaceholderText(/something fun and stupid/i);
   fireEvent.change(input, { target: { value: "   " } });
-  fireEvent.click(screen.getByRole("button", { name: "Get a pick" }));
+  fireEvent.click(screen.getByRole("button", { name: "Find my movie" }));
 
   expect(input).toHaveValue("   ");
   expect(screen.getByRole("alert")).toHaveTextContent(/Enter a vibe/i);
   expect(axios.post).not.toHaveBeenCalledWith(expect.stringContaining("/reelbot/pick"), expect.anything(), expect.anything());
+});
+
+test('a feed route starts with its own heading and exposes crawlable pagination', async()=>{
+  axios.get.mockResolvedValue({data:{results:[{id:1,title:'Arrival',release_date:'2016-11-10'}],total_pages:3}});
+  render(<MemoryRouter initialEntries={['/trending']}><Home routeView="popular" isFeedRoute/></MemoryRouter>);
+  expect(await screen.findByRole('heading',{level:1,name:'Trending This Week'})).toBeInTheDocument();
+  expect(screen.queryByRole('heading',{name:'What should I watch?'})).not.toBeInTheDocument();
+  expect(await screen.findByRole('link',{name:'Next →'})).toHaveAttribute('href','/trending?page=2');
 });

@@ -1,48 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import CollectionPreviewCard from "./components/CollectionPreviewCard";
+import NotFound from "./NotFound";
+import MovieCardMeta from "./components/MovieCardMeta";
 import { COLLECTIONS, COLLECTION_CATEGORIES, getCollection } from "./collections";
-import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
+import { API_BASE_URL, formatMovieDate, getMoviePath } from "./discovery";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { trackProductEvent } from "./analytics";
 import collectionMovieManifest from "./generatedCollectionMovies.json";
-
-export function CollectionPreviewCard({ collection, compact = false }) {
-  const [previewMovies, setPreviewMovies] = useState([]);
-  useEffect(() => {
-    let cancelled = false;
-    const slugs = collection.movies.slice(0, 3);
-    const cached = slugs.map((slug) => collectionMovieManifest[slug]).filter((movie) => movie?.poster_path);
-    if (cached.length === slugs.length) {
-      setPreviewMovies(cached);
-      return () => { cancelled = true; };
-    }
-    Promise.allSettled(slugs.map((slug) => collectionMovieManifest[slug] ? Promise.resolve({ data: collectionMovieManifest[slug] }) : axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
-      .then((results) => {
-        if (cancelled) return;
-        setPreviewMovies(results.filter((result) => result.status === "fulfilled" && result.value?.data?.poster_path).map((result) => result.value.data));
-      });
-    return () => { cancelled = true; };
-  }, [collection]);
-  return (
-    <Link to={`/collections/${collection.slug}`} className={`collection-preview-card${compact ? " collection-preview-card--compact" : ""}`}>
-      <div className="collection-preview-posters" aria-hidden="true">
-        {previewMovies.map((movie, index) => (
-          <img key={movie.id} src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`} alt="" className={`collection-preview-poster collection-preview-poster--${index + 1}`} width="300" height="450" loading="lazy" decoding="async" />
-        ))}
-        <span className="collection-preview-shade"></span>
-      </div>
-      <div className="collection-preview-copy">
-        <span className="detail-description-label">{collection.eyebrow}</span>
-        <h2>{collection.title}</h2>
-        {!compact ? <p>{collection.description}</p> : null}
-        <span className="collection-preview-cta">Explore collection <span aria-hidden="true">→</span></span>
-      </div>
-    </Link>
-  );
-}
 
 function CollectionCard({ movie }) {
   return (
@@ -50,17 +18,14 @@ function CollectionCard({ movie }) {
       <div className="movie-poster-shell">
         <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
           {movie.poster_path ? (
-            <img src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`} alt={movie.title} className="movie-poster" width="300" height="450" loading="lazy" decoding="async" />
+            <img src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt={movie.title} className="movie-poster" width="300" height="450" loading="lazy" decoding="async" />
           ) : <div className="no-poster">Poster unavailable</div>}
         </Link>
       </div>
       <div className="movie-card-content">
-        <div className="movie-card-meta">
-          <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-          {movie.vote_average ? <span className="movie-card-chip">TMDB {Number(movie.vote_average).toFixed(1)}</span> : null}
-        </div>
+        <MovieCardMeta movie={movie} />
         <h2 className="movie-card-title"><Link to={getMoviePath(movie)} className="movie-title-link">{movie.title}</Link></h2>
-        <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
+        {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
       </div>
     </article>
   );
@@ -68,13 +33,11 @@ function CollectionCard({ movie }) {
 
 export function CollectionsIndex() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [visibleCount, setVisibleCount] = useState(12);
 
   const filteredCollections = useMemo(() => COLLECTIONS.filter((collection) =>
     activeCategory === "All" || collection.categories?.includes(activeCategory)
   ), [activeCategory]);
 
-  useEffect(() => { setVisibleCount(12); }, [activeCategory]);
 
   const structuredData = useMemo(() => [
     buildBreadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Collections", path: "/collections" }]),
@@ -100,7 +63,7 @@ export function CollectionsIndex() {
           <div className="collections-filter-row">
             <div className="collections-filter-chips" role="group" aria-label="Filter collections">
               {COLLECTION_CATEGORIES.map((category) => (
-                <button key={category} type="button" className={`collections-filter-chip${activeCategory === category ? " is-active" : ""}`} onClick={() => setActiveCategory(category)}>
+                <button key={category} type="button" aria-pressed={activeCategory === category} className={`collections-filter-chip${activeCategory === category ? " is-active" : ""}`} onClick={() => setActiveCategory(category)}>
                   {category}
                 </button>
               ))}
@@ -109,13 +72,9 @@ export function CollectionsIndex() {
           <p className="collections-result-count">{filteredCollections.length} {filteredCollections.length === 1 ? "collection" : "collections"}</p>
         </section>
         <div className="collections-index-grid">
-          {filteredCollections.slice(0, visibleCount).map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} />)}
+          {filteredCollections.map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} />)}
         </div>
-        {visibleCount < filteredCollections.length ? (
-          <div className="collections-load-more-row">
-            <button type="button" className="browse-library-link collections-load-more" onClick={() => setVisibleCount((count) => count + 12)}>Load more collections</button>
-          </div>
-        ) : null}
+
       </div>
     </div>
   );
@@ -126,11 +85,13 @@ export default function CollectionPage() {
   const collection = getCollection(collectionSlug);
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [shareStatus, setShareStatus] = useState("");
 
   useEffect(() => {
     if (!collection) return;
     let cancelled = false;
     setLoading(true);
+    setMovies([]);
     const slugs = collection.movies.filter((slug) => slug !== collection.anchorMovie);
     Promise.allSettled(slugs.map((slug) => collectionMovieManifest[slug] ? Promise.resolve({ data: collectionMovieManifest[slug] }) : axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
       .then((results) => {
@@ -151,8 +112,9 @@ export default function CollectionPage() {
   ].filter(Boolean) : [], [collection, movies]);
 
   usePageMetadata({
-    title: collection ? `${collection.title} | ReelBot` : "Movie Collections | ReelBot",
+    title: collection ? `${collection.title} | ReelBot Collections` : "Movie Collections | ReelBot",
     description: collection?.description,
+    image: collection ? `/social/collections/${collection.slug}-v3.jpg` : undefined,
     path: collection ? `/collections/${collection.slug}` : "/collections",
     robots: collection ? "index,follow" : "noindex,follow",
     structuredData,
@@ -175,7 +137,7 @@ export default function CollectionPage() {
   }, [collection]);
 
   const shareCollection = async () => {
-    const url = window.location.href;
+    const url = `${window.location.origin}/collections/${collection.slug}`;
     const shareData = { title: collection.title, text: collection.description, url };
     try {
       if (navigator.share) {
@@ -183,6 +145,7 @@ export default function CollectionPage() {
         trackProductEvent("collection_shared", { collection: collection.slug, method: "native" });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
+        setShareStatus("Link copied");
         trackProductEvent("collection_shared", { collection: collection.slug, method: "clipboard" });
       }
     } catch (shareError) {
@@ -197,7 +160,7 @@ export default function CollectionPage() {
   }) : null, [collection, movies]);
   useAskReelbotPageContext(pageContext);
 
-  if (!collection) return <Navigate to="/collections" replace />;
+  if (!collection) return <NotFound title="Collection not found" />;
 
   return (
     <div className="browse-page collections-page">
@@ -211,9 +174,10 @@ export default function CollectionPage() {
             Share collection <span aria-hidden="true">↗</span>
           </button>
         </section>
+        <div className="collection-share-status" role="status">{shareStatus}</div>
         {loading ? (
-          <div className="loading-message"><span className="status-glyph" aria-hidden="true"></span><span>Loading collection...</span></div>
-        ) : (
+          <div className="loading-message" role="status"><span className="status-glyph" aria-hidden="true"></span><span>Loading collection...</span></div>
+        ) : !movies.length ? <div className="collection-empty" role="alert"><p>This collection is temporarily unavailable.</p><button className="reelbot-inline-button" onClick={() => window.location.reload()}>Try again</button></div> : (
           <div className="movie-list collection-movie-list">
             {movies.map((movie) => <CollectionCard key={movie.id} movie={movie} />)}
           </div>

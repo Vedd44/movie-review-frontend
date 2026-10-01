@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import NotFound from "./NotFound";
 import TasteActionBar from "./components/TasteActionBar";
 import WatchAvailability from "./components/WatchAvailability";
 import TrailerModal from "./components/TrailerModal";
@@ -155,6 +156,7 @@ function MovieDetails() {
 
     setLoading(true);
     setError(null);
+    setMovie(null);
     axios.get(endpoint)
       .then((response) => {
         if (cancelled) return;
@@ -166,7 +168,7 @@ function MovieDetails() {
       })
       .catch((requestError) => {
         console.error("Error fetching movie details:", requestError);
-        if (!cancelled) setError("Failed to load movie details.");
+        if (!cancelled) setError(requestError.response?.status === 404 ? "not-found" : "Movie details are temporarily unavailable.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -236,10 +238,10 @@ function MovieDetails() {
   );
   const movieDescription = movie?.description || "No description available.";
   const metaItems = [
-    movie?.runtime ? `${movie.runtime} min` : null,
-    movie?.release_year || null,
+    movie?.release_year || movie?.release_date?.slice(0, 4) || null,
+    movie?.runtime ? `${Math.floor(movie.runtime / 60) ? `${Math.floor(movie.runtime / 60)}h ` : ""}${movie.runtime % 60 ? `${movie.runtime % 60}m` : ""}`.trim() : null,
     movie?.certification || null,
-    movie?.genre_names?.length ? movie.genre_names.join(" • ") : null,
+
     !previewMode && movie?.rating ? `TMDB ${movie.rating.toFixed(1)}` : null,
   ].filter(Boolean);
 
@@ -287,6 +289,8 @@ function MovieDetails() {
         url: buildAbsoluteUrl(moviePath),
         image: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : undefined,
         datePublished: movie.release_date || undefined,
+        duration: movie.runtime ? `PT${movie.runtime}M` : undefined,
+        contentRating: movie.certification || undefined,
         genre: movie.genre_names || undefined,
         director: movie.director ? { "@type": "Person", name: movie.director } : undefined,
         actor: (movie.top_cast || []).slice(0, 5).map((name) => ({ "@type": "Person", name })),
@@ -297,7 +301,9 @@ function MovieDetails() {
   usePageMetadata({
     title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
     description: movie ? `Explore ${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.` : "Explore movie details, cast, runtime, where to watch, ReelBot’s take, and similar movies.",
-    path: movie ? getMoviePath(movie) : "/",
+    path: movie ? getMoviePath(movie) : location.pathname,
+    enabled: !loading,
+    robots: error ? "noindex,follow" : "index,follow",
     type: "video.movie",
     image: movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
     structuredData: detailStructuredData,
@@ -312,8 +318,9 @@ function MovieDetails() {
 
   const backToPick = () => navigate("/#pick-result", { state: { restorePickSession: true, scrollToPickResult: true } });
 
-  if (loading) return <div className="loading-message"><span className="status-glyph" aria-hidden="true"></span><span>Loading movie details...</span></div>;
-  if (error) return <p className="error-message">{error}</p>;
+  if (loading) return <div className="loading-message" role="status"><span className="status-glyph" aria-hidden="true"></span><span>Loading movie details...</span></div>;
+  if (error === "not-found") return <NotFound title="Movie not found" />;
+  if (error) return <section className="container page-unavailable"><h1>Unable to load this movie</h1><p role="alert">{error}</p><button className="reelbot-inline-button" onClick={() => window.location.reload()}>Try again</button></section>;
   if (!movie) return <p className="error-message">No data available.</p>;
 
   const reviewHighlights = movie.review_highlights || {};
@@ -332,12 +339,15 @@ function MovieDetails() {
         </nav>
 
         <section className="detail-hero" style={movie.backdrop_path ? { backgroundImage: `linear-gradient(90deg, rgba(8, 11, 22, 0.92), rgba(8, 11, 22, 0.78)), url(https://image.tmdb.org/t/p/w1280${movie.backdrop_path})` } : undefined}>
-          <div className="detail-poster-column"><img src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : "/placeholder.jpg"} alt={`${movie.title} poster`} className="detail-poster" width="500" height="750" fetchPriority="high" decoding="async" /></div>
+          <div className="detail-poster-column">{movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} srcSet={`https://image.tmdb.org/t/p/w185${movie.poster_path} 185w, https://image.tmdb.org/t/p/w500${movie.poster_path} 500w`} sizes="(max-width: 599px) 100px, (max-width: 900px) 230px, 260px" alt={`${movie.title} poster`} className="detail-poster" width="500" height="750" fetchPriority="high" decoding="async" /> : <div className="detail-poster no-poster">Poster unavailable</div>}</div>
           <div className="detail-content-column">
-            <div className="detail-eyebrow">{previewMode ? "Coming Soon" : "Movie Details"}</div>
-            <h1 className="movie-title detail-title">{movie.title}</h1>
-            {movie.tagline ? <p className="detail-tagline">{movie.tagline}</p> : null}
-            <div className="detail-meta-strip">{metaItems.map((item) => <span key={item} className="detail-meta-pill">{item}</span>)}</div>
+            <div className="detail-identity">
+              {previewMode ? <div className="detail-eyebrow">Coming Soon</div> : null}
+              <h1 className="movie-title detail-title">{movie.title}</h1>
+              <div className="detail-meta-strip">{metaItems.map((item) => <span key={item} className="detail-meta-pill">{item}</span>)}</div>
+              {movie.genre_names?.length ? <p className="detail-genres">{movie.genre_names.join(" · ")}</p> : null}
+              {movie.director_credit?.id ? <p className="detail-director-line">Directed by <Link to={getPersonPath(movie.director_credit)}>{movie.director_credit.name}</Link></p> : movie.director ? <p className="detail-director-line">Directed by {movie.director}</p> : null}
+            </div>
             <div className="detail-description-block"><div className="detail-description-label">Overview</div><p className="detail-description">{movieDescription}</p></div>
             <div className="detail-hero-actions detail-hero-actions--simplified" role="group" aria-label="Movie actions">
               <button type="button" className="detail-trailer-cta" onClick={() => jumpTo("where-to-watch")}>Where to Watch</button>

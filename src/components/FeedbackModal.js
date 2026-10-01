@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import useDialogFocus from "../hooks/useDialogFocus";
 import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
 
 const TYPES = [["feature","Feature request"],["recommendation","Recommendation issue"],["bug","Bug report"],["other","Something else"]];
@@ -9,6 +10,7 @@ export default function FeedbackModal({ open, onClose }) {
   const [email,setEmail]=useState("");
   const [status,setStatus]=useState("idle");
   const dialogRef=useRef(null);
+  useDialogFocus(open, dialogRef);
 
   useEffect(() => {
     if (!open) return undefined;

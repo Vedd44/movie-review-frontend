@@ -57,8 +57,11 @@ export const usePageMetadata = ({
   type = "website",
   image = DEFAULT_SOCIAL_IMAGE,
   structuredData = [],
+  enabled = true,
 }) => {
+  const schemaJson = JSON.stringify(structuredData.filter(Boolean));
   useEffect(() => {
+    if (!enabled) return;
     const canonicalUrl = buildAbsoluteUrl(path);
     const imageUrl = image.startsWith("http") ? image : buildAbsoluteUrl(image);
     document.title = title;
@@ -80,7 +83,7 @@ export const usePageMetadata = ({
     const existingScripts = document.head.querySelectorAll("script[data-reelbot-schema]");
     existingScripts.forEach((script) => script.remove());
 
-    structuredData.filter(Boolean).forEach((entry, index) => {
+    JSON.parse(schemaJson).forEach((entry, index) => {
       const script = document.createElement("script");
       script.type = "application/ld+json";
       script.setAttribute("data-reelbot-schema", String(index));
@@ -91,5 +94,5 @@ export const usePageMetadata = ({
     return () => {
       document.head.querySelectorAll("script[data-reelbot-schema]").forEach((script) => script.remove());
     };
-  }, [description, image, path, robots, structuredData, title, type]);
+  }, [description, enabled, image, path, robots, schemaJson, title, type]);
 };

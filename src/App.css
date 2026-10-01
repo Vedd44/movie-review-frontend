@@ -547,12 +547,8 @@ body {
 }
 
 .detail-meta-pill {
-  background: rgba(14, 28, 47, 0.86);
-  border: 1px solid rgba(139, 172, 214, 0.16);
-  color: #eff6ff;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 0.95rem;
+  color: #d5d8de;
+  font-size: 0.9rem;
 }
 
 .detail-description {
@@ -9467,7 +9463,7 @@ body {
   .person-sort-toggle {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     border-radius: 14px;
   }
 
@@ -18076,7 +18072,7 @@ body,
   }
 
   .browse-page .movie-card-meta {
-    display:none;
+    display:flex;
   }
 
   .browse-page .movie-card-title {

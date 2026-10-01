@@ -3,7 +3,7 @@ import App from './App';
 
 test('renders the ReelBot tagline', () => {
   render(<App />);
-  const taglines = screen.getAllByText(/Find something worth watching/i);
+  const taglines = screen.getAllByText(/Stop browsing. Start watching./i);
   expect(taglines.length).toBeGreaterThan(0);
 });
 
@@ -57,13 +57,11 @@ test('frames account creation around remembered utility', () => {
   expect(screen.getByText(/Save movies, remember what you’ve watched, and get better picks/i)).toBeInTheDocument();
 });
 
-test('opens contextual Ask ReelBot without replacing search', () => {
+test('keeps the homepage focused on its picker and movie search', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /Ask ReelBot/i }));
-
-  expect(screen.getByRole('dialog', { name: 'Ask ReelBot' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Pick for date night' })).toBeInTheDocument();
-  expect(screen.getByRole('textbox', { name: 'Ask ReelBot' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Ask ReelBot/i })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Search movies' })).toBeInTheDocument();
+  expect(document.getElementById('pick-for-me')).toBeInTheDocument();
 });
 
 test('logo always navigates home without restoring an active pick hash', async () => {

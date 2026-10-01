@@ -5,17 +5,9 @@ const sharp = require("sharp");
 const API = "https://movie-review-backend-zevb.onrender.com";
 const OUT = path.join(process.cwd(), "public", "social", "collections");
 const MANIFEST_OUT = path.join(process.cwd(), "src", "generatedCollectionMovies.json");
-const source = fs.readFileSync(path.join(process.cwd(), "src", "collections.js"), "utf8");
-
-function collectionsFromSource() {
-  const blocks = source.split(/\n  \{\n/).slice(1);
-  return blocks.map((block) => {
-    const pick = (key) => block.match(new RegExp(key + '\\s*:\\s*"([^"]*)"'))?.[1] || "";
-    const moviesMatch = block.match(/movies\s*:\s*\[([\s\S]*?)\]/);
-    const movies = moviesMatch ? [...moviesMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [];
-    return { slug: pick("slug"), title: pick("title"), eyebrow: pick("eyebrow"), movies };
-  }).filter((item) => item.slug && item.title);
-}
+const { readCollections: collectionsFromSource } = require("../server/collections");
+const existingManifest = fs.existsSync(MANIFEST_OUT) ? JSON.parse(fs.readFileSync(MANIFEST_OUT, "utf8")) : {};
+const { compactMovie } = require("../server/compactMovie");
 
 async function fetchWithTimeout(url, ms = 12000) {
   const controller = new AbortController();
@@ -26,6 +18,7 @@ async function fetchWithTimeout(url, ms = 12000) {
 
 const movieCache = new Map();
 async function resolveMovie(slug) {
+  if (existingManifest[slug]?.id) return existingManifest[slug];
   if (!movieCache.has(slug)) movieCache.set(slug, (async () => {
     try {
       const res = await fetchWithTimeout(`${API}/movies/resolve/${encodeURIComponent(slug)}`);
@@ -39,7 +32,7 @@ async function posterFor(slug) {
   try {
     const movie = await resolveMovie(slug);
     if (!movie.poster_path) return null;
-    const imageRes = await fetchWithTimeout(`https://image.tmdb.org/t/p/original${movie.poster_path}`);
+    const imageRes = await fetchWithTimeout(`https://image.tmdb.org/t/p/w500${movie.poster_path}`);
     return imageRes.ok ? Buffer.from(await imageRes.arrayBuffer()) : null;
   } catch { return null; }
 }
@@ -61,6 +54,8 @@ function wrapTitle(title, max = 24) {
 }
 
 async function render(collection) {
+  const existingImage = path.join(OUT, `${collection.slug}-v3.jpg`);
+  if (fs.existsSync(existingImage)) return;
   const posterBuffers = (await Promise.all(collection.movies.slice(0, 3).map(posterFor))).filter(Boolean);
   const composites = [];
   const posterWidth = 400;
@@ -107,9 +102,16 @@ async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const collections = collectionsFromSource();
   const uniqueSlugs = [...new Set(collections.flatMap((collection) => collection.movies))];
-  const resolved = await Promise.all(uniqueSlugs.map(async (slug) => [slug, await resolveMovie(slug)]));
-  const manifest = Object.fromEntries(resolved.filter(([, movie]) => movie?.id).map(([slug, movie]) => [slug, movie]));
+  const resolved = [];
+  for (let offset = 0; offset < uniqueSlugs.length; offset += 6) {
+    const batch = uniqueSlugs.slice(offset, offset + 6);
+    resolved.push(...await Promise.all(batch.map(async (slug) => [slug, await resolveMovie(slug)])));
+    console.log(`Resolved ${Math.min(offset + 6, uniqueSlugs.length)}/${uniqueSlugs.length} collection movies.`);
+  }
+  const manifest = Object.fromEntries(resolved.filter(([, movie]) => movie?.id).map(([slug, movie]) => [slug, compactMovie(movie)]));
+  if (Object.keys(manifest).length < uniqueSlugs.length * 0.95) throw new Error("Collection data incomplete; preserving the previous manifest and stopping the build.");
   fs.writeFileSync(MANIFEST_OUT, JSON.stringify(manifest));
+  fs.writeFileSync(path.join(process.cwd(), "src", "generatedCollectionPreviews.json"), JSON.stringify(Object.fromEntries(Object.entries(manifest).map(([slug, movie]) => [slug, {id: movie.id, poster_path: movie.poster_path}]))));
   console.log(`Collection manifest: ${Object.keys(manifest).length}/${uniqueSlugs.length} movies resolved.`);
   for (const collection of collections) await render(collection);
   console.log(`Generated ${collections.length} collection OG images.`);

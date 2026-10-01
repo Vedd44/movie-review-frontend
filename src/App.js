@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./Home";
+import NotFound from "./NotFound";
 import AuthModal from "./components/AuthModal";
 import ProfileMenu from "./components/ProfileMenu";
 import GlobalMovieSearch from "./components/GlobalMovieSearch";
@@ -8,8 +9,9 @@ import AskReelbotLayer from "./components/AskReelbotLayer";
 import FeedbackModal from "./components/FeedbackModal";
 import { AskReelbotProvider, useAskReelbotContext } from "./context/AskReelbotContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { getFeedPath } from "./discovery";
+import { getFeedPath, isContextualDetailPath } from "./discovery";
 import "./App.css";
+import "./productPolish.css";
 
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
@@ -175,11 +177,11 @@ function MobileBottomNav() {
 
   return (
     <div className={`mobile-bottom-dock${pastHero ? " is-visible" : " is-hero-hidden"}`}>
-      {location.pathname !== "/" ? <button
+      {isContextualDetailPath(location.pathname) ? <button
         type="button"
         className="mobile-ask-launcher"
         onClick={openAskReelBot}
-        aria-label="Ask ReelBot about this page"
+        aria-label={isCollectionContext ? "Pick a movie from this collection" : "Ask ReelBot about this page"}
       >
         <img className="mobile-ask-launcher-mark" src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="15" height="18" />
         <span className="mobile-ask-launcher-label">{assistantLabel}</span>
@@ -263,8 +265,9 @@ function AppShell() {
   return (
     <AskReelbotProvider>
       <div className="app-shell">
+        <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteHeader />
-        <main className="site-main">
+        <main className="site-main" id="main-content" tabIndex="-1">
           <Suspense fallback={<RouteLoading />}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -285,7 +288,8 @@ function AppShell() {
               <Route path="/movies/:movieSlug" element={<MovieDetails />} />
               <Route path="/person/:personId" element={<PersonDetails />} />
               <Route path="/people/:personSlug" element={<PersonDetails />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/ask" element={<Navigate to="/#pick-for-me" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </main>

@@ -1,41 +1,15 @@
 {
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     {
-      "source": "/collections/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp).*"
-        }
-      ],
-      "destination": "/api/social-meta?path=/collections/:slug"
-    },
-    {
-      "source": "/movies/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp).*"
-        }
-      ],
-      "destination": "/api/social-meta?path=/movies/:slug"
-    },
-    {
-      "source": "/people/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp).*"
-        }
-      ],
-      "destination": "/api/social-meta?path=/people/:slug"
-    },
-    {
-      "source": "/sitemap.xml",
+      "source": "/sitemap-discovery.xml",
       "destination": "https://movie-review-backend-zevb.onrender.com/sitemap.xml"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/api/page?path=/:path*"
     }
   ],
   "headers": [
@@ -88,5 +62,11 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/page.js": {
+      "includeFiles": "server/generated/**",
+      "maxDuration": 30
+    }
+  }
 }

@@ -115,7 +115,7 @@ function AuthPanel({
       return;
     }
 
-    const passwordError = usingPasswordFlow && !isForgotPasswordView ? validatePassword(password) : "";
+    const passwordError = isSignupView ? validatePassword(password) : view === PASSWORD_LOGIN_VIEW && !password ? "Enter your password" : "";
     if (passwordError) {
       setError(passwordError);
       return;

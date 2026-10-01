@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
+import useDialogFocus from "../hooks/useDialogFocus";
 import { createPortal } from "react-dom";
 
 const getEmbedUrl = (video) => {
@@ -15,6 +16,8 @@ const getEmbedUrl = (video) => {
 
 function TrailerModal({ isOpen, video, movieTitle, onClose }) {
   const embedUrl = useMemo(() => getEmbedUrl(video), [video]);
+  const dialogRef = useRef(null);
+  useDialogFocus(isOpen && Boolean(embedUrl), dialogRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -44,6 +47,8 @@ function TrailerModal({ isOpen, video, movieTitle, onClose }) {
   return createPortal(
     <div className="trailer-modal-backdrop" role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
+        tabIndex="-1"
         className="trailer-modal"
         role="dialog"
         aria-modal="true"

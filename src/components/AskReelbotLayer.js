@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL, getMoviePath, getRecommendationMovieState } from "../discovery";
+import { API_BASE_URL, getMoviePath, getRecommendationMovieState, isContextualDetailPath } from "../discovery";
 import { dedupeIds, normalizePickPayload } from "../reelbotSession";
 import { useAskReelbotContext } from "../context/AskReelbotContext";
 import useTasteProfile from "../hooks/useTasteProfile";
@@ -380,9 +380,9 @@ function AskReelbotLayer() {
 
   return (
     <>
-      <button ref={triggerRef} type="button" className={`ask-reelbot-trigger${isCollection ? " ask-reelbot-trigger--collection" : ""}${pastHomeHero ? "" : " is-hero-hidden"}`} onClick={openPanel} aria-haspopup="dialog">
+      {isContextualDetailPath(location.pathname) ? <button ref={triggerRef} type="button" className={`ask-reelbot-trigger${isCollection ? " ask-reelbot-trigger--collection" : ""}${pastHomeHero ? "" : " is-hero-hidden"}`} onClick={openPanel} aria-haspopup="dialog">
         {triggerLabel}
-      </button>
+      </button> : null}
       {open ? (
         <div className="ask-reelbot-backdrop" role="presentation" onMouseDown={closePanel}>
           <section ref={sheetRef} className="ask-reelbot-sheet" role="dialog" aria-modal="true" aria-labelledby="ask-reelbot-sheet-title" onMouseDown={(event) => event.stopPropagation()}>

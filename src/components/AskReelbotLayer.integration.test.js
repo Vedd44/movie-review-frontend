@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 test("clears Ask input after accepted submit while keeping the submitted message and response", async () => {
-  render(<MemoryRouter><AskReelbotLayer /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotLayer /></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
 
   const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
@@ -54,7 +54,7 @@ test("clears Ask input after accepted submit while keeping the submitted message
 });
 
 test("does not clear an empty Ask submission", () => {
-  render(<MemoryRouter><AskReelbotLayer /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotLayer /></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
 
   const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
@@ -65,7 +65,7 @@ test("does not clear an empty Ask submission", () => {
 
 test("movie-detail question chips submit movie questions through the active movie context", async () => {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/movies/aliens-1986"]}>
       <AskReelbotProvider>
         <ContextRegistration context={{ page: "movie_detail", movieId: 679, movieTitle: "Alien" }} />
         <AskReelbotLayer />
@@ -102,7 +102,7 @@ test("replaces starter chips with returned follow-ups and continues the conversa
     });
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/movies/aliens-1986"]}>
       <AskReelbotProvider>
         <ContextRegistration context={{ page: "movie_detail", movieId: 679, movieTitle: "Alien" }} />
         <AskReelbotLayer />
@@ -131,4 +131,10 @@ test("replaces starter chips with returned follow-ups and continues the conversa
 test("malformed follow-ups render no chips", () => {
   expect(normalizeAskFollowUps(null)).toEqual([]);
   expect(normalizeAskFollowUps(["", null, "  ", { text: "nope" }])).toEqual([]);
+});
+
+
+test("does not restore a generic homepage floating assistant",()=>{
+  render(<MemoryRouter initialEntries={["/"]}><AskReelbotLayer/></MemoryRouter>);
+  expect(screen.queryByRole("button",{name:/Ask ReelBot/i})).not.toBeInTheDocument();
 });

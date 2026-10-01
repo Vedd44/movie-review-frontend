@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import useDialogFocus from "../hooks/useDialogFocus";
 import AuthPanel from "./AuthPanel";
 import { useAuth } from "../context/AuthContext";
 
@@ -6,6 +7,8 @@ const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
 function AuthModal() {
   const { authPromptOpen, closeAuthPrompt } = useAuth();
+  const dialogRef = useRef(null);
+  useDialogFocus(authPromptOpen, dialogRef);
 
   useEffect(() => {
     if (!authPromptOpen) {
@@ -40,7 +43,7 @@ function AuthModal() {
 
   return (
     <div className="auth-modal-backdrop" onClick={closeAuthPrompt} role="presentation">
-      <div className="auth-modal-shell" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" onClick={(event) => event.stopPropagation()}>
+      <div ref={dialogRef} tabIndex="-1" className="auth-modal-shell" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" onClick={(event) => event.stopPropagation()}>
         <button type="button" className="auth-modal-close" onClick={closeAuthPrompt} aria-label="Close sign in dialog">
           ×
         </button>

@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./App.css";
+import MovieCardMeta from "./components/MovieCardMeta";
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
-import { formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
+import { formatMovieDate, getMoviePath } from "./discovery";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
 import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotContext";
 
@@ -227,17 +228,15 @@ function MyMovies() {
                   </Link>
 
                   <div className="movie-card-content saved-movie-card-content">
-                    <div className="movie-card-meta">
-                      <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-                      {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
-                    </div>
+                    <MovieCardMeta movie={movie}>
+                    </MovieCardMeta>
 
                     <h3 className="movie-card-title">
                       <Link to={getMoviePath(movie)} className="movie-title-link">
                         {movie.title}
                       </Link>
                     </h3>
-                    <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
+                    {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
                     <p className="saved-movie-note">{getSavedMetaLabel(activeTab, movie)}</p>
                     {movie.overview ? <p className="saved-movie-overview">{movie.overview}</p> : null}
 

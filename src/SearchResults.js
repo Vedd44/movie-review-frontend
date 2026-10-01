@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import MovieCardMeta from "./components/MovieCardMeta";
 import ProviderBadgeRow from "./components/ProviderBadgeRow";
-import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./discovery";
+import { API_BASE_URL, formatMovieDate, getMoviePath } from "./discovery";
 import { rankSearchResults } from "./movieSignals";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import useWatchProviderBadges from "./hooks/useWatchProviderBadges";
@@ -150,7 +151,7 @@ function SearchResults() {
           <div className="browse-copy search-results-hero-copy">
             <div className="browse-kicker">ReelBot Search</div>
             <h1 className="browse-title">Results for “{searchQuery || "your search"}”</h1>
-            <p className="browse-subtitle">We've highlighted your best match first, with other top-rated options below.</p>
+
           </div>
 
           <div className="search-results-toolbar">
@@ -179,14 +180,6 @@ function SearchResults() {
 
         {!loading && !error && (
           <>
-            <div className="section-header section-header--stacked-mobile section-header--compact search-results-section-head">
-              <div>
-                <div className="detail-description-label">Search results</div>
-                
-              </div>
-              <div className="results-count">{resultCountLabel}</div>
-            </div>
-
             {topMatch ? (
               <article className="search-top-match-card">
                 <Link to={getMoviePath(topMatch)} className="search-top-match-poster-link" aria-label={`Open ${topMatch.title}`}>
@@ -195,6 +188,7 @@ function SearchResults() {
                       src={`https://image.tmdb.org/t/p/w300${topMatch.poster_path}`}
                       alt={topMatch.title}
                       className="search-top-match-poster"
+                      width="300" height="450" decoding="async"
                     />
                   ) : (
                     <div className="search-top-match-poster search-top-match-poster--placeholder">Poster unavailable</div>
@@ -204,24 +198,17 @@ function SearchResults() {
                 <div className="search-top-match-content">
                   <div className="search-top-match-main">
                     <div className="detail-description-label">Best Match</div>
-                    <h3 className="search-top-match-title">
+                    <h2 className="search-top-match-title">
                       <Link to={getMoviePath(topMatch)} className="movie-title-link">
                         {topMatch.title}
                       </Link>
-                    </h3>
-                    <div className="movie-card-meta">
-                      <span className="movie-card-chip">{getReleaseYear(topMatch.release_date)}</span>
-                      {topMatch.vote_average ? <span className="movie-card-chip">TMDB {topMatch.vote_average.toFixed(1)}</span> : null}
+                    </h2>
+                    <MovieCardMeta movie={topMatch}>
                       <span className="movie-card-chip movie-card-chip--accent">{topMatch.exact_match ? "Exact Match" : "Best Fit"}</span>
                       {shouldShowAvailabilityChip(topMatchAvailabilityStatus) ? (
                         <span className="movie-card-chip movie-card-chip--availability">{topMatchAvailabilityStatus.label}</span>
                       ) : null}
-                    </div>
-                    <p className="search-top-match-summary">
-                      {topMatch.exact_match
-                        ? "Exact title match with the clearest overall fit in these results."
-                        : "The clearest title match with the strongest overall quality and relevance."}
-                    </p>
+                    </MovieCardMeta>
                     {topMatch.overview ? <p className="search-top-match-overview">{topMatch.overview}</p> : null}
                     <ProviderBadgeRow badges={providerMap[topMatch.id]?.provider_badges} compact />
                   </div>
@@ -245,8 +232,8 @@ function SearchResults() {
                 <div className="section-header section-header--compact section-header--stacked-mobile">
                   <div>
                     <div className="detail-description-label">Related titles</div>
-                    <h3 className="section-title">Other likely matches</h3>
-                    <p className="section-subtitle">Nearby title matches and stronger alternates, with weak results pushed down.</p>
+                    <h2 className="section-title">Other likely matches</h2>
+
                   </div>
                 </div>
 
@@ -262,6 +249,7 @@ function SearchResults() {
                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                             alt={movie.title}
                             className="movie-poster"
+                            width="300" height="450"
                             loading="lazy"
                             decoding="async"
                           />
@@ -271,13 +259,11 @@ function SearchResults() {
                       </Link>
 
                       <div className="movie-card-content">
-                        <div className="movie-card-meta">
-                          <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-                          {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                        <MovieCardMeta movie={movie}>
                           {shouldShowAvailabilityChip(availabilityStatus) ? (
                             <span className="movie-card-chip movie-card-chip--availability">{availabilityStatus.label}</span>
                           ) : null}
-                        </div>
+                        </MovieCardMeta>
                         <ProviderBadgeRow badges={providerMap[movie.id]?.provider_badges} compact />
 
                         <h3 className="movie-card-title">
@@ -285,7 +271,7 @@ function SearchResults() {
                             {movie.title}
                           </Link>
                         </h3>
-                        <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
+                        {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
                         {movie.overview ? <p className="movie-card-overview search-result-overview">{movie.overview}</p> : null}
 
                         <div className="movie-card-actions-row search-result-actions">

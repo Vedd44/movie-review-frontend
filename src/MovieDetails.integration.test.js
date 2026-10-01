@@ -45,6 +45,7 @@ const generatedTake = {
 };
 
 beforeEach(() => {
+  jest.clearAllMocks();
   axios.get.mockImplementation((url) => Promise.resolve(
     String(url).includes("/reelbot-take") ? { data: { take: generatedTake } } : { data: movie }
   ));
@@ -93,8 +94,8 @@ test("groups movie hero actions in the intended order", async () => {
   expect(within(actionGroup).getAllByRole("button").map((button) => button.textContent.trim())).toEqual([
     "Where to Watch",
     "Save",
-    "Cast & details ↓",
-    "Watch trailer ↗",
+    "Cast & details",
+    "Watch trailer",
   ]);
 });
 
@@ -121,7 +122,7 @@ test("does not reuse historical recommendation context for a direct, search, or 
   expect(screen.queryByRole("heading", { name: "Why ReelBot Picked This" })).not.toBeInTheDocument();
 });
 
-test("uses historical context when the current history entry is an active recommendation visit", async () => {
+test("preserves active recommendation provenance alongside the movie-specific take", async () => {
   useTasteProfile.mockReturnValue({
     profile: { skipped: [] },
     actions: { addRecentMovie: jest.fn().mockResolvedValue(), recordDetailView: jest.fn().mockResolvedValue() },
@@ -148,8 +149,8 @@ test("uses historical context when the current history entry is an active recomm
   );
 
   expect(await screen.findByRole("heading", { name: "Why ReelBot Picked This" })).toBeInTheDocument();
-  expect(screen.getByText(/sustained siege pressure/i)).toBeInTheDocument();
-  expect(axios.get).not.toHaveBeenCalledWith(expect.stringContaining("/reelbot-take"));
+  expect(await screen.findByText(generatedTake.assessment)).toBeInTheDocument();
+  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/reelbot-take"));
 });
 
 test("keeps the movie page available when Take generation fails", async () => {
@@ -177,7 +178,7 @@ test("links cast and director to canonical people routes and handles missing hea
   );
 
   expect(await screen.findByRole("heading", { name: "Cast & Details" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: /James Cameron/i })).toHaveAttribute("href", "/people/james-cameron");
+  expect(screen.getAllByRole("link", { name: /James Cameron/i })[0]).toHaveAttribute("href", "/people/james-cameron");
   expect(screen.getByRole("link", { name: /Sigourney Weaver/i })).toHaveAttribute("href", "/people/sigourney-weaver");
   fireEvent.click(screen.getByRole("button", { name: /Cast & details/i }));
   expect(window.scrollTo).toHaveBeenCalled();

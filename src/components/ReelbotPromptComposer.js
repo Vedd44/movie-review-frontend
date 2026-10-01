@@ -48,6 +48,7 @@ function ReelbotPromptComposer({
       <div ref={inputShellRef} className="pick-prompt-shell">
         <input
           id={inputId}
+          aria-label={label || "Describe the movie you want"}
           type="text"
           className={`pick-prompt-input${errorText ? " is-invalid" : ""}`}
           placeholder={placeholder}

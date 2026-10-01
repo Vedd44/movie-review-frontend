@@ -39,7 +39,7 @@ test("invalid password response exits loading with a useful error", async () => 
   const submitButton = screen.getAllByRole("button", { name: "Sign in" }).find((button) => button.type === "submit");
   fireEvent.click(submitButton);
   await waitFor(() => expect(submitButton).not.toBeDisabled());
-  expect(screen.getByText("That email and password didn’t work.")).toBeInTheDocument();
+  expect(screen.getByText("Incorrect email or password.")).toBeInTheDocument();
 });
 
 test("uses sign in and create account as the primary tasks", () => {
@@ -93,7 +93,17 @@ test("switching auth states clears the previous error", async () => {
   fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "viewer@example.com" } });
   fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password1" } });
   fireEvent.click(screen.getByRole("button", { name: "Sign in", selector: "button[type=submit]" }));
-  expect(await screen.findByText("That email and password didn’t work.")).toBeInTheDocument();
+  expect(await screen.findByText("Incorrect email or password.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "Create account" }));
-  expect(screen.queryByText("That email and password didn’t work.")).not.toBeInTheDocument();
+  expect(screen.queryByText("Incorrect email or password.")).not.toBeInTheDocument();
+});
+
+test('sign in accepts an existing password without applying new-account strength rules',async()=>{
+  const signInWithPassword=jest.fn().mockResolvedValue({});
+  useAuth.mockReturnValue({...authDefaults,signInWithPassword});
+  render(<AuthPanel initialView="password-login"/>);
+  fireEvent.change(screen.getByLabelText('Email address'),{target:{value:'viewer@example.com'}});
+  fireEvent.change(screen.getByLabelText('Password'),{target:{value:'existing-password'}});
+  fireEvent.click(screen.getByRole('button',{name:'Sign in'}));
+  await waitFor(()=>expect(signInWithPassword).toHaveBeenCalledWith({email:'viewer@example.com',password:'existing-password'}));
 });

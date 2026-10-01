@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import MovieCardMeta from "./components/MovieCardMeta";
 import {
   API_BASE_URL,
   MOOD_FILTERS,
   VIEW_OPTIONS,
   formatMovieDate,
   getFeedPath,
-  getReleaseYear,
   getViewLabel,
   getMoviePath,
   getRecommendationMovieState,
@@ -30,7 +30,7 @@ import { tasteProfileService } from "./services/tasteProfileService";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { getPromptCategory, trackProductEvent } from "./analytics";
 import { COLLECTIONS } from "./collections";
-import { CollectionPreviewCard } from "./CollectionPage";
+import CollectionPreviewCard from "./components/CollectionPreviewCard";
 
 const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 
@@ -715,7 +715,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [, setIsFeedRefreshing] = useState(() => initialFeedState.refreshing);
   const [error, setError] = useState(() => initialFeedState.error);
   const [movieType, setMovieType] = useState(routeView);
-  const [currentPage, setCurrentPage] = useState(1);
+  const routePage = Math.min(500, Math.max(1, Number.parseInt(new URLSearchParams(location.search).get("page"), 10) || 1));
+  const [currentPage, setCurrentPage] = useState(isFeedRoute ? routePage : 1);
   const [totalPages, setTotalPages] = useState(() => initialFeedState.totalPages);
   const [selectedMood, setSelectedMood] = useState("all");
   const [pickPrompt, setPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
@@ -926,8 +927,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   useEffect(() => {
     setMovieType(routeView);
-    setCurrentPage(1);
-  }, [routeView]);
+    setCurrentPage(isFeedRoute ? routePage : 1);
+  }, [routeView, routePage, isFeedRoute]);
 
   useEffect(() => {
     const needsOnboardingPosterPool = !isFeedRoute
@@ -1241,12 +1242,12 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   const heroPreviewMovies = useMemo(() => {
     // Keep this rail distinct from the browse grid below it.
-    const gridIds = new Set(displayedMovies.slice(0, isCompactHeroPreview ? 6 : 8).map((movie) => movie.id));
+    const gridIds = new Set(displayedMovies.slice(0, isFeedRoute ? displayedMovies.length : isCompactHeroPreview ? 6 : 8).map((movie) => movie.id));
     const seen = new Set();
     return [...curatedMovies, ...filteredMovies]
       .filter((movie) => movie?.id && movie?.poster_path && !gridIds.has(movie.id) && !seen.has(movie.id) && seen.add(movie.id))
       .slice(0, 3);
-  }, [curatedMovies, displayedMovies, filteredMovies, isCompactHeroPreview]);
+  }, [curatedMovies, displayedMovies, filteredMovies, isCompactHeroPreview, isFeedRoute]);
   const heroArtMovies = useMemo(() => {
     const source = [...displayedMovies, ...filteredMovies, ...curatedMovies];
     const seen = new Set();
@@ -1489,9 +1490,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   usePageMetadata(
     isFeedRoute
       ? {
-          title: FEED_METADATA[movieType]?.title || "Now Playing Movies | ReelBot",
+          title: currentPage > 1 ? `${heading} — Page ${currentPage} | ReelBot` : FEED_METADATA[movieType]?.title || "Now Playing Movies | ReelBot",
           description: FEED_METADATA[movieType]?.description || SITE_DESCRIPTION,
-          path: FEED_METADATA[movieType]?.path || "/now-playing",
+          path: `${FEED_METADATA[movieType]?.path || "/now-playing"}${currentPage > 1 ? `?page=${currentPage}` : ""}`,
           structuredData: homeStructuredData,
         }
       : {
@@ -2073,9 +2074,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   useAskReelbotPageContext(askReelbotPageContext);
 
   return (
-    <div className="browse-page home-page">
-      <CinematicAtmosphere active={isHeroInputFocused || isPickBusy} loading={isPickBusy} />
-      <section
+    <div className={`browse-page home-page${isFeedRoute ? " feed-page" : ""}`}>
+      {!isFeedRoute ? <CinematicAtmosphere active={isHeroInputFocused || isPickBusy} loading={isPickBusy} /> : null}
+      {!isFeedRoute ? <section
           id="pick-for-me"
           className="home-hero"
           aria-labelledby="home-hero-title"
@@ -2189,10 +2190,10 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               ) : null}
             </div>
           </div>
-        </section>
+        </section> : null}
 
       <div className="container browse-shell home-shell">
-        {shouldRenderPickResultSection ? (
+        {!isFeedRoute && shouldRenderPickResultSection ? (
         <section id="your-pick" ref={pickResultSectionRef} className="pick-result-section home-result-section" aria-live="polite">
           <div id="pick-result" aria-hidden="true"></div>
           <div className="section-header section-header--compact section-header--stacked-mobile">
@@ -2277,13 +2278,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
               <div className="detail-description-label">Explore</div>
-              <h2 className="section-title">Browse movies</h2>
+              {isFeedRoute ? <h1 className="section-title feed-title">{heading}</h1> : <h2 className="section-title">Browse movies</h2>}
             </div>
           </div>
 
           <div className="tabs browse-tabs browse-tabs--secondary">
             {VIEW_OPTIONS.map((option) => (
-              <button key={option.id} className={movieType === option.id ? "active" : ""} onClick={() => handleViewChange(option.id)}>
+              <button key={option.id} aria-pressed={movieType === option.id} className={movieType === option.id ? "active" : ""} onClick={() => handleViewChange(option.id)}>
                 {option.label}
               </button>
             ))}
@@ -2330,7 +2331,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                   </article>
                 ))
               ) : displayedMovies.length > 0 ? (
-                displayedMovies.slice(0, isCompactHeroPreview ? 6 : 8).map((movie) => (
+                displayedMovies.slice(0, isFeedRoute ? displayedMovies.length : isCompactHeroPreview ? 6 : 8).map((movie) => (
                   <article key={movie.id} className="movie-card home-movie-card">
                     <Link to={getMoviePath(movie)} className="home-movie-card-link" aria-label={`Open ${movie.title}`}>
                       <div className="home-movie-card-poster-shell">
@@ -2352,19 +2353,17 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                       </div>
 
                       <div className="movie-card-content">
-                        <div className="movie-card-meta">
-                          <span className="movie-card-chip">{getReleaseYear(movie.release_date)}</span>
-                          {movie.vote_average ? <span className="movie-card-chip">TMDB {movie.vote_average.toFixed(1)}</span> : null}
+                        <MovieCardMeta movie={movie}>
                           {shouldShowAvailabilityChip(getAvailabilityStatus(movie)) ? (
                             <span className="movie-card-chip movie-card-chip--availability">{getAvailabilityStatus(movie).label}</span>
                           ) : null}
                           {seenMovieIds.has(movie.id) ? (
                             <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
                           ) : null}
-                        </div>
+                        </MovieCardMeta>
 
                         <h3 className="movie-card-title">{movie.title}</h3>
-                        <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p>
+                        {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
                       </div>
                     </Link>
                   </article>
@@ -2398,15 +2397,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
         {isFeedRoute && totalPages > 1 ? (
           <div className="pagination browse-pagination">
-            <button disabled={currentPage === 1} onClick={() => setCurrentPage((previous) => previous - 1)}>
-              ⬅ Previous
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((previous) => previous + 1)}>
-              Next ➡
-            </button>
+            {currentPage > 1 ? <Link rel="prev" to={`${getFeedPath(movieType)}${currentPage > 2 ? `?page=${currentPage - 1}` : ""}`}>← Previous</Link> : <span aria-disabled="true">← Previous</span>}
+            <span>Page {currentPage} of {totalPages}</span>
+            {currentPage < totalPages ? <Link rel="next" to={`${getFeedPath(movieType)}?page=${currentPage + 1}`}>Next →</Link> : null}
           </div>
         ) : null}
         </section>
@@ -2427,7 +2420,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           </section>
         ) : null}
 
-        <section className="home-magic-section" aria-labelledby="home-magic-title">
+        {!isFeedRoute ? <section className="home-magic-section" aria-labelledby="home-magic-title">
           <div className="home-magic-intro">
             <div className="detail-description-label">More than a search</div>
             <h2 id="home-magic-title" className="home-magic-title">Tell ReelBot the part you can't put into a filter.</h2>
@@ -2450,7 +2443,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             ))}
           </div>
           <Link to="/ask" className="home-magic-cta">Try it with your own request <span aria-hidden="true">→</span></Link>
-        </section>
+        </section> : null}
 
       </div>
 

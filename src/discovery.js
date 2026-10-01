@@ -185,3 +185,5 @@ export const formatMovieDate = (releaseDate) =>
         year: "numeric",
       })
     : "Release date unavailable";
+
+export const isContextualDetailPath = (pathname = "") => /^\/(?:movies|movie|people|person|collections)\/[^/]+/.test(pathname);

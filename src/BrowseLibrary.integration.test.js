@@ -79,7 +79,7 @@ test("load more appends a unique page and keeps the existing results", async () 
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
   expect(await screen.findByRole("heading", { name: "Aliens" })).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Load more" }));
+  fireEvent.click(screen.getByRole("link", { name: "Load more" }));
 
   expect(await screen.findByRole("heading", { name: "Pitch Black" })).toBeInTheDocument();
   expect(screen.getAllByRole("heading", { name: "Aliens" })).toHaveLength(1);
@@ -103,7 +103,7 @@ test("changing source resets progressive results to the new first page", async (
 
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
   expect(await screen.findByRole("heading", { name: "Aliens" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Load more" }));
+  fireEvent.click(screen.getByRole("link", { name: "Load more" }));
   expect(await screen.findByRole("heading", { name: "Pitch Black" })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Now Playing" }));
@@ -130,7 +130,7 @@ test("changing a filter resets progressive results to the filtered first page", 
 
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
   expect(await screen.findByRole("heading", { name: "Aliens" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Load more" }));
+  fireEvent.click(screen.getByRole("link", { name: "Load more" }));
   expect(await screen.findByRole("heading", { name: "Pitch Black" })).toBeInTheDocument();
 
   fireEvent.click(await screen.findByRole("button", { name: "Action" }));
