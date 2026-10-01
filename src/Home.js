@@ -2045,7 +2045,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     <div className={`browse-page home-page${isFeedRoute ? " feed-page" : ""}`}>
       {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}`} aria-labelledby="home-hero-title">
         <div className="rb-intro-copy">
-          <span className="rb-eyebrow">Your night. Your kind of movie.</span>
+          <span className="rb-eyebrow">A better way to choose.</span>
           <h1 id="home-hero-title">{homeHeadline}</h1>
           <p className="rb-intro-dek">Less searching.<br />More getting lost in a good film.</p>
           <div className={`rb-night-composer${isHeroInputFocused ? " is-focused" : ""}`}>
