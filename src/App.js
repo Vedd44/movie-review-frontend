@@ -157,6 +157,7 @@ function MobileBottomNav() {
     window.addEventListener("resize", update);
     return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
   }, [location.pathname]);
+
   const items = [
     { label: "Pick for me", to: "/#pick-for-me", active: location.pathname === "/" },
     { label: "Browse", to: "/browse", active: location.pathname === "/browse" },
@@ -169,25 +170,25 @@ function MobileBottomNav() {
   };
 
   return (
-    <nav className={`mobile-bottom-nav${pastHero ? " is-visible" : " is-hero-hidden"}`} aria-label="Mobile navigation">
-      {items.map((item, index) => index === 0 ? (
-        <button
-          key={item.label}
-          type="button"
-          className={"mobile-bottom-nav-item mobile-bottom-nav-item--ask" + (item.active ? " is-active" : "")}
-          onClick={openAskReelBot}
-          aria-label="Ask ReelBot"
-        >
-          <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
-          <span>Ask ReelBot</span>
-        </button>
-      ) : (
-        <NavLink key={item.label} to={item.to} className={"mobile-bottom-nav-item" + (item.active ? " is-active" : "")}>
-          <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
-          <span>{item.label}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <div className={`mobile-bottom-dock${pastHero ? " is-visible" : " is-hero-hidden"}`}>
+      <button
+        type="button"
+        className="mobile-ask-launcher"
+        onClick={openAskReelBot}
+        aria-label="Ask ReelBot about this page"
+      >
+        <span className="mobile-ask-launcher-mark" aria-hidden="true">✦</span>
+        <span className="mobile-ask-launcher-label">Ask ReelBot</span>
+      </button>
+      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+        {items.map((item) => (
+          <NavLink key={item.label} to={item.to} className={"mobile-bottom-nav-item" + (item.active ? " is-active" : "")}>
+            <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+    </div>
   );
 }
 
@@ -286,29 +287,97 @@ function AppShell() {
         </main>
         <SiteFooter />
         <style>{`
-          /* Mobile/Fold interaction polish: one persistent assistant entry point,
-             slower nav reveal, and a cleaner editorial prompt field. */
+          /* Mobile/Fold dock: navigation is navigation; Ask ReelBot is a contextual tool. */
           @media (max-width: 900px) {
-            .ask-reelbot-trigger:not(.ask-reelbot-trigger--collection) {
+            .ask-reelbot-trigger,
+            .detail-floating-reelbot {
               display: none !important;
             }
 
-            .mobile-bottom-nav {
+            .mobile-bottom-dock {
+              position: fixed;
+              z-index: 1190;
+              left: 50%;
+              bottom: max(8px, env(safe-area-inset-bottom));
+              width: min(calc(100% - 24px), 760px);
+              transform: translate(-50%, 0);
+              opacity: 1;
+              visibility: visible;
               transition:
-                opacity .42s cubic-bezier(.2,.72,.2,1),
-                transform .42s cubic-bezier(.2,.72,.2,1),
-                visibility .42s ease !important;
+                opacity .46s cubic-bezier(.2,.72,.2,1),
+                transform .46s cubic-bezier(.2,.72,.2,1),
+                visibility .46s ease;
             }
 
-            .mobile-bottom-nav.is-hero-hidden {
-              transform: translateY(28px) !important;
+            .mobile-bottom-dock.is-hero-hidden {
+              opacity: 0;
+              visibility: hidden;
+              pointer-events: none;
+              transform: translate(-50%, 30px);
             }
 
-            .mobile-bottom-nav-item--ask {
-              appearance: none;
-              -webkit-appearance: none;
-              font: inherit;
+            .mobile-bottom-nav {
+              position: relative !important;
+              inset: auto !important;
+              display: grid !important;
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              width: 100% !important;
+              min-height: 64px;
+              padding: 6px !important;
+              border-radius: 20px !important;
+            }
+
+            .mobile-bottom-nav-item {
+              min-width: 0 !important;
+              padding: 7px 4px;
+              text-align: center;
+            }
+
+            .mobile-bottom-nav-item:nth-child(1) .mobile-bottom-nav-icon::before { content: "✦" !important; }
+            .mobile-bottom-nav-item:nth-child(2) .mobile-bottom-nav-icon::before { content: "#" !important; }
+            .mobile-bottom-nav-item:nth-child(3) .mobile-bottom-nav-icon::before { content: "▦" !important; }
+            .mobile-bottom-nav-item:nth-child(4) .mobile-bottom-nav-icon::before { content: "♡" !important; }
+
+            .mobile-ask-launcher {
+              position: absolute;
+              right: 18px;
+              bottom: calc(100% - 1px);
+              display: inline-flex;
+              align-items: center;
+              gap: 7px;
+              min-height: 38px;
+              padding: 8px 13px 9px;
+              border: 1px solid rgba(232,180,91,.3);
+              border-bottom-color: rgba(255,255,255,.08);
+              border-radius: 15px 15px 5px 5px;
+              color: #f3c76c;
+              background: rgba(10,11,16,.96);
+              box-shadow: 0 -8px 24px rgba(0,0,0,.2);
+              backdrop-filter: blur(18px);
+              -webkit-backdrop-filter: blur(18px);
+              font: 650 .78rem/1 inherit;
+              letter-spacing: -.01em;
               cursor: pointer;
+            }
+
+            .mobile-ask-launcher::after {
+              content: "";
+              position: absolute;
+              left: 10px;
+              right: 10px;
+              bottom: -1px;
+              height: 1px;
+              background: rgba(10,11,16,.96);
+            }
+
+            .mobile-ask-launcher-mark {
+              font-size: .9rem;
+              line-height: 1;
+            }
+
+            .mobile-ask-launcher:focus-visible {
+              outline: 2px solid rgba(240,189,87,.7);
+              outline-offset: 2px;
             }
 
             .home-page .home-hero .pick-prompt-shell {
@@ -321,26 +390,48 @@ function AppShell() {
             }
           }
 
-          @media (max-width: 599px) {
+          @media (max-width: 430px) {
+            .mobile-bottom-dock {
+              width: calc(100% - 20px);
+            }
+
             .mobile-bottom-nav {
-              left: max(12px, env(safe-area-inset-left)) !important;
-              right: max(12px, env(safe-area-inset-right)) !important;
-              width: auto !important;
-              max-width: none !important;
+              min-height: 60px;
+              border-radius: 18px !important;
             }
 
             .mobile-bottom-nav-item {
-              min-width: 0 !important;
+              font-size: .63rem !important;
+              gap: 3px !important;
             }
 
-            .mobile-bottom-nav-item--ask span:last-child {
-              white-space: nowrap;
+            .mobile-ask-launcher {
+              right: 10px;
+              min-height: 36px;
+              padding: 7px 11px 8px;
+              font-size: .74rem;
             }
           }
 
-          @media (min-width: 600px) and (max-width: 900px) {
-            .mobile-bottom-nav {
-              width: min(calc(100% - 92px), 760px) !important;
+          @media (max-width: 350px) {
+            .mobile-ask-launcher-label {
+              position: absolute;
+              width: 1px;
+              height: 1px;
+              overflow: hidden;
+              clip: rect(0 0 0 0);
+              white-space: nowrap;
+            }
+
+            .mobile-ask-launcher {
+              width: 38px;
+              justify-content: center;
+              padding-left: 0;
+              padding-right: 0;
+            }
+
+            .mobile-bottom-nav-item {
+              font-size: .59rem !important;
             }
           }
         `}</style>
