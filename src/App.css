@@ -20414,3 +20414,37 @@ body,
   .related-collections-grid { grid-template-columns:1fr; }
   .related-collections-grid .collection-preview-card--compact { min-height:190px; }
 }
+
+
+/* Password visibility control */
+.password-input-wrap {
+  position:relative;
+  width:100%;
+}
+.password-input-wrap > input {
+  width:100%;
+  padding-right:44px !important;
+}
+.password-visibility-toggle {
+  position:absolute;
+  top:50%;
+  right:10px;
+  transform:translateY(-50%);
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  padding:0;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:rgba(244,239,228,.58);
+  font:inherit;
+  cursor:pointer;
+}
+.password-visibility-toggle:hover,
+.password-visibility-toggle:focus-visible {
+  color:#fff2d8;
+  background:rgba(255,255,255,.05);
+  outline:none;
+}
