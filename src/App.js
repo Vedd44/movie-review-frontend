@@ -323,6 +323,8 @@ function AppShell() {
               top: auto !important;
               bottom: auto !important;
               inset: auto !important;
+              transform: none !important;
+              margin: 0 !important;
               display: grid !important;
               grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
               width: 100% !important;
