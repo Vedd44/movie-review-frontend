@@ -2350,7 +2350,16 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               </article>
             ))}
           </div>
-          <Link to="/ask" className="home-magic-cta">Try it with your own request <span aria-hidden="true">→</span></Link>
+          <button
+            type="button"
+            className="home-magic-cta"
+            onClick={() => {
+              scrollToSection("pick-for-me");
+              focusPickPromptComposer();
+            }}
+          >
+            Try it with your own request <span aria-hidden="true">→</span>
+          </button>
         </section> : null}
 
       </div>
