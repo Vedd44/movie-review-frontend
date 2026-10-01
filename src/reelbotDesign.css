@@ -864,15 +864,23 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 }
 
 
-/* Homepage browse should use the available canvas, not inherit the narrower utility grid. */
+/* Homepage browse uses the same full content canvas as Collections below.
+   Expand the section itself; do not solve width by shrinking/cramming cards. */
+.home-page .home-browse-section {
+  width: min(var(--rb-page), calc(100% - var(--rb-gutter) * 2));
+  max-width: var(--rb-page);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 @media (min-width: 901px) {
   .home-page .home-browse-section .movie-list {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 36px 20px;
   }
 
   .home-page .home-browse-section .home-movie-card {
-    width: auto;
+    width: 100%;
     max-width: none;
   }
 }
