@@ -34,6 +34,7 @@ function AuthPanel({
   const [successState, setSuccessState] = useState(null);
   const [error, setError] = useState("");
   const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
 
   useEffect(() => {
     setError("");
@@ -282,6 +283,7 @@ function AuthPanel({
           {usingPasswordFlow && !isForgotPasswordView ? (
             <div className="password-input-wrap">
               <input
+                ref={passwordInputRef}
                 type={showPassword ? "text" : "password"}
                 aria-invalid={Boolean(error)}
                 value={password}
@@ -296,7 +298,7 @@ function AuthPanel({
                 autoComplete={isSignupView ? "new-password" : "current-password"}
                 disabled={loading || authLoading}
               />
-              <button type="button" className="password-visibility-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
+              <button type="button" className="password-visibility-toggle" onPointerDown={(event) => event.preventDefault()} onClick={() => { setShowPassword((visible) => !visible); window.requestAnimationFrame(() => passwordInputRef.current?.focus({ preventScroll: true })); }} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   {showPassword ? (
                     <>
