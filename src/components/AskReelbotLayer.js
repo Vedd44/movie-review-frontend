@@ -346,6 +346,18 @@ function AskReelbotLayer() {
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
   const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
   const triggerLabel = isCollection ? "Pick for me" : "Ask ReelBot";
+  const [pastHomeHero, setPastHomeHero] = useState(location.pathname !== "/");
+
+  useEffect(() => {
+    if (location.pathname !== "/") { setPastHomeHero(true); return undefined; }
+    const hero = document.getElementById("pick-for-me");
+    if (!hero) { setPastHomeHero(false); return undefined; }
+    const update = () => setPastHomeHero(window.scrollY > Math.max(140, hero.offsetHeight * 0.28));
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [location.pathname]);
 
   const openPanel = () => {
     setOpen(true);
@@ -361,7 +373,7 @@ function AskReelbotLayer() {
 
   return (
     <>
-      <button ref={triggerRef} type="button" className={`ask-reelbot-trigger${isCollection ? " ask-reelbot-trigger--collection" : ""}`} onClick={openPanel} aria-haspopup="dialog">
+      <button ref={triggerRef} type="button" className={`ask-reelbot-trigger${isCollection ? " ask-reelbot-trigger--collection" : ""}${pastHomeHero ? "" : " is-hero-hidden"}`} onClick={openPanel} aria-haspopup="dialog">
         <img className="reelbot-assistant-icon" src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="22" height="26" /> {triggerLabel}
       </button>
       {open ? (
