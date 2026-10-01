@@ -195,7 +195,7 @@ function MovieDetails() {
     let cancelled = false;
     setGenericTake(null);
 
-    if (!movie?.id || recommendationContext) {
+    if (!movie?.id) {
       setGenericTakeLoading(false);
       return () => { cancelled = true; };
     }
