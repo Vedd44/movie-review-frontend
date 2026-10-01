@@ -20448,3 +20448,72 @@ body,
   background:rgba(255,255,255,.05);
   outline:none;
 }
+
+
+/* Mobile auth QA: keep controls contained and make hamburger sign-in intentional. */
+.password-input-wrap {
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.password-input-wrap > input {
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.password-visibility-toggle {
+  z-index:2;
+  touch-action:manipulation;
+}
+.password-visibility-toggle svg {
+  width:19px;
+  height:19px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  pointer-events:none;
+}
+@media only screen and (max-width:860px) {
+  .site-nav--mobile .site-nav-account-link {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:48px;
+    margin-top:6px;
+    padding:0 16px;
+    box-sizing:border-box;
+    border:1px solid rgba(232,180,91,.42);
+    border-radius:999px;
+    background:linear-gradient(135deg,#f0be57,#d89935);
+    color:#101114;
+    font:700 .95rem/1 inherit;
+    text-align:center;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+  .site-nav--mobile .site-nav-account-link:hover,
+  .site-nav--mobile .site-nav-account-link:focus-visible {
+    color:#101114;
+    border-color:rgba(243,201,106,.72);
+    background:linear-gradient(135deg,#f3c96a,#dca043);
+    outline:none;
+  }
+}
+@media only screen and (max-width:640px) {
+  .auth-panel-form--stacked,
+  .auth-panel-form--stacked > *,
+  .password-input-wrap {
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    box-sizing:border-box;
+  }
+  .auth-panel-form--stacked .reelbot-inline-button--solid {
+    max-width:none;
+  }
+}
