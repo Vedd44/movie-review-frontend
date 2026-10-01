@@ -153,11 +153,18 @@ function BrowseLibrary() {
   }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
+    // Fill the initial browse surface with enough real titles to occupy the desktop grid.
+    // The API page is intentionally preserved as the unit of pagination; this simply
+    // advances through additional pages until we have a full 3-row desktop surface.
+    if (loading || loadingMore || error || normalizedPage >= totalPages || filteredMovies.length >= 12) return;
+    setLoadingMore(true);
+    updateFilters({ page: normalizedPage + 1 });
+  }, [error, filteredMovies.length, loading, loadingMore, normalizedPage, totalPages]);
+
+  useEffect(() => {
+    // Editing the next request should not erase the recommendation already on screen.
+    // A submitted pick, explicit refresh/refine, or Start fresh owns result replacement.
     setPickError(null);
-    setPickResult(null);
-    setSwapQueue([]);
-    setCandidatePoolIds([]);
-    setRefinementState(null);
   }, [includeTheatrical, normalizedGenre, normalizedMood, normalizedRuntime, normalizedView, pickPrompt]);
 
   const selectedMoodConfig = useMemo(
@@ -486,7 +493,7 @@ function BrowseLibrary() {
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
             <div className="browse-kicker">Explore</div>
-            <h1 className="browse-title">Find something worth your night.</h1>
+            <h1 className="browse-title">Find something worth watching.</h1>
             <p className="rb-page-dek">Follow your mood, revisit a favorite genre, or let ReelBot make the call.</p>
           </div>
         </section>
@@ -518,7 +525,7 @@ function BrowseLibrary() {
           <div className="library-results-actions">
             <div className="results-count" role="status">{loading ? "Loading movies…" : `${filteredMovies.length} movies`}</div>
             <button type="button" className="browse-library-link browse-library-link--button" onClick={() => setShowReelbotPicker((current) => !current)} aria-expanded={showReelbotPicker} aria-controls="library-reelbot-picker">
-              Ask ReelBot to pick one <span aria-hidden="true">→</span>
+              Ask ReelBot to pick one <span className="browse-picker-toggle-icon" aria-hidden="true">{showReelbotPicker ? "×" : "→"}</span>
             </button>
           </div>
         </div>

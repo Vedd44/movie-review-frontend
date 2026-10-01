@@ -635,3 +635,172 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 @media (max-width: 599px) {
   .admin-heading { flex-direction: column; align-items: flex-start; }
 }
+
+
+/* Pass 3.1 acceptance polish: preserve the system, correct the last visual regressions. */
+.auth-modal-shell {
+  display: block;
+  width: min(520px, 100%);
+}
+.auth-value-proposition {
+  width: 100%;
+  min-width: 0;
+}
+.auth-value-proposition p {
+  max-width: 38ch;
+}
+.auth-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Keep the hero artwork composed rather than decorative/staggered. */
+.rb-film-strip {
+  align-items: center;
+  padding-bottom: 22px;
+}
+.rb-film-strip-item:nth-child(2),
+.rb-film-strip-item:nth-child(3) {
+  transform: none;
+}
+.rb-intro-film-caption {
+  margin-top: 20px;
+}
+
+/* Editorial propositions share the serif voice; utility headings remain sans. */
+.home-collections-head .section-title {
+  font: 400 clamp(2rem, 3.5vw, 3.25rem)/1.04 var(--rb-serif);
+  letter-spacing: -.045em;
+  max-width: 15ch;
+}
+
+/* A complete browse row is calmer than the previous 5 + 3 orphan layout. */
+.browse-page .movie-list,
+.home-browse-section .movie-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Refine is one intentional control row, not a label floating beside controls. */
+.pick-refine-panel {
+  align-items: center;
+}
+.pick-refine-label {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  flex: 0 0 auto;
+}
+.pick-refine-grid {
+  align-items: center;
+}
+
+/* Alternatives should read as real secondary choices, not footnotes. */
+.pick-backup-strip {
+  gap: 20px;
+}
+.pick-backup-card {
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.pick-backup-card img {
+  width: 92px;
+  height: 138px;
+}
+.pick-backup-card h4 {
+  margin: 2px 0 8px;
+  font-size: 1.05rem;
+}
+.pick-backup-card p {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .browse-page .movie-list,
+  .home-browse-section .movie-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .pick-backup-card {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+  .pick-backup-card img {
+    width: 76px;
+    height: 114px;
+  }
+}
+
+@media (max-width: 599px) {
+  .auth-modal-shell {
+    width: 100%;
+    display: block;
+  }
+  .browse-page .movie-list,
+  .home-browse-section .movie-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pick-refine-panel {
+    display: block;
+  }
+  .pick-refine-label {
+    min-height: 0;
+    margin-bottom: 6px;
+  }
+  .pick-backup-strip {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .pick-backup-card {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+  .pick-backup-card img {
+    width: 82px;
+    height: 123px;
+  }
+}
+
+
+/* Pass 3.1 browse acceptance fixes. */
+.site-brand {
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.site-brand .reelbot-brand-logo { pointer-events: none; }
+
+.library-reelbot-card .section-header--compact > div { min-width: 0; }
+.library-reelbot-card .section-subtitle {
+  max-width: 72ch;
+  white-space: nowrap;
+}
+.browse-picker-toggle-icon {
+  display: inline-flex;
+  width: 1.15em;
+  justify-content: center;
+  margin-left: 4px;
+}
+.library-reelbot-card .reelbot-prompt-composer,
+.library-reelbot-card .reelbot-prompt-field { position: relative; }
+.library-reelbot-card .reelbot-prompt-clear,
+.library-reelbot-card .prompt-clear-button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+}
+.library-reelbot-card .pick-result-section {
+  margin-top: 44px;
+}
+.library-reelbot-card .pick-primary-card {
+  padding-top: 4px;
+}
+
+@media (max-width: 820px) {
+  .library-reelbot-card .section-subtitle { white-space: normal; }
+}
