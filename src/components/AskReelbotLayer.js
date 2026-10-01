@@ -19,12 +19,9 @@ const GENERAL_ACTIONS = [
 ];
 
 const MOVIE_ACTIONS = [
-  ["Is it scary?", "Is it scary?"],
-  ["Is it slow?", "Is it slow?"],
-  ["What should I know before watching?", "What should I know before watching?"],
-  ["Is it good for a group?", "Is it good for a group?"],
+  ["What kind of night is it for?", "What kind of night is it for?"],
   ["How intense is it?", "How intense is it?"],
-  ["Explain the ending", "Explain the ending"],
+  ["Is it a slow burn?", "Is it a slow burn?"],
 ];
 
 const PERSON_ACTIONS = [
@@ -147,6 +144,10 @@ function AskReelbotLayer() {
   const [loading, setLoading] = useState(false);
   const [loadingIntent, setLoadingIntent] = useState("");
   const [error, setError] = useState("");
+  const [turns, setTurns] = useState([]);
+  const [pendingQuestion, setPendingQuestion] = useState("");
+  const retryPrompt = useRef("");
+  const conversationEnd = useRef(null);
   const requestController = useRef(null);
   const requestVersion = useRef(0);
 
@@ -167,6 +168,8 @@ function AskReelbotLayer() {
       setResult(null);
       setAnswerResult(null);
       setLastTurn(null);
+      setTurns([]);
+      setPendingQuestion("");
       setExcludedIds([]);
       setError("");
       setConversation(createAskConversation(context));
@@ -191,8 +194,11 @@ function AskReelbotLayer() {
       requestController.current?.abort();
       requestVersion.current += 1;
       setLoading(false);
+      retryPrompt.current = "";
       setConversation(createAskConversation(contextRef.current));
       setLastTurn(null);
+      setTurns([]);
+      setPendingQuestion("");
       setExcludedIds([]);
       setOpen(true);
       setDraft(String(event.detail?.prompt || ""));
@@ -246,6 +252,8 @@ function AskReelbotLayer() {
     setResult(null);
     setAnswerResult(null);
     setLastTurn(null);
+      setTurns([]);
+      setPendingQuestion("");
     setError("");
     setExcludedIds([]);
     setConversation(createAskConversation(contextRef.current));
@@ -273,6 +281,8 @@ function AskReelbotLayer() {
     // conversation state below. Clear only the visible composer once the
     // request is accepted, leaving validation failures untouched.
     setDraft("");
+    setPendingQuestion(normalizedPrompt);
+    retryPrompt.current = normalizedPrompt;
     const requestConversation = result && /^\s*(?:not that one|no,? not that|skip)/i.test(normalizedPrompt)
       ? addHistoryStatus(conversation, result.primary, "rejected")
       : conversation;
@@ -301,6 +311,7 @@ function AskReelbotLayer() {
       if (controller.signal.aborted || version !== requestVersion.current) return;
       if (response.data?.conversation_state) setConversation(response.data.conversation_state);
       if (response.data?.kind === "answer") {
+        setTurns(current => [...current, { question: normalizedPrompt, answer: response.data.answer }].slice(-12));
         setAnswerResult(response.data);
         setResult(null);
         setLastTurn({ prompt: normalizedPrompt, intent: response.data.intent, answer: response.data.answer });
@@ -312,11 +323,13 @@ function AskReelbotLayer() {
       if (response.data?.recommendation?.user_message && !payload?.primary) {
         setResult(null);
         setAnswerResult(null);
+        trackProductEvent("ask_reelbot_result", { kind: "recommendation", outcome: "no_match", latency_ms: Date.now() - startedAt });
         setError(response.data.recommendation.user_message);
         return;
       }
       if (!payload?.primary) throw new Error("no_pick");
       setAnswerResult(null);
+      setTurns(current => [...current, { question: normalizedPrompt, answer: payload.rationale?.primary_reason || payload.primary.reason || payload.summary, movie: payload.primary }].slice(-12));
       setResult(payload);
       setLastTurn({ prompt: normalizedPrompt, intent: response.data?.intent, movie_id: payload.primary.id, movie_title: payload.primary.title });
       void tasteActions.recordPickResult({
@@ -328,14 +341,14 @@ function AskReelbotLayer() {
         genre: context.activeFilters?.genre || "all",
       }, payload).catch(() => {});
       trackProductEvent("ask_reelbot_intent", { intent: response.data?.intent || "UNKNOWN", page: context.page || "general" });
-      trackProductEvent("ask_reelbot_result", { kind: "recommendation", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
+      trackProductEvent("ask_reelbot_result", { kind: "recommendation", outcome: response.data?.recommendation?.performance?.outcome || "pick", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
       setExcludedIds((current) => dedupeIds([...current, payload.primary.id]));
     } catch (requestError) {
       if (controller.signal.aborted || version !== requestVersion.current) return;
-      trackProductEvent("ask_reelbot_failed", { page: context.page || "general", latency_ms: Date.now() - startedAt });
+      trackProductEvent("ask_reelbot_failed", { kind: /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer", outcome: requestError?.message === "no_pick" ? "no_match" : "failed", page: context.page || "general", latency_ms: Date.now() - startedAt });
       setError(requestError?.message === "no_pick" ? "Nothing great matched that exactly. Try loosening one detail." : "ReelBot hit a snag. Try that again.");
     } finally {
-      if (version === requestVersion.current) { setLoading(false); setLoadingIntent(""); }
+      if (version === requestVersion.current) { setLoading(false); setLoadingIntent(""); setPendingQuestion(""); }
     }
   };
 
@@ -349,6 +362,9 @@ function AskReelbotLayer() {
 
   const closePanel = () => { requestController.current?.abort(); requestVersion.current += 1; setLoading(false); setOpen(false); };
   useEffect(() => () => { requestController.current?.abort(); }, []);
+  useEffect(() => {
+    conversationEnd.current?.scrollIntoView?.({ block: "nearest", behavior: "auto" });
+  }, [turns.length, loading]);
   const isCollection = context.page === "collection";
   const rationaleLines = result?.rationale?.whyRecommended || result?.rationale?.why_this_works || [];
   const resultReason = result?.rationale?.primary_reason || result?.primary?.reason || rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.summary;
@@ -372,6 +388,8 @@ function AskReelbotLayer() {
   const openPanel = () => {
     setConversation(createAskConversation(context));
     setLastTurn(null);
+      setTurns([]);
+      setPendingQuestion("");
     setExcludedIds([]);
     setOpen(true);
     setDraft("");
@@ -393,6 +411,7 @@ function AskReelbotLayer() {
         <div className="ask-reelbot-backdrop" role="presentation" onMouseDown={closePanel}>
           <section ref={sheetRef} className="ask-reelbot-sheet" role="dialog" aria-modal="true" aria-labelledby="ask-reelbot-sheet-title" onMouseDown={(event) => event.stopPropagation()}>
             <header className="ask-reelbot-sheet-head">
+              {(context.movie?.poster_path || result?.primary?.poster_path) ? <img className="rb-ask-context-art" src={`https://image.tmdb.org/t/p/w92${context.movie?.poster_path || result?.primary?.poster_path}`} alt="" width="46" height="69" /> : null}
               <div>
                 <div className="detail-description-label reelbot-assistant-label"><img src="/brand/reelbot-icon.svg" alt="" aria-hidden="true" width="20" height="24" />{isCollection ? "ReelBot Collection Pick" : "Ask ReelBot"}</div>
                 <h2 id="ask-reelbot-sheet-title">{config.heading}</h2>
@@ -401,7 +420,14 @@ function AskReelbotLayer() {
               <button type="button" className="ask-reelbot-close" onClick={closePanel} aria-label="Close Ask ReelBot">×</button>
             </header>
 
-            {!isCollection && !result && !answerResult ? (
+            <div className="rb-conversation-body">
+            {turns.slice(0, loading ? undefined : -1).map((turn, index) => <article className="rb-conversation-turn" key={index}>
+              <p className="rb-conversation-question">{turn.question}</p>
+              {turn.movie ? <a className="rb-conversation-film" href={getMoviePath(turn.movie)}>{turn.movie.title}</a> : null}
+              <p>{turn.answer}</p>
+            </article>)}
+            {pendingQuestion || lastTurn?.prompt ? <p className="rb-conversation-question">{pendingQuestion || lastTurn.prompt}</p> : null}
+            {!isCollection && !result && !answerResult && !loading ? (
               <div className="ask-reelbot-start">
                 <div className="ask-reelbot-suggestions">
                   {config.actions.map(([label, prompt]) => (
@@ -410,8 +436,8 @@ function AskReelbotLayer() {
                 </div>
               </div>
             ) : null}
-            {answerResult ? (
-              <article className="ask-reelbot-answer ask-reelbot-answer--direct">
+            {!loading && answerResult ? (
+              <article className="ask-reelbot-answer ask-reelbot-answer--direct" aria-live="polite">
                 <div className="ask-reelbot-answer-label">About {answerMovieTitle}</div>
                 <p className="ask-reelbot-direct-copy">{answerResult.answer}</p>
                 <div className="ask-reelbot-answer-actions">
@@ -420,7 +446,7 @@ function AskReelbotLayer() {
                   ))}
                 </div>
               </article>
-            ) : result ? (
+            ) : !loading && result ? (
               <article className="ask-reelbot-answer">
                 <div className="ask-reelbot-answer-label">Your pick</div>
                 <div className="ask-reelbot-answer-main">
@@ -437,12 +463,6 @@ function AskReelbotLayer() {
                 </div>
               </article>
             ) : null}
-            {!isCollection ? (
-              <form className="ask-reelbot-form" onSubmit={submitDraft}>
-                <input ref={inputRef} value={draft} maxLength={500} onChange={(event) => setDraft(event.target.value)} placeholder={answerResult || result ? "Ask a follow-up…" : "Ask ReelBot…"} aria-label="Ask ReelBot" />
-                <button type="submit" disabled={loading || !draft.trim()}>{loading ? loadingCopy : "Ask"}</button>
-              </form>
-            ) : null}
             {loading ? (
               <div className={`ask-reelbot-status ask-reelbot-status--loading${isCollection ? " ask-reelbot-status--collection" : ""}`} role="status" aria-live="polite">
                 <div className="ask-reelbot-status-progress">
@@ -455,7 +475,16 @@ function AskReelbotLayer() {
 
               </div>
             ) : null}
-            {error ? <div className="ask-reelbot-status ask-reelbot-status--error" role="alert">{error}</div> : null}
+            {error ? <div className="ask-reelbot-status ask-reelbot-status--error" role="alert">{error}<button className="rb-text-button" onClick={() => requestPick(retryPrompt.current)}>Try again</button></div> : null}
+            <div ref={conversationEnd} />
+            </div>
+            {!isCollection ? (
+              <form className="ask-reelbot-form" onSubmit={submitDraft}>
+                <input ref={inputRef} value={draft} maxLength={500} onChange={(event) => setDraft(event.target.value)} placeholder={answerResult || result ? "Ask a follow-up…" : "Ask ReelBot…"} aria-label="Ask ReelBot" />
+                <button type="submit" disabled={loading || !draft.trim()}>{loading ? "…" : "Ask"}</button>
+              </form>
+            ) : null}
+
           </section>
         </div>
       ) : null}

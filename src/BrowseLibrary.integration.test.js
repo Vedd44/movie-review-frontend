@@ -35,7 +35,7 @@ beforeEach(() => {
   });
 });
 
-test("progressively discloses runtime and sends all selected filters to the existing picker", async () => {
+test("labelled selects and a typed prompt reach the existing constrained picker", async () => {
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
 
   expect(await screen.findByRole("heading", { name: "Movies" })).toBeInTheDocument();
@@ -43,19 +43,20 @@ test("progressively discloses runtime and sends all selected filters to the exis
   expect(screen.getByRole("button", { name: "Now Playing" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Coming Soon" })).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Dark" }));
-  fireEvent.click(screen.getByRole("button", { name: "Action" }));
-  fireEvent.click(screen.getByText("Filters"));
-  fireEvent.click(screen.getByRole("button", { name: "Under 2 hours" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Mood" }), {target:{value:"dark"}});
+  fireEvent.change(screen.getByRole("combobox", { name: "Genre" }), {target:{value:"28"}});
+  fireEvent.change(screen.getByRole("combobox", { name: "Runtime" }), {target:{value:"under_two_hours"}});
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot to pick one/i }));
 
   const picker = document.getElementById("library-reelbot-picker");
+  fireEvent.change(within(picker).getByRole("textbox", {name:"Add a vibe"}), {target:{value:"A gritty thriller"}});
   fireEvent.click(within(picker).getByRole("checkbox", { name: /Include movies still in theaters/i }));
   fireEvent.click(within(picker).getByRole("button", { name: "Ask ReelBot" }));
 
   await waitFor(() => expect(axios.post).toHaveBeenCalled());
   const requestBody = axios.post.mock.calls[0][1];
   expect(requestBody).toMatchObject({
+    prompt: "A gritty thriller",
     view: "popular",
     mood: "dark",
     runtime: "under_two_hours",
@@ -133,7 +134,7 @@ test("changing a filter resets progressive results to the filtered first page", 
   fireEvent.click(screen.getByRole("link", { name: "Load more" }));
   expect(await screen.findByRole("heading", { name: "Pitch Black" })).toBeInTheDocument();
 
-  fireEvent.click(await screen.findByRole("button", { name: "Action" }));
+  fireEvent.change(await screen.findByRole("combobox", { name: "Genre" }), {target:{value:"28"}});
 
   expect(await screen.findByRole("heading", { name: "The Terminator" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Aliens" })).not.toBeInTheDocument();

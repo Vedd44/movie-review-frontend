@@ -219,11 +219,18 @@ function AuthPanel({
       {title ? <div id={titleId || undefined} className="auth-panel-title">{title}</div> : null}
 
       {!user && usingPasswordFlow && !isForgotPasswordView ? (
-        <div className="auth-panel-task-switcher" role="tablist" aria-label="Account task">
+        <div className="auth-panel-task-switcher" role="tablist" aria-label="Account task" onKeyDown={(event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          const tabs = [...event.currentTarget.querySelectorAll("[role=tab]")];
+          const index = tabs.indexOf(document.activeElement);
+          tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length]?.focus();
+        }}>
           <button
             type="button"
             role="tab"
             aria-selected={view === PASSWORD_LOGIN_VIEW}
+            tabIndex={view === PASSWORD_SIGNUP_VIEW ? -1 : 0}
             className={`auth-panel-task-switch${view === PASSWORD_LOGIN_VIEW ? " is-active" : ""}`}
             onClick={() => handleViewChange(PASSWORD_LOGIN_VIEW)}
           >
@@ -233,6 +240,7 @@ function AuthPanel({
             type="button"
             role="tab"
             aria-selected={view === PASSWORD_SIGNUP_VIEW}
+            tabIndex={view === PASSWORD_SIGNUP_VIEW ? 0 : -1}
             className={`auth-panel-task-switch${view === PASSWORD_SIGNUP_VIEW ? " is-active" : ""}`}
             onClick={() => handleViewChange(PASSWORD_SIGNUP_VIEW)}
           >

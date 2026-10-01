@@ -16,9 +16,7 @@ import {
 } from "./discovery";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
-import CinematicAtmosphere from "./components/CinematicAtmosphere";
 import TrailerModal from "./components/TrailerModal";
-import SwipeableRail from "./components/SwipeableRail";
 import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
@@ -1246,36 +1244,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     // Keep this rail distinct from the browse grid below it.
     const gridIds = new Set(displayedMovies.slice(0, isFeedRoute ? displayedMovies.length : isCompactHeroPreview ? 6 : 8).map((movie) => movie.id));
     const seen = new Set();
-    return [...curatedMovies, ...filteredMovies]
-      .filter((movie) => movie?.id && movie?.poster_path && !gridIds.has(movie.id) && !seen.has(movie.id) && seen.add(movie.id))
-      .slice(0, 3);
+    const available = [...curatedMovies, ...filteredMovies].filter(movie => movie?.id && movie?.poster_path && !seen.has(movie.id) && seen.add(movie.id));
+    return [...available.filter(movie => !gridIds.has(movie.id)), ...available.filter(movie => gridIds.has(movie.id))].slice(0, 3);
   }, [curatedMovies, displayedMovies, filteredMovies, isCompactHeroPreview, isFeedRoute]);
-  const heroArtMovies = useMemo(() => {
-    const source = [...displayedMovies, ...filteredMovies, ...curatedMovies];
-    const seen = new Set();
-    const unique = source.filter((movie) => {
-      if (!movie?.poster_path || seen.has(movie.id)) return false;
-      seen.add(movie.id);
-      return true;
-    });
-
-    // Stable for the whole calendar day, then reshuffles automatically the next day.
-    const dayKey = new Date().toISOString().slice(0, 10);
-    const hash = (value) => {
-      let result = 2166136261;
-      for (let index = 0; index < value.length; index += 1) {
-        result ^= value.charCodeAt(index);
-        result = Math.imul(result, 16777619);
-      }
-      return result >>> 0;
-    };
-
-    return unique
-      .map((movie) => ({ movie, order: hash(`${dayKey}:${movie.id}`) }))
-      .sort((left, right) => left.order - right.order)
-      .slice(0, 24)
-      .map(({ movie }) => movie);
-  }, [curatedMovies, displayedMovies, filteredMovies]);
   const onboardingVibe = useMemo(
     () => ONBOARDING_VIBES.find((option) => option.id === onboardingVibeId) || null,
     [onboardingVibeId]
@@ -1609,6 +1580,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       void tasteActions.recordPickResult(nextPreferences, nextPayload).catch(() => {});
       trackProductEvent("recommendation_returned", {
         latency_ms: Date.now() - startedAt,
+        outcome: nextPayload.performance?.outcome || "pick",
         fit_tier: nextPayload.fit_tier || "unknown",
         theaters_toggle: Boolean(nextPreferences.include_theatrical),
       });
@@ -1624,7 +1596,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       }
 
       console.error("Error fetching ReelBot pick:", requestError);
-      trackProductEvent("recommendation_failed", { latency_ms: Date.now() - startedAt, theaters_toggle: Boolean(nextPreferences.include_theatrical) });
+      trackProductEvent("recommendation_failed", { outcome: requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed", latency_ms: Date.now() - startedAt, theaters_toggle: Boolean(nextPreferences.include_theatrical) });
       const nextStatus = requestError?.code === PICK_STATUS.EXHAUSTED ? PICK_STATUS.EXHAUSTED : PICK_STATUS.ERROR;
 
       if (options.isSwap && previousPick?.primary) {
@@ -2071,34 +2043,17 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   return (
     <div className={`browse-page home-page${isFeedRoute ? " feed-page" : ""}`}>
-      {!isFeedRoute ? <CinematicAtmosphere active={isHeroInputFocused || isPickBusy} loading={isPickBusy} /> : null}
-      {!isFeedRoute ? <section
-          id="pick-for-me"
-          className="home-hero"
-          aria-labelledby="home-hero-title"
-        >
-          {heroArtMovies.length ? (
-            <div className="home-hero-art" aria-hidden="true">
-              <div className="home-hero-art-track">
-                {[...heroArtMovies, ...heroArtMovies].map((movie, index) => (
-                  <div
-                    key={`${movie.id}-${index}`}
-                    className={`home-hero-art-panel home-hero-art-panel--${(index % heroArtMovies.length) + 1}`}
-                    style={{ backgroundImage: `url("https://image.tmdb.org/t/p/w342${movie.poster_path}")` }}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <div className="home-hero-copy">
-            <div className="browse-kicker">Skip the endless scroll</div>
-            <h1 id="home-hero-title" className="home-hero-title">{homeHeadline}</h1>
-            <p className="home-hero-subtitle"><span>A movie for your mood, your time, your kind of night.</span></p>
-            <div className="home-hero-form">
+      {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}`} aria-labelledby="home-hero-title">
+        <div className="rb-intro-copy">
+          <span className="rb-eyebrow">Your night. Your kind of movie.</span>
+          <h1 id="home-hero-title">{homeHeadline}</h1>
+          <p className="rb-intro-dek">Less searching.<br />More getting lost in a good film.</p>
+          <div className={`rb-night-composer${isHeroInputFocused ? " is-focused" : ""}`}>
               <ReelbotPromptComposer
+                multiline
                 inputId="pick-prompt-input"
                 introText=""
-                suggestions={visiblePromptSuggestions}
+                suggestions={visiblePromptSuggestions.slice(0, 4)}
                 activeSuggestion={activePromptSuggestion}
                 value={pickPrompt}
                 onSuggestionSelect={(value) => {
@@ -2125,67 +2080,25 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 placeholder='Try “something fun and stupid, but actually good”'
                 errorText={pickValidation}
               />
-
-              <div className="home-hero-actions home-hero-actions--primary">
-                <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handlePickSubmit} disabled={isPickBusy}>
-                  {isPickLoading && lastPickMode === "prompt" ? "Getting a pick…" : "Find my movie"}
-                </button>
-                <button type="button" className="reelbot-inline-button reelbot-inline-button--secondary" onClick={handleSurprisePick} disabled={isPickBusy}>
-                  {isPickLoading && lastPickMode === "surprise" ? "Surprising you…" : "Surprise me"}
-                </button>
-              </div>
-
-              <label className="reelbot-toggle-option theatrical-toggle theatrical-toggle--quiet">
-                <input
-                  type="checkbox"
-                  checked={includeTheatrical}
-                  onChange={(event) => setIncludeTheatrical(event.target.checked)}
-                  disabled={isPickBusy}
-                />
-                <span className="reelbot-toggle-option-control" aria-hidden="true"></span>
-                <span className="reelbot-toggle-option-copy">
-                  <span className="reelbot-toggle-option-title">Include movies in theaters</span>
-                  <span className="reelbot-toggle-option-subtitle"></span>
-                </span>
-              </label>
+            <div className="rb-composer-actions">
+              <button type="button" className="rb-button rb-button--primary" onClick={handlePickSubmit} disabled={isPickBusy}>
+                {isPickLoading && lastPickMode === "prompt" ? "Finding your movie…" : "Find my movie"}<span aria-hidden="true">↗</span>
+              </button>
+              <button type="button" className="rb-text-button" onClick={handleSurprisePick} disabled={isPickBusy}>{isPickLoading && lastPickMode === "surprise" ? "Finding a surprise…" : "Surprise me"}</button>
             </div>
-
-            <div id="now-playing" className="home-hero-now-playing home-hero-now-playing--inline" aria-label="Popular movies">
-              <div className="home-hero-now-playing-head">
-                <div>
-                  <h2 className="home-hero-now-playing-heading">{heroPreviewLabel}</h2>
-                </div>
-              </div>
-
-              {heroPreviewMovies.length ? (
-                <SwipeableRail className="home-hero-now-playing-rail" ariaLabel="Popular movies">
-                  {heroPreviewMovies.map((movie) => (
-                    <Link key={movie.id} to={getMoviePath(movie)} className="home-hero-now-playing-item reelbot-poster-card reelbot-poster-card--compact" aria-label={`Open ${movie.title}`}>
-                      {movie.poster_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
-                          alt={movie.title}
-                          className="home-hero-now-playing-poster reelbot-poster-art"
-                          width="300"
-                          height="450"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <ArtworkFallback className="home-hero-now-playing-poster home-hero-now-playing-poster--placeholder" />
-                      )}
-                      <span className="home-hero-now-playing-title">{movie.title}</span>
-                    </Link>
-                  ))}
-                </SwipeableRail>
-              ) : loading ? (
-                <div className="home-hero-now-playing-rail home-hero-now-playing-rail--loading" aria-hidden="true">
-                  {Array.from({ length: 3 }).map((_, index) => <span key={index} className="home-hero-now-playing-skeleton" />)}
-                </div>
-              ) : null}
-            </div>
+            <label className="rb-check"><input type="checkbox" checked={includeTheatrical} onChange={(event) => setIncludeTheatrical(event.target.checked)} disabled={isPickBusy} /><span>Include movies in theaters</span></label>
           </div>
-        </section> : null}
+        </div>
+        <aside className="rb-intro-films" aria-label="Popular movies">
+          <div className="rb-film-strip">
+            {heroPreviewMovies.map((movie) => <Link key={movie.id} to={getMoviePath(movie)} className="rb-film-strip-item" aria-label={`Open ${movie.title}`}>
+              {movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`} alt={movie.title} width="342" height="513" decoding="async" /> : <ArtworkFallback />}
+              <span>{movie.title}</span>
+            </Link>)}
+          </div>
+          <div className="rb-intro-film-caption"><span>{heroPreviewLabel}</span><Link to="/browse">Explore the movies <span aria-hidden="true">→</span></Link></div>
+        </aside>
+      </section> : null}
 
       <div className="container browse-shell home-shell">
         {!isFeedRoute && shouldRenderPickResultSection ? (

@@ -60,3 +60,17 @@ test("pending anonymous Save is applied once to the restored account", async () 
   expect(reelbotCloudService.saveUserState).toHaveBeenCalledTimes(1);
   expect(window.localStorage.getItem("reelbotPendingMovieSave")).toBeNull();
 });
+
+
+test("request telemetry is quiet and a failed measurement cannot lose a queued Save", async () => {
+  render(app()); await ready();
+  let rejectTelemetry;
+  reelbotCloudService.saveUserState.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectTelemetry = reject; }));
+  await act(async () => window.dispatchEvent(new CustomEvent("reelbot:analytics", { detail: { name: "recommendation_returned", properties: { latency_ms: 4200, page: "home", outcome: "pick" } } })));
+  await waitFor(() => expect(rejectTelemetry).toBeDefined());
+  expect(first.isCloudSyncing).toBe(false);
+  let save;
+  await act(async () => { save = first.actions.toggleWatchlist({ id: 11, title: "Still saved" }); rejectTelemetry(new Error("Telemetry failed")); await save; });
+  expect(first.profile.watchlist.map(movie => movie.id)).toEqual([11]);
+  expect(first.cloudSyncError).toBe("");
+});

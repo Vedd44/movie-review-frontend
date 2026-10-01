@@ -230,7 +230,7 @@ function GlobalMovieSearch() {
                     <strong>{movie.title || movie.name}</strong>
                     <span>{movie.media_type === "person" ? movie.known_for_department : `Movie · ${getReleaseYear(movie.release_date) || "Year unavailable"}`}</span>
                   </span>
-                  <span className="global-search-open-label">Open</span>
+                  <span className="global-search-open-label" aria-hidden="true">↗</span>
                 </button>
               )) : null}
             </div>

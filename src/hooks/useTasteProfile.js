@@ -93,24 +93,24 @@ function useSharedTasteProfile() {
       const persisted = tasteProfileService.save(nextProfile);
       applyProfile(persisted);
       if (!userId || !reelbotCloudService.isConfigured) return persisted;
-      setSyncLoading(true);
+      if (!options.quiet) setSyncLoading(true);
       try {
         const snapshot = await reelbotCloudService.saveUserState(userId, persisted, { ...options, previousProfile });
         if (activeUser.current !== userId || generation.current !== version) return snapshot.profile;
         reelbotCloudService.activateLocalCache(snapshot, userId);
         applyProfile(snapshot.profile);
-        setSyncError("");
+        if (!options.quiet) setSyncError("");
         return snapshot.profile;
       } catch (error) {
         if (activeUser.current === userId && generation.current === version) {
           tasteProfileService.save(previousProfile);
           tasteProfileService.saveInteractions(previousInteractions);
           applyProfile(previousProfile);
-          setSyncError(error.message || "That change couldn't be saved. Please try again.");
+          if (!options.quiet) setSyncError(error.message || "That change couldn't be saved. Please try again.");
         }
         throw error;
       } finally {
-        if (activeUser.current === userId && generation.current === version) setSyncLoading(false);
+        if (!options.quiet && activeUser.current === userId && generation.current === version) setSyncLoading(false);
       }
     };
     // One queue for every Save button, route and recommendation interaction.
@@ -118,6 +118,24 @@ function useSharedTasteProfile() {
     queue.current = operation.catch(() => {});
     return operation;
   }, [userId, applyProfile]);
+
+  useEffect(() => {
+    if (!userId) return undefined;
+    const record = ({ detail }) => {
+      const { name, properties = {} } = detail || {};
+      const isPick = name === "recommendation_returned" || (name === "ask_reelbot_result" && properties.kind === "recommendation");
+      const isFailure = name === "recommendation_failed" || name === "ask_reelbot_failed";
+      if (!isPick && !isFailure) return;
+      if (name === "ask_reelbot_failed" && properties.kind !== "recommendation") return;
+      void commit(profile => tasteProfileService.recordRequestOutcome(profile, {
+        outcome: properties.outcome || (isPick ? "pick" : "failed"),
+        latency_ms: properties.latency_ms,
+        surface: properties.page || (name.startsWith("ask_") ? "ask" : "home"),
+      }), { quiet: true }).catch(() => {});
+    };
+    window.addEventListener("reelbot:analytics", record);
+    return () => window.removeEventListener("reelbot:analytics", record);
+  }, [commit, userId]);
 
   const actions = useMemo(
     () => ({

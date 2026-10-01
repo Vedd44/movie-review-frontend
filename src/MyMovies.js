@@ -1,5 +1,5 @@
 import ArtworkFallback from "./components/ArtworkFallback";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./App.css";
 import MovieCardMeta from "./components/MovieCardMeta";
@@ -75,7 +75,8 @@ const normalizeSavedMovie = (movie = {}) => ({
 function MyMovies() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, openAuthPrompt } = useAuth();
-  const { profile, actions, getMovieState, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError, isUsingCloudProfile } = useTasteProfile();
+  const { profile, actions, getMovieState, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError } = useTasteProfile();
+  const [libraryQuery, setLibraryQuery] = useState("");
   const activeTab = TAB_CONFIG.some((tab) => tab.id === searchParams.get("tab")) ? searchParams.get("tab") : "watchlist";
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) || TAB_CONFIG[0];
 
@@ -98,7 +99,7 @@ function MyMovies() {
     const allMovies = [
       ...(profile.watchlist || []),
       ...(profile.seen || []),
-      ...(profile.skipped || []),
+
     ];
     const genreCounts = new Map();
     allMovies.forEach((movie) => {
@@ -145,8 +146,9 @@ function MyMovies() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo my-movies-hero">
           <div className="browse-copy">
+            <div className="rb-eyebrow">Your personal collection</div>
             <h1 className="browse-title">My movies</h1>
-            {user ? <p className="browse-subtitle browse-subtitle--hero">Saved, watched, and hidden movies.</p> : null}
+            {user ? <p className="browse-subtitle browse-subtitle--hero">Good movies deserve a place to come back to.</p> : null}
             {user && askCandidateIds.length ? (
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: "choose a movie from my saved list that I have not watched" })}>
                 Pick from my movies
@@ -179,14 +181,7 @@ function MyMovies() {
 
         {user ? (
         <section className="saved-movies-shell detail-info-card">
-          <div className="section-header section-header--stacked-mobile section-header--compact">
-            <div>
-              <h2 className="section-title">Movies</h2>
-            </div>
-            <div className="saved-movies-sync-status" role="status">
-              <span>{isCloudSyncing ? "Syncing…" : cloudSyncError ? "Sync unavailable" : isUsingCloudProfile ? "Synced" : "Saved in this browser"}</span>
-            </div>
-          </div>
+          {isCloudSyncing ? <p className="saved-movies-sync-status" role="status">Saving your changes…</p> : null}
           {cloudSyncError ? <p className="error-message my-movies-sync-error">{cloudSyncError}</p> : null}
 
           <div className="tabs saved-movie-tabs" role="group" aria-label="Saved movie lists">
@@ -198,7 +193,7 @@ function MyMovies() {
                 aria-pressed={activeTab === tab.id}
                 onClick={() => setSearchParams({ tab: tab.id })}
               >
-                {tab.label}
+                {tab.label} <span className="rb-tab-count">{getSavedMoviesForBucket(tab.id).length}</span>
               </button>
             ))}
           </div>
@@ -207,12 +202,13 @@ function MyMovies() {
             <div>
               <p className="detail-secondary-text">{activeTabConfig.description}</p>
             </div>
-            <div className="results-count">{savedMovies.length}</div>
+            <label className="rb-library-search"><span className="sr-only">Search your movies</span><input type="search" aria-label="Search your movies" placeholder="Find in your movies" value={libraryQuery} onChange={(event) => setLibraryQuery(event.target.value)} /></label>
           </div>
 
+          {savedMovies.length && !savedMovies.some(movie => movie.title.toLowerCase().includes(libraryQuery.trim().toLowerCase())) ? <div className="empty-state"><h3>No movies match “{libraryQuery}”</h3><button className="rb-text-button" onClick={() => setLibraryQuery("")}>Clear search</button></div> : null}
           {savedMovies.length ? (
             <div className="movie-list saved-movie-list">
-              {savedMovies.map((movie) => {
+              {savedMovies.filter(movie => movie.title.toLowerCase().includes(libraryQuery.trim().toLowerCase())).map((movie) => {
                 const movieState = getMovieState(movie.id);
                 return (
                 <article key={`${activeTab}-${movie.id}`} className="movie-card saved-movie-card">
@@ -241,7 +237,7 @@ function MyMovies() {
                     </h3>
                     {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
                     <p className="saved-movie-note">{getSavedMetaLabel(activeTab, movie)}</p>
-                    {movie.overview ? <p className="saved-movie-overview">{movie.overview}</p> : null}
+
 
                     <div className="saved-movie-actions">
                       <Link to={getMoviePath(movie)} className="card-link saved-movie-open-link">

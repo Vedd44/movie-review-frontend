@@ -255,6 +255,7 @@ function MovieDetails() {
     movie: movie ? {
       id: movie.id,
       title: movie.title,
+      poster_path: movie.poster_path,
       originalTitle: movie.original_title || movie.title,
       year: movie.release_year || null,
       genres: movie.genre_names || [],
@@ -351,7 +352,7 @@ function MovieDetails() {
               {movie.genre_names?.length ? <p className="detail-genres">{movie.genre_names.join(" · ")}</p> : null}
               {movie.director_credit?.id ? <p className="detail-director-line">Directed by <Link to={getPersonPath(movie.director_credit)}>{movie.director_credit.name}</Link></p> : movie.director ? <p className="detail-director-line">Directed by {movie.director}</p> : null}
             </div>
-            <div className="detail-description-block"><div className="detail-description-label">Overview</div><p className="detail-description">{movieDescription}</p></div>
+            <div className="detail-description-block"><div className="detail-description-label">The story</div><p className="detail-description">{movieDescription.length > 240 ? `${movieDescription.slice(0, movieDescription.lastIndexOf(" ", 240))}…` : movieDescription}</p>{movieDescription.length > 240 ? <details className="rb-synopsis"><summary>Read full synopsis</summary><p>{movieDescription}</p></details> : null}</div>
             <div className="detail-hero-actions detail-hero-actions--simplified" role="group" aria-label="Movie actions">
               <button type="button" className="detail-trailer-cta" onClick={() => jumpTo("where-to-watch")}>Where to Watch</button>
               <TasteActionBar movie={movie} compact showSeenAction={false} showSkipAction={false} showVibeAction={false} />

@@ -1,3 +1,4 @@
+const { buildAdminMetrics } = require("../server/adminMetrics");
 const { createClient } = require("@supabase/supabase-js");
 const normalizeSupabaseUrl = (value) =>
   String(value || "")
@@ -179,29 +180,18 @@ function createAdminHandler({ getClient } = {}) {
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       const byId = new Map(users.map((user) => [user.id, user]));
       const activity = (sessionsResult.data || [])
-        .flatMap((row) => [
-          {
-            id: `sync-${row.user_id}`,
+        .flatMap((row) => (Array.isArray(row.payload?.interactions) ? row.payload.interactions : [])
+          .slice(0, 25)
+          .map((entry, i) => ({
+            id: `${row.user_id}-${i}`,
             user_id: row.user_id,
             email: byId.get(row.user_id)?.email || "",
-            label: "Profile synced",
-            detail: row.last_prompt || "",
-            created_at: row.updated_at,
-          },
-          ...(Array.isArray(row.payload?.interactions)
-            ? row.payload.interactions
-            : []
-          )
-            .slice(0, 25)
-            .map((entry, i) => ({
-              id: `${row.user_id}-${i}`,
-              user_id: row.user_id,
-              email: byId.get(row.user_id)?.email || "",
-              label: String(entry.type || "Activity").replaceAll("_", " "),
-              detail: entry.movie?.title || entry.metadata?.prompt || "",
-              created_at: entry.timestamp || row.updated_at,
-            })),
-        ])
+            label: entry.type === "request_result"
+              ? ({ pick: "Recommendation returned", no_match: "No matching movie", failed: "Recommendation failed", fallback: "Recommendation recovered" }[entry.metadata?.outcome] || "Recommendation request")
+              : ({ pick_shown: "Movie recommended", save: "Movie saved", seen: "Marked watched", hidden: "Marked not for me", unsave: "Removed from saved", unsee: "Removed from watched" }[entry.type] || String(entry.type || "Activity").replaceAll("_", " ")),
+            detail: entry.movie?.title || entry.metadata?.prompt || (entry.type === "request_result" ? entry.metadata?.surface || "" : ""),
+            created_at: entry.timestamp || row.updated_at,
+          })))
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       return send(res, 200, {
         stats: {
@@ -216,6 +206,7 @@ function createAdminHandler({ getClient } = {}) {
           feedback_count: feedbackCount.count,
           feedback_7d: weekFeedback.count,
         },
+        operations: buildAdminMetrics(sessionsResult.data),
         users,
         activity: activity.slice(0, 200),
         feedback: feedbackResult.data || [],

@@ -39,18 +39,20 @@ beforeEach(() => {
 
 test("Manage shows both saved and watched states across lists and preserves Saved when unwatching", async () => {
   renderLibrary();
-  await screen.findByText("Synced");
+  await waitFor(() => expect(screen.queryByText("Saving your changes…")).not.toBeInTheDocument());
+  await screen.findByRole("heading", {name:"The Town"});
+  expect(screen.queryByText("Synced")).not.toBeInTheDocument();
   let menu = statuses();
   expect(menu.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
   expect(menu.getByRole("button", { name: "Watched" })).toHaveAttribute("aria-pressed", "true");
   expect(menu.getByRole("button", { name: "Not for me" })).toHaveAttribute("aria-pressed", "false");
-  fireEvent.click(lists().getByRole("button", { name: "Watched" }));
+  fireEvent.click(lists().getByRole("button", { name: /^Watched/ }));
   menu = statuses();
   expect(menu.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
   fireEvent.click(menu.getByRole("button", { name: "Watched" }));
   await screen.findByText("Nothing marked as watched yet.");
-  await screen.findByText("Synced");
-  fireEvent.click(lists().getByRole("button", { name: "Saved" }));
+  await waitFor(() => expect(screen.queryByText("Saving your changes…")).not.toBeInTheDocument());
+  fireEvent.click(lists().getByRole("button", { name: /^Saved/ }));
   menu = statuses();
   expect(menu.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
   expect(menu.getByRole("button", { name: "Watched" })).toHaveAttribute("aria-pressed", "false");
@@ -61,14 +63,26 @@ test("a pending mutation never claims Synced, and a failed mutation restores the
   let rejectSave;
   reelbotCloudService.saveUserState.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectSave = reject; }));
   renderLibrary();
-  await screen.findByText("Synced");
+  await waitFor(() => expect(screen.queryByText("Saving your changes…")).not.toBeInTheDocument());
+  await screen.findByRole("heading", {name:"The Town"});
   fireEvent.click(statuses().getByRole("button", { name: "Saved" }));
-  await screen.findByText("Syncing…");
+  await screen.findByText("Saving your changes…");
   expect(screen.queryByText("Synced")).not.toBeInTheDocument();
   await waitFor(() => expect(rejectSave).toBeDefined());
   await act(async () => { rejectSave(new Error("Could not save. Try again.")); });
   expect(await screen.findByRole("heading", { name: "The Town" })).toBeInTheDocument();
-  expect(screen.getByText("Sync unavailable")).toBeInTheDocument();
   expect(screen.getByText("Could not save. Try again.")).toBeInTheDocument();
   expect(screen.queryByText("Synced")).not.toBeInTheDocument();
+});
+
+
+test("library search filters locally and clearing it preserves the saved list", async () => {
+  renderLibrary();
+  await screen.findByRole("heading", { name: "The Town" });
+  const search = screen.getByRole("searchbox", { name: /Search/i });
+  fireEvent.change(search, { target: { value: "no-such-movie" } });
+  expect(screen.queryByRole("heading", { name: "The Town" })).not.toBeInTheDocument();
+  fireEvent.change(search, { target: { value: "town" } });
+  expect(screen.getByRole("heading", { name: "The Town" })).toBeInTheDocument();
+  expect(reelbotCloudService.saveUserState).not.toHaveBeenCalled();
 });

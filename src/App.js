@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath, isContextualDetailPath, hasUsefulAskContext } from "./discovery";
 import "./App.css";
 import "./productPolish.css";
+import "./reelbotDesign.css";
 
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
@@ -48,7 +49,7 @@ function LegacyFeedRedirect() {
 function SiteHeader() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, openAuthPrompt } = useAuth();
+  const { user, authReady, openAuthPrompt } = useAuth();
   const isAskReelbotActive = location.pathname === "/" && location.hash === "#pick-for-me";
 
   useEffect(() => {
@@ -96,7 +97,7 @@ function SiteHeader() {
 
         <div className="site-header-right">
           <GlobalMovieSearch />
-          {!user ? (
+          {authReady && !user ? (
             <button
               type="button"
               className="reelbot-inline-button site-auth-trigger"
@@ -163,10 +164,10 @@ function MobileBottomNav() {
   }, [location.pathname]);
 
   const items = [
-    { label: "Find a movie", to: "/#pick-for-me", active: location.pathname === "/" },
-    { label: "Browse", to: "/browse", active: location.pathname === "/browse" },
-    { label: "Collections", to: "/collections", active: location.pathname.startsWith("/collections") },
-    { label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
+    { icon: "M12 3l2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z", label: "Find a movie", to: "/#pick-for-me", active: location.pathname === "/" },
+    { icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z", label: "Browse", to: "/browse", active: location.pathname === "/browse" },
+    { icon: "M3 7h18v14H3zM6 3h12", label: "Collections", to: "/collections", active: location.pathname.startsWith("/collections") },
+    { icon: "M6 3h12v18l-6-4-6 4Z", label: "My Movies", to: "/my-movies", active: location.pathname === "/my-movies" },
   ];
 
   const isCollectionContext = pageContext?.page === "collection";
@@ -190,7 +191,7 @@ function MobileBottomNav() {
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
         {items.map((item) => (
           <NavLink key={item.label} to={item.to} className={"mobile-bottom-nav-item" + (item.active ? " is-active" : "")}>
-            <span className="mobile-bottom-nav-icon" aria-hidden="true"></span>
+            <svg className="mobile-bottom-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true"><path d={item.icon} /></svg>
             <span>{item.label}</span>
           </NavLink>
         ))}
@@ -300,230 +301,6 @@ function AppShell() {
           </Suspense>
         </main>
         <SiteFooter />
-        <style>{`
-          /* Mobile/Fold dock: navigation is navigation; Ask ReelBot is a contextual tool. */
-          @media (max-width: 900px) {
-            .ask-reelbot-trigger,
-            .detail-floating-reelbot {
-              display: none !important;
-            }
-
-            .mobile-bottom-dock {
-              position: fixed;
-              z-index: 1190;
-              left: 50%;
-              bottom: max(8px, env(safe-area-inset-bottom));
-              width: min(calc(100% - 24px), 760px);
-              transform: translate(-50%, 0);
-              opacity: 1;
-              visibility: visible;
-              transition:
-                opacity .46s cubic-bezier(.2,.72,.2,1),
-                transform .46s cubic-bezier(.2,.72,.2,1),
-                visibility .46s ease;
-            }
-
-            .mobile-bottom-dock.is-hero-hidden {
-              opacity: 0;
-              visibility: hidden;
-              pointer-events: none;
-              transform: translate(-50%, 30px);
-            }
-
-            .mobile-bottom-nav {
-              position: relative !important;
-              left: auto !important;
-              right: auto !important;
-              top: auto !important;
-              bottom: auto !important;
-              inset: auto !important;
-              transform: none !important;
-              margin: 0 !important;
-              display: grid !important;
-              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-              width: 100% !important;
-              min-height: 64px;
-              padding: 6px !important;
-              border-radius: 20px !important;
-            }
-
-            .mobile-bottom-nav-item {
-              min-width: 0 !important;
-              padding: 7px 4px;
-              text-align: center;
-            }
-
-            .mobile-bottom-nav-item:nth-child(1) .mobile-bottom-nav-icon::before { content: "✦" !important; }
-            .mobile-bottom-nav-item:nth-child(2) .mobile-bottom-nav-icon::before { content: "#" !important; }
-            .mobile-bottom-nav-item:nth-child(3) .mobile-bottom-nav-icon::before { content: "▦" !important; }
-            .mobile-bottom-nav-item:nth-child(4) .mobile-bottom-nav-icon::before { content: "♡" !important; }
-
-            .mobile-ask-launcher {
-              position: absolute;
-              right: 18px;
-              bottom: calc(100% - 1px);
-              display: inline-flex;
-              align-items: center;
-              gap: 7px;
-              min-height: 38px;
-              padding: 8px 13px 9px;
-              border: 1px solid rgba(232,180,91,.3);
-              border-bottom-color: rgba(255,255,255,.08);
-              border-radius: 15px 15px 5px 5px;
-              color: #f3c76c;
-              background: rgba(10,11,16,.96);
-              box-shadow: 0 -8px 24px rgba(0,0,0,.2);
-              backdrop-filter: blur(18px);
-              -webkit-backdrop-filter: blur(18px);
-              font-family: inherit;
-              font-size: .78rem;
-              font-weight: 650;
-              line-height: 1;
-              letter-spacing: -.01em;
-              cursor: pointer;
-            }
-
-            .mobile-ask-launcher::after {
-              content: "";
-              position: absolute;
-              left: 10px;
-              right: 10px;
-              bottom: -1px;
-              height: 1px;
-              background: rgba(10,11,16,.96);
-            }
-
-            .mobile-ask-launcher-mark {
-              display: block;
-              width: 15px;
-              height: 18px;
-              object-fit: contain;
-              flex: 0 0 auto;
-            }
-
-            .mobile-ask-launcher:focus-visible {
-              outline: 2px solid rgba(240,189,87,.7);
-              outline-offset: 2px;
-            }
-
-            .home-page .home-hero .pick-prompt-shell {
-              border-radius: 12px !important;
-              overflow: hidden;
-            }
-
-            .home-page .home-hero .pick-prompt-input {
-              border-radius: 11px !important;
-            }
-
-            .site-header .site-auth-trigger {
-              display: none !important;
-            }
-
-            .reelbot-brand-logo {
-              width: 102px !important;
-              height: 40px !important;
-              transform: translateY(-3px);
-            }
-
-            .site-menu-toggle {
-              border-color: rgba(255,255,255,.09) !important;
-              background: rgba(12,18,28,.72) !important;
-              box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
-            }
-
-            .site-menu-toggle.is-open {
-              border-color: rgba(240,189,87,.2) !important;
-              background: rgba(17,22,31,.96) !important;
-            }
-
-            .site-nav-shell {
-              top: calc(100% + 8px) !important;
-              left: 8px !important;
-              right: 8px !important;
-              padding: 10px !important;
-              border: 1px solid rgba(255,255,255,.08) !important;
-              border-radius: 18px !important;
-              background: rgba(8,11,17,.985) !important;
-              box-shadow: 0 24px 70px rgba(0,0,0,.5) !important;
-              backdrop-filter: blur(24px);
-              -webkit-backdrop-filter: blur(24px);
-            }
-
-            .site-nav--mobile {
-              display: grid !important;
-              gap: 2px !important;
-            }
-
-            .site-nav--mobile .site-nav-link {
-              min-height: 48px;
-              padding: 0 14px !important;
-              border: 0 !important;
-              border-radius: 11px !important;
-              color: rgba(239,230,217,.68) !important;
-              background: transparent !important;
-              font-size: .92rem;
-              font-weight: 620;
-            }
-
-            .site-nav--mobile .site-nav-link.is-active {
-              color: #f3c76c !important;
-              background: rgba(240,189,87,.07) !important;
-            }
-
-            .site-nav--mobile .site-nav-account-link {
-              margin-top: 6px;
-              justify-content: center !important;
-              color: #171108 !important;
-              background: linear-gradient(135deg,#f2c55f,#dfa13d) !important;
-              font-weight: 750;
-            }
-          }
-
-          @media (max-width: 430px) {
-            .mobile-bottom-dock {
-              width: calc(100% - 20px);
-            }
-
-            .mobile-bottom-nav {
-              min-height: 60px;
-              border-radius: 18px !important;
-            }
-
-            .mobile-bottom-nav-item {
-              font-size: .63rem !important;
-              gap: 3px !important;
-            }
-
-            .mobile-ask-launcher {
-              right: 10px;
-              min-height: 36px;
-              padding: 7px 11px 8px;
-              font-size: .74rem;
-            }
-          }
-
-          @media (max-width: 350px) {
-            .mobile-ask-launcher-label {
-              position: absolute;
-              width: 1px;
-              height: 1px;
-              overflow: hidden;
-              clip: rect(0 0 0 0);
-              white-space: nowrap;
-            }
-
-            .mobile-ask-launcher {
-              width: 38px;
-              justify-content: center;
-              padding-left: 0;
-              padding-right: 0;
-            }
-
-            .mobile-bottom-nav-item {
-              font-size: .59rem !important;
-            }
-          }
-        `}</style>
         <MobileBottomNav />
         <CookieNotice />
         <AuthModal />

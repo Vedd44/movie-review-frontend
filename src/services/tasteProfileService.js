@@ -504,6 +504,12 @@ const savePickPreferences = (profile, preferences) => {
   });
 };
 
+const recordRequestOutcome = (profile, metadata) => {
+  const outcome = ["pick", "no_match", "failed", "fallback"].includes(metadata.outcome) ? metadata.outcome : "failed";
+  appendInteraction({ type: "request_result", metadata: { outcome, latency_ms: Math.max(0, Math.min(180000, Number(metadata.latency_ms) || 0)), surface: String(metadata.surface || "home").slice(0, 40), version: 1 } });
+  return rebuildProfile(profile);
+};
+
 const recordPickResult = (profile, preferences, payload) => {
   const movieIds = dedupeStrings([
     payload?.primary?.id,
@@ -749,6 +755,7 @@ export const tasteProfileService = {
   addRecentMovie,
   savePickPreferences,
   recordPickResult,
+  recordRequestOutcome,
   recordSwapFeedback,
   recordDetailView,
   recordProviderClick,

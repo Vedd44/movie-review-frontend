@@ -73,11 +73,11 @@ test("movie-detail question chips submit movie questions through the active movi
     </MemoryRouter>
   );
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
-  fireEvent.click(screen.getByRole("button", { name: "Is it scary?" }));
+  fireEvent.click(screen.getByRole("button", { name: "How intense is it?" }));
 
   await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
     expect.stringContaining("/reelbot/ask"),
-    expect.objectContaining({ prompt: "Is it scary?", page_context: expect.objectContaining({ movieId: 679 }) }),
+    expect.objectContaining({ prompt: "How intense is it?", page_context: expect.objectContaining({ movieId: 679 }) }),
     expect.anything()
   ));
 });
@@ -110,14 +110,14 @@ test("replaces starter chips with returned follow-ups and continues the conversa
     </MemoryRouter>
   );
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
-  expect(screen.getByRole("button", { name: "Is it scary?" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "How intense is it?" })).toBeInTheDocument();
 
   const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
   fireEvent.change(input, { target: { value: "Is it good for a group?" } });
   fireEvent.click(screen.getByRole("button", { name: "Ask" }));
 
   expect(await screen.findByRole("button", { name: "What makes it R-rated?" })).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Is it scary?" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "How intense is it?" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "What makes it R-rated?" }));
 
   await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
@@ -126,6 +126,9 @@ test("replaces starter chips with returned follow-ups and continues the conversa
     page_context: expect.objectContaining({ movieId: 679 }),
   }));
   expect(await screen.findByRole("button", { name: "Is it easy to follow?" })).toBeInTheDocument();
+  expect(screen.getByText("Is it good for a group?")).toBeInTheDocument();
+  expect(screen.getByText("It is a good group option for older teens and adults.")).toBeInTheDocument();
+  expect(screen.getByText("The rating reflects sustained peril and violence.")).toBeInTheDocument();
 });
 
 test("malformed follow-ups render no chips", () => {
@@ -144,11 +147,24 @@ test('closing Ask cancels the pending request and ignores a late answer', async 
   axios.post.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   render(<MemoryRouter initialEntries={['/movies/aliens-1986']}><AskReelbotProvider><ContextRegistration context={{ page: 'movie_detail', movieId: 679, movieTitle: 'Aliens' }} /><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
   fireEvent.click(screen.getByRole('button', { name: /Ask ReelBot/i }));
-  fireEvent.click(screen.getByRole('button', { name: 'Is it scary?' }));
+  fireEvent.click(screen.getByRole('button', { name: 'How intense is it?' }));
   const signal = axios.post.mock.calls[0][2].signal;
   fireEvent.click(screen.getByRole('button', { name: 'Close Ask ReelBot' }));
   expect(signal.aborted).toBe(true);
   finish({ data: { kind: 'answer', answer: 'A stale answer' } });
   fireEvent.click(screen.getByRole('button', { name: /Ask ReelBot/i }));
   await waitFor(() => expect(screen.queryByText('A stale answer')).not.toBeInTheDocument());
+});
+
+
+test("a failed question can be retried without losing its text", async () => {
+  axios.post.mockRejectedValueOnce(new Error("Connection interrupted"));
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><AskReelbotProvider><ContextRegistration context={{ page: "movie_detail", movieId: 679, movieTitle: "Aliens" }} /><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Ask ReelBot" }), { target: { value: "Is it suitable for teens?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
+  expect(axios.post.mock.calls[1][1].prompt).toBe("Is it suitable for teens?");
+  expect(await screen.findByText("Sigourney Weaver stars in it.")).toBeInTheDocument();
 });

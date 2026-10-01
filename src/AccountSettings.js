@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { validatePassword } from "./authValidation";
 import { buildBreadcrumbJsonLd, usePageMetadata } from "./seo";
@@ -60,7 +60,10 @@ function AccountSettings() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
+            <div className="rb-eyebrow">Your ReelBot</div>
             <h1 className="browse-title">Account</h1>
+            <p className="rb-page-dek">A little about you. The rest is in your movies.</p>
+            <Link className="rb-account-library" to="/my-movies">Back to My Movies →</Link>
           </div>
         </section>
 
@@ -128,11 +131,12 @@ function AccountSettings() {
             </button>
           </div>
 
-          <div className="account-settings-password">
+          <details className="account-settings-password">
+            <summary>Password &amp; security <span aria-hidden="true">+</span></summary>
             <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
-                <h2 className="section-title">Password</h2>
-                <p className="section-subtitle">Change your password.</p>
+                <h2 className="section-title">Change password</h2>
+
               </div>
             </div>
 
@@ -175,6 +179,7 @@ function AccountSettings() {
                   <span>New password</span>
                   <input
                     type="password"
+                    autoComplete="new-password"
                     value={password}
                     onChange={(event) => {
                       setPassword(event.target.value);
@@ -189,6 +194,7 @@ function AccountSettings() {
                   <span>Confirm password</span>
                   <input
                     type="password"
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(event) => {
                       setConfirmPassword(event.target.value);
@@ -215,11 +221,11 @@ function AccountSettings() {
                 </button>
               </div>
             </form>
-          </div>
+          </details>
 
           <div className="account-settings-danger">
             <div>
-              <div className="detail-description-label">Danger zone</div>
+              <div className="detail-description-label">Close account</div>
               <p className="detail-secondary-text">Permanently delete your account and saved movies.</p>
             </div>
             <button

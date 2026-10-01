@@ -111,6 +111,8 @@ export default function AdminPanel() {
   if (!user || user?.app_metadata?.role !== "super_admin")
     return <Navigate to="/" replace />;
   const s = data?.stats || {};
+  const ops = data?.operations;
+  const seconds = ms => ms == null ? "—" : `${(ms / 1000).toFixed(1)}s`;
   return (
     <div className="admin-page">
       <div className="admin-shell">
@@ -177,6 +179,23 @@ export default function AdminPanel() {
                 <strong>{s.feedback_count ?? "—"}</strong>
                 <small>{s.feedback_7d ?? "—"} received in 7 days</small>
               </article>
+            </section>
+            <section className="rb-operations" aria-labelledby="operations-title">
+              <div className="admin-card-head"><div><span className="admin-kicker">Recommendation health</span><h2 id="operations-title">From a pick to movie night</h2></div><span className="rb-ops-scope">{ops?.scope || "Activity sample unavailable"}</span></div>
+              {ops ? <>
+                <div className="rb-ops-metrics">
+                  <div><span>Completed requests</span><strong>{ops.requests.total}</strong><small>{ops.requests.pick} picks · {ops.requests.no_match} no matches</small></div>
+                  <div><span>Median response</span><strong>{seconds(ops.requests.median_ms)}</strong><small>95th percentile {seconds(ops.requests.p95_ms)}</small></div>
+                  <div><span>Request failures</span><strong>{ops.requests.failure_rate == null ? "—" : `${Math.round(ops.requests.failure_rate * 100)}%`}</strong><small>{ops.requests.failed} failed · {ops.requests.fallback} recovered</small></div>
+                </div>
+                {!ops.requests.total ? <p className="rb-ops-note">Timing starts with requests made after this release. No measured requests are in the retained sample yet.</p> : null}
+                <div className="rb-funnel" aria-label="Observed pick to saved to watched cohort">
+                  <div><strong>{ops.funnel.picked}</strong><span>Movies picked</span></div><span aria-hidden="true">→</span><div><strong>{ops.funnel.saved}</strong><span>Then saved</span></div><span aria-hidden="true">→</span><div><strong>{ops.funnel.watched}</strong><span>Then watched</span></div>
+                </div>
+                <p className="rb-ops-note">Unique user/movie pairs, with each later step observed in order. This shows historical actions, not current library totals.</p>
+                <details className="rb-ops-coverage"><summary>What this sample includes</summary><p>{ops.coverage} Response time covers the interactive request until a usable response or error reaches the browser; it excludes cached queue promotions.</p></details>
+                {ops.recent_failures.length ? <div className="rb-ops-failures"><h3>Recent interruptions</h3>{ops.recent_failures.map((item,index) => <p key={index}><span>{item.surface} · {item.outcome}</span><time dateTime={item.created_at}>{fmt(item.created_at)}</time></p>)}</div> : null}
+              </> : <p className="rb-ops-note">Request health will appear when retained profile activity can be read.</p>}
             </section>
             <div className="admin-grid">
               <section className="admin-card">

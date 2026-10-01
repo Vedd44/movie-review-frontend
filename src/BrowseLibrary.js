@@ -6,7 +6,6 @@ import "./App.css";
 import MovieCardMeta from "./components/MovieCardMeta";
 import PickResultPanel from "./components/PickResultPanel";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
-import ReelbotSignatureStrip from "./components/ReelbotSignatureStrip";
 import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
@@ -276,6 +275,7 @@ function BrowseLibrary() {
   };
 
   const requestLibraryPick = async (options = {}) => {
+    const startedAt = Date.now();
     const nextPreferences = {
       view: normalizedView,
       mood: normalizedMood,
@@ -342,6 +342,7 @@ function BrowseLibrary() {
           return mergedQueue;
         });
       } else {
+        trackProductEvent("recommendation_returned", { page: "browse", latency_ms: Date.now() - startedAt, outcome: response.data?.performance?.outcome || "pick" });
         setPickResult(normalizedPayload);
         setSwapQueue(buildSwapQueueFromPayload(normalizedPayload));
         setCandidatePoolIds(Array.isArray(normalizedPayload.candidate_pool_ids) ? normalizedPayload.candidate_pool_ids : []);
@@ -355,6 +356,7 @@ function BrowseLibrary() {
     } catch (requestError) {
       console.error("Error fetching library ReelBot pick:", requestError);
       if (!options.backgroundRefill) {
+        trackProductEvent("recommendation_failed", { page: "browse", latency_ms: Date.now() - startedAt });
         setPickError("ReelBot could not narrow the library right now.");
       }
     } finally {
@@ -484,15 +486,14 @@ function BrowseLibrary() {
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
             <div className="browse-kicker">Explore</div>
-            <h1 className="browse-title">Browse Movies</h1>
+            <h1 className="browse-title">Find something worth your night.</h1>
+            <p className="rb-page-dek">Follow your mood, revisit a favorite genre, or let ReelBot make the call.</p>
           </div>
         </section>
 
         <section id="library-filters" className="library-discovery-controls" aria-label="Browse movie filters">
           <div className="filter-group-row filter-group-row--primary">
-            <div className="filter-group-head">
-              <div className="detail-description-label">Browse by</div>
-            </div>
+
             <div className="tabs browse-tabs browse-tabs--library">
               {BROWSE_VIEW_OPTIONS.map((option) => (
                 <button key={option.id} type="button" aria-pressed={normalizedView === option.id} className={normalizedView === option.id ? "active" : ""} onClick={() => updateFilters({ view: option.id })}>
@@ -502,51 +503,11 @@ function BrowseLibrary() {
             </div>
           </div>
 
-          <div className="filter-group-row">
-            <div className="filter-group-head"><div className="detail-description-label">What are you in the mood for?</div></div>
-            <div className="mood-chip-row browse-filter-chips--desktop">
-              {MOOD_FILTERS.map((filter) => (
-                <button key={filter.id} type="button" aria-pressed={normalizedMood === filter.id} className={`mood-rail-chip${normalizedMood === filter.id ? " is-active" : ""}`} onClick={() => updateFilters({ mood: filter.id })}>
-                  <span className="mood-rail-chip-label">{filter.label}</span>
-                </button>
-              ))}
-            </div>
-            <select className="browse-mobile-filter-select" aria-label="Mood" value={normalizedMood} onChange={(event) => updateFilters({ mood: event.target.value })}>
-              {MOOD_FILTERS.map((filter) => <option key={filter.id} value={filter.id}>{filter.label}</option>)}
-            </select>
+          <div className="rb-browse-filters">
+            <label>Mood<select aria-label="Mood" value={normalizedMood} onChange={(event) => updateFilters({ mood: event.target.value })}>{MOOD_FILTERS.map((filter) => <option key={filter.id} value={filter.id}>{filter.label}</option>)}</select></label>
+            <label>Genre<select aria-label="Genre" value={normalizedGenre} onChange={(event) => updateFilters({ genre: event.target.value })} disabled={genreLoading}><option value="all">All genres</option>{genres.map((genre) => <option key={genre.id} value={String(genre.id)}>{genre.name}</option>)}</select></label>
+            <label>Length<select aria-label="Runtime" value={normalizedRuntime} onChange={(event) => updateFilters({ runtime: event.target.value })}>{PICK_RUNTIME_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
           </div>
-
-          <div className="filter-group-row">
-            <div className="filter-group-head"><div className="detail-description-label">Genre</div></div>
-            <div className="mood-chip-row browse-filter-chips--desktop">
-              <button type="button" className={`mood-rail-chip${normalizedGenre === "all" ? " is-active" : ""}`} onClick={() => updateFilters({ genre: "all" })}>
-                <span className="mood-rail-chip-label">All genres</span>
-              </button>
-              {genres.map((genre) => (
-                <button key={genre.id} type="button" className={`mood-rail-chip${normalizedGenre === String(genre.id) ? " is-active" : ""}`} onClick={() => updateFilters({ genre: genre.id })} disabled={genreLoading}>
-                  <span className="mood-rail-chip-label">{genre.name}</span>
-                </button>
-              ))}
-            </div>
-            <select className="browse-mobile-filter-select" aria-label="Genre" value={normalizedGenre} onChange={(event) => updateFilters({ genre: event.target.value })} disabled={genreLoading}>
-              <option value="all">All genres</option>
-              {genres.map((genre) => <option key={genre.id} value={String(genre.id)}>{genre.name}</option>)}
-            </select>
-          </div>
-
-          <details className="library-advanced-filters">
-            <summary>Filters</summary>
-            <div className="library-advanced-filters-body">
-              <div className="filter-group-head"><div className="detail-description-label">Runtime</div></div>
-              <div className="mood-chip-row">
-                {PICK_RUNTIME_OPTIONS.map((option) => (
-                  <button key={option.id} type="button" className={`mood-rail-chip${normalizedRuntime === option.id ? " is-active" : ""}`} onClick={() => updateFilters({ runtime: option.id })}>
-                    <span className="mood-rail-chip-label">{option.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </details>
         </section>
 
         <div id="library-results" className="section-header section-header--stacked-mobile library-results-head">
@@ -577,7 +538,7 @@ function BrowseLibrary() {
               <div>
                 <h2 className="section-title">Let ReelBot choose</h2>
                 <p className="section-subtitle">Keep the filters you already set, add a vibe if you want, and let ReelBot make the call.</p>
-                <ReelbotSignatureStrip className="reelbot-signature-strip--panel" />
+
               </div>
             </div>
 

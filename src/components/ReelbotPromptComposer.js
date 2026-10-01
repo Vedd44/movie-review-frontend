@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 
 function ReelbotPromptComposer({
   label,
+  multiline = false,
   helperText = "",
   introText = "",
   suggestions = [],
@@ -10,6 +11,7 @@ function ReelbotPromptComposer({
   value,
   onSuggestionSelect,
   onInputChange,
+  onChange,
   onKeyDown,
   onFocus,
   onBlur,
@@ -23,7 +25,7 @@ function ReelbotPromptComposer({
   const handleSuggestionClick = (prompt) => {
     // Choosing a suggestion should fill the field without summoning a software keyboard.
     inputRef.current?.blur();
-    onSuggestionSelect?.(prompt);
+    (onSuggestionSelect || onInputChange || onChange)?.(prompt);
 
     window.requestAnimationFrame(() => {
       if (window.matchMedia("(max-width: 720px)").matches) {
@@ -33,23 +35,25 @@ function ReelbotPromptComposer({
   };
 
   const handleClear = () => {
-    onInputChange?.("");
+    (onInputChange || onChange)?.("");
     inputRef.current?.blur();
   };
 
   const handleInputChange = (event) => {
-    onInputChange?.(event.target.value);
+    (onInputChange || onChange)?.(event.target.value);
   };
+  const Input = multiline ? "textarea" : "input";
   return (
     <div className="pick-control-group pick-control-group--prompt">
       {label ? <div className="detail-description-label">{label}</div> : null}
       {helperText ? <p className="prompt-composer-copy detail-secondary-text">{helperText}</p> : null}
       {introText ? <div className="prompt-composer-intro">{introText}</div> : null}
       <div ref={inputShellRef} className="pick-prompt-shell">
-        <input
+        <Input
           id={inputId}
           aria-label={label || "Describe the movie you want"}
-          type="text"
+          type={multiline ? undefined : "text"}
+          rows={multiline ? 2 : undefined}
           className={`pick-prompt-input${errorText ? " is-invalid" : ""}`}
           placeholder={placeholder}
           ref={inputRef}
