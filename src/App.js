@@ -6,7 +6,7 @@ import ProfileMenu from "./components/ProfileMenu";
 import GlobalMovieSearch from "./components/GlobalMovieSearch";
 import AskReelbotLayer from "./components/AskReelbotLayer";
 import FeedbackModal from "./components/FeedbackModal";
-import { AskReelbotProvider } from "./context/AskReelbotContext";
+import { AskReelbotProvider, useAskReelbotContext } from "./context/AskReelbotContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { getFeedPath } from "./discovery";
 import "./App.css";
