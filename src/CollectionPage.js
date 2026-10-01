@@ -7,12 +7,19 @@ import { API_BASE_URL, formatMovieDate, getMoviePath, getReleaseYear } from "./d
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { trackProductEvent } from "./analytics";
+import collectionMovieManifest from "./generatedCollectionMovies.json";
 
 export function CollectionPreviewCard({ collection, compact = false }) {
   const [previewMovies, setPreviewMovies] = useState([]);
   useEffect(() => {
     let cancelled = false;
-    Promise.allSettled(collection.movies.slice(0, 3).map((slug) => axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
+    const slugs = collection.movies.slice(0, 3);
+    const cached = slugs.map((slug) => collectionMovieManifest[slug]).filter((movie) => movie?.poster_path);
+    if (cached.length === slugs.length) {
+      setPreviewMovies(cached);
+      return () => { cancelled = true; };
+    }
+    Promise.allSettled(slugs.map((slug) => collectionMovieManifest[slug] ? Promise.resolve({ data: collectionMovieManifest[slug] }) : axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
       .then((results) => {
         if (cancelled) return;
         setPreviewMovies(results.filter((result) => result.status === "fulfilled" && result.value?.data?.poster_path).map((result) => result.value.data));
@@ -124,7 +131,8 @@ export default function CollectionPage() {
     if (!collection) return;
     let cancelled = false;
     setLoading(true);
-    Promise.allSettled(collection.movies.filter((slug) => slug !== collection.anchorMovie).map((slug) => axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
+    const slugs = collection.movies.filter((slug) => slug !== collection.anchorMovie);
+    Promise.allSettled(slugs.map((slug) => collectionMovieManifest[slug] ? Promise.resolve({ data: collectionMovieManifest[slug] }) : axios.get(`${API_BASE_URL}/movies/resolve/${encodeURIComponent(slug)}`)))
       .then((results) => {
         if (cancelled) return;
         setMovies(results.filter((result) => result.status === "fulfilled" && result.value?.data?.id).map((result) => result.value.data));
