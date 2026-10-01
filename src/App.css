@@ -20975,3 +20975,83 @@ body,
     margin: 11px auto 0 !important;
   }
 }
+
+
+/* Fold/tablet final viewport correction: reserve the fixed header instead of
+   allowing the hero's opening copy to render beneath it. */
+@media (min-width: 600px) and (max-width: 900px) {
+  .home-page > .home-hero {
+    padding-top: 104px !important;
+    padding-bottom: 30px !important;
+  }
+
+  .home-page > .home-hero .browse-kicker {
+    display: inline-flex !important;
+    width: auto !important;
+    padding: 6px 10px !important;
+    margin: 0 auto 10px !important;
+    border: 1px solid rgba(240,189,87,.18);
+    border-radius: 999px;
+    background: rgba(9,10,14,.62);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    letter-spacing: .12em !important;
+  }
+
+  .home-page > .home-hero .home-hero-form {
+    padding: 12px !important;
+    border: 1px solid rgba(255,255,255,.065);
+    border-radius: 26px;
+    background: rgba(8,9,13,.32);
+    box-shadow: 0 22px 60px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.025);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* Cookie notice is intentionally transient: first meaningful scroll dismisses it.
+   Keep it flush to the viewport edge and above floating navigation while present. */
+.cookie-notice {
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1300 !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 16px 16px 0 0 !important;
+  padding: 12px max(18px, calc((100vw - 1120px) / 2)) calc(12px + env(safe-area-inset-bottom)) !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+}
+.cookie-notice-copy {
+  max-width: 680px;
+  text-align: center;
+}
+.cookie-notice-button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: rgba(240,189,87,.9);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media (max-width: 599px) {
+  .cookie-notice {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+  .cookie-notice-copy {
+    font-size: .82rem;
+    line-height: 1.35;
+    text-align: left;
+  }
+}
