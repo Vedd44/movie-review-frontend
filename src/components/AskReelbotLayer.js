@@ -336,7 +336,9 @@ function AskReelbotLayer() {
     return () => { cancelled = true; };
   }, [result?.primary]);
 
-  requestPickRef.current = requestPick;\n\n  const submitDraft = (event) => {
+  requestPickRef.current = requestPick;
+
+  const submitDraft = (event) => {
     event?.preventDefault();
     requestPick(draft);
   };
