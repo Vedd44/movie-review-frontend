@@ -153,6 +153,15 @@ function BrowseLibrary() {
   }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
 
   useEffect(() => {
+    // Fill the initial browse surface with enough real titles to occupy the desktop grid.
+    // The API page is intentionally preserved as the unit of pagination; this simply
+    // advances through additional pages until we have a full 3-row desktop surface.
+    if (loading || loadingMore || error || normalizedPage >= totalPages || filteredMovies.length >= 12) return;
+    setLoadingMore(true);
+    updateFilters({ page: normalizedPage + 1 });
+  }, [error, filteredMovies.length, loading, loadingMore, normalizedPage, totalPages]);
+
+  useEffect(() => {
     // Editing the next request should not erase the recommendation already on screen.
     // A submitted pick, explicit refresh/refine, or Start fresh owns result replacement.
     setPickError(null);
