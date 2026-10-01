@@ -83,9 +83,9 @@ const HOMEPAGE_PROMPT_POOL = [
 
 const HOMEPAGE_PROMPT_COUNT = 10;
 const MIN_CURATED_FEED_SIZE = 8;
-const HOMEPAGE_DESKTOP_COLUMNS = 5;
-const HOMEPAGE_BASE_DISPLAY_COUNT = 8;
-const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 12;
+const HOMEPAGE_DESKTOP_COLUMNS = 4;
+const HOMEPAGE_BASE_DISPLAY_COUNT = 12;
+const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 20;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
 const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
 const SOFT_SWAP_MESSAGE = "Want more options? Refine this pick or start fresh.";
@@ -1242,7 +1242,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   const heroPreviewMovies = useMemo(() => {
     // Keep this rail distinct from the browse grid below it.
-    const gridIds = new Set(displayedMovies.slice(0, isFeedRoute ? displayedMovies.length : isCompactHeroPreview ? 6 : 8).map((movie) => movie.id));
+    const gridIds = new Set(displayedMovies.slice(0, isFeedRoute ? displayedMovies.length : isCompactHeroPreview ? 6 : HOMEPAGE_BASE_DISPLAY_COUNT).map((movie) => movie.id));
     const seen = new Set();
     const available = [...curatedMovies, ...filteredMovies].filter(movie => movie?.id && movie?.poster_path && !seen.has(movie.id) && seen.add(movie.id));
     return [...available.filter(movie => !gridIds.has(movie.id)), ...available.filter(movie => gridIds.has(movie.id))].slice(0, 3);
@@ -2150,8 +2150,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             showDetailLink={false}
             refreshLabel={isSwapLoading ? "Swapping…" : "Get another pick"}
             resetLabel="Start fresh"
-            backupTitle="More to consider"
-            backupCopy=""
+            backupTitle="Also worth considering"
+            backupCopy="If you want another angle."
             onRefreshChoices={pickResult?.primary ? () => {
               markFirstPickSummarySeen();
               return handleRefreshPick();
@@ -2239,7 +2239,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                   </article>
                 ))
               ) : displayedMovies.length > 0 ? (
-                displayedMovies.slice(0, isFeedRoute ? displayedMovies.length : isCompactHeroPreview ? 6 : 8).map((movie) => (
+                displayedMovies.slice(0, isFeedRoute ? displayedMovies.length : isCompactHeroPreview ? 6 : HOMEPAGE_BASE_DISPLAY_COUNT).map((movie) => (
                   <article key={movie.id} className="movie-card home-movie-card">
                     <Link to={getMoviePath(movie)} className="home-movie-card-link" aria-label={`Open ${movie.title}`}>
                       <div className="home-movie-card-poster-shell">
@@ -2287,7 +2287,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               )}
             </div>
 
-            {selectedMood !== "all" && displayedMovies.length > 0 && displayedMovies.length < 8 ? (
+            {selectedMood !== "all" && displayedMovies.length > 0 && displayedMovies.length < HOMEPAGE_BASE_DISPLAY_COUNT ? (
               <div className="feed-followup-card">
                 <div>
                   <div className="detail-description-label">Want more {selectedMoodConfig.label.toLowerCase()} picks?</div>
