@@ -12,7 +12,8 @@ export const ASK_INTENTS = Object.freeze({
 });
 
 const normalize = (value = "") => String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
-const recommendationPattern = /\b(?:something|anything)\s+(?:like|lighter|darker|shorter|funnier|gentler|less|more)|\b(?:another|alternative|recommend|recommendation|pick|find me|give me|watch after|what should i watch after|similar but|instead)\b|\b(?:less scary|less intense|more modern)\s+(?:than|instead)?\b/i;
+const recommendationPattern = /\b(?:something|anything)\s+(?:like|lighter|darker|shorter|funnier|gentler|less|more)|\b(?:another|alternative|recommend|recommendation|pick|find me|watch after|what should i watch after|similar but|instead)\b|\b(?:less scary|less intense|more modern)\s+(?:than|instead)?\b/i;
+const spoilerQuestionPattern = /\b(?:give|tell|show)\s+me\s+(?:the\s+)?spoilers?\b|\bspoil(?:er|ers)?\s+(?:it|this|the movie|the film)\b|\bwhat happens(?:\s+at\s+the\s+end)?\b|\bhow does (?:it|this|the movie|the film) end\b/i;
 const comparisonPattern = /\b(?:better than|compare|which should i watch|this or|it or|versus|vs\.?|should i watch (?:this|it) or)\b/i;
 const questionPattern = /^(?:is|are|does|do|will|would|can|could|should|how|what|who|when|where|why)\b|\b(?:scary|violent|violence|gore|jump scare|sad|funny|confusing|slow|appropriate|good for|happy ending|runtime|how long|toddler|kid|child|group|date movie)\b/i;
 const nextPattern = /^(?:okay,?\s*)?(?:another|another one|next|next one|one more)(?:\s+please)?[.!?]*$/i;
@@ -29,6 +30,9 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
   const hasRecommendation = /recommendation/.test(activeIntent) || Boolean(conversation.activeRequest);
   const hasActiveHomePick = page === "home" && Boolean(context.currentPick?.id);
   if (!value) return ASK_INTENTS.UNKNOWN;
+  // Spoiler requests are questions about the anchored movie, never discovery prompts.
+  // This must precede recommendation matching (e.g. "give me ...").
+  if (hasAnchor && spoilerQuestionPattern.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (comparisonPattern.test(value)) return ASK_INTENTS.MOVIE_COMPARISON;
   if (nextPattern.test(value) && hasRecommendation) return ASK_INTENTS.NEXT_RECOMMENDATION;
   if (hasActiveHomePick && homePickRefinementPattern.test(value)) return ASK_INTENTS.REFINE_RECOMMENDATION;
