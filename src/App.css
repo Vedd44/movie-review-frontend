@@ -20853,3 +20853,125 @@ body,
     margin-top: 12px !important;
   }
 }
+
+
+/* Homepage overlay + Fold QC pass. Keep first-screen controls clear until the user
+   has moved through the picker, and neutralize legacy hero sizing at this viewport. */
+.mobile-bottom-nav.is-hero-hidden,
+.ask-reelbot-trigger.is-hero-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(14px) !important;
+}
+.mobile-bottom-nav,
+.ask-reelbot-trigger {
+  transition: opacity .2s ease, transform .2s ease, visibility .2s ease;
+}
+
+@media (min-width: 600px) and (max-width: 900px) {
+  .home-page > .home-hero {
+    min-height: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    padding: 34px 24px 26px !important;
+  }
+
+  .home-page > .home-hero .home-hero-copy {
+    position: relative !important;
+    inset: auto !important;
+    transform: none !important;
+    width: min(100%, 680px) !important;
+    max-width: 680px !important;
+    min-width: 0 !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: center !important;
+  }
+
+  .home-page > .home-hero .browse-kicker {
+    margin: 0 auto 8px !important;
+    text-align: center !important;
+  }
+
+  .home-page > .home-hero .home-hero-title {
+    width: auto !important;
+    max-width: 11ch !important;
+    margin: 0 auto 10px !important;
+    font-size: clamp(2.45rem, 5.4vw, 3.25rem) !important;
+    line-height: .98 !important;
+    text-align: center !important;
+  }
+
+  .home-page > .home-hero .home-hero-subtitle {
+    width: auto !important;
+    max-width: 480px !important;
+    margin: 0 auto !important;
+    font-size: .96rem !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+  }
+
+  .home-page > .home-hero .home-hero-form {
+    width: min(100%, 620px) !important;
+    max-width: 620px !important;
+    margin: 16px auto 0 !important;
+    padding: 0 !important;
+    align-self: center !important;
+  }
+
+  .home-page > .home-hero .prompt-composer,
+  .home-page > .home-hero .pick-prompt-shell,
+  .home-page > .home-hero .pick-prompt-input {
+    width: 100% !important;
+    max-width: 620px !important;
+    min-width: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-input {
+    min-height: 54px !important;
+    padding: 0 18px !important;
+    font-size: .94rem !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-suggestions {
+    width: 100% !important;
+    max-width: 600px !important;
+    margin: 11px auto 0 !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    gap: 6px !important;
+  }
+
+  .home-page > .home-hero .pick-prompt-chip {
+    padding: 7px 10px !important;
+    font-size: .8rem !important;
+  }
+
+  .home-page > .home-hero .home-hero-actions--primary {
+    width: 100% !important;
+    max-width: 520px !important;
+    margin: 14px auto 0 !important;
+    justify-content: center !important;
+    gap: 10px !important;
+  }
+
+  .home-page > .home-hero .home-hero-actions--primary .reelbot-inline-button {
+    min-height: 46px !important;
+    padding: 0 22px !important;
+    font-size: .9rem !important;
+  }
+
+  .home-page > .home-hero .theatrical-toggle {
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin: 11px auto 0 !important;
+  }
+}
