@@ -84,7 +84,7 @@ function SiteHeader() {
     <header className="site-header">
       <div className="site-header-inner">
         <div className="site-header-left">
-          <NavLink to="/" className="site-brand">
+          <NavLink to="/" className="site-brand" aria-label="ReelBot home">
             <img className="reelbot-brand-logo" src="/brand/reelbot-logo.svg" alt="ReelBot" width="134" height="52" />
           </NavLink>
         </div>
