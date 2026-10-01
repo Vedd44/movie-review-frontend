@@ -29,6 +29,7 @@ function AuthPanel({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successState, setSuccessState] = useState(null);
   const [error, setError] = useState("");
@@ -88,6 +89,7 @@ function AuthPanel({
   const resetFormState = () => {
     setPassword("");
     setConfirmPassword("");
+    setShowPassword(false);
     setError("");
     setSuccessState(null);
     clearAuthError();
@@ -278,26 +280,31 @@ function AuthPanel({
           />
 
           {usingPasswordFlow && !isForgotPasswordView ? (
-            <input
-              type="password"
-              aria-invalid={Boolean(error)}
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                if (error) {
-                  setError("");
-                }
-              }}
-              placeholder="Password"
-              aria-label="Password"
-              autoComplete={isSignupView ? "new-password" : "current-password"}
-              disabled={loading || authLoading}
-            />
+            <div className="password-input-wrap">
+              <input
+                type={showPassword ? "text" : "password"}
+                aria-invalid={Boolean(error)}
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (error) {
+                    setError("");
+                  }
+                }}
+                placeholder="Password"
+                aria-label="Password"
+                autoComplete={isSignupView ? "new-password" : "current-password"}
+                disabled={loading || authLoading}
+              />
+              <button type="button" className="password-visibility-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
+                <span aria-hidden="true">◉</span>
+              </button>
+            </div>
           ) : null}
 
           {view === PASSWORD_SIGNUP_VIEW ? (
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(event) => {
                 setConfirmPassword(event.target.value);
