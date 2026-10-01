@@ -207,13 +207,23 @@ function CookieNotice() {
     return window.localStorage.getItem(COOKIE_NOTICE_KEY) === "true";
   });
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(COOKIE_NOTICE_KEY, "true");
     }
 
     setDismissed(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (dismissed || typeof window === "undefined") return undefined;
+    const startY = window.scrollY;
+    const handleScroll = () => {
+      if (Math.abs(window.scrollY - startY) >= 24) handleDismiss();
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [dismissed, handleDismiss]);
 
   if (dismissed) {
     return null;
@@ -221,9 +231,9 @@ function CookieNotice() {
 
   return (
     <div className="cookie-notice" role="status" aria-live="polite">
-      <p className="cookie-notice-copy">ReelBot uses cookies to improve performance and understand usage.</p>
-      <button type="button" className="reelbot-inline-button cookie-notice-button" onClick={handleDismiss}>
-        OK
+      <p className="cookie-notice-copy">ReelBot uses cookies to improve performance and understand usage. Scroll to continue.</p>
+      <button type="button" className="cookie-notice-button" onClick={handleDismiss} aria-label="Dismiss cookie notice">
+        Dismiss
       </button>
     </div>
   );
