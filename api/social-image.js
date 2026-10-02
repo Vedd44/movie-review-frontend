@@ -42,7 +42,7 @@ async function resolvePoster(slug) {
     if (!response.ok) return null;
     const movie = await response.json();
     if (!movie.poster_path) return null;
-    const imageResponse = await fetch(`https://image.tmdb.org/t/p/w780${movie.poster_path}`);
+    const imageResponse = await fetch(`https://image.tmdb.org/t/p/original${movie.poster_path}`);
     return imageResponse.ok ? Buffer.from(await imageResponse.arrayBuffer()) : null;
   } catch {
     return null;
@@ -62,7 +62,8 @@ module.exports = async (req, res) => {
 
   for (let index = 0; index < posters.length; index += 1) {
     const poster = await sharp(posters[index])
-      .resize(430, 645, { fit: "cover" })
+      .resize(430, 645, { fit: "cover", kernel: sharp.kernel.lanczos3, withoutEnlargement: false })
+      .sharpen({ sigma: 0.8 })
       .modulate({ brightness: 0.58 })
       .toBuffer();
     composites.push({ input: poster, left: index * 385, top: 0 });
@@ -78,8 +79,8 @@ module.exports = async (req, res) => {
   </svg>`);
   composites.push({ input: overlay, left: 0, top: 0 });
 
-  const png = await base.composite(composites).png().toBuffer();
-  res.setHeader("Content-Type", "image/png");
+  const jpg = await base.composite(composites).jpeg({ quality: 94, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer();
+  res.setHeader("Content-Type", "image/jpeg");
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, must-revalidate");
-  return res.status(200).send(png);
+  return res.status(200).send(jpg);
 };
