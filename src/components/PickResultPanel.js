@@ -1,5 +1,5 @@
 import ArtworkFallback from "./ArtworkFallback";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
 import TasteActionBar from "./TasteActionBar";
@@ -7,6 +7,7 @@ import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getRecommendationMovieState, getReleaseYear } from "../discovery";
 import { getBackupCardMeta } from "../recommendationInsights";
+import { REELBOT_LOADING_QUOTES } from "../reelbotLoadingQuotes";
 
 const getAvailabilityStatus = (movie, providerEntry) =>
   movie?.availability_status || providerEntry?.availability_status || null;
@@ -55,7 +56,21 @@ function PickResultPanel({
   showSessionPlaceholder = false,
   refineStatusLabel = "",
   tasteActionProps = {},
+  loadingCopy = "",
 }) {
+  const [loadingQuoteIndex, setLoadingQuoteIndex] = useState(0);
+  useEffect(() => {
+    if (!loading) {
+      setLoadingQuoteIndex(0);
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setLoadingQuoteIndex((current) => (current + 1) % REELBOT_LOADING_QUOTES.length);
+    }, 1400);
+    return () => window.clearInterval(timer);
+  }, [loading]);
+  const loadingQuote = REELBOT_LOADING_QUOTES[loadingQuoteIndex];
+  const rotatingLoadingCopy = loadingQuote ? `“${loadingQuote.quote}” — ${loadingQuote.movie}` : "Finding your pick…";
   const visibleBackupMovies = useMemo(
     () => (Array.isArray(backupMovies) ? backupMovies.slice(0, 3) : []),
     [backupMovies]
@@ -81,7 +96,7 @@ function PickResultPanel({
         <div className="reelbot-loading-state" role="status">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
-            <p className="reelbot-loading-title">Finding your pick…</p>
+            <p className="reelbot-loading-title">{loadingCopy || rotatingLoadingCopy}</p>
           </div>
         </div>
       ) : null}
@@ -92,7 +107,7 @@ function PickResultPanel({
             <div className="reelbot-loading-state pick-active-loading-state" role="status" aria-live="polite">
               <span className="reelbot-loading-dot" aria-hidden="true"></span>
               <div className="reelbot-loading-copy">
-                <p className="reelbot-loading-title">{refineStatusLabel || recoveryMessage || "Finding your next pick…"}</p>
+                <p className="reelbot-loading-title">{refineStatusLabel || loadingCopy || rotatingLoadingCopy}</p>
               </div>
             </div>
           ) : null}
