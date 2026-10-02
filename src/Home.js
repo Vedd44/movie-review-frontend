@@ -1690,7 +1690,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setSwapQueue([]);
     setLastPickMode("prompt");
     setSwapCount(0);
-    setVariationIndex(0);
     setCandidatePoolIds([]);
     setRefinementState(null);
     setHasExpandedSwapPool(false);
