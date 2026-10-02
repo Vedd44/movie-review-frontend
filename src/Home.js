@@ -1850,7 +1850,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         customExcludedIds: excludedIds,
         extraExcludedIds: excludedIds,
         loadingMessage: "Finding a fresh pick…",
-        refreshKey: `fresh-swap-${nextSwapCount}-${Date.now()}`,
       },
       null,
       lastPickMeta
