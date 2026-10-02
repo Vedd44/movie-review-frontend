@@ -30,8 +30,12 @@ import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { getPromptCategory, trackProductEvent } from "./analytics";
 import { COLLECTIONS } from "./collections";
 import CollectionPreviewCard from "./components/CollectionPreviewCard";
+import { REELBOT_LOADING_QUOTES } from "./reelbotLoadingQuotes";
 
-const PICK_LOADING_MESSAGES = ["Finding your pick…"];
+const PICK_LOADING_MESSAGES = [
+  "Finding your pick…",
+  ...REELBOT_LOADING_QUOTES.map(({ quote, movie }) => `“${quote}” — ${movie}`),
+];
 
 const MAGIC_PROMPT_CARDS = [
   {
