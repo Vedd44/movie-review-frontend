@@ -884,3 +884,55 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
     max-width: none;
   }
 }
+
+
+/* Acceptance fix: Refine label and actions share one vertical centerline. */
+.pick-result-section .pick-refine-panel,
+.library-reelbot-card .pick-refine-panel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 24px;
+}
+.pick-result-section .pick-refine-label,
+.library-reelbot-card .pick-refine-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+.pick-result-section .pick-refine-grid,
+.library-reelbot-card .pick-refine-grid {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 0;
+}
+.pick-result-section .pick-refine-button,
+.library-reelbot-card .pick-refine-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1;
+}
+@media (max-width: 599px) {
+  .pick-result-section .pick-refine-panel,
+  .library-reelbot-card .pick-refine-panel {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+  }
+  .pick-result-section .pick-refine-label,
+  .library-reelbot-card .pick-refine-label {
+    min-height: 44px;
+    margin: 0;
+  }
+}
