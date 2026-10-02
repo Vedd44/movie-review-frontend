@@ -168,7 +168,7 @@ const PICK_STATUS = {
   ERROR: "error",
 };
 
-const PICK_REFRESH_EXHAUSTION_THRESHOLD = 3;
+const MAX_FRESH_PICK_ATTEMPTS = 5;
 
 const HOMEPAGE_USER_STATE = {
   NEW: "new",
@@ -1361,13 +1361,10 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     ? pickResult.candidate_pool_ids.length
     : candidatePoolIds.length;
   const candidatePoolExhausted = pickStatus === PICK_STATUS.EXHAUSTED;
-  const refreshExhausted =
-    candidatePoolSize > 0 && candidatePoolSize < PICK_REFRESH_EXHAUSTION_THRESHOLD;
-  const refreshExhaustionMessage = candidatePoolExhausted
-    ? "You’ve seen the available picks here. Refine this or start fresh."
-    : refreshExhausted
-      ? "You've seen the strongest options here"
-      : "";
+  const refreshExhausted = swapCount >= MAX_FRESH_PICK_ATTEMPTS;
+  const refreshExhaustionMessage = candidatePoolExhausted || refreshExhausted
+    ? "That’s five fresh tries. Start fresh with a new request, or refine this pick."
+    : "";
   const pickRecoveryTitle =
     pickStatus === PICK_STATUS.LOADING_SWAP
       ? "Swapping your pick…"
@@ -1797,10 +1794,24 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, navigate, pickResult, replaceHomePickSession, resetOnboardingSignals, scrollToSection, tasteActions]);
 
   const handleRefreshPick = async () => {
-    if (isPickBusy || !pickResult?.primary) {
+    if (isPickBusy || !pickResult?.primary || swapCount >= MAX_FRESH_PICK_ATTEMPTS) {
       return;
     }
+
     trackProductEvent("another_pick_clicked", { page: "home", theaters_toggle: includeTheatrical });
+
+    const previousPick = pickResult;
+    const nextSwapCount = swapCount + 1;
+    const currentDeckIds = [
+      previousPick.primary?.id,
+      ...((previousPick.alternates || []).map((movie) => movie?.id)),
+      ...queuedSwapIds,
+    ].filter(Boolean);
+    const excludedIds = dedupeIds([
+      ...currentDeckIds,
+      ...swapHistoryExcludedIds,
+      ...persistentExcludedIds,
+    ]);
 
     const swapPreferences = {
       view: movieType,
@@ -1813,77 +1824,35 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     };
 
     void tasteActions.recordSwapFeedback(
-      pickResult.primary,
+      previousPick.primary,
       swapPreferences,
-      { swapCount: swapCount + 1 }
+      { swapCount: nextSwapCount }
     ).catch(() => {});
 
-    const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id)), ...queuedSwapIds].filter(Boolean);
-    const nextSwapCount = swapCount + 1;
-    const shouldExpandSearch = nextSwapCount > SWAP_SOFT_EXHAUSTION_THRESHOLD;
-    const hasStrictThemeLock = Boolean(pickResult?.resolved_intent?.strict_filters?.require_theme_match);
-    const shouldReuseCandidatePool = !shouldExpandSearch && !hasStrictThemeLock && candidatePoolIds.length > currentDeckIds.length;
-
     setSwapCount(nextSwapCount);
-    setHasExpandedSwapPool(shouldExpandSearch);
-
-    // A replacement pick should enter the same clean loading state as the
-    // initial recommendation instead of leaving the previous movie on screen.
-    setPickResult(null);
-    setPickStatus(PICK_STATUS.LOADING);
-    setPickLoadingMessageOverride(shouldExpandSearch ? EXPANDED_SWAP_LOADING_MESSAGE : "Finding your pick…");
+    setHasExpandedSwapPool(true);
+    setSwapQueue([]);
+    setPickStatus(PICK_STATUS.LOADING_SWAP);
+    setPickLoadingMessageOverride("Finding a fresh pick…");
     scrollToPickResults({ skipIfVisible: true });
 
-    const eligibleSwapQueue = includeTheatrical
-      ? swapQueue
-      : swapQueue.filter((movie) => !movie?.availability_status?.theater_only);
-
-    if (eligibleSwapQueue.length) {
-      const [nextPrimary, ...remainingQueue] = eligibleSwapQueue;
-      const previousPick = pickResult;
-      const nextPayload = promoteQueuedPick(previousPick, nextPrimary, remainingQueue);
-
-      setPickResult(nextPayload);
-      setSwapQueue(remainingQueue);
-      setSwapHistory((currentHistory) => [...currentHistory, previousPick].slice(-10));
-      setPickStatus(PICK_STATUS.READY);
-      setPickLoadingMessageOverride("");
-      void tasteActions.recordPickResult(swapPreferences, nextPayload).catch(() => {});
-      scrollToPickResults({ skipIfVisible: true });
-
-      refillSwapQueueInBackground(
-        swapPreferences,
-        {
-          isSwap: true,
-          intentSnapshot: pickResult?.resolved_intent,
-          candidatePoolIds: shouldReuseCandidatePool ? candidatePoolIds : [],
-          extraExcludedIds: [...currentDeckIds, ...swapHistoryExcludedIds],
-          customExcludedIds: shouldExpandSearch ? [...persistentExcludedIds, ...currentDeckIds, ...swapHistoryExcludedIds] : undefined,
-          disableCandidatePoolReuse: !shouldReuseCandidatePool,
-          loadingMessage: shouldExpandSearch ? EXPANDED_SWAP_LOADING_MESSAGE : "",
-          refreshKey: shouldExpandSearch ? `expanded-refill-${Date.now()}` : `swap-refill-${Date.now()}`,
-        }
-      );
-      return;
-    }
-
-    const variationFocus = getVariationFocusFromIndex(variationIndex);
-    if (variationFocus) {
-      setVariationIndex((current) => current + 1);
-    }
-
+    // "Get another pick" is a new recommendation search, not promotion of one
+    // of the visible alternates. Keep the current card in place while loading
+    // and exclude everything already shown in this session.
     await submitPick(
       {},
       {
         isSwap: true,
         scrollToResults: true,
-        extraExcludedIds: [...currentDeckIds, ...swapHistoryExcludedIds],
-        customExcludedIds: shouldExpandSearch ? [...persistentExcludedIds, ...currentDeckIds, ...swapHistoryExcludedIds] : undefined,
-        disableCandidatePoolReuse: !shouldReuseCandidatePool,
-        loadingMessage: shouldExpandSearch ? EXPANDED_SWAP_LOADING_MESSAGE : "",
-        refreshKey: shouldExpandSearch ? `expanded-${Date.now()}` : Date.now(),
+        intentSnapshot: previousPick?.resolved_intent,
+        disableCandidatePoolReuse: true,
+        candidatePoolIds: [],
+        customExcludedIds: excludedIds,
+        extraExcludedIds: excludedIds,
+        loadingMessage: "Finding a fresh pick…",
+        refreshKey: `fresh-swap-${nextSwapCount}-${Date.now()}`,
       },
-      variationFocus,
+      null,
       lastPickMeta
     );
   };
@@ -2159,7 +2128,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               return handleRefreshPick();
             } : undefined}
             onResetChoices={activePick ? handleStartFresh : undefined}
-            refreshDisabled={isPickBusy || candidatePoolExhausted}
+            refreshDisabled={isPickBusy || refreshExhausted}
             resetDisabled={false}
             recoveryTitle={pickRecoveryTitle}
             recoveryMessage={pickRecoveryMessage}
