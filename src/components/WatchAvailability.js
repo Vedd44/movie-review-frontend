@@ -36,8 +36,23 @@ function WatchAvailability({ availability, sectionId }) {
               <ul aria-label={`${group.label} providers`}>
                 {group.providers.map((provider) => (
                   <li key={`${group.id}-${provider.id}`}>
-                    {provider.logo_path ? <img src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`} alt="" aria-hidden="true" loading="lazy" /> : null}
-                    <span>{provider.name}</span>
+                    {provider.direct_url ? (
+                      <a
+                        href={provider.direct_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Watch ${provider.name}`}
+                        style={{ display: "flex", alignItems: "center", gap: "inherit", color: "inherit", textDecoration: "none" }}
+                      >
+                        {provider.logo_path ? <img src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`} alt="" aria-hidden="true" loading="lazy" /> : null}
+                        <span>{provider.name}</span>
+                      </a>
+                    ) : (
+                      <>
+                        {provider.logo_path ? <img src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`} alt="" aria-hidden="true" loading="lazy" /> : null}
+                        <span>{provider.name}</span>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
