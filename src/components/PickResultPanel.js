@@ -93,7 +93,8 @@ function PickResultPanel({
         <div className="reelbot-loading-state" role="status">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
-            <p className="reelbot-loading-title"><span>{loaderCopy}</span></p>\n            {loadingQuote ? <p className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></p> : null}
+            <p className="reelbot-loading-title"><span>{loaderCopy}</span></p>
+            {loadingQuote ? <p className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></p> : null}
           </div>
         </div>
       ) : null}
