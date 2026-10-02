@@ -21,7 +21,7 @@ import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behaviora
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { buildRecommendationRationale, getBackupRoleLabel } from "./recommendationInsights";
-import { buildSwapQueueFromPayload, dedupeIds, getPickSessionMovieIds, mergeSwapQueue, normalizePickPayload, promoteQueuedPick } from "./reelbotSession";
+import { buildSwapQueueFromPayload, dedupeIds, getPickSessionMovieIds, mergeSwapQueue, normalizePickPayload } from "./reelbotSession";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl, DEFAULT_SOCIAL_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "./siteConfig";
 import { homeFeedService } from "./services/homeFeedService";
@@ -87,9 +87,7 @@ const HOMEPAGE_DESKTOP_COLUMNS = 4;
 const HOMEPAGE_BASE_DISPLAY_COUNT = 10;
 const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 20;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
-const SWAP_SOFT_EXHAUSTION_THRESHOLD = 4;
 const SOFT_SWAP_MESSAGE = "Want more options? Refine this pick or start fresh.";
-const EXPANDED_SWAP_LOADING_MESSAGE = "Finding your pick…";
 const RESTORE_STATUS_TIMEOUT_MS = 1000;
 const SWAP_LOADING_MESSAGE = "Finding your pick…";
 const PICK_REQUEST_FALLBACK_MESSAGE = "Try loosening one detail.";
@@ -141,22 +139,6 @@ const PICK_VARIATION_SEQUENCE = [
   { id: "violence_stylized", dimension: "violence", emphasis: "stylized", description: "Treat the violence as stylized" },
   { id: "violence_harsh", dimension: "violence", emphasis: "harsh", description: "Treat the violence as harsh" },
 ];
-
-const getVariationFocusFromIndex = (index = 0) => {
-  if (!PICK_VARIATION_SEQUENCE.length) {
-    return null;
-  }
-
-  const safeIndex = ((Math.floor(index) % PICK_VARIATION_SEQUENCE.length) + PICK_VARIATION_SEQUENCE.length) % PICK_VARIATION_SEQUENCE.length;
-  const entry = PICK_VARIATION_SEQUENCE[safeIndex];
-  return {
-    index: safeIndex,
-    id: entry.id,
-    dimension: entry.dimension,
-    emphasis: entry.emphasis,
-    description: entry.description,
-  };
-};
 
 const PICK_STATUS = {
   IDLE: "idle",
@@ -746,7 +728,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [swapQueue, setSwapQueue] = useState(() => (Array.isArray(initialPickSession.swapQueue) ? initialPickSession.swapQueue : []));
   const [lastPickMode, setLastPickMode] = useState(() => (initialPickSession.lastPickMode === "surprise" ? "surprise" : "prompt"));
   const [swapCount, setSwapCount] = useState(() => Number(initialPickSession.swapCount || 0));
-  const [variationIndex, setVariationIndex] = useState(0);
   const [candidatePoolIds, setCandidatePoolIds] = useState(() => (Array.isArray(initialPickSession.candidatePool) ? initialPickSession.candidatePool : []));
   const [refinementState, setRefinementState] = useState(() => initialPickSession.refinementState || null);
   const [hasExpandedSwapPool, setHasExpandedSwapPool] = useState(() => Boolean(initialPickSession.hasExpandedSwapPool));
@@ -1357,9 +1338,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const shouldShowPickFallbackState = !activePick && (pickStatus === PICK_STATUS.EXHAUSTED || pickStatus === PICK_STATUS.ERROR);
   const pickFallbackTitle = pickStatus === PICK_STATUS.ERROR ? "ReelBot hit a snag." : "Nothing great matched that exactly.";
   const pickFallbackCopy = pickError || PICK_REQUEST_FALLBACK_MESSAGE;
-  const candidatePoolSize = Array.isArray(pickResult?.candidate_pool_ids)
-    ? pickResult.candidate_pool_ids.length
-    : candidatePoolIds.length;
   const candidatePoolExhausted = pickStatus === PICK_STATUS.EXHAUSTED;
   const refreshExhausted = swapCount >= MAX_FRESH_PICK_ATTEMPTS;
   const refreshExhaustionMessage = candidatePoolExhausted || refreshExhausted
@@ -1614,57 +1592,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     }
   };
 
-  const refillSwapQueueInBackground = async (nextPreferences, options = {}) => {
-    const requestVersion = pickRequestVersionRef.current;
-
-    try {
-      const refillPayload = await runPickRequest(nextPreferences, { ...options, signal: pickControllerRef.current?.signal });
-      if (requestVersion !== pickRequestVersionRef.current) {
-        return;
-      }
-
-      setCandidatePoolIds((currentIds) => {
-        const incomingIds = Array.isArray(refillPayload?.candidate_pool_ids) ? refillPayload.candidate_pool_ids : [];
-        return incomingIds.length ? incomingIds : currentIds;
-      });
-      setRefinementState((currentRefinement) => refillPayload?.resolved_refinement || currentRefinement || null);
-      setSwapQueue((currentQueue) => {
-        const excludedIds = dedupeIds([
-          pickResult?.primary?.id,
-          ...swapHistoryExcludedIds,
-          ...currentQueue.map((movie) => movie?.id),
-          ...(options.extraExcludedIds || []),
-        ]);
-        const incomingQueue = [refillPayload?.primary, ...((Array.isArray(refillPayload?.alternates) ? refillPayload.alternates : []))];
-        const mergedQueue = mergeSwapQueue(currentQueue, incomingQueue, excludedIds);
-        setPickResult((currentPickResult) => {
-          if (!currentPickResult?.primary) {
-            return currentPickResult;
-          }
-
-          return {
-            ...currentPickResult,
-            alternates: mergedQueue.slice(0, 3),
-            candidate_pool_ids: Array.isArray(refillPayload?.candidate_pool_ids) && refillPayload.candidate_pool_ids.length
-              ? refillPayload.candidate_pool_ids
-              : currentPickResult.candidate_pool_ids,
-          };
-        });
-        return mergedQueue;
-      });
-    } catch (refillError) {
-      if (requestVersion !== pickRequestVersionRef.current) {
-        return;
-      }
-
-      console.error("Error refilling ReelBot swap queue:", refillError);
-    } finally {
-      if (requestVersion === pickRequestVersionRef.current) {
-        setPickStatus((currentStatus) => (currentStatus === PICK_STATUS.LOADING_SWAP ? PICK_STATUS.READY : currentStatus));
-        setPickLoadingMessageOverride("");
-      }
-    }
-  };
 
   const submitPick = async (
     overrides = {},
