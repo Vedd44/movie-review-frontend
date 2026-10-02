@@ -87,8 +87,11 @@ const HOMEPAGE_PROMPT_POOL = [
 
 const HOMEPAGE_PROMPT_COUNT = 10;
 const MIN_CURATED_FEED_SIZE = 8;
-const HOMEPAGE_DESKTOP_COLUMNS = 3;
-const HOMEPAGE_BASE_DISPLAY_COUNT = 9;
+const HOMEPAGE_DESKTOP_COLUMNS = 5;
+const HOMEPAGE_DESKTOP_DISPLAY_COUNT = 10;
+const HOMEPAGE_TABLET_DISPLAY_COUNT = 9;
+const HOMEPAGE_MOBILE_DISPLAY_COUNT = 6;
+const HOMEPAGE_BASE_DISPLAY_COUNT = HOMEPAGE_DESKTOP_DISPLAY_COUNT;
 const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 18;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
 const SOFT_SWAP_MESSAGE = "Want more options? Refine this pick or start fresh.";
@@ -325,7 +328,7 @@ const isHighConfidenceCuratedMovie = (movie, view) => {
   return voteAverage >= 6.2 && (voteCount >= 80 || popularity >= 45);
 };
 
-export const trimMoviesToDisplayCount = (items = [], view = "latest") => {
+export const trimMoviesToDisplayCount = (items = [], view = "latest", baseDisplayCount = HOMEPAGE_BASE_DISPLAY_COUNT) => {
   const expandedCandidates = items.slice(0, HOMEPAGE_EXPANDED_DISPLAY_COUNT);
   const highConfidenceExpandedCount = expandedCandidates.filter((movie) => isHighConfidenceCuratedMovie(movie, view)).length;
 
@@ -333,15 +336,15 @@ export const trimMoviesToDisplayCount = (items = [], view = "latest") => {
     return expandedCandidates;
   }
 
-  if (items.length >= HOMEPAGE_BASE_DISPLAY_COUNT) {
-    return items.slice(0, HOMEPAGE_BASE_DISPLAY_COUNT);
+  if (items.length >= baseDisplayCount) {
+    return items.slice(0, baseDisplayCount);
   }
 
   // A partial final row is preferable to turning a small but valid API response
   // into an empty feed.
   const fallbackCount = Math.max(
-    Math.min(items.length, HOMEPAGE_DESKTOP_COLUMNS),
-    Math.floor(items.length / HOMEPAGE_DESKTOP_COLUMNS) * HOMEPAGE_DESKTOP_COLUMNS
+    Math.min(items.length, Math.min(HOMEPAGE_DESKTOP_COLUMNS, baseDisplayCount)),
+    Math.floor(items.length / Math.min(HOMEPAGE_DESKTOP_COLUMNS, baseDisplayCount)) * Math.min(HOMEPAGE_DESKTOP_COLUMNS, baseDisplayCount)
   );
   return items.slice(0, fallbackCount);
 };
@@ -735,6 +738,27 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 560px)").matches;
   });
+  const [homepageBaseDisplayCount, setHomepageBaseDisplayCount] = useState(() => {
+    if (typeof window === "undefined") return HOMEPAGE_DESKTOP_DISPLAY_COUNT;
+    if (window.matchMedia("(max-width: 599px)").matches) return HOMEPAGE_MOBILE_DISPLAY_COUNT;
+    if (window.matchMedia("(max-width: 900px)").matches) return HOMEPAGE_TABLET_DISPLAY_COUNT;
+    return HOMEPAGE_DESKTOP_DISPLAY_COUNT;
+  });
+
+  useEffect(() => {
+    const updateHomepageDisplayCount = () => {
+      if (window.matchMedia("(max-width: 599px)").matches) {
+        setHomepageBaseDisplayCount(HOMEPAGE_MOBILE_DISPLAY_COUNT);
+      } else if (window.matchMedia("(max-width: 900px)").matches) {
+        setHomepageBaseDisplayCount(HOMEPAGE_TABLET_DISPLAY_COUNT);
+      } else {
+        setHomepageBaseDisplayCount(HOMEPAGE_DESKTOP_DISPLAY_COUNT);
+      }
+    };
+    updateHomepageDisplayCount();
+    window.addEventListener("resize", updateHomepageDisplayCount);
+    return () => window.removeEventListener("resize", updateHomepageDisplayCount);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -1203,14 +1227,14 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       return [];
     }
 
-    const trimmedMovies = trimMoviesToDisplayCount(filteredMovies, movieType);
+    const trimmedMovies = trimMoviesToDisplayCount(filteredMovies, movieType, homepageBaseDisplayCount);
 
     if (trimmedMovies.length) {
       return trimmedMovies;
     }
 
-    return trimMoviesToDisplayCount(curatedMovies, movieType);
-  }, [curatedMovies, filteredMovies, movieType]);
+    return trimMoviesToDisplayCount(curatedMovies, movieType, homepageBaseDisplayCount);
+  }, [curatedMovies, filteredMovies, homepageBaseDisplayCount, movieType]);
 
   const heroPreviewMovies = useMemo(() => {
     // Keep this rail distinct from the browse grid below it.
@@ -2015,7 +2039,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             primaryMovie={activePick}
             backupMovies={visibleBackupPicks}
             vibeLabel={pickVibeLabel}
-            loadingCopy={pickLoadingMessageOverride || "Finding your pick…"}
+            loadingCopy={pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…"}
             emptyCopy="Nothing here yet. Tell ReelBot what you want to watch."
             emptyActionLabel="Get a pick"
             onEmptyAction={handleEmptyPickCta}
