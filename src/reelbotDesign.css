@@ -1001,3 +1001,31 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 @media (prefers-reduced-motion: reduce) {
   .reelbot-loading-ellipsis span { animation: none; opacity: 1; }
 }
+
+
+/* Pick loading: retain the primary status and let film quotes act as quiet secondary texture. */
+.reelbot-loading-copy { min-width: 0; }
+.reelbot-loading-title { margin: 0; color: var(--rb-text); font: 600 .95rem/1.4 var(--rb-sans); }
+.reelbot-loading-quote { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; margin: 8px 0 0; color: var(--rb-muted); font: 400 .82rem/1.55 var(--rb-sans); transition: opacity .2s ease; }
+.reelbot-loading-quote q { font-style: italic; }
+.reelbot-loading-quote span { color: var(--rb-faint); font-size: .74rem; letter-spacing: .02em; }
+.reelbot-loading-state { min-height: 160px; }
+@media (max-width: 599px) {
+  .reelbot-loading-state { align-items: flex-start; min-height: 140px; padding: 28px 0; }
+  .reelbot-loading-quote { max-width: 30ch; font-size: .78rem; }
+}
+
+/* Three alternates use the full result width instead of clustering at the left edge. */
+.pick-backups-block { width: 100%; }
+.pick-backup-strip { width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 3vw, 48px); }
+.pick-backup-card { width: 100%; grid-template-columns: 92px minmax(0, 1fr); }
+@media (max-width: 900px) {
+  .pick-backup-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .pick-backup-card { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+  .pick-backup-card img { width: 72px; height: 108px; }
+}
+@media (max-width: 599px) {
+  .pick-backup-strip { grid-template-columns: 1fr; gap: 22px; }
+  .pick-backup-card { grid-template-columns: 82px minmax(0, 1fr); }
+  .pick-backup-card img { width: 82px; height: 123px; }
+}
