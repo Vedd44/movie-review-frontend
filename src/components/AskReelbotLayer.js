@@ -281,6 +281,11 @@ function AskReelbotLayer() {
     setConversation(createAskConversation(contextRef.current));
   }, [location.pathname, location.search]);
 
+  const shouldShowPickLabel = Boolean(result) && !(
+    /\?\s*$/.test(String(lastTurn?.prompt || "").trim())
+    && !/\b(?:recommend|pick|find me|what should i watch|something to watch|another option|another one)\b/i.test(String(lastTurn?.prompt || ""))
+  );
+
   const requestPick = async (prompt, options = {}) => {
     const normalizedPrompt = String(prompt || "").trim();
     if (!normalizedPrompt || loading) return;
@@ -471,7 +476,7 @@ function AskReelbotLayer() {
               </article>
             ) : !loading && !error && result ? (
               <article className="ask-reelbot-answer">
-                <div className="ask-reelbot-answer-label">Your pick</div>
+                {shouldShowPickLabel ? <div className="ask-reelbot-answer-label">Your pick</div> : null}
                 <div className="ask-reelbot-answer-main">
                   {result.primary.poster_path ? <img src={`https://image.tmdb.org/t/p/w185${result.primary.poster_path}`} alt="" loading="lazy" decoding="async" /> : null}
                   <div>
