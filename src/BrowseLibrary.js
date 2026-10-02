@@ -318,7 +318,9 @@ function BrowseLibrary() {
           is_swap: Boolean(options.isSwap),
           refinement: options.refinement,
           intent_snapshot: options.intentSnapshot || ((options.isSwap || options.isRefinement) ? pickResult?.resolved_intent : undefined),
-          candidate_pool_ids: options.candidatePoolIds || ((options.isSwap || options.isRefinement) ? candidatePoolIds : undefined),
+          candidate_pool_ids: options.disableCandidatePoolReuse
+            ? undefined
+            : (options.candidatePoolIds || ((options.isSwap || options.isRefinement) ? candidatePoolIds : undefined)),
         },
         {
           headers: {
@@ -442,7 +444,8 @@ function BrowseLibrary() {
         source_movie_title: pickResult.primary.title,
       },
       intentSnapshot: pickResult?.resolved_intent,
-      candidatePoolIds,
+      disableCandidatePoolReuse: true,
+      candidatePoolIds: [],
     });
   };
 
