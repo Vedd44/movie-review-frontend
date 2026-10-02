@@ -84,7 +84,11 @@ function TasteActionBar({
       if (typeof onInteraction === "function") {
         onInteraction(actionKey);
       }
-      setFeedback(feedbackMap[actionKey] || "Saved");
+      // The Save button itself reflects watchlist state (Save/Saved), so avoid a second
+      // success line that changes the action-row height and knocks controls out of alignment.
+      if (actionKey !== "watchlist") {
+        setFeedback(feedbackMap[actionKey] || "Saved");
+      }
     } catch (error) {
       console.error("Error updating ReelBot taste state:", error);
       setActionError("Could not save that change. Try again.");
@@ -139,7 +143,7 @@ function TasteActionBar({
           {pendingAction === "vibe" ? "Saving…" : tasteState.likedVibe ? "Vibe Saved" : "Like this Vibe"}
         </button>
       ) : null}
-      {pendingAction && user && isCloudSyncing ? <span className="taste-action-feedback">Saving…</span> : null}
+      {pendingAction && user && isCloudSyncing && pendingAction !== "watchlist" ? <span className="taste-action-feedback">Saving…</span> : null}
       {actionError ? <span className="taste-action-feedback taste-action-feedback--error">{actionError}</span> : null}
       {feedback ? <span className="taste-action-feedback">{feedback}</span> : null}
     </div>
