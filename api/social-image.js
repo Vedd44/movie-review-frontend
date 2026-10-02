@@ -81,6 +81,6 @@ module.exports = async (req, res) => {
 
   const jpg = await base.composite(composites).jpeg({ quality: 94, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer();
   res.setHeader("Content-Type", "image/jpeg");
-  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, must-revalidate");
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=86400, must-revalidate");
   return res.status(200).send(jpg);
 };
