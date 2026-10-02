@@ -981,3 +981,23 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
   .detail-radarr-link { width: 28px; height: 28px; }
   .detail-radarr-link svg { width: 16px; height: 16px; }
 }
+
+
+/* Calm loading motion: keep copy stable and animate only the ellipsis. */
+.reelbot-loading-ellipsis {
+  display: inline-flex;
+  width: 1.35em;
+  margin-left: 0.08em;
+}
+.reelbot-loading-ellipsis span {
+  animation: reelbot-loading-dot-fade 1.35s infinite both;
+}
+.reelbot-loading-ellipsis span:nth-child(2) { animation-delay: 0.18s; }
+.reelbot-loading-ellipsis span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes reelbot-loading-dot-fade {
+  0%, 20% { opacity: 0.2; }
+  45%, 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reelbot-loading-ellipsis span { animation: none; opacity: 1; }
+}
