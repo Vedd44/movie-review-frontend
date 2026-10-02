@@ -1527,6 +1527,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       setPickLoadingMessageOverride(options.loadingMessage || "");
       setPickError(null);
       setPickValidation("");
+      trackProductEvent("recommendation_requested", {
+        page: "home",
+        request_type: options.isRefinement ? "refinement" : options.isSwap ? "another_pick" : "initial",
+        prompt_category: getPromptCategory(nextPreferences.prompt),
+        theaters_toggle: Boolean(nextPreferences.include_theatrical),
+        authenticated: Boolean(user),
+      });
       void tasteActions.savePickPreferences({ ...nextPreferences, log_prompt_submission: !options.isSwap }).catch(() => {});
 
       if (options.scrollToResults) {
