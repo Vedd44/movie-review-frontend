@@ -610,7 +610,6 @@ function BrowseLibrary() {
                 primaryMovie={pickResult?.primary}
                 backupMovies={pickResult?.alternates || []}
                 vibeLabel={libraryVibeLabel}
-                loadingCopy="Finding your pick…"
                 emptyCopy="Let ReelBot choose from these filters, or add one detail."
                 refreshLabel={pickLoading ? "Finding…" : "Get another pick"}
                 resetLabel="Start fresh"
@@ -620,7 +619,6 @@ function BrowseLibrary() {
                 onResetChoices={pickResult?.primary ? handleStartFreshLibraryPick : undefined}
                 refineActions={pickResult?.primary ? LIBRARY_REFINE_ACTIONS : []}
                 onRefineAction={pickResult?.primary ? handleRefineLibraryPick : undefined}
-                refineStatusLabel={pickResult?.primary && pickLoading ? "Finding your pick…" : ""}
                 refreshDisabled={pickLoading}
               />
             </div>
