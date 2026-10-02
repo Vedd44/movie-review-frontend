@@ -936,3 +936,14 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
     margin: 0;
   }
 }
+
+
+/* Homepage result title needs breathing room from the result container edge. */
+.home-result-section > .section-header {
+  padding: 28px 32px 0;
+}
+@media (max-width: 599px) {
+  .home-result-section > .section-header {
+    padding: 28px 24px 0;
+  }
+}
