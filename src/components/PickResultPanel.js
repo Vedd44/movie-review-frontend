@@ -1,5 +1,5 @@
 import ArtworkFallback from "./ArtworkFallback";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
 import TasteActionBar from "./TasteActionBar";
@@ -7,7 +7,7 @@ import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getRecommendationMovieState, getReleaseYear } from "../discovery";
 import { getBackupCardMeta } from "../recommendationInsights";
-import { pickLoadingQuote } from "../reelbotLoadingQuotes";
+import { REELBOT_LOADING_QUOTES } from "../reelbotLoadingQuotes";
 
 const getAvailabilityStatus = (movie, providerEntry) =>
   movie?.availability_status || providerEntry?.availability_status || null;
@@ -58,8 +58,16 @@ function PickResultPanel({
   tasteActionProps = {},
   loadingCopy = "",
 }) {
-  const loadingQuote = useMemo(() => pickLoadingQuote(), []);
-  const loaderCopy = loadingCopy || `“${loadingQuote.quote}” — ${loadingQuote.movie}`;
+  const loaderCopy = loadingCopy || "Finding your pick…";
+  const [loadingQuoteIndex, setLoadingQuoteIndex] = useState(() => Math.floor(Math.random() * REELBOT_LOADING_QUOTES.length));
+  useEffect(() => {
+    if (!loading) return undefined;
+    const intervalId = window.setInterval(() => {
+      setLoadingQuoteIndex((currentIndex) => (currentIndex + 1) % REELBOT_LOADING_QUOTES.length);
+    }, 3600);
+    return () => window.clearInterval(intervalId);
+  }, [loading]);
+  const loadingQuote = REELBOT_LOADING_QUOTES[loadingQuoteIndex];
   const visibleBackupMovies = useMemo(
     () => (Array.isArray(backupMovies) ? backupMovies.slice(0, 3) : []),
     [backupMovies]
@@ -85,7 +93,7 @@ function PickResultPanel({
         <div className="reelbot-loading-state" role="status">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
-            <p className="reelbot-loading-title"><span>{loaderCopy}</span><span className="reelbot-loading-ellipsis" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+            <p className="reelbot-loading-title"><span>{loaderCopy}</span></p>\n            {loadingQuote ? <p className="reelbot-loading-quote"><q>{loadingQuote.quote}</q><span>{loadingQuote.movie}</span></p> : null}
           </div>
         </div>
       ) : null}
