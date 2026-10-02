@@ -21,7 +21,7 @@ import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behaviora
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { buildRecommendationRationale, getBackupRoleLabel } from "./recommendationInsights";
-import { buildSwapQueueFromPayload, dedupeIds, getPickSessionMovieIds, mergeSwapQueue, normalizePickPayload } from "./reelbotSession";
+import { buildSwapQueueFromPayload, dedupeIds, getPickSessionMovieIds, normalizePickPayload } from "./reelbotSession";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { buildAbsoluteUrl, DEFAULT_SOCIAL_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "./siteConfig";
 import { homeFeedService } from "./services/homeFeedService";
@@ -126,19 +126,6 @@ const getContextualRefineActions = (movie = {}, prompt = "", resolvedIntent = {}
 
 const getAvailabilityStatus = (movie) => movie?.availability_status || null;
 const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
-
-const PICK_VARIATION_SEQUENCE = [
-  { id: "tone_gritty", dimension: "tone", emphasis: "gritty", description: "Lean into a grittier tone" },
-  { id: "tone_polished", dimension: "tone", emphasis: "polished", description: "Lean into a more polished tone" },
-  { id: "pacing_fast", dimension: "pacing", emphasis: "fast", description: "Push a faster, choppier pace" },
-  { id: "pacing_measured", dimension: "pacing", emphasis: "measured", description: "Stay measured and deliberate" },
-  { id: "scale_contained", dimension: "scale", emphasis: "contained", description: "Keep the scale more contained" },
-  { id: "scale_expansive", dimension: "scale", emphasis: "expansive", description: "Lean toward a more expansive scale" },
-  { id: "access_easy", dimension: "accessibility", emphasis: "easy", description: "Highlight easier, accessible energy" },
-  { id: "access_demanding", dimension: "accessibility", emphasis: "demanding", description: "Lean into a more demanding watch" },
-  { id: "violence_stylized", dimension: "violence", emphasis: "stylized", description: "Treat the violence as stylized" },
-  { id: "violence_harsh", dimension: "violence", emphasis: "harsh", description: "Treat the violence as harsh" },
-];
 
 const PICK_STATUS = {
   IDLE: "idle",
