@@ -126,7 +126,7 @@ function BrowseLibrary() {
     const runtimeQuery = normalizedRuntime !== "any" ? `&runtime=${encodeURIComponent(normalizedRuntime)}` : "";
 
     axios
-      .get(`${API_BASE_URL}/movies?type=${normalizedView}&page=${normalizedPage}${genreQuery}${runtimeQuery}`)
+      .get(`${API_BASE_URL}/movies?type=${normalizedView}&page=${normalizedPage}${genreQuery}${runtimeQuery}&fill=10`)
       .then((response) => {
         if (!isCurrentRequest) return;
         const incomingMovies = Array.isArray(response.data.results) ? response.data.results : [];
