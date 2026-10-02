@@ -18,10 +18,30 @@ const GENERAL_ACTIONS = [
   ["Surprise me", ""],
 ];
 
-const MOVIE_ACTIONS = [
+const MOVIE_ACTION_POOL = [
+  ["Is it actually good?", "Is it actually good?"],
+  ["What kind of mood is it?", "What kind of mood is it?"],
   ["How intense is it?", "How intense is it?"],
   ["Is it a slow burn?", "Is it a slow burn?"],
+  ["Is it easy to follow?", "Is it easy to follow?"],
+  ["How violent is it?", "How violent is it?"],
+  ["Is it good with friends?", "Is it good with friends?"],
+  ["What does it do best?", "What does it do best?"],
+  ["Is it worth the runtime?", "Is it worth the runtime?"],
+  ["What should I know going in?", "What should I know going in?"],
 ];
+
+const isLikelySequel = (movie = {}) => /(?:\b(?:part|chapter)\s+\d+\b|\b[2-9]\b|\b(?:ii|iii|iv|v|vi|vii|viii|ix|x)\b)/i.test(String(movie.title || ""));
+
+const getMovieActions = (context = {}) => {
+  const movie = context.movie || {};
+  const seed = String(movie.id || movie.title || "reelbot").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+  const rotated = MOVIE_ACTION_POOL.map((_, index) => MOVIE_ACTION_POOL[(index + seed) % MOVIE_ACTION_POOL.length]);
+  const actions = rotated.slice(0, 3);
+  if (isLikelySequel(movie)) actions.unshift(["Do I need to see the earlier movies?", "Do I need to see the earlier movies first?"]);
+  actions.push(["Find me something else like this", "Find me something else like this"]);
+  return actions.slice(0, 4);
+};
 
 const PERSON_ACTIONS = [
   ["Where should I start?", "Pick a good starting point from this filmography"],
@@ -51,7 +71,7 @@ export const getPanelConfig = (context = {}) => {
     return {
       heading: `Ask about ${movieTitle}`,
       prompt: "What do you want to know?",
-      actions: MOVIE_ACTIONS,
+      actions: getMovieActions(context),
     };
   }
 
