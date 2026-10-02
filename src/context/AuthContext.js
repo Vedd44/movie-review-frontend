@@ -86,6 +86,7 @@ export function AuthProvider({ children }) {
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
   const recoveryRedirectedRef = useRef(false);
+  const trackedSignedInUsersRef = useRef(new Set());
 
   const clearPasswordRecovery = useCallback(() => {
     setPasswordRecoveryActive(false);
@@ -140,6 +141,11 @@ export function AuthProvider({ children }) {
             recoveryRedirectedRef.current = false;
           } else if (event === "SIGNED_IN" && !recoveryRedirectedRef.current && !isRecoveryUrl()) {
             setPasswordRecoveryActive(false);
+            const userId = nextSession?.user?.id;
+            if (userId && !trackedSignedInUsersRef.current.has(userId)) {
+              trackedSignedInUsersRef.current.add(userId);
+              trackProductEvent("login", { method: "email" });
+            }
           }
 
           if (event !== "SIGNED_OUT" && (event === "PASSWORD_RECOVERY" || recoveryRedirectedRef.current)) {
@@ -237,7 +243,7 @@ export function AuthProvider({ children }) {
     }
 
     setAuthError("");
-    trackProductEvent("signup_completed", { method: "email" });
+    trackProductEvent("sign_up", { method: "email", confirmation_required: !response?.data?.session });
     return response;
   }, []);
 
