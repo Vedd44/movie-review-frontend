@@ -25,7 +25,7 @@ import {
 import { passesSignalFloor } from "./movieSignals";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
-import { trackProductEvent } from "./analytics";
+import { getPromptCategory, trackProductEvent } from "./analytics";
 
 const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
 const BROWSE_VIEW_OPTIONS = VIEW_OPTIONS;
@@ -320,6 +320,13 @@ function BrowseLibrary() {
       }
       setPickError(null);
       if (!options.backgroundRefill) {
+        trackProductEvent("recommendation_requested", {
+          page: "browse",
+          request_type: options.isRefinement ? "refinement" : options.isSwap ? "another_pick" : "initial",
+          prompt_category: getPromptCategory(nextPreferences.prompt),
+          theaters_toggle: Boolean(nextPreferences.include_theatrical),
+          authenticated: Boolean(user),
+        });
         void tasteActions.savePickPreferences({ ...nextPreferences, log_prompt_submission: !options.isSwap }).catch(() => {});
       }
 
