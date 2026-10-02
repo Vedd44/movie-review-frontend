@@ -201,15 +201,18 @@ function BrowseLibrary() {
   const displayMovies = useMemo(() => {
     if (filteredMovies.length >= 10) return filteredMovies;
     const includedIds = new Set(filteredMovies.map((movie) => movie.id));
+    // The browse signal floor is a ranking/quality preference, not a reason to
+    // leave a desktop row visibly incomplete. Fill from the fetched source set
+    // while preserving explicit user exclusions; the source endpoint already
+    // owns the active view/genre/runtime constraints.
     const fillMovies = movies.filter(
       (movie) =>
         movie?.id
         && !includedIds.has(movie.id)
         && !suppressedMovieIds.has(movie.id)
-        && selectedMoodConfig.predicate(movie)
     );
-    return [...filteredMovies, ...fillMovies].slice(0, Math.max(10, filteredMovies.length));
-  }, [filteredMovies, movies, selectedMoodConfig, suppressedMovieIds]);
+    return [...filteredMovies, ...fillMovies].slice(0, 10);
+  }, [filteredMovies, movies, suppressedMovieIds]);
 
   useEffect(() => {
     // Fill the initial browse surface with enough real titles to occupy the desktop grid.
