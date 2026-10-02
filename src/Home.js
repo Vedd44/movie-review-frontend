@@ -30,12 +30,8 @@ import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { getPromptCategory, trackProductEvent } from "./analytics";
 import { COLLECTIONS } from "./collections";
 import CollectionPreviewCard from "./components/CollectionPreviewCard";
-import { REELBOT_LOADING_QUOTES } from "./reelbotLoadingQuotes";
 
-const PICK_LOADING_MESSAGES = [
-  "Finding your pick…",
-  ...REELBOT_LOADING_QUOTES.map(({ quote, movie }) => `“${quote}” — ${movie}`),
-];
+const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 
 const MAGIC_PROMPT_CARDS = [
   {
@@ -777,7 +773,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     return () => mediaQuery.removeListener(handleChange);
   }, []);
 
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const { profile, behavioralMemory, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
   const isPickLoading = pickStatus === PICK_STATUS.LOADING;
   const isSwapLoading = pickStatus === PICK_STATUS.LOADING_SWAP;
@@ -1115,19 +1110,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [movieType]);
 
   useEffect(() => {
-    if (!isPickBusy) {
-      setLoadingMessageIndex(0);
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setLoadingMessageIndex((currentIndex) => (currentIndex + 1) % PICK_LOADING_MESSAGES.length);
-    }, 1400);
-
-    return () => window.clearInterval(intervalId);
-  }, [isPickBusy]);
-
-  useEffect(() => {
     setIsPickTrailerOpen(false);
   }, [pickResult?.primary?.id]);
 
@@ -1370,14 +1352,14 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     ? (pickStatus === PICK_STATUS.LOADING_SWAP
         ? (pickLoadingMessageOverride || SWAP_LOADING_MESSAGE)
         : pickStatus === PICK_STATUS.LOADING
-          ? (pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")
+          ? (pickLoadingMessageOverride || PICK_LOADING_MESSAGES[0])
         : pickStatus === PICK_STATUS.ERROR
           ? (pickError || SWAP_REQUEST_ERROR_MESSAGE)
           : pickStatus === PICK_STATUS.EXHAUSTED
             ? SOFT_SWAP_MESSAGE
             : "")
     : "";
-  const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…")) : "";
+  const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[0])) : "";
   const shouldRenderPickResultSection = Boolean(activePick || isPickBusy || shouldShowPickFallbackState || shouldShowPickSessionPlaceholder);
 
   const homeStructuredData = useMemo(() => {
