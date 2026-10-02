@@ -1901,7 +1901,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         isRefinement: true,
         scrollToResults: true,
         intentSnapshot: pickResult?.resolved_intent,
-        candidatePoolIds,
+        // Refine against the preserved intent, but search beyond the old deck.
+        disableCandidatePoolReuse: true,
+        candidatePoolIds: [],
         extraExcludedIds: [pickResult.primary.id],
         loadingMessage: action.loadingMessage || "Refining your pick…",
         refreshKey: `refine-${action.id}-${Date.now()}`,
