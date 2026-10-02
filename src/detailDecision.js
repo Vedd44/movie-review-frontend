@@ -313,7 +313,7 @@ const buildReelbotTake = ({ movie, recommendationContext = null, genericTake = n
     || buildLocalTakeFallback(movie);
 
   return {
-    heading: hasReliableProvenance ? "Why ReelBot Picked This" : "ReelBot’s Take",
+    heading: "ReelBot’s Take",
     hasReliableProvenance,
     ...content,
   };
