@@ -155,7 +155,17 @@ export const getMovieSlug = (movie = {}) => {
 
 export const getMoviePath = (movieOrId, title) => {
   if (typeof movieOrId === "object" && movieOrId !== null) {
-    return `/movies/${getMovieSlug(movieOrId)}`;
+    const movieSlug = getMovieSlug(movieOrId);
+    const releaseYear = getReleaseYear(movieOrId?.release_date);
+
+    // Unreleased/TBA titles cannot safely use a title-only canonical route:
+    // another movie can share the same title and win the slug resolver.
+    // Keep the TMDB id in the route until a release year is available.
+    if (releaseYear === "TBA" && movieOrId?.id) {
+      return `/movies/${movieOrId.id}/${movieSlug}`;
+    }
+
+    return `/movies/${movieSlug}`;
   }
 
   // Numeric calls are retained for legacy/internal lookups until movie data is
