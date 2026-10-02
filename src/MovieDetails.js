@@ -16,6 +16,7 @@ import { tasteProfileService } from "./services/tasteProfileService";
 import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { trackProductEvent } from "./analytics";
 import { COLLECTIONS } from "./collections";
+import { useAuth } from "./context/AuthContext";
 
 const DETAIL_ANCHOR_OFFSET = 110;
 const TITLE_TOKEN_STOPWORDS = new Set(["about", "after", "before", "black", "dark", "first", "house", "movie", "night", "return", "story", "world"]);
@@ -147,6 +148,8 @@ function MovieDetails() {
   const [genericTakeLoading, setGenericTakeLoading] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const { profile, actions: tasteActions, getRecommendationContextForMovie } = useTasteProfile();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.app_metadata?.role === "super_admin";
 
   useEffect(() => {
     let cancelled = false;
@@ -347,7 +350,23 @@ function MovieDetails() {
           <div className="detail-content-column">
             <div className="detail-identity">
               {previewMode ? <div className="detail-eyebrow">Coming Soon</div> : null}
-              <h1 className="movie-title detail-title">{movie.title}</h1>
+              <div className="detail-title-row">
+                <h1 className="movie-title detail-title">{movie.title}</h1>
+                {isSuperAdmin ? (
+                  <a
+                    className="detail-radarr-link"
+                    href="http://192.168.0.69:7878/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open Radarr for ${movie.title}`}
+                    title="Open Radarr"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M12 2.4 20.3 7v10L12 21.6 3.7 17V7L12 2.4Zm0 2.2L5.7 8.1v7.8l6.3 3.5 6.3-3.5V8.1L12 4.6Zm-3.4 4h4.5c2.2 0 3.6 1.1 3.6 3 0 1.4-.8 2.4-2.1 2.8l2.5 3h-2.8l-2.1-2.7h-1.4v2.7H8.6V8.6Zm2.2 1.9v2.3H13c.9 0 1.5-.4 1.5-1.2s-.6-1.1-1.5-1.1h-2.2Z"/>
+                    </svg>
+                  </a>
+                ) : null}
+              </div>
               <div className="detail-meta-strip">{metaItems.map((item) => <span key={item} className="detail-meta-pill">{item}</span>)}</div>
               {movie.genre_names?.length ? <p className="detail-genres">{movie.genre_names.join(" · ")}</p> : null}
               {movie.director_credit?.id ? <p className="detail-director-line">Directed by <Link to={getPersonPath(movie.director_credit)}>{movie.director_credit.name}</Link></p> : movie.director ? <p className="detail-director-line">Directed by {movie.director}</p> : null}
