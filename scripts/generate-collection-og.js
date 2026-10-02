@@ -85,7 +85,7 @@ async function render(collection) {
     <text x="116" y="${(titleStartY - 66) * 2}" fill="#f4d98d" font-family="Arial,Helvetica,sans-serif" font-size="44" font-weight="700" letter-spacing="6">${escapeXml((collection.eyebrow || "REELBOT COLLECTION").toUpperCase())}</text>
     ${titleSvg}
     <text x="116" y="1150" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="50" font-weight="800">REELBOT</text>
-    <text x="352" y="575" fill="#f4d98d" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="700">COLLECTIONS</text>
+    <text x="352" y="1150" fill="#f4d98d" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="700">COLLECTIONS</text>
   </svg>`);
   composites.push({ input: overlay, left: 0, top: 0 });
 
