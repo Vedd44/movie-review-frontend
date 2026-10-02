@@ -2039,7 +2039,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             primaryMovie={activePick}
             backupMovies={visibleBackupPicks}
             vibeLabel={pickVibeLabel}
-            loadingCopy={pickLoadingMessageOverride || PICK_LOADING_MESSAGES[loadingMessageIndex] || "Finding your pick…"}
+            loadingCopy={pickLoadingMessageOverride || ""}
             emptyCopy="Nothing here yet. Tell ReelBot what you want to watch."
             emptyActionLabel="Get a pick"
             onEmptyAction={handleEmptyPickCta}
