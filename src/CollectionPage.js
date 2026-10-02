@@ -115,7 +115,7 @@ export default function CollectionPage() {
   usePageMetadata({
     title: collection ? `${collection.title} | ReelBot Collections` : "Movie Collections | ReelBot",
     description: collection?.description,
-    image: collection ? `/social/collections/${collection.slug}-v4.jpg` : undefined,
+    image: collection ? `/social/collections/${collection.slug}-v5.jpg` : undefined,
     path: collection ? `/collections/${collection.slug}` : "/collections",
     robots: collection ? "index,follow" : "noindex,follow",
     structuredData,
