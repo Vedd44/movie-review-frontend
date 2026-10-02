@@ -79,8 +79,14 @@ function TasteActionBar({
 
     try {
       await handler();
-      const eventNames = { watchlist: "save_clicked", seen: "watched_clicked", hidden: "not_for_me_clicked" };
-      if (eventNames[actionKey]) trackProductEvent(eventNames[actionKey], { authenticated: Boolean(user), movie_id: Number(movie.id) });
+      const eventName = actionKey === "watchlist"
+        ? (tasteState.inWatchlist ? "movie_unsaved" : "movie_saved")
+        : actionKey === "seen"
+          ? (tasteState.seen ? "movie_unwatched" : "movie_watched")
+          : actionKey === "hidden"
+            ? (tasteState.skipped ? "not_for_me_removed" : "not_for_me_added")
+            : "";
+      if (eventName) trackProductEvent(eventName, { authenticated: Boolean(user), movie_id: Number(movie.id) });
       if (typeof onInteraction === "function") {
         onInteraction(actionKey);
       }
