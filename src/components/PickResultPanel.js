@@ -70,7 +70,9 @@ function PickResultPanel({
     return () => window.clearInterval(timer);
   }, [loading]);
   const loadingQuote = REELBOT_LOADING_QUOTES[loadingQuoteIndex];
-  const rotatingLoadingCopy = loadingQuote ? `“${loadingQuote.quote}” — ${loadingQuote.movie}` : "Finding your pick…";
+  const rotatingLoadingCopy = loadingQuoteIndex === 0
+    ? (loadingCopy || "Finding your pick…")
+    : loadingQuote ? `“${loadingQuote.quote}” — ${loadingQuote.movie}` : "Finding your pick…";
   const visibleBackupMovies = useMemo(
     () => (Array.isArray(backupMovies) ? backupMovies.slice(0, 3) : []),
     [backupMovies]
@@ -96,7 +98,7 @@ function PickResultPanel({
         <div className="reelbot-loading-state" role="status">
           <span className="reelbot-loading-dot" aria-hidden="true"></span>
           <div className="reelbot-loading-copy">
-            <p className="reelbot-loading-title">{loadingCopy || rotatingLoadingCopy}</p>
+            <p className="reelbot-loading-title">{rotatingLoadingCopy}</p>
           </div>
         </div>
       ) : null}
@@ -107,7 +109,7 @@ function PickResultPanel({
             <div className="reelbot-loading-state pick-active-loading-state" role="status" aria-live="polite">
               <span className="reelbot-loading-dot" aria-hidden="true"></span>
               <div className="reelbot-loading-copy">
-                <p className="reelbot-loading-title">{refineStatusLabel || loadingCopy || rotatingLoadingCopy}</p>
+                <p className="reelbot-loading-title">{refineStatusLabel || rotatingLoadingCopy}</p>
               </div>
             </div>
           ) : null}
