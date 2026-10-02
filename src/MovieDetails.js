@@ -355,7 +355,7 @@ function MovieDetails() {
                 {isSuperAdmin ? (
                   <a
                     className="detail-radarr-link"
-                    href="http://192.168.0.69:7878/"
+                    href={`http://192.168.0.69:7878/add/new?term=${encodeURIComponent(`tmdb:${movie.id}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Open Radarr for ${movie.title}`}
