@@ -947,3 +947,37 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
     padding: 28px 24px 0;
   }
 }
+
+
+/* Private super-admin homelab shortcut */
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.detail-title-row .detail-title { margin-bottom: 0; }
+.detail-radarr-link {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(235, 190, 82, .28);
+  border-radius: 50%;
+  color: var(--gold, #d6ad4c);
+  opacity: .72;
+  transition: opacity .16s ease, border-color .16s ease, transform .16s ease;
+}
+.detail-radarr-link:hover,
+.detail-radarr-link:focus-visible {
+  opacity: 1;
+  border-color: currentColor;
+  transform: translateY(-1px);
+}
+.detail-radarr-link svg { width: 18px; height: 18px; fill: currentColor; }
+@media (max-width: 599px) {
+  .detail-title-row { gap: 9px; }
+  .detail-radarr-link { width: 28px; height: 28px; }
+  .detail-radarr-link svg { width: 16px; height: 16px; }
+}
