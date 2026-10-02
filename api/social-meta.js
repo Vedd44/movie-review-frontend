@@ -35,7 +35,7 @@ function collectionMeta(slug) {
   return {
     title,
     description,
-    image: `${ORIGIN}/social/collections/${encodeURIComponent(slug)}-v3.jpg`,
+    image: `${ORIGIN}/social/collections/${encodeURIComponent(slug)}-v4.jpg`,
   };
 }
 
