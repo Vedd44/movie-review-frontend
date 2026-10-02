@@ -198,6 +198,19 @@ function BrowseLibrary() {
     [behavioralMemory, movies, normalizedView, selectedMoodConfig, suppressedMovieIds]
   );
 
+  const displayMovies = useMemo(() => {
+    if (filteredMovies.length >= 10) return filteredMovies;
+    const includedIds = new Set(filteredMovies.map((movie) => movie.id));
+    const fillMovies = movies.filter(
+      (movie) =>
+        movie?.id
+        && !includedIds.has(movie.id)
+        && !suppressedMovieIds.has(movie.id)
+        && selectedMoodConfig.predicate(movie)
+    );
+    return [...filteredMovies, ...fillMovies].slice(0, Math.max(10, filteredMovies.length));
+  }, [filteredMovies, movies, selectedMoodConfig, suppressedMovieIds]);
+
   useEffect(() => {
     // Fill the initial browse surface with enough real titles to occupy the desktop grid.
     // Run after filteredMovies and updateFilters are defined so CI lint does not see
@@ -622,8 +635,8 @@ function BrowseLibrary() {
 
         {!loading && !error && (
           <div className="movie-list">
-            {filteredMovies.length > 0 ? (
-              filteredMovies.map((movie) => {
+            {displayMovies.length > 0 ? (
+              displayMovies.map((movie) => {
                 return (
                 <article
                   key={movie.id}
