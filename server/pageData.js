@@ -59,7 +59,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     const c = collections.find(c=>c.slug===collectionMatch[1]);
     if (!c) return missing(path);
     const entries = c.movies.filter(slug=>slug!==c.anchorMovie).map(slug=>movies[slug]).filter(Boolean);
-    return {path,title:`${c.title} | ReelBot Collections`,heading:c.title,description:c.description,image:`${ORIGIN}/social/collections/${c.slug}-v4.jpg`,content:movieLinks(entries),schema:[breadcrumbs([['Home','/'],['Collections','/collections'],[c.title,path]]),itemList(entries)]};
+    return {path,title:`${c.title} | ReelBot Collections`,heading:c.title,description:c.description,image:`${ORIGIN}/social/collections/${c.slug}-v5.jpg`,content:movieLinks(entries),schema:[breadcrumbs([['Home','/'],['Collections','/collections'],[c.title,path]]),itemList(entries)]};
   }
   const numericMovie = path.match(/^\/(?:movie|movies)\/(\d+)(?:\/[^/]+)?$/);
   const movieMatch = path.match(/^\/movies\/([^/]+)$/);
