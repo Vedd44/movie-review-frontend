@@ -7,6 +7,7 @@ import ProviderBadgeRow from "./ProviderBadgeRow";
 import useWatchProviderBadges from "../hooks/useWatchProviderBadges";
 import { getMoviePath, getRecommendationMovieState, getReleaseYear } from "../discovery";
 import { getBackupCardMeta } from "../recommendationInsights";
+import { pickLoadingQuote } from "../reelbotLoadingQuotes";
 
 const getAvailabilityStatus = (movie, providerEntry) =>
   movie?.availability_status || providerEntry?.availability_status || null;
@@ -57,7 +58,8 @@ function PickResultPanel({
   tasteActionProps = {},
   loadingCopy = "",
 }) {
-  const loaderCopy = loadingCopy || "Finding your pick";
+  const loadingQuote = useMemo(() => pickLoadingQuote(), []);
+  const loaderCopy = loadingCopy || `“${loadingQuote.quote}” — ${loadingQuote.movie}`;
   const visibleBackupMovies = useMemo(
     () => (Array.isArray(backupMovies) ? backupMovies.slice(0, 3) : []),
     [backupMovies]
