@@ -116,8 +116,8 @@ module.exports = async (req, res) => {
 <meta property="og:image" content="${escapeHtml(meta.image)}">
 <meta property="og:image:secure_url" content="${escapeHtml(meta.image)}">
 <meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="627">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1254">
 <meta property="og:image:alt" content="${escapeHtml(meta.imageAlt || `${meta.title} on ReelBot`)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(title)}">
