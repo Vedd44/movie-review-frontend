@@ -94,9 +94,7 @@ async function render(collection) {
   const out = path.join(OUT, `${collection.slug}-v5.jpg`);
   await sharp({ create: { width: canvasWidth, height: canvasHeight, channels: 4, background: "#08101a" } })
     .composite(composites)
-    .resize(1200, 627, { kernel: sharp.kernel.lanczos3 })
-    .sharpen({ sigma: 0.35 })
-    .jpeg({ quality: 96, chromaSubsampling: "4:4:4", mozjpeg: true })
+    .jpeg({ quality: 94, chromaSubsampling: "4:4:4", mozjpeg: true })
     .toFile(out);
   console.log(`OG: ${collection.slug} (${posterBuffers.length} posters)`);
 }
