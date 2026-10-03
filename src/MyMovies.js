@@ -248,7 +248,7 @@ function MyMovies() {
                         <div className="saved-movie-status-popover">
                           <span className="saved-movie-status-heading">Movie status</span>
                           {[
-                            { label: "Saved", active: movieState.inWatchlist, toggle: actions.toggleWatchlist },
+                            { label: activeTab === "recent" ? "Save" : "Saved", active: movieState.inWatchlist, toggle: actions.toggleWatchlist },
                             { label: "Watched", active: movieState.seen, toggle: actions.toggleSeen },
                             { label: "Not for me", active: movieState.skipped, toggle: actions.toggleSkipped },
                           ].map(({ label, active, toggle }) => (
