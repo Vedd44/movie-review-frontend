@@ -317,6 +317,11 @@ function BrowseLibrary() {
     try {
       if (!options.backgroundRefill) {
         setPickLoading(true);
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            document.getElementById("library-reelbot-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
       }
       setPickError(null);
       if (!options.backgroundRefill) {
