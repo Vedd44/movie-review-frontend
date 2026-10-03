@@ -1060,3 +1060,11 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
   .pick-backup-card { grid-template-columns: 82px minmax(0, 1fr); }
   .pick-backup-card img { width: 82px; height: 123px; }
 }
+
+/* Align the standalone mobile loading status with the inset result heading. */
+@media (max-width: 599px) {
+  .home-result-section .pick-result-stage > .reelbot-loading-state:not(.pick-active-loading-state) {
+    box-sizing: border-box;
+    padding-inline: 24px;
+  }
+}
