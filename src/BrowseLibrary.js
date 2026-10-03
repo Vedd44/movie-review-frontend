@@ -10,7 +10,7 @@ import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behaviora
 import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { buildRecommendationRationale } from "./recommendationInsights";
-import { buildSwapQueueFromPayload, dedupeIds, mergeSwapQueue, normalizePickPayload, promoteQueuedPick } from "./reelbotSession";
+import { buildSwapQueueFromPayload, dedupeIds, mergeSwapQueue, normalizePickPayload } from "./reelbotSession";
 import {
   API_BASE_URL,
   DISCOVERY_PROMPTS,
@@ -424,30 +424,18 @@ function BrowseLibrary() {
 
     const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id)), ...queuedSwapIds].filter(Boolean);
 
-    if (swapQueue.length) {
-      const [nextPrimary, ...remainingQueue] = swapQueue;
-      const promotedPayload = promoteQueuedPick(pickResult, nextPrimary, remainingQueue);
-      setPickResult(promotedPayload);
-      setSwapQueue(remainingQueue);
-      setPickLoading(true);
-      setPickError(null);
-      void tasteActions.recordPickResult(swapPreferences, promotedPayload).catch(() => {});
-
-      requestLibraryPick({
-        extraExcludedIds: currentDeckIds,
-        refreshKey: `browse-refill-${Date.now()}`,
-        isSwap: true,
-        candidatePoolIds,
-        backgroundRefill: true,
-      })
-        .catch(() => {})
-        .finally(() => {
-          setPickLoading(false);
-        });
-      return;
-    }
-
-    await requestLibraryPick({ extraExcludedIds: currentDeckIds, refreshKey: `browse-refresh-${Date.now()}`, isSwap: true });
+    // Match the homepage swap behavior: "Get another pick" is a fresh
+    // recommendation search, not promotion of a visible alternate. Keep the
+    // current card in place while loading and exclude the entire visible deck.
+    setSwapQueue([]);
+    await requestLibraryPick({
+      extraExcludedIds: currentDeckIds,
+      refreshKey: `browse-refresh-${Date.now()}`,
+      isSwap: true,
+      intentSnapshot: pickResult?.resolved_intent,
+      disableCandidatePoolReuse: true,
+      candidatePoolIds: [],
+    });
   };
 
   const handleRefineLibraryPick = async (action) => {
