@@ -37,3 +37,18 @@ test('untrusted movie strings cannot inject HTML or close JSON-LD scripts',()=>{
   const html=renderPage('<html><head></head><body><div id="root"></div></body></html>',{path:'/',title:'<script>x</script>',heading:'<img src=x>',description:'"quoted"',schema:[{name:'</script><script>bad</script>'}]});
   assert.ok(!html.includes('<script>bad'));assert.match(html,/&lt;img/);assert.match(html,/\\u003c\/script>/);
 });
+test('home and how-it-works expose the same product explanation before hydration',async()=>{
+  const copy=require('../src/productCopy');
+  let calls=0;
+  const home=await getPageData('/',new URLSearchParams(),{fetcher:async()=>{calls++;return response({results:[]});}});
+  assert.equal(home.title,copy.title);assert.equal(home.description,copy.description);
+  assert.match(home.content,/Get one movie/);assert.equal(calls,1);
+  assert.deepEqual(home.schema.map(s=>s['@type']),['Organization','WebSite','WebApplication']);
+  const how=await getPageData('/how-reelbot-works',new URLSearchParams(),{fetcher:()=>{throw new Error('Must not fetch');}});
+  assert.match(how.content,/Is ReelBot an AI movie picker/);assert.match(how.content,/Your current request comes first/);
+  assert.ok(!how.content.includes('remember'));
+});
+test('shared choice URLs are not indexed and do not cause recommendation or detail requests on server',async()=>{
+  const page=await getPageData('/movie-night',new URLSearchParams('movies=1,2,3&choice=2'),{fetcher:()=>{throw new Error('Must not fetch');}});
+  assert.equal(page.robots,'noindex,follow');
+});

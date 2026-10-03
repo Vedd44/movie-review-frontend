@@ -9,7 +9,7 @@ beforeEach(() => {
 
 test('renders the ReelBot tagline', () => {
   render(<App />);
-  const taglines = screen.getAllByText(/Stop browsing. Start watching./i);
+  const taglines = screen.getAllByText(/A good movie, without the endless search./i);
   expect(taglines.length).toBeGreaterThan(0);
 });
 

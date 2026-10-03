@@ -1,4 +1,5 @@
 import React from "react";
+import { trackProductEvent } from "../analytics";
 import { buildAvailabilityLink } from "../streamingLinks";
 
 const GROUP_LABELS = {
@@ -13,7 +14,7 @@ const getProviderGroups = (availability) => [
   { id: "buy", label: GROUP_LABELS.buy, providers: Array.isArray(availability?.buy) ? availability.buy : [] },
 ].filter((group) => group.providers.length);
 
-function WatchAvailability({ availability, sectionId }) {
+function WatchAvailability({ availability, sectionId, movie }) {
   const providerGroups = getProviderGroups(availability);
   const availabilityAction = buildAvailabilityLink(availability?.link);
   const regionLabel = availability?.region === "US" ? "the U.S." : availability?.region || "your region";
@@ -39,6 +40,7 @@ function WatchAvailability({ availability, sectionId }) {
                     {provider.direct_url ? (
                       <a
                         href={provider.direct_url}
+                        onClick={() => trackProductEvent("provider_clicked", { movie_id: Number(movie?.id) || 0, provider_id: Number(provider.id) || 0, availability_type: group.id })}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Watch ${provider.name}`}
@@ -65,7 +67,7 @@ function WatchAvailability({ availability, sectionId }) {
 
       <div className="watch-availability-footer">
         {availabilityAction ? (
-          <a href={availabilityAction.href} target="_blank" rel="noopener noreferrer sponsored" className="detail-text-action watch-now-primary-cta">
+          <a onClick={() => trackProductEvent("viewing_options_clicked", { movie_id: Number(movie?.id) || 0 })} href={availabilityAction.href} target="_blank" rel="noopener noreferrer sponsored" className="detail-text-action watch-now-primary-cta">
             See current viewing options <span aria-hidden="true">↗</span>
           </a>
         ) : null}

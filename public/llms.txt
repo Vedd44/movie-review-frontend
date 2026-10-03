@@ -1,6 +1,6 @@
 # ReelBot
 
-> ReelBot is a movie discovery and recommendation service for finding something worth watching quickly.
+> ReelBot (reelbot.movie) recommends movies for your mood, time and taste. It gives you one recommendation, explains why it fits and offers alternatives.
 
 ## Key pages
 
@@ -12,6 +12,10 @@
 - [Coming soon](https://reelbot.movie/coming-soon) — upcoming movie releases.
 - [How ReelBot works](https://reelbot.movie/how-reelbot-works) — recommendation approach and product overview.
 - [Sitemap](https://reelbot.movie/sitemap.xml) — canonical discovery URLs for collections, movies, and people.
+
+## How recommendations work
+
+ReelBot uses AI to interpret requests and rank real movies from TMDB. Saved movies, viewing history and feedback help shape suggestions; the current request comes first. Movie information comes from TMDB.
 
 ## Content
 

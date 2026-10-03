@@ -40,7 +40,7 @@ beforeEach(() => {
 test("clears the homepage picker after accepting a prompt while preserving the request prompt", async () => {
   render(<MemoryRouter><Home /></MemoryRouter>);
 
-  const input = await screen.findByPlaceholderText(/something fun and stupid/i);
+  const input = await screen.findByPlaceholderText(/A mood, a movie you love/i);
   fireEvent.change(input, { target: { value: "Under 100 minutes" } });
   fireEvent.click(screen.getByRole("button", { name: "Find my movie" }));
 
@@ -55,7 +55,7 @@ test("clears the homepage picker after accepting a prompt while preserving the r
 test("does not clear an invalid homepage prompt", async () => {
   render(<MemoryRouter><Home /></MemoryRouter>);
 
-  const input = await screen.findByPlaceholderText(/something fun and stupid/i);
+  const input = await screen.findByPlaceholderText(/A mood, a movie you love/i);
   fireEvent.change(input, { target: { value: "   " } });
   fireEvent.click(screen.getByRole("button", { name: "Find my movie" }));
 

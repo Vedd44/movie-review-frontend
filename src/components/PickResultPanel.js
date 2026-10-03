@@ -1,4 +1,5 @@
 import ArtworkFallback from "./ArtworkFallback";
+import PickCompanion from "./PickCompanion";
 import React, { useEffect, useMemo, useState } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
@@ -55,6 +56,7 @@ function PickResultPanel({
   showEmptyState = true,
   showSessionPlaceholder = false,
   refineStatusLabel = "",
+  showCompanion = false,
   tasteActionProps = {},
   loadingCopy = "",
 }) {
@@ -211,6 +213,8 @@ function PickResultPanel({
               </div>
             </div>
           </article>
+
+          {showCompanion ? <PickCompanion movie={primaryMovie} alternatives={visibleBackupMovies} onRefine={onRefineAction} disabled={refreshDisabled} /> : null}
 
           {shouldShowInlineRecovery ? (
             <div className="pick-session-recovery">

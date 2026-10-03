@@ -1,3 +1,4 @@
+const copy = require("../src/productCopy");
 const fs = require("fs");
 const path = require("path");
 const ORIGIN = "https://reelbot.movie";
@@ -91,8 +92,8 @@ module.exports = async (req, res) => {
 
   if (!meta) {
     meta = {
-      title: "ReelBot | Find Something Worth Watching",
-      description: "Get one tailored movie pick, useful backups, and a faster way to decide what to watch.",
+      title: copy.title,
+      description: copy.description,
       image: `${ORIGIN}/brand/reelbot-social.png`,
     };
   }

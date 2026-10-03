@@ -179,3 +179,13 @@ body:has(.global-search-backdrop) :is(.mobile-ask-launcher, .mobile-bottom-nav, 
 }
 
 }
+
+/* Optional feedback stays below the existing result controls. */
+.pick-companion { margin-block: 24px; padding: 16px 24px; }
+.pick-companion details { margin-bottom: 16px; }
+.pick-companion summary, .watch-check-in summary { cursor: pointer; font-weight: 600; }
+.pick-companion p, .watch-check-in p { margin-block: 12px; }
+.pick-companion-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.watch-check-in { margin-block: 16px; }
+.movie-night-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; margin-block: 24px; }
+.pick-companion a, .movie-night-grid a { overflow-wrap: anywhere; }

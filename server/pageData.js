@@ -1,3 +1,4 @@
+const copy = require('../src/productCopy');
 const ORIGIN = 'https://reelbot.movie';
 const API = 'https://movie-review-backend-zevb.onrender.com';
 const DEFAULT_IMAGE = `${ORIGIN}/brand/reelbot-social.png`;
@@ -16,12 +17,13 @@ async function apiJson(endpoint, fetcher) {
   return response.json();
 }
 const STATIC = {
-  '/': ['ReelBot — Find a Movie Worth Watching','What should I watch?','Get one tailored movie pick, useful backups, and a faster way to decide what to watch.'],
+  '/': [copy.title,'What should I watch?',copy.description],
   '/browse': ['Browse Movies | ReelBot','Browse Movies','Browse movies currently playing, trending, and coming soon, then ask ReelBot to narrow the choice.'],
   '/now-playing': ['Now Playing Movies | ReelBot','Now Playing','Explore movies in theaters now, with cast, runtime and where-to-watch details.'],
   '/trending': ['Trending Movies | ReelBot','Trending Movies','Discover popular movies, explore their cast and find your next watch.'],
   '/coming-soon': ['Upcoming Movies & New Releases | ReelBot','Coming Soon','Explore upcoming movie releases, trailers, cast and release dates.'],
-  '/how-reelbot-works': ['How ReelBot Works | ReelBot','How ReelBot works','Tell ReelBot what you want to watch. Explore your pick, save movies and refine your recommendations.'],
+  '/how-reelbot-works': [copy.howTitle,'How ReelBot works',copy.howIntro],
+  '/movie-night': ['Choose a Movie Together | ReelBot','Your movie night','Choose from a few ReelBot picks and share your choice.'],
   '/my-movies': ['My Movies | ReelBot','My Movies','Your saved movies and recent picks.'],
   '/account': ['Account | ReelBot','Your account','Manage your ReelBot account.'],
   '/admin': ['Administration | ReelBot','Administration','ReelBot administration.'],
@@ -37,7 +39,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   if (path === '/' && params.has('view')) return {redirect: ({popular:'/trending',upcoming:'/coming-soon'})[params.get('view')] || '/now-playing'};
   if (STATIC[path]) {
     const [title,heading,description] = STATIC[path];
-    const privatePage = ['/my-movies','/account','/admin','/reset-password','/search'].includes(path);
+    const privatePage = ['/my-movies','/account','/admin','/reset-password','/search','/movie-night'].includes(path);
     const filtered = path === '/browse' && ['view','genre','mood','runtime'].some(k=>params.has(k) && !['all','any','popular'].includes(params.get(k)));
     const page = Math.min(500, Math.max(1, parseInt(params.get('page'),10) || 1));
     const isFeed = ['/browse','/now-playing','/trending','/coming-soon'].includes(path);
@@ -51,6 +53,15 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
       if (isFeed && page < (payload?.total_pages || 1)) data.content += link(`${path}?page=${page+1}`,'Next page');
       if (path === '/') data.content += '<h2>Movie collections</h2><ul>'+collections.slice(0,6).map(c=>`<li>${link('/collections/'+c.slug,c.title)}</li>`).join('')+'</ul>';
     }
+    if (path === '/') {
+      data.content = `<p>${escapeHtml(copy.intro)}</p><p>Try a mood, a movie you love, or how much time you have.</p>` + data.content;
+      data.schema = [
+        {'@context':'https://schema.org','@type':'Organization',name:'ReelBot',url:ORIGIN+'/',description:copy.description,logo:ORIGIN+'/brand/reelbot-logo.svg'},
+        {'@context':'https://schema.org','@type':'WebSite',name:'ReelBot',url:ORIGIN+'/'},
+        {'@context':'https://schema.org','@type':'WebApplication',name:'ReelBot',url:ORIGIN+'/',applicationCategory:'EntertainmentApplication',operatingSystem:'Web',description:copy.description}
+      ];
+    }
+    if (path === '/how-reelbot-works') data.content = '<h2>Get a recommendation</h2><ol>'+copy.steps.map(([title,text])=>`<li><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></li>`).join('')+'</ol><h2>Make it yours</h2><p>Save movies for later. Mark movies Watched or Not for me to keep them out of future picks. Ask follow-up questions about a movie or recommendation.</p>'+`<h2>${escapeHtml(copy.faqQuestion)}</h2><p>${escapeHtml(copy.faqAnswer)}</p><h2>Where the movie data comes from</h2><p>${escapeHtml(copy.ai)}</p>`;
     return data;
   }
   if (path === '/collections') return {path,title:'Movie Collections by Mood, Genre & More | ReelBot',heading:'Find your next movie.',description:'Handpicked movie collections for every mood, genre, era, and kind of movie night.',content:'<ul>'+collections.map(c=>`<li>${link('/collections/'+c.slug,c.title)}<p>${escapeHtml(c.description)}</p></li>`).join('')+'</ul>'};

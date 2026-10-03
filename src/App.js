@@ -18,6 +18,7 @@ import "./reelbotDesign.css";
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
+const MovieNight = lazy(() => import("./MovieNight"));
 const BrowseLibrary = lazy(() => import("./BrowseLibrary"));
 const MyMovies = lazy(() => import("./MyMovies"));
 const AccountSettings = lazy(() => import("./AccountSettings"));
@@ -206,7 +207,7 @@ function SiteFooter() {
     <footer className="site-footer"><div className="site-footer-inner">
       <div className="site-footer-brand">
         <NavLink to="/" aria-label="ReelBot home"><img className="reelbot-footer-logo" src="/brand/reelbot-logo.svg" alt="ReelBot" width="154" height="60" loading="lazy" /></NavLink>
-        <p className="site-footer-copy">Stop browsing. Start watching.</p>
+        <p className="site-footer-copy">A good movie, without the endless search.</p>
       </div>
       <nav className="site-footer-nav" aria-label="Footer"><div className="site-footer-links">
         <NavLink to="/#pick-for-me" className="site-footer-link">Ask ReelBot</NavLink>
@@ -290,6 +291,7 @@ function AppShell() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
+              <Route path="/movie-night" element={<MovieNight />} />
               <Route path="/movie/:legacyMovieId" element={<MovieDetails />} />
               <Route path="/movies/:legacyMovieId/:legacySlug" element={<MovieDetails />} />
               <Route path="/movies/:movieSlug" element={<MovieDetails />} />

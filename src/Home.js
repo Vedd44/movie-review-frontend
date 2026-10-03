@@ -1,3 +1,5 @@
+import productCopy from "./productCopy";
+import WatchCheckIn from "./components/WatchCheckIn";
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -1387,7 +1389,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         name: SITE_NAME,
         description: SITE_DESCRIPTION,
         url: buildAbsoluteUrl("/"),
-        logo: buildAbsoluteUrl("/logo512.png"),
+        logo: buildAbsoluteUrl("/brand/reelbot-logo.svg"),
       },
       {
         "@context": "https://schema.org",
@@ -1422,8 +1424,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           structuredData: homeStructuredData,
         }
       : {
-          title: "ReelBot — Find a Movie Worth Watching",
-          description: "Get one tailored movie pick, useful backups, and a faster way to decide what to watch.",
+          title: productCopy.title,
+          description: SITE_DESCRIPTION,
           path: "/",
           image: DEFAULT_SOCIAL_IMAGE,
           structuredData: homeStructuredData,
@@ -1947,7 +1949,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         <div className="rb-intro-copy">
           <span className="rb-eyebrow">A better way to choose.</span>
           <h1 id="home-hero-title">{homeHeadline}</h1>
-          <p className="rb-intro-dek">Less searching.<br />More getting lost in a good film.</p>
+          <p className="rb-intro-dek">{productCopy.intro}</p>
+          {!activePick ? <WatchCheckIn /> : null}
           <div className={`rb-night-composer${isHeroInputFocused ? " is-focused" : ""}`}>
               <ReelbotPromptComposer
                 multiline
@@ -1977,7 +1980,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 onKeyDown={handlePromptKeyDown}
                 onFocus={() => { setIsHeroInputFocused(true); trackProductEvent("prompt_started", { page: "home" }); }}
                 onBlur={() => setIsHeroInputFocused(false)}
-                placeholder='Try “something fun and stupid, but actually good”'
+                placeholder={productCopy.placeholder}
                 errorText={pickValidation}
               />
             <div className="rb-composer-actions">
@@ -2039,6 +2042,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             fallbackSecondaryActionPath={shouldShowPickFallbackState ? browseLibraryPath : ""}
             primaryActionLabel={activePick?.trailer ? "Watch trailer" : "View details"}
             onPrimaryAction={activePick ? () => {
+              trackProductEvent(activePick.trailer ? "pick_trailer_clicked" : "pick_details_clicked", { movie_id: Number(activePick.id) });
               markFirstPickSummarySeen();
               if (activePick.trailer) {
                 setIsPickTrailerOpen(true);
@@ -2067,6 +2071,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             showEmptyState={shouldShowEmptyPickState}
             showSessionPlaceholder={shouldShowPickSessionPlaceholder}
             showExpandedReasoning
+            showCompanion
             tasteActionProps={{
               showSeenAction: false,
               showSkipAction: false,
