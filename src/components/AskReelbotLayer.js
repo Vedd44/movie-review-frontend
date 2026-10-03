@@ -58,6 +58,16 @@ const REFINEMENT_ACTIONS = [
   ["Good for a group", "is this good for a group?"],
 ];
 
+const renderAskInlineText = (value) => {
+  const text = String(value || "");
+  return text.split(/(\*[^*\n]+\*)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+      return <em key={`ask-em-${index}`}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+};
+
 export const normalizeAskFollowUps = (value) => (Array.isArray(value) ? value : [])
   .filter((item) => typeof item === "string")
   .map((item) => item.replace(/\s+/g, " ").trim())
@@ -452,7 +462,7 @@ function AskReelbotLayer() {
             {turns.slice(0, loading || error ? undefined : -1).map((turn, index) => <article className="rb-conversation-turn" key={index}>
               <p className="rb-conversation-question">{turn.question}</p>
               {turn.movie ? <a className="rb-conversation-film" href={getMoviePath(turn.movie)}>{turn.movie.title}</a> : null}
-              <p>{turn.answer}</p>
+              <p>{renderAskInlineText(turn.answer)}</p>
             </article>)}
             {pendingQuestion || (error ? retryPrompt.current : lastTurn?.prompt) ? <p className="rb-conversation-question">{pendingQuestion || (error ? retryPrompt.current : lastTurn.prompt)}</p> : null}
             {!isCollection && !result && !answerResult && !loading && !error ? (
@@ -467,7 +477,7 @@ function AskReelbotLayer() {
             {!loading && !error && answerResult ? (
               <article className="ask-reelbot-answer ask-reelbot-answer--direct" aria-live="polite">
                 <div className="ask-reelbot-answer-label">About {answerMovieTitle}</div>
-                <p className="ask-reelbot-direct-copy">{answerResult.answer}</p>
+                <p className="ask-reelbot-direct-copy">{renderAskInlineText(answerResult.answer)}</p>
                 <div className="ask-reelbot-answer-actions">
                   {contextualFollowUps.map((followUp) => (
                     <button key={followUp} type="button" className="reelbot-inline-button" onClick={() => requestPick(followUp)}>{followUp}</button>
