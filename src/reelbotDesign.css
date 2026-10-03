@@ -825,6 +825,37 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
   transform: translateY(-50%);
   z-index: 2;
 }
+.library-reelbot-card .pick-prompt-submit {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(217, 178, 91, 0.45);
+  border-radius: 8px;
+  background: rgba(217, 178, 91, 0.12);
+  color: var(--rb-gold, #d9b25b);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.library-reelbot-card .pick-prompt-submit:hover:not(:disabled),
+.library-reelbot-card .pick-prompt-submit:focus-visible {
+  background: rgba(217, 178, 91, 0.2);
+  border-color: rgba(217, 178, 91, 0.7);
+}
+.library-reelbot-card .pick-prompt-submit:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 #library-reelbot-result:has(.pick-result-stage.is-live),
 #library-reelbot-result:has(.reelbot-loading-state) {
   margin-top: 36px;
