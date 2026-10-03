@@ -585,6 +585,8 @@ function BrowseLibrary() {
               suggestions={LIBRARY_PROMPTS.slice(0, 4)}
               value={pickPrompt}
               onChange={setPickPrompt}
+              onSubmit={handleLibraryPick}
+              submitDisabled={pickLoading}
               placeholder="Try: smart sci-fi under 2 hours, dark but rewarding, or an easy watch"
             />
 
