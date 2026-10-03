@@ -61,6 +61,30 @@ test("pending anonymous Save is applied once to the restored account", async () 
   expect(window.localStorage.getItem("reelbotPendingMovieSave")).toBeNull();
 });
 
+test("logged-in Saved, Watched, rejected and recent history reach recommendation memory after account reload", async () => {
+  const view = render(app()); await ready();
+  const movie = { id: 550, title: "Fight Club", genre_ids: [18], runtime: 139 };
+  await act(async () => {
+    await first.actions.toggleWatchlist(movie);
+    await first.actions.toggleSeen({ ...movie, id: 551 });
+    await first.actions.toggleSkipped({ ...movie, id: 552 });
+    await first.actions.addRecentMovie({ ...movie, id: 553 });
+  });
+  const profile = first.profile;
+  expect(first.behavioralMemory.savedMovieIds).toContain(550);
+  expect(first.behavioralMemory.seenMovieIds).toContain(551);
+  expect(first.behavioralMemory.hiddenMovieIds).toContain(552);
+  expect(first.behavioralMemory.recentMovieIds).toContain(553);
+  expect(first.getPickExcludedIds({ prompt: "something good" })).toEqual(expect.arrayContaining([551, 552]));
+  view.unmount();
+  reelbotCloudService.bootstrapUserState.mockResolvedValue({ ...empty(), profile });
+  render(app()); await ready();
+  expect(first.behavioralMemory.savedMovieIds).toContain(550);
+  expect(first.behavioralMemory.seenMovieIds).toContain(551);
+  expect(first.behavioralMemory.hiddenMovieIds).toContain(552);
+  expect(reelbotCloudService.saveUserState.mock.calls.every(call => call[0] === "account-a")).toBe(true);
+});
+
 
 test("request telemetry is quiet and a failed measurement cannot lose a queued Save", async () => {
   render(app()); await ready();

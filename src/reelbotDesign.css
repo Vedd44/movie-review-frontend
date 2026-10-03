@@ -71,8 +71,8 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .rb-night-composer .pick-prompt-input { display: block; width: 100%; height: 104px; min-height: 104px; padding: 20px 42px 20px 20px; resize: vertical; border: 0; border-radius: 10px; box-shadow: none; background: none; color: var(--rb-text); font: 400 1rem/1.6 var(--rb-sans); outline: none; }
 .rb-night-composer .pick-prompt-input::placeholder { color: var(--rb-faint); opacity: 1; }
 .rb-night-composer .pick-prompt-clear { position: absolute; right: 2px; top: 2px; width: 38px; height: 38px; min-height: 0; padding: 0; border: 0; background: none; color: var(--rb-muted); }
-.rb-night-composer .pick-prompt-suggestions { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0 16px; margin: 10px 0 14px; padding: 0; }
-.rb-night-composer .pick-prompt-chip { border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--rb-muted); padding: 8px 0; min-height: 44px; font-size: .75rem; line-height: 1.4; }
+.rb-night-composer .pick-prompt-suggestions { display: flex; flex-wrap: wrap; justify-content: flex-start; align-content: flex-start; gap: 0 16px; margin: 10px 0 14px; padding: 0; }
+.rb-night-composer .pick-prompt-chip { border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--rb-muted); padding: 6px 0; min-height: 32px; font-size: .75rem; line-height: 1.4; }
 .rb-night-composer .pick-prompt-chip:hover, .rb-night-composer .pick-prompt-chip.is-active { color: var(--rb-gold); text-decoration: underline; }
 .rb-composer-actions { display: flex; align-items: center; gap: 24px; }
 .rb-composer-actions .rb-button { min-height: 50px; min-width: 192px; }
@@ -420,7 +420,7 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
   .rb-intro-dek br { display: none; }
   .rb-night-composer .pick-prompt-input { height: 106px; min-height: 106px; padding: 16px 38px 16px 16px; }
   .rb-night-composer .pick-prompt-suggestions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 16px; margin: 8px 0 12px; }
-  .rb-night-composer .pick-prompt-chip { text-align: left; justify-content: flex-start; min-height: 44px; font-size: .75rem; white-space: normal; }
+  .rb-night-composer .pick-prompt-chip { text-align: left; justify-content: flex-start; min-height: 32px; font-size: .75rem; white-space: normal; }
   .rb-composer-actions { display: grid; grid-template-columns: 1fr auto; gap: 18px; }
   .rb-composer-actions .rb-button { width: 100%; min-width: 0; padding: 12px 14px; justify-content: space-between; }
   .rb-composer-actions .rb-text-button { font-size: .8rem; }
