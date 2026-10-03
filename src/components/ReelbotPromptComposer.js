@@ -60,7 +60,7 @@ function ReelbotPromptComposer({
           value={value}
           maxLength={maxLength}
           onChange={handleInputChange}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleKeyDown}
           onFocus={onFocus}
           onBlur={onBlur}
           aria-invalid={errorText ? "true" : "false"}
