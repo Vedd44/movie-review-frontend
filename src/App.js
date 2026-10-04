@@ -269,7 +269,8 @@ function CookieNotice() {
 function AppShell() {
   const location = useLocation();
   const { user, authReady } = useAuth();
-  useEffect(() => { if (!authReady) return; setAnalyticsAuthenticated(Boolean(user)); if (!location.pathname.startsWith("/admin")) trackProductEvent("page_viewed", { page: telemetrySurface(location.pathname), authenticated: Boolean(user) }); }, [authReady, user?.id, location.pathname]);
+  const analyticsSignedIn = Boolean(user);
+  useEffect(() => { if (!authReady) return; setAnalyticsAuthenticated(analyticsSignedIn); if (!location.pathname.startsWith("/admin")) trackProductEvent("page_viewed", { page: telemetrySurface(location.pathname), authenticated: analyticsSignedIn }); }, [authReady, analyticsSignedIn, location.pathname]);
   const navigationType = useNavigationType();
   useEffect(() => {
     if (navigationType !== "POP" && !location.hash) window.scrollTo({ top: 0, behavior: "instant" });

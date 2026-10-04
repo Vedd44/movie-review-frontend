@@ -12,7 +12,7 @@ export function sanitizeTelemetryProperties(p={}) {
 }
 function schedule(){if(!timer)timer=setTimeout(()=>{timer=null;void flush();},5000);}
 async function flush(force=false) {
- if(!queue.length||sending||busy&&!force){if(queue.length)schedule();return;}
+ if(!queue.length||sending||(busy&&!force)){if(queue.length)schedule();return;}
  const events=queue.splice(0,30);const body=JSON.stringify({session_id:sessionId,batch_id:uuid(),events});
  sending=true;
  try{await fetch('/api/product-events',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:true});}catch{/* Metrics cannot interrupt choosing a movie. */}
