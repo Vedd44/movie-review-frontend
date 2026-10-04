@@ -29,3 +29,9 @@ test('stored guest batches are readable only through the private admin-side aggr
  await createTelemetryStore(db).write(normalizeBatch(batch(1,[event(1,'page_viewed',{page:'home',authenticated:false}),event(2,'recommendation_returned',{outcome:'pick',latency_ms:8000,authenticated:false})]),now));
  const result=await readProductTelemetry(db,now);assert.equal(result.guests.sessions,1);assert.equal(result.signed_in.sessions,0);assert.equal(result.total.completed,1);assert.equal(result.total.median_ms,8000);assert.equal(result.capped,false);
 });
+
+test('pending Ask requests never count as completed recommendations or identifications',()=>{
+ const pending=batch(1,[event(20,'ask_reelbot_submitted',{kind:'recommendation'}),event(21,'ask_reelbot_submitted',{kind:'identification'})]);
+ const metrics=buildProductMetrics([pending],now);assert.equal(metrics.total.requests,1);assert.equal(metrics.total.completed,0);assert.equal(metrics.total.identifications,0);
+ const finished=buildProductMetrics([pending,batch(1,[event(22,'ask_reelbot_result',{kind:'recommendation',outcome:'pick',latency_ms:8000}),event(23,'ask_reelbot_result',{kind:'identification',outcome:'identification'})])],now);assert.equal(finished.total.completed,1);assert.equal(finished.total.identifications,1);
+});

@@ -53,7 +53,7 @@ function buildProductMetrics(batches,now=Date.now(),capped=false) {
   const scoped=events.filter(e=>group==='all'||Boolean(e.properties.authenticated)===(group==='signed_in'));
   const sessions=new Set(scoped.map(e=>e.session));
   const requested=scoped.filter(e=>e.name==='recommendation_requested'||e.name==='ask_reelbot_submitted'&&e.properties.kind==='recommendation');
-  const outcomes=scoped.filter(e=>e.name==='recommendation_returned'||e.name==='recommendation_failed'||(e.name.startsWith('ask_reelbot_')&&['recommendation','identification'].includes(e.properties.kind)));
+  const outcomes=scoped.filter(e=>e.name==='recommendation_returned'||e.name==='recommendation_failed'||(['ask_reelbot_result','ask_reelbot_failed'].includes(e.name)&&['recommendation','identification'].includes(e.properties.kind)));
   const recommendation=outcomes.filter(e=>e.properties.kind!=='identification'&&e.properties.outcome!=='identification');
   const times=recommendation.map(e=>e.properties.latency_ms).filter(t=>Number.isFinite(t)&&t>0).sort((a,b)=>a-b);
   const percentile=p=>times.length?times[Math.min(times.length-1,Math.ceil(times.length*p)-1)]:null;
