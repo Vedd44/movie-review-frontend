@@ -15,6 +15,9 @@ function ResetPassword() {
     clearPasswordRecovery,
     authError,
     clearAuthError,
+    recoverySession,
+    authNotice,
+    openAuthPrompt,
   } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,7 +44,7 @@ function ResetPassword() {
     };
   }, [clearPasswordRecovery]);
 
-  const canResetPassword = Boolean(user) || passwordRecoveryActive;
+  const canResetPassword = Boolean(user) || (passwordRecoveryActive && Boolean(recoverySession?.user));
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -70,7 +73,6 @@ function ResetPassword() {
         navigate("/account", { replace: true });
       }, 1200);
     } catch (submitError) {
-      console.error("Error resetting ReelBot password:", submitError);
       setError("Something went wrong. Try again.");
     } finally {
       setLoading(false);
@@ -114,6 +116,8 @@ function ResetPassword() {
                     }}
                     placeholder="New password"
                     autoFocus
+                    autoComplete="new-password"
+                    required
                   />
                 </label>
                 <label className="account-settings-field">
@@ -128,6 +132,8 @@ function ResetPassword() {
                       }
                     }}
                     placeholder="Confirm password"
+                    autoComplete="new-password"
+                    required
                   />
                 </label>
 
@@ -148,8 +154,9 @@ function ResetPassword() {
             </>
           ) : (
             <div className="account-settings-stack">
-              <p className="account-settings-note">Open the reset link from your email to set a new password.</p>
+              <p className="account-settings-note" role={authNotice?.kind === "error" ? "alert" : undefined}>{authNotice?.kind === "error" ? authNotice.message : "Open the reset link from your email to set a new password."}</p>
               <div className="account-settings-actions">
+                <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={() => openAuthPrompt("password_recovery")}>Send a new reset link</button>
                 <Link to="/" className="reelbot-inline-button">
                   Back home
                 </Link>

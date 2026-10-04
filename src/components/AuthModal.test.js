@@ -3,6 +3,7 @@ import AuthModal from "./AuthModal";
 import { useAuth } from "../context/AuthContext";
 
 jest.mock("../context/AuthContext", () => ({ useAuth: jest.fn() }));
+jest.mock("../lib/supabaseClient", () => ({ getAuthProviders: async () => ({}) }));
 
 test("opens on password sign in with task-first navigation and concise value proposition", () => {
   const closeAuthPrompt = jest.fn();

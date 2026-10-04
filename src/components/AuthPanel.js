@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { validateEmail, validatePassword } from "../authValidation";
+import { authErrorMessage } from "../authFlow";
+import { getAuthProviders } from "../lib/supabaseClient";
 
 const EMAIL_LINK_VIEW = "email-link";
 const PASSWORD_LOGIN_VIEW = "password-login";
@@ -24,6 +26,10 @@ function AuthPanel({
     signUpWithPassword,
     sendPasswordReset,
     clearAuthError,
+    resendConfirmation,
+    signInWithGoogle,
+    authNotice,
+    clearAuthNotice,
   } = useAuth();
   const [view, setView] = useState(initialView);
   const [email, setEmail] = useState("");
@@ -33,8 +39,22 @@ function AuthPanel({
   const [loading, setLoading] = useState(false);
   const [successState, setSuccessState] = useState(null);
   const [error, setError] = useState("");
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    getAuthProviders().then(providers => { if (active) setGoogleEnabled(Boolean(providers.google)); });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    if (!resendSeconds) return undefined;
+    const timer = window.setTimeout(() => setResendSeconds(seconds => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendSeconds]);
 
   useEffect(() => {
     setError("");
@@ -94,11 +114,37 @@ function AuthPanel({
     setError("");
     setSuccessState(null);
     clearAuthError();
+    clearAuthNotice?.();
+    setNeedsConfirmation(false);
   };
 
   const handleViewChange = (nextView) => {
     setView(nextView);
     resetFormState();
+  };
+
+  const handleResend = async () => {
+    if (loading || resendSeconds) return;
+    const address = email.trim().toLowerCase();
+    if (validateEmail(address)) { setError("Enter a valid email"); return; }
+    setLoading(true); setError("");
+    try {
+      const kind = successState?.kind || "signup";
+      if (kind === "recovery") await sendPasswordReset(address);
+      else if (kind === "email-link") await sendMagicLink(address);
+      else await resendConfirmation(address);
+      setSuccessState({ kind, title: "Check your email", body: `A new ${kind === "signup" ? "confirmation" : kind === "recovery" ? "reset" : "sign-in"} link is on the way to ${address}.`, resetLabel: "Use a different email" });
+      setResendSeconds(60); setNeedsConfirmation(false);
+    } catch (e) { setError(authErrorMessage(e, "We couldn’t send the link. Try again.")); }
+    finally { setLoading(false); }
+  };
+
+  const handleGoogle = async () => {
+    if (loading) return;
+    setLoading(true); setError(""); clearAuthNotice?.();
+    try { await signInWithGoogle(); }
+    catch (e) { setError(authErrorMessage(e, "We couldn’t open Google sign-in. Try again or use email.")); }
+    finally { setLoading(false); }
   };
 
   const handleSubmit = async (event) => {
@@ -137,13 +183,16 @@ function AuthPanel({
     clearAuthError();
 
     try {
+      clearAuthNotice?.();
       if (view === EMAIL_LINK_VIEW) {
         await sendMagicLink(normalizedEmail);
         setSuccessState({
+          kind: "email-link",
           title: "Check your email",
           body: `We sent a sign-in link to ${normalizedEmail}.`,
           resetLabel: "Use a different email",
         });
+        setResendSeconds(60);
       } else if (view === PASSWORD_LOGIN_VIEW) {
         await signInWithPassword({
           email: normalizedEmail,
@@ -161,32 +210,32 @@ function AuthPanel({
 
         if (!hasSession) {
           setSuccessState({
+            kind: "signup",
             title: "Check your email",
-            body: "Confirm your email to finish creating your account.",
+            body: `Confirm your email using the link sent to ${normalizedEmail}.`,
             resetLabel: "Use a different email",
           });
+          setResendSeconds(60);
         } else if (typeof onComplete === "function") {
           onComplete();
         }
       } else if (view === FORGOT_PASSWORD_VIEW) {
         await sendPasswordReset(normalizedEmail);
         setSuccessState({
+          kind: "recovery",
           title: "Check your email",
-          body: "Your reset link is on the way.",
-          resetLabel: "Send another reset link",
+          body: `If there’s an account for ${normalizedEmail}, a reset link is on the way.`,
+          resetLabel: "Use a different email",
         });
+        setResendSeconds(60);
       }
     } catch (submitError) {
-      console.error("Error with ReelBot auth flow:", submitError);
+      setError(authErrorMessage(submitError, view === PASSWORD_LOGIN_VIEW ? "We couldn’t sign you in. Try again." : isSignupView ? "We couldn’t create your account. Try again." : "We couldn’t send the link. Try again."));
       if (view === PASSWORD_LOGIN_VIEW) {
         const message = String(submitError?.message || "").toLowerCase();
-        if (message.includes("email not confirmed")) setError("Confirm your email before signing in.");
+        if (message.includes("email not confirmed") || submitError?.code === "email_not_confirmed") { setError("Confirm your email before signing in."); setNeedsConfirmation(true); }
         else if (message.includes("invalid login credentials")) setError("Incorrect email or password.");
-        else setError("We couldn’t sign you in. Try again.");
       }
-      else if (view === EMAIL_LINK_VIEW) setError("We couldn’t send the link. Try again.");
-      else if (view === PASSWORD_SIGNUP_VIEW) setError("We couldn’t create that account. Try again.");
-      else setError("We couldn’t send the reset link. Try again.");
     } finally {
       setLoading(false);
     }
@@ -251,25 +300,30 @@ function AuthPanel({
 
       {!user ? <div className="auth-panel-mode-title">{modeTitle}</div> : null}
       <p className="auth-panel-copy" aria-live="polite">{helperCopy}</p>
+      {authNotice?.kind === "error" ? <p role="alert" className="auth-panel-error">{authNotice.message}</p> : null}
       {error ? <p className="error-message auth-panel-error">{error}</p> : null}
+      {needsConfirmation ? <button type="button" className="auth-panel-link" disabled={loading || resendSeconds > 0} onClick={handleResend}>Resend confirmation email</button> : null}
 
       {successState ? (
         <div className="auth-panel-success-block" aria-live="polite">
           <div className="auth-panel-success-mark" aria-hidden="true">✓</div>
           <div className="auth-panel-success-title">{successState.title}</div>
           <p className="auth-panel-success">{successState.body}</p>
+          <p className="auth-panel-copy">Look for an email from hello@reelbot.movie. If it hasn’t arrived, check your spam folder.</p>
+          <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" disabled={loading || resendSeconds > 0} onClick={handleResend}>{loading ? "Sending…" : resendSeconds > 0 ? `Resend available in ${resendSeconds}s` : successState.kind === "signup" ? "Resend confirmation email" : "Send another link"}</button>
           <button
             type="button"
             className="reelbot-inline-button"
             onClick={() => {
-              setSuccessState(null);
-              setError("");
+              resetFormState();
             }}
           >
             {successState.resetLabel}
           </button>
         </div>
       ) : !user ? (
+        <>
+        {googleEnabled && !isForgotPasswordView ? <div className="auth-provider-options"><button type="button" className="reelbot-inline-button auth-google-button" disabled={loading || authLoading} onClick={handleGoogle}>Continue with Google</button><div className="auth-provider-divider">or use email</div></div> : null}
         <form className="auth-panel-form auth-panel-form--stacked" onSubmit={handleSubmit}>
           <input
             ref={emailInputRef}
@@ -285,6 +339,7 @@ function AuthPanel({
             placeholder="Email address"
             aria-label="Email address"
             autoComplete="email"
+            required
             disabled={loading || authLoading}
           />
 
@@ -304,6 +359,8 @@ function AuthPanel({
                 placeholder="Password"
                 aria-label="Password"
                 autoComplete={isSignupView ? "new-password" : "current-password"}
+                required
+                aria-describedby={isSignupView ? "auth-password-hint" : undefined}
                 disabled={loading || authLoading}
               />
               <button type="button" className="password-visibility-toggle" onPointerDown={(event) => event.preventDefault()} onClick={() => { setShowPassword((visible) => !visible); window.requestAnimationFrame(() => passwordInputRef.current?.focus({ preventScroll: true })); }} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
@@ -327,6 +384,8 @@ function AuthPanel({
           ) : null}
 
           {view === PASSWORD_SIGNUP_VIEW ? (
+            <>
+            <p id="auth-password-hint" className="auth-password-hint">Use at least 8 characters, including letters and numbers.</p>
             <input
               type={showPassword ? "text" : "password"}
               value={confirmPassword}
@@ -339,14 +398,17 @@ function AuthPanel({
               placeholder="Confirm password"
               aria-label="Confirm password"
               autoComplete="new-password"
+              required
               disabled={loading || authLoading}
             />
+            </>
           ) : null}
 
           <button type="submit" className="reelbot-inline-button reelbot-inline-button--solid" disabled={loading || authLoading}>
             {submitLabel}
           </button>
         </form>
+        </>
       ) : null}
 
       {!user ? (

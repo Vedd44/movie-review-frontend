@@ -175,6 +175,7 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
           display_name: user.user_metadata?.display_name || "",
           created_at: user.created_at,
           last_sign_in_at: user.last_sign_in_at,
+          email_verified: Boolean(user.email_confirmed_at),
           banned_until: user.banned_until || null,
           is_suspended: suspended(user),
           movie_count: countsComplete ? counts[user.id] || 0 : null,
@@ -199,6 +200,8 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
       return send(res, 200, {
         stats: {
           total_users: users.length,
+          verified_users: users.filter(user => user.email_verified).length,
+          pending_verification: users.filter(user => !user.email_verified).length,
           new_users_7d: users.filter((user) => user.created_at >= weekDate)
             .length,
           active_users_7d: users.filter(

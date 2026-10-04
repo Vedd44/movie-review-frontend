@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
 import { API_BASE_URL } from "../discovery";
 import { trackProductEvent } from "../analytics";
+import { getAuthReturn } from "../authFlow";
 
 export const PENDING_SAVE_KEY = "reelbotPendingMovieSave";
 const AUTH_TIMEOUT_MS = 15000;
@@ -68,6 +69,8 @@ export function AuthProvider({ children }) {
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [lastMagicLinkEmail, setLastMagicLinkEmail] = useState("");
   const [authPromptSource, setAuthPromptSource] = useState("");
+  const authReturnRef = useRef(getAuthReturn());
+  const [authNotice, setAuthNotice] = useState(() => authReturnRef.current?.kind === "error" ? authReturnRef.current : null);
   const [passwordRecoveryActive, setPasswordRecoveryActive] = useState(() => isRecoveryUrl());
   const [pendingRecoverySession, setPendingRecoverySession] = useState(null);
 
@@ -115,7 +118,7 @@ export function AuthProvider({ children }) {
           setAuthError(error.message || "Could not restore your account session.");
         }
 
-        const enteringRecovery = isRecoveryUrl();
+        const enteringRecovery = isRecoveryUrl() && Boolean(data?.session);
         setPasswordRecoveryActive(enteringRecovery);
         recoveryRedirectedRef.current = enteringRecovery;
         if (enteringRecovery) {
@@ -126,6 +129,15 @@ export function AuthProvider({ children }) {
           setSession(data?.session || null);
         }
         setLoading(false);
+        if (authReturnRef.current?.kind === "error") {
+          if (window.location.pathname !== "/reset-password") setAuthPromptOpen(true);
+          const url = new URL(window.location.href);
+          ["error", "error_code", "error_description"].forEach(key => url.searchParams.delete(key));
+          window.history.replaceState(window.history.state, "", url.pathname + url.search);
+        } else if (authReturnRef.current?.kind === "confirmation" && data?.session?.user?.email_confirmed_at) {
+          setAuthNotice({ kind: "success", message: "Your email is confirmed. You’re signed in." });
+          trackProductEvent("sign_up", { method: "email", email_verified: true });
+        }
 
         const { data: listener } = client.auth.onAuthStateChange((event, nextSession) => {
           if (event === "PASSWORD_RECOVERY") {
@@ -144,7 +156,7 @@ export function AuthProvider({ children }) {
             const userId = nextSession?.user?.id;
             if (userId && !trackedSignedInUsersRef.current.has(userId)) {
               trackedSignedInUsersRef.current.add(userId);
-              trackProductEvent("login", { method: "email" });
+              trackProductEvent("login", { method: nextSession.user.app_metadata?.provider || "email" });
             }
           }
 
@@ -161,6 +173,7 @@ export function AuthProvider({ children }) {
         subscription = listener.subscription;
       } catch (error) {
         if (cancelled) return;
+        if (authReturnRef.current?.kind === "error" && window.location.pathname !== "/reset-password") setAuthPromptOpen(true);
         setAuthError(error.message || "Could not restore your account session.");
         setLoading(false);
       }
@@ -243,7 +256,24 @@ export function AuthProvider({ children }) {
     }
 
     setAuthError("");
-    trackProductEvent("sign_up", { method: "email", confirmation_required: !response?.data?.session });
+    trackProductEvent(response?.data?.session ? "sign_up" : "signup_confirmation_requested", { method: "email", confirmation_required: !response?.data?.session });
+    return response;
+  }, []);
+
+  const resendConfirmation = useCallback(async (email) => {
+    const response = await withAuthTimeout((await getSupabaseClient()).auth.resend({
+      type: "signup", email: String(email || "").trim().toLowerCase(),
+      options: { emailRedirectTo: getAuthRedirectUrl() },
+    }), "Sending the confirmation email");
+    if (response.error) throw response.error;
+    return response;
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    const response = await withAuthTimeout((await getSupabaseClient()).auth.signInWithOAuth({
+      provider: "google", options: { redirectTo: getAuthRedirectUrl() },
+    }), "Opening Google sign-in");
+    if (response.error) throw response.error;
     return response;
   }, []);
 
@@ -276,9 +306,9 @@ export function AuthProvider({ children }) {
       throw new Error("Supabase is not configured.");
     }
 
-    const response = await (await getSupabaseClient()).auth.updateUser({
+    const response = await withAuthTimeout((await getSupabaseClient()).auth.updateUser({
       password,
-    });
+    }), "Updating the password");
     const { data, error } = response;
 
     if (error) {
@@ -412,12 +442,16 @@ export function AuthProvider({ children }) {
       authError,
       authPromptOpen,
       authPromptSource,
+      authNotice,
+      clearAuthNotice: () => setAuthNotice(null),
       lastMagicLinkEmail,
       passwordRecoveryActive,
       recoverySession: pendingRecoverySession,
       sendMagicLink,
       signInWithPassword,
       signUpWithPassword,
+      resendConfirmation,
+      signInWithGoogle,
       sendPasswordReset,
       updatePassword,
       signOut,
@@ -434,6 +468,7 @@ export function AuthProvider({ children }) {
       authError,
       authPromptOpen,
       authPromptSource,
+      authNotice,
       clearPasswordRecovery,
       closeAuthPrompt,
       deleteAccount,
@@ -450,6 +485,8 @@ export function AuthProvider({ children }) {
       signInWithPassword,
       signOut,
       signUpWithPassword,
+      resendConfirmation,
+      signInWithGoogle,
       updateDisplayName,
       updatePassword,
     ]

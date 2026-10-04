@@ -1254,3 +1254,15 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .pick-result-stage--shareable .pick-choice-button[aria-pressed="true"] { color: var(--rb-gold); }
 .rb-product-usage { margin-bottom: 24px; }
 .rb-product-usage td:not(:first-child), .rb-product-usage th:not(:first-child) { text-align: right; }
+
+/* Account recovery stays clear, compact and usable with password managers. */
+.auth-provider-options { margin: 0 0 16px; }
+.auth-panel .auth-google-button { width: 100%; min-height: 48px; justify-content: center; background: #fff; color: #1f1f1f; border: 1px solid #747775; border-radius: 8px; font-weight: 500; }
+.auth-provider-divider { display: flex; align-items: center; gap: 12px; margin-top: 16px; color: var(--rb-muted); font-size: .78rem; }
+.auth-provider-divider::before, .auth-provider-divider::after { content: ""; flex: 1; height: 1px; background: var(--rb-line); }
+.auth-password-hint { margin: -4px 0 0; color: var(--rb-muted); font-size: .78rem; line-height: 1.5; }
+.auth-panel-success-block > button { width: 100%; min-height: 44px; margin-top: 10px; justify-content: center; white-space: normal; }
+.auth-panel-success, .auth-panel-error { overflow-wrap: anywhere; }
+.auth-return-notice { position: fixed; z-index: 160; bottom: calc(90px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; width: min(440px, calc(100% - 32px)); box-sizing: border-box; padding: 14px 18px; border: 1px solid var(--rb-line); border-radius: 10px; background: var(--rb-surface); color: var(--rb-text); font-size: .85rem; box-shadow: 0 8px 32px #0008; }
+.auth-return-notice button { margin-left: auto; flex: 0 0 44px; min-height: 44px; background: none; border: 0; color: inherit; font-size: 1.4rem; cursor: pointer; }
+.admin-status.is-pending { color: var(--rb-gold); background: #eac66d14; }

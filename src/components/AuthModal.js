@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
 function AuthModal() {
-  const { authPromptOpen, closeAuthPrompt } = useAuth();
+  const { authPromptOpen, closeAuthPrompt, authNotice, clearAuthNotice, authPromptSource } = useAuth();
   const dialogRef = useRef(null);
   useDialogFocus(authPromptOpen, dialogRef);
 
@@ -38,7 +38,7 @@ function AuthModal() {
   }, [authPromptOpen, closeAuthPrompt]);
 
   if (!authPromptOpen) {
-    return null;
+    return authNotice?.kind === "success" ? <div className="auth-return-notice" role="status"><span>{authNotice.message}</span><button type="button" aria-label="Dismiss account confirmation" onClick={clearAuthNotice}>×</button></div> : null;
   }
 
   return (
@@ -53,7 +53,7 @@ function AuthModal() {
           <p>Save movies, remember what you’ve watched, and get better picks over time.</p>
         </div>
         <AuthPanel
-          initialView="password-login"
+          initialView={authPromptSource === "password_recovery" ? "forgot-password" : authNotice?.view || "password-login"}
           titleId="auth-modal-title"
           onComplete={closeAuthPrompt}
         />

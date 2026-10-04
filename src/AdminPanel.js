@@ -163,7 +163,7 @@ export default function AdminPanel() {
               <article>
                 <span>Total users</span>
                 <strong>{s.total_users ?? "—"}</strong>
-                <small>{s.new_users_7d ?? "—"} joined in 7 days</small>
+                <small>{s.verified_users ?? "—"} verified · {s.pending_verification ?? "—"} awaiting verification</small>
               </article>
               <article>
                 <span>Recent sign-ins</span>
@@ -298,10 +298,10 @@ export default function AdminPanel() {
                         <span
                           className={
                             "admin-status " +
-                            (x.is_suspended ? "is-banned" : "is-active")
+                            (x.is_suspended ? "is-banned" : x.email_verified ? "is-active" : "is-pending")
                           }
                         >
-                          {x.is_suspended ? "Suspended" : "Active"}
+                          {x.is_suspended ? "Suspended" : x.email_verified ? "Verified" : "Awaiting verification"}
                         </span>
                       </td>
                       <td>

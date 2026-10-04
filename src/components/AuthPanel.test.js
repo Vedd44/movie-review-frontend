@@ -1,8 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AuthPanel from "./AuthPanel";
 import { useAuth } from "../context/AuthContext";
+import { getAuthProviders } from "../lib/supabaseClient";
 
 jest.mock("../context/AuthContext", () => ({ useAuth: jest.fn() }));
+jest.mock("../lib/supabaseClient", () => ({ getAuthProviders: jest.fn() }));
 
 const authDefaults = {
   user: null,
@@ -12,11 +14,63 @@ const authDefaults = {
   signUpWithPassword: jest.fn(),
   sendPasswordReset: jest.fn(),
   clearAuthError: jest.fn(),
+  clearAuthNotice: jest.fn(),
+  resendConfirmation: jest.fn(),
+  signInWithGoogle: jest.fn(),
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  getAuthProviders.mockResolvedValue({ google: false });
   useAuth.mockReturnValue({ ...authDefaults });
+});
+
+test("confirmation names the destination and resends only after the cooldown", async () => {
+  jest.useFakeTimers();
+  const resendConfirmation = jest.fn().mockResolvedValue({});
+  useAuth.mockReturnValue({ ...authDefaults, resendConfirmation, signUpWithPassword: jest.fn().mockResolvedValue({ data: { session: null } }) });
+  render(<AuthPanel initialView="password-signup" />);
+  fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "viewer@example.com" } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password1" } });
+  fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "password1" } });
+  fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+  expect(await screen.findByText("Confirm your email using the link sent to viewer@example.com.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Resend available in 60s" })).toBeDisabled();
+  for (let i = 0; i < 60; i++) await act(async () => { jest.advanceTimersByTime(1000); });
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Resend confirmation email" })); });
+  await waitFor(() => expect(resendConfirmation).toHaveBeenCalledWith("viewer@example.com"));
+  expect(await screen.findByText("A new confirmation link is on the way to viewer@example.com.")).toBeInTheDocument();
+  jest.useRealTimers();
+});
+
+test("unconfirmed login offers a confirmation resend", async () => {
+  const resendConfirmation = jest.fn().mockResolvedValue({});
+  useAuth.mockReturnValue({ ...authDefaults, resendConfirmation, signInWithPassword: jest.fn().mockRejectedValue({ code: "email_not_confirmed", message: "Email not confirmed" }) });
+  render(<AuthPanel />);
+  fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "viewer@example.com" } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password1" } });
+  fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Resend confirmation email" }));
+  await waitFor(() => expect(resendConfirmation).toHaveBeenCalledWith("viewer@example.com"));
+  expect(await screen.findByText("A new confirmation link is on the way to viewer@example.com.")).toBeInTheDocument();
+});
+
+test("Google is shown only for an enabled provider and failures keep email usable", async () => {
+  getAuthProviders.mockResolvedValue({ google: true });
+  const signInWithGoogle = jest.fn().mockRejectedValue(new Error("Provider unavailable"));
+  useAuth.mockReturnValue({ ...authDefaults, signInWithGoogle });
+  render(<AuthPanel />);
+  fireEvent.click(await screen.findByRole("button", { name: "Continue with Google" }));
+  expect(await screen.findByText("We couldn’t open Google sign-in. Try again or use email.")).toBeInTheDocument();
+  expect(screen.getByLabelText("Email address")).not.toBeDisabled();
+});
+
+test("rate limits receive actionable guidance", async () => {
+  useAuth.mockReturnValue({ ...authDefaults, sendPasswordReset: jest.fn().mockRejectedValue({ code: "over_email_send_rate_limit" }) });
+  render(<AuthPanel initialView="forgot-password" />);
+  fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "viewer@example.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+  expect(await screen.findByText("Please wait a minute before trying again.")).toBeInTheDocument();
 });
 
 test("magic-link request exits loading and shows the destination address", async () => {
