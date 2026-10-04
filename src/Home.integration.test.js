@@ -85,4 +85,8 @@ test('keeps submitted request beside the pick and Edit restores it without anoth
   fireEvent.click(screen.getByRole('button',{name:'Edit',exact:true}));
   expect(input).toHaveValue('A clever mystery under 100 minutes');
   expect(axios.post.mock.calls.length).toBe(calls);
+  fireEvent.click(screen.getByRole('button',{name:'Cancel edit'}));
+  expect(input).not.toBeVisible();
+  expect(screen.getByText('A clever mystery under 100 minutes')).toBeVisible();
+  expect(axios.post.mock.calls.length).toBe(calls);
 });

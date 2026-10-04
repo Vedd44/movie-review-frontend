@@ -1993,6 +1993,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 {isPickLoading && lastPickMode === "prompt" ? "Finding your movie…" : "Find my movie"}<span aria-hidden="true">↗</span>
               </button>
               <button type="button" className="rb-text-button" onClick={handleSurprisePick} disabled={isPickBusy}>{isPickLoading && lastPickMode === "surprise" ? "Finding a surprise…" : "Surprise me"}</button>
+              {isRequestEditing ? <button type="button" className="rb-text-button" disabled={isPickBusy} onClick={() => { setIsRequestEditing(false); setPickPrompt(""); }}>Cancel edit</button> : null}
             </div>
             <label className="rb-check"><input type="checkbox" checked={includeTheatrical} onChange={(event) => setIncludeTheatrical(event.target.checked)} disabled={isPickBusy} /><span>Include movies in theaters</span></label>
           </div>
