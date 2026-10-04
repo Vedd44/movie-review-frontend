@@ -1244,3 +1244,13 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .pick-share-dialog .pick-share-preview > div { min-width: 0; overflow-wrap: anywhere; }
 .pick-share-dialog .pick-share-preview img { display: block; width: 72px; height: 108px; }
 .pick-share-dialog .pick-share-preview .pick-share-note { margin: 14px 0 0; font-size: .78rem; }
+
+.pick-personalization-note { margin-top: 12px; color: var(--rb-muted); font-size: .8rem; }
+.pick-personalization-note summary { cursor: pointer; }
+.pick-personalization-note p { margin: 8px 0 4px; line-height: 1.55; }
+.pick-personalization-note small { color: var(--rb-faint); }
+.pick-result-stage--shareable .pick-feedback-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; }
+.pick-result-stage--shareable .pick-choice-button { min-height: 44px; padding: 8px 0; border: 0; background: transparent; box-shadow: none; color: var(--rb-muted); font: inherit; font-size: .8rem; cursor: pointer; }
+.pick-result-stage--shareable .pick-choice-button[aria-pressed="true"] { color: var(--rb-gold); }
+.rb-product-usage { margin-bottom: 24px; }
+.rb-product-usage td:not(:first-child), .rb-product-usage th:not(:first-child) { text-align: right; }

@@ -1,3 +1,4 @@
+import { recordProductTelemetry } from './productTelemetry';
 const cleanProperties = (properties = {}) => Object.fromEntries(
   Object.entries(properties).filter(([, value]) => ["string", "number", "boolean"].includes(typeof value))
 );
@@ -14,6 +15,7 @@ export const getPromptCategory = (prompt = "") => {
 
 export const trackProductEvent = (name, properties = {}) => {
   const safeProperties = cleanProperties(properties);
+  recordProductTelemetry(name, safeProperties);
 
   if (typeof window !== "undefined") {
     // GA4 is loaded directly in public/index.html. Calling gtag here means the

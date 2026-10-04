@@ -75,6 +75,12 @@
     "api/pick-image.js": {
       "includeFiles": "{public/brand/reelbot-icon.svg,server/assets/**}",
       "maxDuration": 30
+    },
+    "api/admin-overview.js": {
+      "maxDuration": 30
+    },
+    "api/product-events.js": {
+      "maxDuration": 15
     }
   }
 }

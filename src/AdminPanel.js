@@ -112,6 +112,7 @@ export default function AdminPanel() {
     return <Navigate to="/" replace />;
   const s = data?.stats || {};
   const ops = data?.operations;
+  const usage = data?.product_usage;
   const seconds = ms => ms == null ? "—" : `${(ms / 1000).toFixed(1)}s`;
   return (
     <div className="admin-page">
@@ -179,6 +180,12 @@ export default function AdminPanel() {
                 <strong>{s.feedback_count ?? "—"}</strong>
                 <small>{s.feedback_7d ?? "—"} received in 7 days</small>
               </article>
+            </section>
+            <section className="admin-card admin-card--full rb-product-usage" aria-labelledby="product-usage-title">
+              <div className="admin-card-head"><div><span className="admin-kicker">Guests & accounts</span><h2 id="product-usage-title">Are people finding a movie?</h2></div><span className="rb-ops-scope">{usage?.scope || "Activity unavailable"}</span></div>
+              {usage ? <><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Observed activity</th><th>Guests</th><th>Signed in</th><th>All sessions</th></tr></thead><tbody>{[
+                ["Sessions", "sessions"], ["Page views", "page_views"], ["Completed recommendation requests", "completed"], ["Picks returned", "picks"], ["No match", "no_match"], ["Request failures", "failed"], ["Movie identifications (separate)", "identifications"], ["Movies presented", "presented"], ["Chosen to watch", "chosen"], ["Details opened after a pick", "details"], ["Saved after a pick", "saved"], ["Marked watched after a pick", "watched"], ["Save sign-in attempts", "save_attempts"], ["Another pick clicks", "swaps"], ["Refinements", "refinements"], ["Shares", "shares"]
+              ].map(([label,key])=><tr key={key}><td>{label}</td><td>{usage.guests[key]}</td><td>{usage.signed_in[key]}</td><td>{usage.total[key]}</td></tr>)}<tr><td>Median response</td><td>{seconds(usage.guests.median_ms)}</td><td>{seconds(usage.signed_in.median_ms)}</td><td>{seconds(usage.total.median_ms)}</td></tr><tr><td>95th percentile response</td><td>{seconds(usage.guests.p95_ms)}</td><td>{seconds(usage.signed_in.p95_ms)}</td><td>{seconds(usage.total.p95_ms)}</td></tr></tbody></table></div>{usage.surfaces?.length ? <details className="rb-ops-coverage"><summary>Where visitors spend time</summary><ul>{usage.surfaces.map(row=><li key={row.page}>{row.page.replaceAll("_", " ")}: {row.views} page views · {row.guest_sessions} guest sessions</li>)}</ul></details> : null}<p className="rb-ops-note">Chosen means an explicit intention to watch. Saves and Watched are separate actions. Later actions count only when the same session first saw that movie as a pick; they are not proof the movie was played.</p><details className="rb-ops-coverage"><summary>Coverage and limitations</summary><p>{usage.coverage}</p></details></> : <p className="rb-ops-note">Guest usage starts with this release. Missing activity will appear as unavailable, rather than a zero.</p>}
             </section>
             <section className="rb-operations" aria-labelledby="operations-title">
               <div className="admin-card-head"><div><span className="admin-kicker">Recommendation health</span><h2 id="operations-title">From a pick to movie night</h2></div><span className="rb-ops-scope">{ops?.scope || "Activity sample unavailable"}</span></div>

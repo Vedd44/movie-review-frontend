@@ -383,7 +383,7 @@ function BrowseLibrary() {
           return mergedQueue;
         });
       } else {
-        trackProductEvent("recommendation_returned", { page: "browse", latency_ms: Date.now() - startedAt, outcome: response.data?.performance?.outcome || "pick" });
+        trackProductEvent("recommendation_returned", { page: "browse", latency_ms: Date.now() - startedAt, outcome: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : response.data?.performance?.outcome || "pick" });
         setPickResult({ ...normalizedPayload, sharePrompt: nextPreferences.prompt });
         setSwapQueue(buildSwapQueueFromPayload(normalizedPayload));
         setCandidatePoolIds(Array.isArray(normalizedPayload.candidate_pool_ids) ? normalizedPayload.candidate_pool_ids : []);
@@ -412,6 +412,7 @@ function BrowseLibrary() {
   };
 
   const handleRefreshLibraryPick = async () => {
+    trackProductEvent("another_pick_clicked", {page:"browse",movie_id:Number(pickResult?.primary?.id || 0)});
     const swapPreferences = {
       view: normalizedView,
       mood: normalizedMood,
@@ -447,6 +448,7 @@ function BrowseLibrary() {
     if (!pickResult?.primary || !action?.id || pickLoading) {
       return;
     }
+    trackProductEvent("refine_clicked", {page:"browse", movie_id:Number(pickResult.primary.id)});
 
     await requestLibraryPick({
       isSwap: true,

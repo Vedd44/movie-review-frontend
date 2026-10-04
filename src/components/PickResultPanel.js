@@ -89,6 +89,7 @@ function PickResultPanel({
   const availableRefineActions = Array.isArray(refineActions) ? refineActions.filter((action) => action?.id && action?.label) : [];
   const primaryAvailabilityStatus = getAvailabilityStatus(primaryMovie, providerMap[primaryMovie?.id]);
   const bestFitLabel = rationale?.fitLabel || "Best fit";
+  useEffect(() => { if (primaryMovie?.id && !loading) trackProductEvent("pick_presented", { movie_id: Number(primaryMovie.id) }); }, [primaryMovie?.id, loading]);
 
   return (
     <div id={id} className={`pick-result-stage${showCompanion ? " pick-result-stage--shareable" : ""}${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
@@ -135,6 +136,7 @@ function PickResultPanel({
               <div className="pick-primary-fit-row">
                 <span className="pick-primary-fit-label">{bestFitLabel}</span>
                 {rationale?.summaryLine ? <p className="pick-primary-hook"><MovieCopy titles={[primaryMovie.title]}>{rationale.summaryLine}</MovieCopy></p> : null}
+                {rationale?.personalizationHint ? <details className="pick-personalization-note"><summary>A nod to your taste</summary><p>{rationale.personalizationHint}</p><small>Your current request comes first.</small></details> : null}
               </div>
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>

@@ -1,3 +1,4 @@
+const { readProductTelemetry } = require('../server/productTelemetry');
 const { buildAdminMetrics } = require("../server/adminMetrics");
 const { createClient } = require("@supabase/supabase-js");
 const normalizeSupabaseUrl = (value) =>
@@ -12,7 +13,7 @@ const send = (res, status, payload) => {
 const suspended = (user) =>
   new Date(user?.banned_until || 0).getTime() > Date.now();
 
-function createAdminHandler({ getClient } = {}) {
+function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } = {}) {
   return async (req, res) => {
     try {
       const url = normalizeSupabaseUrl(
@@ -155,6 +156,8 @@ function createAdminHandler({ getClient } = {}) {
             .gte("created_at", weekDate),
         ),
       ]);
+      let productUsage = null;
+      try { productUsage = await getTelemetry(db); } catch { warnings.push("Guest and product activity could not be loaded. Refresh to try again."); }
       const movies = moviesResult.data || [];
       const countsComplete = moviesResult.data !== null && movies.length < 1000;
       if (movies.length >= 1000)
@@ -207,6 +210,7 @@ function createAdminHandler({ getClient } = {}) {
           feedback_7d: weekFeedback.count,
         },
         operations: buildAdminMetrics(sessionsResult.data),
+        product_usage: productUsage,
         users,
         activity: activity.slice(0, 200),
         feedback: feedbackResult.data || [],

@@ -33,3 +33,10 @@ test('shows one bounded adjustment row and resets rejection reasons for a new mo
   rerender(<PickCompanion movie={{id:2}} onRefine={onRefine} refineActions={refineActions} />);
   expect(screen.queryByText(/leave this movie out/)).not.toBeInTheDocument();
 });
+
+test('chosen-to-watch is independent of Watched and recommendation requests',()=>{
+ global.fetch=jest.fn();render(<PickCompanion movie={{id:99,title:'A movie'}} />);
+ const choice=screen.getByRole('button',{name:'Choose this movie'});expect(choice).toHaveAttribute('aria-pressed','false');
+ fireEvent.click(choice);expect(screen.getByRole('button',{name:'✓ Chosen to watch'})).toHaveAttribute('aria-pressed','true');
+ expect(global.fetch).not.toHaveBeenCalled();
+});

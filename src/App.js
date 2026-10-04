@@ -1,3 +1,5 @@
+import { trackProductEvent } from './analytics';
+import { setAnalyticsAuthenticated, telemetrySurface } from './productTelemetry';
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import Home from "./Home";
@@ -266,6 +268,8 @@ function CookieNotice() {
 
 function AppShell() {
   const location = useLocation();
+  const { user, authReady } = useAuth();
+  useEffect(() => { if (!authReady) return; setAnalyticsAuthenticated(Boolean(user)); if (!location.pathname.startsWith("/admin")) trackProductEvent("page_viewed", { page: telemetrySurface(location.pathname), authenticated: Boolean(user) }); }, [authReady, user?.id, location.pathname]);
   const navigationType = useNavigationType();
   useEffect(() => {
     if (navigationType !== "POP" && !location.hash) window.scrollTo({ top: 0, behavior: "instant" });

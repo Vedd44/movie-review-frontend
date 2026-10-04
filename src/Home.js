@@ -1562,7 +1562,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       void tasteActions.recordPickResult(nextPreferences, nextPayload).catch(() => {});
       trackProductEvent("recommendation_returned", {
         latency_ms: Date.now() - startedAt,
-        outcome: nextPayload.performance?.outcome || "pick",
+        outcome: nextPayload.intent === "MOVIE_IDENTIFICATION" ? "identification" : nextPayload.performance?.outcome || "pick",
         fit_tier: nextPayload.fit_tier || "unknown",
         theaters_toggle: Boolean(nextPreferences.include_theatrical),
       });

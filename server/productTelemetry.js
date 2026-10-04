@@ -1,0 +1,74 @@
+const BUCKET = 'reelbot-product-events';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EVENTS = new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed']);
+const SURFACES = new Set(['home','browse','collection','movie','person','shared_pick','my_movies','search','other','ask']);
+function normalizeBatch(body, now=Date.now()) {
+ if (!UUID.test(body?.session_id || '') || !UUID.test(body?.batch_id || '') || !Array.isArray(body.events) || !body.events.length || body.events.length>30) return null;
+ const events=[];
+ for(const event of body.events) {
+  if(!UUID.test(event?.id || '') || !EVENTS.has(event.name)) return null;
+  const time=Number(event.time);if(!Number.isFinite(time)||time<now-86400000||time>now+60000)return null;
+  const p=event.properties || {}; const properties={};
+  if(SURFACES.has(p.page))properties.page=p.page;
+  if(['initial','another_pick','refinement'].includes(p.request_type))properties.request_type=p.request_type;
+  if(['pick','no_match','failed','fallback','identification'].includes(p.outcome))properties.outcome=p.outcome;
+  if(['answer','recommendation','identification'].includes(p.kind))properties.kind=p.kind;
+  if(['runtime','family','similarity','tone','general','surprise'].includes(p.prompt_category))properties.prompt_category=p.prompt_category;
+  if(typeof p.authenticated==='boolean')properties.authenticated=p.authenticated;
+  if(Number.isSafeInteger(p.movie_id)&&p.movie_id>0)properties.movie_id=p.movie_id;
+  if(Number.isFinite(p.latency_ms)&&p.latency_ms>=0&&p.latency_ms<=180000)properties.latency_ms=Math.round(p.latency_ms);
+  events.push({id:event.id,name:event.name,time,properties});
+ }
+ return {v:1,session_id:body.session_id,batch_id:body.batch_id,received_at:new Date(now).toISOString(),events};
+}
+function createTelemetryStore(db) {
+ let ready;
+ return {async write(batch) {
+  if(!ready)ready=(async()=>{const found=await db.storage.getBucket(BUCKET);if(!found.error)return;const created=await db.storage.createBucket(BUCKET,{public:false,fileSizeLimit:16384,allowedMimeTypes:['application/json']});if(created.error&&!/already exists|duplicate/i.test(created.error.message || ''))throw created.error;})().catch(error=>{ready=null;throw error;});
+  await ready;
+  const path=`${batch.received_at.slice(0,10)}/${batch.batch_id}.json`;
+  const result=await db.storage.from(BUCKET).upload(path,JSON.stringify(batch),{contentType:'application/json',upsert:false});
+  if(result.error&&!/already exists|duplicate/i.test(result.error.message || ''))throw result.error;
+ }};
+}
+async function readProductTelemetry(db, now=Date.now()) {
+ if(!db.storage)return null;
+ const storage=db.storage.from(BUCKET);const files=[];let capped=false;
+ await Promise.all(Array.from({length:8},async(_,day)=>{
+  const prefix=new Date(now-day*86400000).toISOString().slice(0,10);
+  const result=await storage.list(prefix,{limit:40,sortBy:{column:'created_at',order:'desc'}});
+  if(result.error)throw result.error;
+  if(result.data?.length===40)capped=true;
+  files.push(...(result.data || []).filter(f=>/\.json$/.test(f.name)).map(f=>`${prefix}/${f.name}`));
+ }));
+ const batches=[];let index=0;
+ await Promise.all(Array.from({length:Math.min(8,files.length)},async()=>{while(index<files.length){const path=files[index++];const r=await storage.download(path);if(r.error)throw r.error;const b=JSON.parse(await r.data.text());if(b.v===1&&UUID.test(b.session_id)&&Array.isArray(b.events))batches.push(b);}}));
+ return buildProductMetrics(batches,now,capped);
+}
+function buildProductMetrics(batches,now=Date.now(),capped=false) {
+ const entries=new Map();
+ for(const b of batches)for(const e of b.events || [])if(EVENTS.has(e.name)&&e.time>=now-7*86400000&&e.time<=now)entries.set(e.id,{...e,session:b.session_id});
+ const events=[...entries.values()].sort((a,b)=>a.time-b.time);
+ const summary=group=>{
+  const scoped=events.filter(e=>group==='all'||Boolean(e.properties.authenticated)===(group==='signed_in'));
+  const sessions=new Set(scoped.map(e=>e.session));
+  const requested=scoped.filter(e=>e.name==='recommendation_requested'||e.name==='ask_reelbot_submitted'&&e.properties.kind==='recommendation');
+  const outcomes=scoped.filter(e=>e.name==='recommendation_returned'||e.name==='recommendation_failed'||(e.name.startsWith('ask_reelbot_')&&['recommendation','identification'].includes(e.properties.kind)));
+  const recommendation=outcomes.filter(e=>e.properties.kind!=='identification'&&e.properties.outcome!=='identification');
+  const times=recommendation.map(e=>e.properties.latency_ms).filter(t=>Number.isFinite(t)&&t>0).sort((a,b)=>a-b);
+  const percentile=p=>times.length?times[Math.min(times.length-1,Math.ceil(times.length*p)-1)]:null;
+  const picks=new Map();for(const e of scoped){const id=e.properties.movie_id;if(!id)continue;const key=`${e.session}:${id}`;
+   if(e.name==='pick_presented'&&!picks.has(key))picks.set(key,{chosen:false,details:false,saved:false,watched:false,swap:false});
+   const p=picks.get(key);if(!p)continue;
+   if(e.name==='pick_chosen')p.chosen=true;
+   if(e.name==='pick_choice_removed')p.chosen=false;
+   if(e.name==='movie_detail_opened'||e.name==='pick_details_clicked')p.details=true;
+   if(e.name==='movie_saved')p.saved=true;
+   if(e.name==='movie_watched')p.watched=true;
+  }
+  return {sessions:sessions.size,page_views:scoped.filter(e=>e.name==='page_viewed').length,requests:requested.length,completed:recommendation.length,picks:recommendation.filter(e=>['pick','fallback'].includes(e.properties.outcome)).length,no_match:recommendation.filter(e=>e.properties.outcome==='no_match').length,failed:recommendation.filter(e=>e.properties.outcome==='failed'||e.name==='recommendation_failed'&&!e.properties.outcome).length,identifications:outcomes.filter(e=>e.properties.kind==='identification'||e.properties.outcome==='identification').length,median_ms:percentile(.5),p95_ms:percentile(.95),presented:picks.size,chosen:[...picks.values()].filter(p=>p.chosen).length,details:[...picks.values()].filter(p=>p.details).length,saved:[...picks.values()].filter(p=>p.saved).length,watched:[...picks.values()].filter(p=>p.watched).length,save_attempts:scoped.filter(e=>e.name==='save_clicked').length,swaps:scoped.filter(e=>e.name==='another_pick_clicked').length,refinements:scoped.filter(e=>e.name==='refine_clicked').length,shares:scoped.filter(e=>e.name==='pick_shared').length};
+ };
+ const surfaces=[...SURFACES].map(page=>{const views=events.filter(e=>e.name==='page_viewed'&&e.properties.page===page);return {page,views:views.length,guest_sessions:new Set(views.filter(e=>!e.properties.authenticated).map(e=>e.session)).size};}).filter(row=>row.views).sort((a,b)=>b.views-a.views);
+ return {surfaces,scope:'Browser-reported activity sample · last 7 days',coverage:`Includes guests and signed-in sessions from this release. Sessions are visits in a browser tab, not unique people. A visitor who signs in can appear in both groups. No prompts, email addresses or account IDs are collected here. Up to 40 recent event batches per day are read; ${capped?'this sample has reached that limit.':'the read limit has not been reached.'} Blocked tracking and missing browser events are excluded.`,capped,total:summary('all'),guests:summary('guest'),signed_in:summary('signed_in')};
+}
+module.exports={BUCKET,EVENTS,normalizeBatch,createTelemetryStore,readProductTelemetry,buildProductMetrics};

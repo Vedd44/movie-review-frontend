@@ -328,7 +328,7 @@ function AskReelbotLayer() {
     setLoading(true);
     setError("");
     const startedAt = Date.now();
-    trackProductEvent("ask_reelbot_submitted", { page: context.page || "general", prompt_category: getPromptCategory(normalizedPrompt) });
+    trackProductEvent("ask_reelbot_submitted", { page: context.page || "general", prompt_category: getPromptCategory(normalizedPrompt), kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer" });
     try {
       const response = await axios.post(`${API_BASE_URL}/reelbot/ask`, {
         prompt: normalizedPrompt,
@@ -378,7 +378,7 @@ function AskReelbotLayer() {
         genre: context.activeFilters?.genre || "all",
       }, payload).catch(() => {});
       trackProductEvent("ask_reelbot_intent", { intent: response.data?.intent || "UNKNOWN", page: context.page || "general" });
-      trackProductEvent("ask_reelbot_result", { kind: "recommendation", outcome: response.data?.recommendation?.performance?.outcome || "pick", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
+      trackProductEvent("ask_reelbot_result", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: response.data?.recommendation?.performance?.outcome || "pick", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
       setExcludedIds((current) => dedupeIds([...current, payload.primary.id]));
     } catch (requestError) {
       if (controller.signal.aborted || version !== requestVersion.current) return;
