@@ -1258,6 +1258,8 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 /* Account recovery stays clear, compact and usable with password managers. */
 .auth-provider-options { margin: 0 0 16px; }
 .auth-panel .auth-google-button { width: 100%; min-height: 48px; justify-content: center; background: #fff; color: #1f1f1f; border: 1px solid #747775; border-radius: 8px; font-weight: 500; }
+.auth-panel .auth-google-button { gap: 10px; }
+.auth-google-icon { display: block; width: 20px; height: 20px; flex: 0 0 20px; object-fit: contain; }
 .auth-provider-divider { display: flex; align-items: center; gap: 12px; margin-top: 16px; color: var(--rb-muted); font-size: .78rem; }
 .auth-provider-divider::before, .auth-provider-divider::after { content: ""; flex: 1; height: 1px; background: var(--rb-line); }
 .auth-password-hint { margin: -4px 0 0; color: var(--rb-muted); font-size: .78rem; line-height: 1.5; }

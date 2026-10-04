@@ -323,7 +323,7 @@ function AuthPanel({
         </div>
       ) : !user ? (
         <>
-        {googleEnabled && !isForgotPasswordView ? <div className="auth-provider-options"><button type="button" className="reelbot-inline-button auth-google-button" disabled={loading || authLoading} onClick={handleGoogle}>Continue with Google</button><div className="auth-provider-divider">or use email</div></div> : null}
+        {googleEnabled && !isForgotPasswordView ? <div className="auth-provider-options"><button type="button" className="reelbot-inline-button auth-google-button" disabled={loading || authLoading} onClick={handleGoogle}><img className="auth-google-icon" src="/google-g.svg" width="20" height="20" alt="" aria-hidden="true" /><span>Continue with Google</span></button><div className="auth-provider-divider">or use email</div></div> : null}
         <form className="auth-panel-form auth-panel-form--stacked" onSubmit={handleSubmit}>
           <input
             ref={emailInputRef}
