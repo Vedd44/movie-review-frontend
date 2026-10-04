@@ -3,11 +3,14 @@ import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import BrowseLibrary from "./BrowseLibrary";
 import useTasteProfile from "./hooks/useTasteProfile";
+import { useAuth } from "./context/AuthContext";
 
 jest.mock("axios");
 jest.mock("./hooks/useTasteProfile");
+jest.mock("./context/AuthContext", () => ({ useAuth: jest.fn() }));
 
 beforeEach(() => {
+  useAuth.mockReturnValue({ user: null, openAuthPrompt: jest.fn(), maybePromptToSavePicks: jest.fn() });
   Element.prototype.scrollIntoView = jest.fn();
   useTasteProfile.mockReturnValue({
     profile: { skipped: [], seen: [] },
@@ -150,6 +153,10 @@ test("editing and cancelling a Browse request preserves the displayed pick witho
   fireEvent.change(within(picker).getByRole("textbox", { name: "Add a vibe" }), {target:{value:"A smart sci-fi movie"}});
   fireEvent.click(within(picker).getByRole("button", { name: "Ask ReelBot" }));
   await waitFor(() => expect(within(picker).getByRole("heading", {name:"Aliens"})).toBeInTheDocument());
+  expect(useAuth().maybePromptToSavePicks).not.toHaveBeenCalled();
+  expect(useAuth().openAuthPrompt).not.toHaveBeenCalled();
+  fireEvent.click(within(picker).getByRole("button", {name:"Create account"}));
+  expect(useAuth().openAuthPrompt).toHaveBeenCalledWith("session_browse_inline");
   const count = axios.post.mock.calls.length;
   expect(within(picker).getByText("A smart sci-fi movie")).toBeVisible();
   expect(within(picker).queryByRole("textbox")).not.toBeInTheDocument();

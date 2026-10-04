@@ -79,7 +79,7 @@ function BrowseLibrary() {
   const [candidatePoolIds, setCandidatePoolIds] = useState([]);
   const [, setRefinementState] = useState(null);
   const { profile, behavioralMemory, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
-  const { user, maybePromptToSavePicks } = useAuth();
+  const { user, openAuthPrompt } = useAuth();
 
   useEffect(() => {
     setGenreLoading(true);
@@ -392,9 +392,6 @@ function BrowseLibrary() {
         setCandidatePoolIds(Array.isArray(normalizedPayload.candidate_pool_ids) ? normalizedPayload.candidate_pool_ids : []);
         setRefinementState(normalizedPayload.resolved_refinement || options.refinement || null);
         void tasteActions.recordPickResult(nextPreferences, normalizedPayload).catch(() => {});
-        if (!user && !options.isSwap && !options.isRefinement) {
-          maybePromptToSavePicks("after_pick");
-        }
         document.getElementById("library-reelbot-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     } catch (requestError) {
@@ -638,6 +635,10 @@ function BrowseLibrary() {
                 tasteActionProps={{ showSeenAction: false, showSkipAction: false, showVibeAction: false }}
                 refreshDisabled={pickLoading || isLibraryRequestEditing}
               />
+              {!user && pickResult?.primary ? <div className="session-save-nudge">
+                <p className="session-save-nudge-copy">Save your picks across devices</p>
+                <button type="button" className="reelbot-inline-button" onClick={() => openAuthPrompt("session_browse_inline")}>Create account</button>
+              </div> : null}
             </div>
             </div>
           </section>
