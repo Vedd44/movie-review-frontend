@@ -16,6 +16,7 @@ import { getFeedPath, isContextualDetailPath, hasUsefulAskContext } from "./disc
 import "./App.css";
 import "./productPolish.css";
 import "./reelbotDesign.css";
+import "./pickerEditorial.css";
 
 const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";

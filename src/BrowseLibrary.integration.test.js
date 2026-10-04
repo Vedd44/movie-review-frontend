@@ -141,3 +141,25 @@ test("changing a filter resets progressive results to the filtered first page", 
   expect(screen.queryByRole("heading", { name: "Pitch Black" })).not.toBeInTheDocument();
   expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("page=1&genre=28"));
 });
+
+
+test("editing and cancelling a Browse request preserves the displayed pick without another request", async () => {
+  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: /Ask ReelBot to pick one/i }));
+  const picker = document.getElementById("library-reelbot-picker");
+  fireEvent.change(within(picker).getByRole("textbox", { name: "Add a vibe" }), {target:{value:"A smart sci-fi movie"}});
+  fireEvent.click(within(picker).getByRole("button", { name: "Ask ReelBot" }));
+  await waitFor(() => expect(within(picker).getByRole("heading", {name:"Aliens"})).toBeInTheDocument());
+  const count = axios.post.mock.calls.length;
+  expect(within(picker).getByText("A smart sci-fi movie")).toBeVisible();
+  expect(within(picker).queryByRole("textbox")).not.toBeInTheDocument();
+  fireEvent.click(within(picker).getByRole("button", {name:"Edit"}));
+  fireEvent.change(within(picker).getByRole("textbox", {name:"Add a vibe"}), {target:{value:"Different draft"}});
+  expect(within(picker).getByRole("button", {name:"Get another pick"})).toBeDisabled();
+  fireEvent.click(within(picker).getByRole("button", {name:"Cancel edit"}));
+  expect(within(picker).getByRole("heading", {name:"Aliens"})).toBeInTheDocument();
+  expect(within(picker).getByText("A smart sci-fi movie")).toBeVisible();
+  expect(axios.post).toHaveBeenCalledTimes(count);
+  fireEvent.click(within(picker).getByRole("button", {name:"Edit"}));
+  expect(within(picker).getByRole("textbox", {name:"Add a vibe"})).toHaveValue("A smart sci-fi movie");
+});

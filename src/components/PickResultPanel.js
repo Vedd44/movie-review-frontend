@@ -92,7 +92,7 @@ function PickResultPanel({
   useEffect(() => { if (primaryMovie?.id && !loading) trackProductEvent("pick_presented", { movie_id: Number(primaryMovie.id) }); }, [primaryMovie?.id, loading]);
 
   return (
-    <div id={id} className={`pick-result-stage${showCompanion ? " pick-result-stage--shareable" : ""}${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
+    <div id={id} aria-busy={loading || undefined} className={`pick-result-stage${showCompanion ? " pick-result-stage--shareable picker-editorial" : ""}${primaryMovie ? " is-live" : ""}${isActivePickLoading ? " is-updating" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
       {!hasPrimaryMovie && error && !shouldShowFallbackState ? <p className="error-message">{error}</p> : null}
 
       {!error && shouldShowStandaloneLoading ? (
@@ -115,7 +115,7 @@ function PickResultPanel({
               </div>
             </div>
           ) : null}
-          <article className="pick-primary-card pick-primary-card--hero">
+          <article className="pick-primary-card pick-primary-card--hero" key={primaryMovie.id}>
             <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="pick-primary-poster-link">
               {primaryMovie.poster_path ? (
                 <img
@@ -136,7 +136,7 @@ function PickResultPanel({
               <div className="pick-primary-fit-row">
                 <span className="pick-primary-fit-label">{bestFitLabel}</span>
                 {rationale?.summaryLine ? <p className="pick-primary-hook"><MovieCopy titles={[primaryMovie.title]}>{rationale.summaryLine}</MovieCopy></p> : null}
-                {rationale?.personalizationHint ? <details className="pick-personalization-note"><summary>A nod to your taste</summary><p>{rationale.personalizationHint}</p><small>Your current request comes first.</small></details> : null}
+                {rationale?.personalizationHint ? <p className="picker-personalization"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg><span>{rationale.personalizationHint}</span></p> : null}
               </div>
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
@@ -179,7 +179,7 @@ function PickResultPanel({
                       {...tasteActionProps}
                       buttonClassName="pick-primary-secondary-action"
                     /> : null}
-                    {onResetChoices ? (
+                    {onResetChoices && !showCompanion ? (
                       <button
                         type="button"
                         className="reelbot-inline-button reelbot-inline-button--secondary pick-primary-secondary-action pick-result-reset"
@@ -267,6 +267,7 @@ function PickResultPanel({
                             {movie.title}
                           </Link>
                         </h4>
+                        {showCompanion ? <div className="picker-alternative-facts"><span>{getReleaseYear(movie.release_date)}</span>{movie.runtime ? <span>{movie.runtime} min</span> : null}</div> : null}
                         {movie.seen ? (
                           <div className="pick-backup-status">
                             <span className="movie-card-chip movie-card-chip--seen">Seen before</span>

@@ -1,0 +1,115 @@
+/* Preview direction: one film, one explanation, one clear next step.
+   Scoped to the Homepage/Browse pickers; catalogue and detail layouts stay independent. */
+.picker-request { gap: 12px 24px; margin-top: 14px; padding-bottom: 18px; border-bottom: 1px solid var(--rb-line); }
+.picker-request .picker-request-copy { flex: 1; }
+.picker-request .picker-request-copy p { color: var(--rb-text); max-width: 68ch; font-size: .9rem; line-height: 1.55; }
+.picker-request .picker-request-actions { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; flex: 0 0 auto; }
+.picker-request .picker-request-actions button { min-height: 44px; padding: 8px 0; }
+.picker-request .picker-request-actions button + button { color: var(--rb-muted); }
+.picker-request .picker-request-actions button:hover { color: var(--rb-gold); }
+.home-result-section > .section-header > div { width: 100%; }
+.picker-browse-composer[hidden] { display: none; }
+.picker-browse-request { margin-bottom: 24px; }
+#library-reelbot-result { scroll-margin-top: 100px; }
+.home-page .home-result-section .picker-editorial .pick-primary-card,
+.browse-library-page .picker-editorial .pick-primary-card { grid-template-columns: 180px minmax(0, 1fr); gap: 32px; padding: 0; }
+.picker-editorial .pick-primary-poster-link { width: 180px; max-width: 180px; }
+.picker-editorial .pick-primary-poster { width: 180px; height: 270px; border-radius: 5px; }
+.picker-editorial .pick-primary-content { min-width: 0; }
+.home-page .picker-editorial .pick-primary-title,
+.browse-library-page .picker-editorial .pick-primary-title { margin: 0 0 12px; font-size: clamp(1.75rem, 3.2vw, 2.8rem); line-height: 1.12; letter-spacing: -.035em; overflow-wrap: anywhere; text-wrap: balance; }
+.picker-editorial .pick-primary-content .movie-card-meta { order: 1; margin: 0; gap: 8px 14px; }
+.picker-editorial .pick-movie-utilities { order: 2; gap: 6px 10px; margin: 8px 0 16px; }
+.picker-editorial .pick-movie-utilities .taste-action-button,
+.picker-editorial .pick-share-trigger { min-height: 44px; padding: 8px 10px; border-color: transparent; background: transparent; color: var(--rb-muted); border-radius: 6px; }
+.picker-editorial .pick-movie-utilities .taste-action-button:hover,
+.picker-editorial .pick-share-trigger:hover { color: var(--rb-text); background: var(--rb-surface); border-color: var(--rb-line); }
+.picker-editorial .pick-primary-fit-row { order: 3; margin: 0 0 20px; }
+.home-page .picker-editorial .pick-primary-hook,
+.browse-library-page .picker-editorial .pick-primary-hook { max-width: 64ch; font-size: .98rem; line-height: 1.65; }
+.picker-editorial .picker-personalization { display: flex; align-items: baseline; gap: 8px; margin: 12px 0 0; color: var(--rb-muted); font-size: .8rem; line-height: 1.55; }
+.picker-personalization svg { flex: 0 0 auto; color: var(--rb-gold); }
+.picker-editorial .pick-result-actions-block { order: 4; }
+.picker-editorial .pick-primary-action-row--primary { margin: 0; gap: 10px; }
+.picker-editorial .pick-primary-main-action,
+.picker-editorial .pick-result-refresh { min-height: 48px; border-radius: 7px; font-size: .88rem; padding: 12px 22px; }
+.picker-editorial .pick-primary-content > .provider-badge-row { order: 5; margin: 16px 0 0; }
+.picker-editorial .picker-adjustments { border: 0; margin: 18px 0 0 212px; padding: 0; }
+.picker-editorial .pick-adjust-row { gap: 8px 14px; }
+.picker-editorial .pick-adjust-label { font-size: .75rem; color: var(--rb-faint); }
+.picker-editorial .pick-companion-actions { align-items: start; gap: 6px; }
+.picker-editorial .pick-adjust-chip,
+.picker-editorial .pick-refine-more summary { min-height: 44px; height: auto; border-radius: 6px; border-color: transparent; padding: 9px 10px; font-size: .8rem; background: var(--rb-surface); }
+.picker-editorial .pick-adjust-chip:hover { border-color: var(--rb-line); color: var(--rb-gold); }
+.picker-editorial .pick-refine-more { margin: 0; }
+.picker-editorial .pick-refine-more > div { margin-top: 8px; }
+.picker-editorial .pick-feedback-row { margin: 6px 0 0; }
+.picker-editorial .picker-feedback { width: 100%; margin: 0; }
+.picker-feedback > summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: .78rem; font-weight: 400; color: var(--rb-muted); cursor: pointer; list-style: none; }
+.picker-feedback > summary::-webkit-details-marker { display: none; }
+.picker-feedback[open] > summary svg { transform: rotate(180deg); }
+.picker-feedback-content { max-width: 60ch; padding: 0 0 12px; }
+.picker-feedback-content > p { margin: 0 0 8px; color: var(--rb-muted); font-size: .78rem; line-height: 1.5; }
+.picker-editorial .picker-feedback .taste-action-bar { gap: 8px; }
+.picker-editorial .picker-feedback .taste-action-button { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; min-height: 44px; border: 1px solid var(--rb-line); border-radius: 6px; font-size: .8rem; }
+.picker-editorial .picker-feedback .taste-action-button.is-active { border-color: var(--rb-gold); }
+.picker-editorial .pick-feedback-reasons { padding: 12px 0; border: 0; background: none; }
+.picker-editorial .pick-backups-block { margin-top: 24px; padding-top: 24px; }
+.picker-editorial .pick-backups-head { margin-bottom: 18px; }
+.picker-editorial .pick-backups-copy { margin-top: 5px; font-size: .82rem; }
+.picker-editorial .pick-backup-strip { gap: 24px; }
+.picker-editorial .pick-backup-card { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; }
+.picker-editorial .pick-backup-poster { width: 60px; height: 90px; }
+.picker-editorial .pick-backup-title { margin: 0 0 5px; font-size: 1rem; line-height: 1.3; overflow-wrap: anywhere; }
+.picker-alternative-facts { display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--rb-faint); font-size: .72rem; margin-bottom: 7px; }
+.home-page .picker-editorial .pick-backup-reason,
+.browse-library-page .picker-editorial .pick-backup-reason { display: block; overflow: visible; -webkit-line-clamp: unset; line-clamp: unset; max-height: none; margin: 0; font-size: .8rem; line-height: 1.55; }
+.picker-editorial.is-updating .pick-primary-card { opacity: .65; transition: opacity 140ms ease; }
+.picker-editorial .pick-primary-card { animation: picker-arrive 180ms ease-out; }
+@keyframes picker-arrive { from { opacity: .5; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.picker-editorial :is(button, a, summary):focus-visible,
+.picker-request button:focus-visible { outline: 2px solid var(--rb-gold); outline-offset: 4px; }
+@media (max-width: 900px) {
+  .picker-editorial .pick-backup-strip { grid-template-columns: 1fr; gap: 20px; }
+  .picker-editorial .pick-backup-card { grid-template-columns: 64px minmax(0, 1fr); }
+  .picker-editorial .pick-backup-poster { width: 64px; height: 96px; }
+}
+@media (max-width: 599px) {
+  .picker-request { flex-wrap: wrap; gap: 0; padding-bottom: 12px; }
+  .picker-request .picker-request-copy { flex-basis: 100%; }
+  .picker-request .picker-request-actions { gap: 20px; }
+  .picker-request .picker-request-copy p { font-size: .85rem; }
+  .home-page .home-result-section .picker-editorial .pick-primary-card,
+  .browse-library-page .picker-editorial .pick-primary-card { grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto auto auto auto auto auto; gap: 0 18px; }
+  .home-page .picker-editorial .pick-primary-content,
+  .browse-library-page .picker-editorial .pick-primary-content { display: contents; }
+  .home-page .picker-editorial .pick-primary-poster-link,
+  .browse-library-page .picker-editorial .pick-primary-poster-link { grid-column: 1; grid-row: 1 / 4; width: 100px; max-width: 100px; }
+  .home-page .picker-editorial .pick-primary-poster,
+  .browse-library-page .picker-editorial .pick-primary-poster { width: 100px; height: 150px; }
+  .home-page .picker-editorial .pick-primary-title,
+  .browse-library-page .picker-editorial .pick-primary-title { grid-column: 2; grid-row: 1; font-size: clamp(1.25rem, 5.6vw, 1.7rem); margin: 0 0 9px; }
+  .home-page .picker-editorial .pick-primary-content .movie-card-meta,
+  .browse-library-page .picker-editorial .pick-primary-content .movie-card-meta { grid-column: 2; grid-row: 2; margin: 0; gap: 6px 10px; }
+  .home-page .picker-editorial .pick-movie-utilities,
+  .browse-library-page .picker-editorial .pick-movie-utilities { grid-column: 2; grid-row: 3; gap: 0 5px; margin: 4px 0 0; align-self: start; width: 100%; }
+  .picker-editorial .pick-movie-utilities button { min-height: 44px; font-size: .76rem; padding: 8px 5px; }
+  .home-page .picker-editorial .pick-primary-fit-row,
+  .browse-library-page .picker-editorial .pick-primary-fit-row { grid-column: 1 / -1; grid-row: 4; margin: 20px 0 18px; }
+  .home-page .picker-editorial .pick-primary-hook,
+  .browse-library-page .picker-editorial .pick-primary-hook { font-size: .94rem; line-height: 1.65; }
+  .home-page .picker-editorial .pick-result-actions-block,
+  .browse-library-page .picker-editorial .pick-result-actions-block { grid-column: 1 / -1; grid-row: 5; }
+  .home-page .picker-editorial .pick-primary-content > .provider-badge-row,
+  .browse-library-page .picker-editorial .pick-primary-content > .provider-badge-row { grid-column: 1 / -1; grid-row: 6; margin: 14px 0 0; }
+  .picker-editorial .pick-primary-action-row--primary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .home-page .picker-editorial .pick-primary-action-row--primary > :is(a, button),
+  .browse-library-page .picker-editorial .pick-primary-action-row--primary > :is(a, button) { min-height: 48px; padding: 10px 8px; font-size: .8rem; white-space: normal; }
+  .picker-editorial .picker-adjustments { margin: 16px 0 0; padding: 0; }
+  .picker-editorial .pick-adjust-row { display: block; }
+  .picker-editorial .pick-adjust-row .pick-companion-actions { margin-top: 6px; }
+  .picker-editorial .pick-backups-block { margin-top: 16px; padding-top: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .picker-editorial .pick-primary-card { animation: none; transition: none; }
+}

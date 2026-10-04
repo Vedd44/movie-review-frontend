@@ -17,6 +17,7 @@ import {
   getRecommendationMovieState,
 } from "./discovery";
 import PickResultPanel from "./components/PickResultPanel";
+import PickRequestContext from "./components/PickRequestContext";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import TrailerModal from "./components/TrailerModal";
 import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
@@ -2016,22 +2017,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
                 <h2 className="section-title">ReelBot’s pick</h2>
-                <div className="pick-request-context"><div><span>Your request</span><p>{originalPickPrompt || "Surprise me with something worth watching"}</p></div><button type="button" disabled={isPickBusy} onClick={() => {
+                <PickRequestContext prompt={originalPickPrompt} disabled={isPickBusy} onReset={activePick ? handleStartFresh : undefined} onEdit={() => {
                   setPickPrompt(originalPickPrompt); setIsRequestEditing(true);
                   document.getElementById("pick-for-me")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   window.requestAnimationFrame(() => document.getElementById("pick-prompt-input")?.focus({ preventScroll: true }));
-                }}>Edit</button></div>
+                }} />
             </div>
           </div>
-
-          {isSessionHomepageUser && activePick ? (
-            <div className="session-save-nudge">
-              <p className="session-save-nudge-copy">Save your picks across devices</p>
-              <button type="button" className="reelbot-inline-button" onClick={() => openAuthPrompt("session_home_inline")}>
-                Create account
-              </button>
-            </div>
-          ) : null}
 
           <PickResultPanel
             panelStatus={pickStatus}
@@ -2095,6 +2087,15 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             hideRefreshCta={refreshExhausted}
             refreshExhaustionMessage={refreshExhaustionMessage}
           />
+          {isSessionHomepageUser && activePick ? (
+            <div className="session-save-nudge">
+              <p className="session-save-nudge-copy">Save your picks across devices</p>
+              <button type="button" className="reelbot-inline-button" onClick={() => openAuthPrompt("session_home_inline")}>
+                Create account
+              </button>
+            </div>
+          ) : null}
+
         </section>
         ) : null}
 

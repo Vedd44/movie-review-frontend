@@ -12,6 +12,7 @@ function TasteActionBar({
   buttonClassName = "",
   showSaveAction = true,
   showSaveIcon = false,
+  showFeedbackIcons = false,
   showSeenAction = true,
   showSkipAction = true,
   showVibeAction = true,
@@ -127,6 +128,7 @@ function TasteActionBar({
           disabled={isBusy}
           aria-pressed={tasteState.seen}
         >
+          {showFeedbackIcons ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}
           {pendingAction === "seen" ? "Updating..." : seenLabel}
         </button>
       ) : null}
@@ -138,6 +140,7 @@ function TasteActionBar({
           disabled={isBusy}
           aria-pressed={tasteState.skipped}
         >
+          {showFeedbackIcons ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m6 6 12 12" /></svg> : null}
           {pendingAction === "hidden" ? "Updating..." : tasteState.skipped ? skipActiveLabel : skipLabel}
         </button>
       ) : null}

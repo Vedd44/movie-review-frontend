@@ -5,6 +5,7 @@ import axios from "axios";
 import "./App.css";
 import MovieCardMeta from "./components/MovieCardMeta";
 import PickResultPanel from "./components/PickResultPanel";
+import PickRequestContext from "./components/PickRequestContext";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import { hasBehavioralSignals, scoreMovieForBehavioralMemory } from "./behavioralMemory";
 import { useAuth } from "./context/AuthContext";
@@ -68,6 +69,8 @@ function BrowseLibrary() {
   const [totalPages, setTotalPages] = useState(1);
   const [showReelbotPicker, setShowReelbotPicker] = useState(false);
   const [pickPrompt, setPickPrompt] = useState("");
+  const [isLibraryRequestEditing, setIsLibraryRequestEditing] = useState(false);
+  const [submittedLibraryPrompt, setSubmittedLibraryPrompt] = useState("");
   const [includeTheatrical, setIncludeTheatrical] = useState(false);
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
@@ -408,6 +411,8 @@ function BrowseLibrary() {
   };
 
   const handleLibraryPick = async () => {
+    setSubmittedLibraryPrompt(pickPrompt);
+    setIsLibraryRequestEditing(false);
     await requestLibraryPick({ refreshKey: `browse-pick-${Date.now()}`, isSwap: false });
   };
 
@@ -468,6 +473,8 @@ function BrowseLibrary() {
   };
 
   const handleStartFreshLibraryPick = () => {
+    setIsLibraryRequestEditing(false);
+    setSubmittedLibraryPrompt("");
     setPickPrompt("");
     setPickError(null);
     setPickResult(null);
@@ -566,15 +573,16 @@ function BrowseLibrary() {
         {showReelbotPicker || pickResult?.primary || pickError || pickLoading ? (
           <section id="library-reelbot-picker" className="pick-for-me-card library-reelbot-card library-reelbot-card--inline">
             <div className="library-reelbot-body">
-            <div className="section-header section-header--stacked-mobile section-header--compact">
+            {!pickResult?.primary && !pickLoading ? <div className="section-header section-header--stacked-mobile section-header--compact">
               <div>
                 <h2 className="section-title">Let ReelBot choose</h2>
                 <p className="section-subtitle">Keep the filters you already set, add a vibe if you want, and let ReelBot make the call.</p>
 
               </div>
-            </div>
-
+            </div> : null}
+            <div className="picker-browse-composer" hidden={(pickLoading || Boolean(pickResult?.primary)) && !isLibraryRequestEditing}>
             <ReelbotPromptComposer
+              inputId="library-pick-prompt"
               label="Add a vibe"
               helperText="Optional: add a vibe if you want a more specific pick."
               suggestions={LIBRARY_PROMPTS.slice(0, 4)}
@@ -601,11 +609,13 @@ function BrowseLibrary() {
 
             <div className="pick-for-me-actions">
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handleLibraryPick} disabled={pickLoading}>
-                {pickLoading ? "Finding your pick…" : "Ask ReelBot"}
+                {pickLoading ? "Finding your pick…" : isLibraryRequestEditing ? "Update my pick" : "Ask ReelBot"}
               </button>
+              {isLibraryRequestEditing ? <button type="button" className="rb-text-button" disabled={pickLoading} onClick={() => { setPickPrompt(pickResult?.sharePrompt || submittedLibraryPrompt); setIsLibraryRequestEditing(false); }}>Cancel edit</button> : null}
             </div>
-
+            </div>
             <div id="library-reelbot-result">
+              {pickResult?.primary || pickLoading ? <div className="picker-browse-request"><h2 className="section-title">ReelBot’s pick</h2><PickRequestContext prompt={(pickLoading ? submittedLibraryPrompt : pickResult?.sharePrompt) || activeFilterChips.map(chip => chip.label).join(" · ") || "Choose something worth watching from Browse"} disabled={pickLoading} onReset={pickResult?.primary ? handleStartFreshLibraryPick : undefined} onEdit={() => { setPickPrompt(pickResult?.sharePrompt || submittedLibraryPrompt); setIsLibraryRequestEditing(true); window.requestAnimationFrame(() => { document.getElementById("library-pick-prompt")?.focus({ preventScroll: true }); document.getElementById("library-pick-prompt")?.scrollIntoView({ behavior: "smooth", block: "center" }); }); }} /></div> : null}
               <PickResultPanel
                 loading={pickLoading}
                 error={pickError}
@@ -626,7 +636,7 @@ function BrowseLibrary() {
                 onRefineAction={pickResult?.primary ? handleRefineLibraryPick : undefined}
                 showCompanion
                 tasteActionProps={{ showSeenAction: false, showSkipAction: false, showVibeAction: false }}
-                refreshDisabled={pickLoading}
+                refreshDisabled={pickLoading || isLibraryRequestEditing}
               />
             </div>
             </div>
