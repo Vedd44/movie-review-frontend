@@ -28,6 +28,7 @@ const AccountSettings = lazy(() => import("./AccountSettings"));
 const AdminPanel = lazy(() => import("./AdminPanel"));
 const ResetPassword = lazy(() => import("./ResetPassword"));
 const SearchResults = lazy(() => import("./SearchResults"));
+const LegalPage = lazy(() => import("./LegalPage"));
 const HowReelbotWorks = lazy(() => import("./HowReelbotWorks"));
 const MovieDetails = lazy(() => import("./MovieDetails"));
 const PersonDetails = lazy(() => import("./PersonDetails"));
@@ -220,7 +221,7 @@ function SiteFooter() {
         <NavLink to="/how-reelbot-works" className="site-footer-link site-footer-link--secondary">How it works</NavLink>
         <button type="button" className="site-footer-link site-footer-link--secondary site-footer-feedback" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback"><span className="site-footer-feedback-icon" aria-hidden="true">◌</span>Feedback</button>
       </div></nav>
-      <div className="site-footer-bottom-bar"><p className="site-footer-credit">© 2026 ReelBot · Movie data by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a></p></div>
+      <div className="site-footer-bottom-bar"><p className="site-footer-credit">© 2026 ReelBot · Movie data by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a></p><nav className="site-footer-legal" aria-label="Legal"><NavLink to="/privacy">Privacy</NavLink><NavLink to="/terms">Terms</NavLink></nav></div>
     </div></footer>
     <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
   </>;
@@ -296,6 +297,8 @@ function AppShell() {
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/search" element={<SearchResults />} />
+              <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+              <Route path="/terms" element={<LegalPage kind="terms" />} />
               <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
               <Route path="/p/:shareId" element={<MovieDetails />} />
               <Route path="/movie-night" element={<MovieNight />} />

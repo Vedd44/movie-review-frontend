@@ -9,7 +9,7 @@ fs.mkdirSync(out,{recursive:true});
 fs.copyFileSync(path.join(__dirname,'../build/index.html'),path.join(out,'shell.html'));
 fs.writeFileSync(path.join(out,'collections.json'),JSON.stringify(collections));
 fs.writeFileSync(path.join(out,'movies.json'),JSON.stringify(movies));
-const paths = new Set(['/collections',...collections.map(c=>'/collections/'+c.slug),...Object.values(movies).filter(m=>m.canonical_slug).map(m=>'/movies/'+m.canonical_slug)]);
+const paths = new Set(['/privacy','/terms','/collections',...collections.map(c=>'/collections/'+c.slug),...Object.values(movies).filter(m=>m.canonical_slug).map(m=>'/movies/'+m.canonical_slug)]);
 for (const movie of Object.values(movies)) for (const person of [movie.director_credit,...(movie.top_cast_credits || [])]) if(person?.canonical_slug) paths.add('/people/'+person.canonical_slug);
 fs.writeFileSync('build/sitemap-curated.xml','<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+[...paths].sort().map(p=>`<url><loc>https://reelbot.movie${escapeHtml(p)}</loc></url>`).join('')+'</urlset>');
 fs.writeFileSync('build/sitemap.xml','<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>https://reelbot.movie/sitemap-curated.xml</loc></sitemap><sitemap><loc>https://reelbot.movie/sitemap-discovery.xml</loc></sitemap></sitemapindex>');

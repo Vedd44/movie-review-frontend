@@ -411,6 +411,8 @@ function AuthPanel({
         </>
       ) : null}
 
+      {!user && !successState && !isForgotPasswordView ? <p className="auth-policy-note">By creating an account, you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer">Terms</a>. Read our <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p> : null}
+
       {!user ? (
         <div className="auth-panel-actions auth-panel-actions--links">
           {view === EMAIL_LINK_VIEW ? (

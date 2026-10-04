@@ -1,4 +1,5 @@
 const copy = require('../src/productCopy');
+const legalCopy = require('../src/legalCopy.json');
 const { parseSharedPick } = require('../src/sharedPick');
 const ORIGIN = 'https://reelbot.movie';
 const API = 'https://movie-review-backend-zevb.onrender.com';
@@ -41,6 +42,8 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   try { path = decodeURIComponent(rawPath); } catch { return missing('/404'); }
   if (!path.startsWith('/') || path.startsWith('//') || /[<>\x00-\x1f?#]/.test(path)) return missing('/404');
   if (path.length > 1 && path.endsWith('/')) return {redirect:path.replace(/\/+$/, '')};
+  const legal = Object.values(legalCopy).find(page => page.path === path);
+  if (legal) return {path, title: `${legal.title} | ReelBot`, heading: legal.title, description: legal.description, content: `<p>Updated ${escapeHtml(legal.updated)}</p>` + legal.sections.map(([heading,...paragraphs]) => `<section><h2>${escapeHtml(heading)}</h2>${paragraphs.map(text => `<p>${escapeHtml(text)}</p>`).join('')}</section>`).join('') + `<p>${link('/privacy','Privacy Policy')} · ${link('/terms','Terms of Service')}</p>`};
   if (path === '/ask') return {redirect:'/#pick-for-me'};
   if (path === '/' && params.has('view')) return {redirect: ({popular:'/trending',upcoming:'/coming-soon'})[params.get('view')] || '/now-playing'};
   const shortShare = path.match(/^\/p\/([A-Za-z0-9_-]{12})$/);
@@ -131,7 +134,7 @@ function renderPage(shell, data) {
     ...Object.entries({'twitter:card':'summary_large_image','twitter:title':data.title,'twitter:description':data.description,'twitter:image':image}).map(([k,v])=>`<meta name="${k}" content="${escapeHtml(v)}">`),
     ...(data.schema || []).map((schema,i)=>`<script type="application/ld+json" data-reelbot-schema="${i}">${JSON.stringify(schema).replace(/</g,'\\u003c')}</script>`),
   ].join('');
-  const content = `<main class="server-page"><nav aria-label="Primary">${link('/','ReelBot')}${link('/browse','Browse')}${link('/collections','Collections')}</nav><h1>${escapeHtml(data.heading)}</h1><p>${escapeHtml(data.description)}</p>${data.content || ''}</main>`;
+  const content = `<main class="server-page"><nav aria-label="Primary">${link('/','ReelBot')}${link('/browse','Browse')}${link('/collections','Collections')}</nav><h1>${escapeHtml(data.heading)}</h1><p>${escapeHtml(data.description)}</p>${data.content || ''}<footer>${link('/privacy','Privacy Policy')} ${link('/terms','Terms of Service')}</footer></main>`;
   return shell.replace(/<title>[\s\S]*?<\/title>/i,'').replace(/<meta\s[^>]*(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*>/gi,'').replace(/<link\s[^>]*rel="canonical"[^>]*>/gi,'').replace('</head>',tags+'</head>').replace(/<div id="root">[\s\S]*<\/div>\s*<\/body>/,`<div id="root">${content}</div></body>`);
 }
 module.exports = {getPageData,renderPage,escapeHtml,moviePath};

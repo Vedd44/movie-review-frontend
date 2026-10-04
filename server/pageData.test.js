@@ -1,6 +1,25 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {getPageData,renderPage} = require('./pageData');
+test('legal pages are public full-text documents without auth or backend requests', async () => {
+  for (const path of ['/privacy', '/terms']) {
+    const data = await getPageData(path, new URLSearchParams(), {fetcher: () => { throw new Error('Legal pages must not depend on the backend'); }});
+    assert.equal(data.path, path);
+    assert.ok(!data.privatePage);
+    const html = renderPage('<html><head></head><body><div id="root"></div></body></html>', data);
+    assert.match(html, /Updated October 4, 2026/);
+    assert.match(html, /<section><h2>/);
+    assert.match(html, /Feedback/);
+    assert.match(html, new RegExp(`rel="canonical" href="https://reelbot.movie${path}"`));
+    assert.ok(!html.includes('noindex'));
+  }
+});
+test('homepage includes public policy links before JavaScript runs', async () => {
+  const data = await getPageData('/', new URLSearchParams(), {fetcher: async () => response({results: []})});
+  const html = renderPage('<html><head></head><body><div id="root"></div></body></html>', data);
+  assert.match(html, /href="\/privacy">Privacy Policy/);
+  assert.match(html, /href="\/terms">Terms of Service/);
+});
 const movie = {id:157336,title:'Interstellar',canonical_slug:'interstellar-2014',release_year:2014,release_date:'2014-11-05',runtime:169,description:'A journey through space.',genre_names:['Science Fiction'],director:'Christopher Nolan'};
 const response = (value,status=200)=>({ok:status===200,status,json:async()=>value});
 const context = {fetcher:async()=>response(movie)};

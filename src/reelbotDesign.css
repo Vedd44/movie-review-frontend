@@ -1266,3 +1266,20 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .auth-return-notice { position: fixed; z-index: 160; bottom: calc(90px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; width: min(440px, calc(100% - 32px)); box-sizing: border-box; padding: 14px 18px; border: 1px solid var(--rb-line); border-radius: 10px; background: var(--rb-surface); color: var(--rb-text); font-size: .85rem; box-shadow: 0 8px 32px #0008; }
 .auth-return-notice button { margin-left: auto; flex: 0 0 44px; min-height: 44px; background: none; border: 0; color: inherit; font-size: 1.4rem; cursor: pointer; }
 .admin-status.is-pending { color: var(--rb-gold); background: #eac66d14; }
+
+/* Readable legal pages, with the same quiet hierarchy on phones and tablets. */
+.legal-shell { max-width: 760px; padding-top: 40px; padding-bottom: 56px; }
+.legal-back, .legal-page-links a, .legal-page-links button, .site-footer-legal a { color: var(--rb-muted); text-decoration: underline; text-underline-offset: 4px; }
+.legal-shell header { margin: 28px 0 36px; }
+.legal-shell h1 { font-size: clamp(2rem, 5vw, 3rem); }
+.legal-shell h2 { margin: 0 0 12px; font-size: 1.2rem; }
+.legal-shell p { line-height: 1.75; color: var(--rb-muted); overflow-wrap: anywhere; }
+.legal-shell section { margin-top: 32px; }
+.legal-updated { font-size: .85rem; }
+.legal-page-links, .site-footer-legal { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.legal-page-links { margin-top: 36px; }
+.legal-page-links button { background: none; border: 0; padding: 10px 0; font: inherit; cursor: pointer; }
+.site-footer-legal { font-size: .78rem; }
+.site-footer-legal a { padding: 10px 0; }
+.auth-policy-note { margin: 18px 0 0; font-size: .75rem; line-height: 1.6; color: var(--rb-muted); }
+.auth-policy-note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
