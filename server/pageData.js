@@ -38,6 +38,17 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   if (path.length > 1 && path.endsWith('/')) return {redirect:path.replace(/\/+$/, '')};
   if (path === '/ask') return {redirect:'/#pick-for-me'};
   if (path === '/' && params.has('view')) return {redirect: ({popular:'/trending',upcoming:'/coming-soon'})[params.get('view')] || '/now-playing'};
+  const shortShare = path.match(/^\/p\/([A-Za-z0-9_-]{12})$/);
+  if (shortShare) {
+    const shared = await apiJson(`/reelbot/shares/${shortShare[1]}`,fetcher);
+    if (!shared || !parseSharedPick(new URLSearchParams({pick:JSON.stringify(shared)}).toString())) return missing(path);
+    const movie = await apiJson(`/movies/${shared.id}`,fetcher);
+    if (!movie?.id) return missing(path);
+    return {path,title:`Tonight’s pick: ${movie.title} | ReelBot`,heading:movie.title,
+      description:shared.brief ? `Picked by ReelBot for: ${shared.brief}` : 'A movie worth making time for. Picked by ReelBot.',robots:'noindex,follow',privatePage:true,
+      image:`${ORIGIN}/api/pick-image?movie=${movie.id}&v=2`,content:`<p>ReelBot’s pick</p>${shared.brief ? `<h2>The request</h2><p>${escapeHtml(shared.brief)}</p>` : ''}<h2>Why ReelBot chose it</h2><p>${escapeHtml(shared.why)}</p><p>${link(moviePath(movie),'Full movie details')} ${link('/#pick-for-me','Find your own movie')}</p>`};
+  }
+  if (path.startsWith('/p/')) return missing(path);
   if (STATIC[path]) {
     const [title,heading,description] = STATIC[path];
     const privatePage = ['/my-movies','/account','/admin','/reset-password','/search','/movie-night'].includes(path);
@@ -83,7 +94,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     const shared = parseSharedPick(params.toString(), m.id);
     if (shared) return {path: `${path}?${new URLSearchParams({pick: JSON.stringify(shared)})}`, title: `Tonight’s pick: ${m.title} | ReelBot`, heading:m.title,
       description:shared.brief ? `Picked by ReelBot for: ${shared.brief}` : 'A movie worth making time for. Picked by ReelBot.', robots:'noindex,follow', privatePage:true,
-      image:`${ORIGIN}/api/pick-image?movie=${m.id}`, content:`<p>Picked by ReelBot</p>${shared.brief ? `<h2>The brief</h2><p>${escapeHtml(shared.brief)}</p>` : ''}${shared.why ? `<h2>Why this fits</h2><p>${escapeHtml(shared.why)}</p>` : ''}<p>${link(path,'Movie details')}. ${link('/#pick-for-me','Find your own movie')}</p>`};
+      image:`${ORIGIN}/api/pick-image?movie=${m.id}&v=2`, content:`<p>Picked by ReelBot</p>${shared.brief ? `<h2>The brief</h2><p>${escapeHtml(shared.brief)}</p>` : ''}${shared.why ? `<h2>Why this fits</h2><p>${escapeHtml(shared.why)}</p>` : ''}<p>${link(path,'Movie details')}. ${link('/#pick-for-me','Find your own movie')}</p>`};
     const year = m.release_year || m.release_date?.slice(0,4);
     const title = `${m.title}${year ? ` (${year})` : ''}: Cast, Where to Watch & More | ReelBot`;
     const description = `Explore ${m.title}${year ? ` (${year})` : ''}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.`;

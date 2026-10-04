@@ -142,11 +142,12 @@ function CastAndDetails({ movie }) {
 
 function MovieDetails() {
   const [showFullSynopsis, setShowFullSynopsis] = useState(false);
-  const { legacyMovieId, movieSlug } = useParams();
+  const { legacyMovieId, movieSlug, shareId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [movie, setMovie] = useState(null);
-  const sharedPick = useMemo(() => parseSharedPick(location.search, movie?.id), [location.search, movie?.id]);
+  const [storedSharedPick, setStoredSharedPick] = useState(null);
+  const sharedPick = useMemo(() => storedSharedPick || parseSharedPick(location.search, movie?.id), [storedSharedPick, location.search, movie?.id]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [genericTake, setGenericTake] = useState(null);
@@ -166,13 +167,22 @@ function MovieDetails() {
 
     setLoading(true);
     setError(null);
-    setMovie(null);
-    axios.get(endpoint, { signal: controller.signal })
+    setMovie(null); setStoredSharedPick(null);
+    const loadMovie = async () => {
+      if (!shareId) return axios.get(endpoint, { signal: controller.signal });
+      if (!/^[A-Za-z0-9_-]{12}$/.test(shareId)) throw Object.assign(new Error('Shared pick not found'), {response:{status:404}});
+      const response = await axios.get(`${API_BASE_URL}/reelbot/shares/${shareId}`, {signal: controller.signal});
+      const snapshot = parseSharedPick(new URLSearchParams({pick:JSON.stringify(response.data)}).toString());
+      if (!snapshot) throw Object.assign(new Error('Shared pick not found'), {response:{status:404}});
+      if (!cancelled) setStoredSharedPick(snapshot);
+      return axios.get(`${API_BASE_URL}/movies/${snapshot.id}`, {signal:controller.signal});
+    };
+    loadMovie()
       .then((response) => {
         if (cancelled) return;
         setMovie(response.data);
         const canonicalPath = getMoviePath(response.data);
-        if (location.pathname !== canonicalPath) {
+        if (!shareId && location.pathname !== canonicalPath) {
           navigate(canonicalPath, { replace: true, state: location.state });
         }
       })
@@ -185,7 +195,7 @@ function MovieDetails() {
       });
 
     return () => { cancelled = true; controller.abort(); };
-  }, [legacyMovieId, location.pathname, location.state, movieSlug, navigate]);
+  }, [legacyMovieId, location.pathname, location.state, movieSlug, shareId, navigate]);
 
   useEffect(() => {
     if (!movie?.id) return;
@@ -228,8 +238,8 @@ function MovieDetails() {
     return () => { cancelled = true; controller.abort(); };
   }, [movie?.id]);
   const reelbotTake = useMemo(
-    () => buildReelbotTake({ movie, recommendationContext, genericTake }),
-    [genericTake, movie, recommendationContext]
+    () => buildReelbotTake({ movie, recommendationContext: sharedPick ? null : recommendationContext, genericTake }),
+    [genericTake, movie, recommendationContext, sharedPick]
   );
   const homePickSession = tasteProfileService.loadHomePickSession();
   const sessionMovieIds = useMemo(() => new Set([
@@ -313,11 +323,11 @@ function MovieDetails() {
   usePageMetadata({
     title: sharedPick && movie ? `Tonight’s pick: ${movie.title} | ReelBot` : movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
     description: sharedPick ? (sharedPick.brief ? `Picked by ReelBot for: ${sharedPick.brief}` : "A movie worth making time for. Picked by ReelBot.") : movie ? `Explore ${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.` : "Explore movie details, cast, runtime, where to watch, ReelBot’s take, and similar movies.",
-    path: movie ? getMoviePath(movie) + (sharedPick ? location.search : "") : location.pathname,
+    path: shareId ? location.pathname : movie ? getMoviePath(movie) + (sharedPick ? location.search : "") : location.pathname,
     enabled: !loading,
     robots: error || sharedPick ? "noindex,follow" : "index,follow",
     type: "video.movie",
-    image: sharedPick ? `/api/pick-image?movie=${sharedPick.id}` : movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
+    image: sharedPick ? `/api/pick-image?movie=${sharedPick.id}&v=2` : movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
     structuredData: detailStructuredData,
   });
 
@@ -339,7 +349,7 @@ function MovieDetails() {
   const showReviewSplit = !previewMode && (reviewHighlights.positive || reviewHighlights.negative);
 
   return (
-    <div className="movie-details-page">
+    <div className={`movie-details-page${sharedPick ? " shared-pick-page" : ""}`}>
       <div className="movie-details-container detail-shell">
         <nav className="detail-topbar" aria-label="Breadcrumb">
           <div className="detail-breadcrumb">
@@ -355,7 +365,7 @@ function MovieDetails() {
           <div className="detail-poster-column">{movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} srcSet={`https://image.tmdb.org/t/p/w185${movie.poster_path} 185w, https://image.tmdb.org/t/p/w500${movie.poster_path} 500w`} sizes="(max-width: 599px) 100px, (max-width: 900px) 230px, 260px" alt={`${movie.title} poster`} className="detail-poster" width="500" height="750" fetchPriority="high" decoding="async" /> : <ArtworkFallback className="detail-poster no-poster" />}</div>
           <div className="detail-content-column">
             <div className="detail-identity">
-              {sharedPick ? <div className="detail-eyebrow">Picked by ReelBot</div> : previewMode ? <div className="detail-eyebrow">Coming Soon</div> : null}
+              {sharedPick ? <div className="detail-eyebrow">ReelBot’s pick</div> : previewMode ? <div className="detail-eyebrow">Coming Soon</div> : null}
               <div className="detail-title-row">
                 <h1 className="movie-title detail-title">{movie.title}</h1>
                 {isSuperAdmin ? (
@@ -377,7 +387,11 @@ function MovieDetails() {
               {movie.genre_names?.length ? <p className="detail-genres">{movie.genre_names.join(" · ")}</p> : null}
               {movie.director_credit?.id ? <p className="detail-director-line">Directed by <Link to={getPersonPath(movie.director_credit)}>{movie.director_credit.name}</Link></p> : movie.director ? <p className="detail-director-line">Directed by {movie.director}</p> : null}
             </div>
-            <div className="detail-description-block"><div className="detail-description-label">The story</div><p className="detail-description">{movieDescription.length > 240 && !showFullSynopsis ? `${movieDescription.slice(0, movieDescription.lastIndexOf(" ", 240))}…` : movieDescription}</p>{movieDescription.length > 240 ? <button type="button" className="rb-synopsis-toggle" onClick={() => setShowFullSynopsis((current) => !current)} aria-expanded={showFullSynopsis}>{showFullSynopsis ? "Show less" : "Read full synopsis"}</button> : null}</div>
+            {sharedPick ? <section className="shared-pick-context" aria-label="Shared ReelBot pick">
+              {sharedPick.brief ? <div className="shared-pick-request"><h2>The request</h2><blockquote>“{sharedPick.brief}”</blockquote></div> : null}
+              <div className="shared-pick-reason"><h2>Why ReelBot chose it</h2><p><MovieCopy titles={[movie.title]}>{sharedPick.why}</MovieCopy></p></div>
+            </section> : <><div className="detail-description-block"><div className="detail-description-label">The story</div><p className="detail-description">{movieDescription.length > 240 && !showFullSynopsis ? `${movieDescription.slice(0, movieDescription.lastIndexOf(" ", 240))}…` : movieDescription}</p>{movieDescription.length > 240 ? <button type="button" className="rb-synopsis-toggle" onClick={() => setShowFullSynopsis((current) => !current)} aria-expanded={showFullSynopsis}>{showFullSynopsis ? "Show less" : "Read full synopsis"}</button> : null}</div></>}
+
             <div className="detail-hero-actions detail-hero-actions--simplified" role="group" aria-label="Movie actions">
               <button type="button" className="detail-trailer-cta" onClick={() => jumpTo("where-to-watch")}>Where to Watch</button>
               <TasteActionBar movie={movie} compact showSeenAction={false} showSkipAction={false} showVibeAction={false} />
@@ -388,8 +402,9 @@ function MovieDetails() {
           </div>
         </section>
 
-        {sharedPick ? <section className="shared-pick-context" aria-label="Shared ReelBot pick"><p className="pick-share-eyebrow">PICKED BY REELBOT</p><h2>A movie for tonight.</h2>{sharedPick.brief ? <div><h3>The brief</h3><p>{sharedPick.brief}</p></div> : null}{sharedPick.why ? <div><h3>Why this fits</h3><p><MovieCopy titles={[movie.title]}>{sharedPick.why}</MovieCopy></p></div> : null}<Link className="detail-text-action" to="/#pick-for-me">Find your own movie <span aria-hidden="true">→</span></Link></section> : null}
 
+
+        {sharedPick ? <div className="shared-pick-next"><p>Have a different night in mind?</p><Link to="/#pick-for-me">Find your own movie <span aria-hidden="true">→</span></Link><Link className="shared-pick-full-details" to={getMoviePath(movie)}>Full movie details</Link></div> : null}
         <section className="detail-info-card detail-reelbot-take">
           <div className="detail-section-head"><img className="detail-take-mark" src="/brand/reelbot-icon.svg" width="24" height="28" alt="" aria-hidden="true" /><h2 className="detail-section-title">{reelbotTake.heading}</h2></div>
           {genericTakeLoading && !reelbotTake.hasReliableProvenance ? (

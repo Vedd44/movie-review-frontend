@@ -73,7 +73,7 @@
       "maxDuration": 30
     },
     "api/pick-image.js": {
-      "includeFiles": "public/brand/reelbot-icon.svg",
+      "includeFiles": "{public/brand/reelbot-icon.svg,server/assets/**}",
       "maxDuration": 30
     }
   }

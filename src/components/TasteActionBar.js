@@ -11,6 +11,7 @@ function TasteActionBar({
   className = "",
   buttonClassName = "",
   showSaveAction = true,
+  showSaveIcon = false,
   showSeenAction = true,
   showSkipAction = true,
   showVibeAction = true,
@@ -114,6 +115,7 @@ function TasteActionBar({
           disabled={isBusy}
           aria-pressed={tasteState.inWatchlist}
         >
+          {showSaveIcon ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4V3Z" /></svg> : null}
           {pendingAction === "watchlist" ? "Saving…" : tasteState.inWatchlist ? savedLabel : saveLabel}
         </button>
       ) : null}

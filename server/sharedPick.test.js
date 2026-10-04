@@ -24,3 +24,9 @@ test('preview contains true movie title with safe wrapping for long titles',()=>
  const {titleLines}=require('../api/pick-image');
  const lines=titleLines(movie.title);assert.ok(lines.length<=5);assert.ok(lines.length>1);
 });
+test('short share URLs render movie metadata and saved context without a query string',async()=>{
+ const snapshot={v:1,id:671,why:'A warm adventure',brief:'Something magical'};let calls=[];
+ const data=await getPageData('/p/Abcdef123456',new URLSearchParams(),{fetcher:async url=>{calls.push(url);return {ok:true,status:200,json:async()=>url.includes('/reelbot/shares/') ? snapshot : movie};}});
+ assert.equal(data.path,'/p/Abcdef123456');assert.match(data.title,/Tonight’s pick/);assert.match(data.content,/The request/);assert.match(data.content,/Why ReelBot chose it/);assert.equal(calls.length,2);
+ const missing=await getPageData('/p/bad',new URLSearchParams());assert.equal(missing.status,404);
+});

@@ -1178,3 +1178,59 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
  .pick-refine-more { align-self: flex-start; }
  .pick-share-dialog { padding: 24px; }
 }
+/* Keep Save and Share in one utility row whenever the title column has room. */
+.pick-result-stage--shareable .pick-movie-utilities { width: 100%; min-width: 0; }
+.pick-result-stage--shareable .pick-movie-utilities .taste-action-bar { flex: 0 0 auto; width: auto; }
+@media (max-width: 599px) {
+ .pick-result-stage--shareable .pick-movie-utilities { width: auto; }
+}
+/* Quiet, recognizable utilities and a single aligned refinement baseline. */
+.pick-result-stage--shareable .pick-movie-utilities { gap: 8px; margin: 2px 0 16px; }
+.pick-result-stage--shareable .pick-movie-utilities .taste-action-button,
+.pick-result-stage--shareable .pick-share-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 7px 10px; border: 1px solid var(--rb-line); border-radius: 7px; line-height: 1.2; font-size: .78rem; width: auto; box-sizing: border-box; }
+.pick-result-stage--shareable .pick-movie-utilities .taste-action-button.is-active { color: var(--rb-gold); border-color: #eac66d66; }
+.pick-result-stage--shareable .pick-companion-actions { align-items: flex-start; }
+.pick-result-stage--shareable .pick-adjust-chip,
+.pick-result-stage--shareable .pick-refine-more summary { display: inline-flex; align-items: center; justify-content: center; height: 40px; min-height: 40px; padding: 8px 13px; margin: 0; box-sizing: border-box; line-height: 1.2; font-size: .8rem; }
+.pick-result-stage--shareable .pick-refine-more { margin: 0; padding: 0; align-self: flex-start; }
+.pick-result-stage--shareable .pick-refine-more summary { gap: 6px; list-style: none; cursor: pointer; }
+.pick-refine-more summary::-webkit-details-marker { display: none; }
+.pick-refine-more[open] summary svg { transform: rotate(180deg); }
+.pick-share-dialog .pick-share-close { display: inline-flex; align-items: center; justify-content: center; width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; border: 0; background: none; box-shadow: none; color: var(--rb-muted); }
+.pick-share-preview-label { display: block; font-size: .65rem; color: var(--rb-faint); letter-spacing: .08em; margin-bottom: 6px; }
+.pick-share-preview strong { display: block; line-height: 1.35; }
+.pick-share-preview p { margin: 6px 0 0; }
+.pick-share-option { padding-block: 10px; margin-top: 18px; border-top: 1px solid var(--rb-line); align-items: flex-start; }
+.pick-share-option input { flex: 0 0 auto; margin: 2px 0 0; }
+.pick-share-option small { display: block; color: var(--rb-muted); font-size: .75rem; margin-top: 4px; }
+.pick-share-link-preview { padding: 12px 14px; border: 1px solid var(--rb-line); border-radius: 8px; color: var(--rb-text); background: #0b1016; font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
+.pick-share-dialog .pick-share-dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center; margin-top: 14px; }
+.pick-share-dialog-actions > button { width: 100%; min-height: 44px; margin: 0; box-sizing: border-box; justify-content: center; }
+.pick-share-dialog-actions > button:not(.reelbot-inline-button--solid) { color: var(--rb-text); background: transparent; border: 1px solid var(--rb-line); }
+.pick-share-open-link { color: var(--rb-muted); text-align: center; text-decoration: none; font-size: .8rem; padding: 12px 4px; }
+.pick-share-dialog .pick-share-feedback { margin: 14px 0 0; line-height: 1.5; color: var(--rb-muted); font-size: .8rem; }
+.pick-share-retry { border: 0; background: none; color: var(--rb-gold); padding: 8px; font: inherit; cursor: pointer; }
+/* The recipient reads the request and reason beside the movie, before extra detail. */
+.shared-pick-page .detail-hero { align-items: start; }
+.shared-pick-page .detail-eyebrow { color: var(--rb-gold); font-size: .75rem; letter-spacing: .08em; }
+.shared-pick-page .detail-genres, .shared-pick-page .detail-director-line { display: none; }
+.shared-pick-page .shared-pick-context { border: 0; padding: 0; margin: 22px 0; }
+.shared-pick-context .shared-pick-request h2, .shared-pick-context .shared-pick-reason h2 { margin: 0 0 8px; font: 600 .8rem/1.4 var(--rb-sans); color: var(--rb-gold); }
+.shared-pick-request { margin-bottom: 22px; }
+.shared-pick-request blockquote { margin: 0; padding: 0; border: 0; color: var(--rb-text); font-size: clamp(1rem,1.6vw,1.2rem); line-height: 1.5; overflow-wrap: anywhere; }
+.shared-pick-context .shared-pick-reason p { font-size: 1rem; line-height: 1.65; margin: 0; }
+.shared-pick-next { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; margin: 4px 0 28px; padding: 18px 0; border-block: 1px solid var(--rb-line); }
+.shared-pick-next p { margin: 0; color: var(--rb-muted); font-size: .9rem; }
+.shared-pick-next a { color: var(--rb-gold); font-size: .9rem; text-decoration: none; }
+.shared-pick-next .shared-pick-full-details { margin-left: auto; color: var(--rb-muted); font-size: .8rem; }
+@media(max-width:599px) {
+ .pick-result-stage--shareable .pick-movie-utilities { gap: 6px; margin: 4px 0 0; }
+ .pick-result-stage--shareable .pick-movie-utilities button { min-height: 36px; font-size: .75rem; padding: 7px 8px; }
+ .pick-share-dialog { width: calc(100% - 24px); padding: 24px 20px; }
+ .shared-pick-page .shared-pick-context { grid-column: 1 / -1; margin-top: 20px; }
+ .shared-pick-next .shared-pick-full-details { width: 100%; margin: 4px 0 0; }
+}
+@media(max-width:599px) {
+ .shared-pick-page .shared-pick-context { grid-row: 2; }
+ .shared-pick-page .detail-hero-actions { grid-row: 3; }
+}

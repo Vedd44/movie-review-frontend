@@ -148,7 +148,7 @@ function PickResultPanel({
                 ) : null}
               </div>
               {showCompanion ? <div className="pick-movie-utilities">
-                <TasteActionBar movie={primaryMovie} compact disabled={refreshDisabled} showSeenAction={false} showSkipAction={false} showVibeAction={false} />
+                <TasteActionBar movie={primaryMovie} compact showSaveIcon disabled={refreshDisabled} showSeenAction={false} showSkipAction={false} showVibeAction={false} />
                 {primaryActionLabel === "Watch trailer" && onPrimaryAction ? <button className="pick-share-trigger" type="button" onClick={onPrimaryAction}>Watch trailer</button> : null}
                 <SharePick movie={primaryMovie} why={rationale?.summaryLine || rationale?.decisionSentence || primaryMovie.reason || ''} prompt={sharePrompt} disabled={refreshDisabled} />
               </div> : null}
@@ -157,7 +157,7 @@ function PickResultPanel({
               <div className="pick-result-actions-block">
                 <div className="pick-primary-actions">
                   <div className="pick-primary-action-row pick-primary-action-row--primary">
-                    {showCompanion ? <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="reelbot-inline-button reelbot-inline-button--solid pick-primary-main-action">View details</Link> : null}
+                    {showCompanion ? <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="reelbot-inline-button reelbot-inline-button--solid pick-primary-main-action" onClick={event => { if (primaryActionLabel === "View details" && onPrimaryAction) { event.preventDefault(); onPrimaryAction(); } else trackProductEvent("pick_details_clicked", { movie_id: Number(primaryMovie.id) }); }}>View details</Link> : null}
                     {primaryActionLabel && onPrimaryAction && !showCompanion ? (
                       <button type="button" className="reelbot-inline-button reelbot-inline-button--solid pick-primary-main-action" onClick={onPrimaryAction}>
                         {primaryActionLabel}

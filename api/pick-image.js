@@ -28,8 +28,16 @@ module.exports = async (req,res) => {
     const mark = fs.readFileSync(path.join(process.cwd(),'public/brand/reelbot-icon.svg'));
     layers.push({input:await sharp(mark).resize(42,48).png().toBuffer(),left:452,top:70});
     const lines = titleLines(movie.title);
-    const overlay = Buffer.from(`<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg"><text x="510" y="106" fill="#f4c55e" font-family="sans-serif" font-size="32" font-weight="700">ReelBot</text><text x="452" y="192" fill="#b7b8bc" font-family="sans-serif" font-size="22" letter-spacing="3">TONIGHT’S PICK</text>${lines.map((line,i)=>`<text x="450" y="${261+i*57}" fill="#f7f3ea" font-family="sans-serif" font-weight="700" font-size="49">${escape(line)}</text>`).join('')}<text x="452" y="573" fill="#b7b8bc" font-family="sans-serif" font-size="23">A movie worth making time for.</text></svg>`);
-    layers.push({input:overlay,left:0,top:0});
+    const fontfile = path.join(process.cwd(),'server/assets/reelbot-share.ttf');
+    async function addText(text, size, color, left, top, bold = false) {
+      const markup = `<span foreground="${color}"${bold ? ' weight="bold"' : ''}>${escape(text)}</span>`;
+      const input = await sharp({text:{text:markup,font:`DejaVu Sans ${size}`,fontfile,rgba:true,dpi:72}}).png().toBuffer();
+      layers.push({input,left,top});
+    }
+    await addText('ReelBot',32,'#f4c55e',510,78,true);
+    await addText('TONIGHT’S PICK',22,'#b7b8bc',452,173);
+    for (let i=0;i<lines.length;i++) await addText(lines[i],49,'#f7f3ea',450,222+i*57,true);
+    await addText('A movie worth making time for.',23,'#b7b8bc',452,552);
     const image = await sharp({create:{width:1200,height:630,channels:4,background:'#0b0e12'}}).composite(layers).jpeg({quality:90}).toBuffer();
     res.setHeader('Content-Type','image/jpeg'); res.setHeader('Cache-Control','public, max-age=3600, s-maxage=86400');
     return res.status(200).send(image);

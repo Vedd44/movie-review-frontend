@@ -291,6 +291,7 @@ function AppShell() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/how-reelbot-works" element={<HowReelbotWorks />} />
+              <Route path="/p/:shareId" element={<MovieDetails />} />
               <Route path="/movie-night" element={<MovieNight />} />
               <Route path="/movie/:legacyMovieId" element={<MovieDetails />} />
               <Route path="/movies/:legacyMovieId/:legacySlug" element={<MovieDetails />} />

@@ -217,3 +217,17 @@ test.each([[404, 'Movie not found'], [503, 'Unable to load this movie']])('movie
   expect(await screen.findByRole('heading',{name:title})).toBeInTheDocument();
   if (status === 503) expect(screen.getByRole('button',{name:'Try again'})).toBeInTheDocument();
 });
+
+ test("short shared pick puts the request and reason under the movie facts without redirecting", async () => {
+  axios.get.mockImplementation((url) => Promise.resolve(
+    String(url).includes("/reelbot/shares/") ? {data:{v:1,id:679,brief:"Tense science fiction for tonight",why:"*Aliens* fits the request with tactical tension."}} :
+    String(url).includes("/reelbot-take") ? {data:{take:generatedTake}} : {data:movie}
+  ));
+  render(<MemoryRouter initialEntries={["/p/Abcdef123456"]}><Routes><Route path="/p/:shareId" element={<><MovieDetails/><LocationProbe/></>} /></Routes></MemoryRouter>);
+  expect(await screen.findByText("Why ReelBot chose it")).toBeInTheDocument();
+  expect(screen.getByText("The request")).toBeInTheDocument();
+  expect(screen.getByText(/Tense science fiction for tonight/)).toBeInTheDocument();
+  expect(screen.getAllByText("Aliens", {selector:"em"}).length).toBeGreaterThan(0);
+  expect(screen.getByTestId("location")).toHaveTextContent("/p/Abcdef123456");
+  expect(screen.queryByText(movie.description)).not.toBeInTheDocument();
+ });
