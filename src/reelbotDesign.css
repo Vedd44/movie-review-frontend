@@ -1238,3 +1238,9 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .pick-share-dialog .pick-share-dialog-actions .reelbot-inline-button--solid,
 .pick-share-dialog .pick-share-dialog-actions .reelbot-inline-button--solid:hover,
 .pick-share-dialog .pick-share-dialog-actions .reelbot-inline-button--solid:focus-visible { color: #201b10; }
+
+/* Keep all share-preview copy beside the poster, including wrapped titles. */
+.pick-share-dialog .pick-share-preview { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: start; }
+.pick-share-dialog .pick-share-preview > div { min-width: 0; overflow-wrap: anywhere; }
+.pick-share-dialog .pick-share-preview img { display: block; width: 72px; height: 108px; }
+.pick-share-dialog .pick-share-preview .pick-share-note { margin: 14px 0 0; font-size: .78rem; }
