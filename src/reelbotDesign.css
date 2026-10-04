@@ -1234,3 +1234,7 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
  .shared-pick-page .shared-pick-context { grid-row: 2; }
  .shared-pick-page .detail-hero-actions { grid-row: 3; }
 }
+/* Keep the dialog's primary action legible against its gold background. */
+.pick-share-dialog .pick-share-dialog-actions .reelbot-inline-button--solid,
+.pick-share-dialog .pick-share-dialog-actions .reelbot-inline-button--solid:hover,
+.pick-share-dialog .pick-share-dialog-actions .reelbot-inline-button--solid:focus-visible { color: #201b10; }
