@@ -1,5 +1,7 @@
 import ArtworkFallback from "./ArtworkFallback";
 import PickCompanion from "./PickCompanion";
+import SharePick from "./SharePick";
+import MovieCopy from "./MovieCopy";
 import React, { useEffect, useMemo, useState } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
@@ -57,6 +59,7 @@ function PickResultPanel({
   showSessionPlaceholder = false,
   refineStatusLabel = "",
   showCompanion = false,
+  sharePrompt = "",
   tasteActionProps = {},
   loadingCopy = "",
 }) {
@@ -88,7 +91,7 @@ function PickResultPanel({
   const bestFitLabel = rationale?.fitLabel || "Best fit";
 
   return (
-    <div id={id} className={`pick-result-stage${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
+    <div id={id} className={`pick-result-stage${showCompanion ? " pick-result-stage--shareable" : ""}${primaryMovie ? " is-live" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
       {!hasPrimaryMovie && error && !shouldShowFallbackState ? <p className="error-message">{error}</p> : null}
 
       {!error && shouldShowStandaloneLoading ? (
@@ -131,7 +134,7 @@ function PickResultPanel({
               </h3>
               <div className="pick-primary-fit-row">
                 <span className="pick-primary-fit-label">{bestFitLabel}</span>
-                {rationale?.summaryLine ? <p className="pick-primary-hook">{rationale.summaryLine}</p> : null}
+                {rationale?.summaryLine ? <p className="pick-primary-hook"><MovieCopy titles={[primaryMovie.title]}>{rationale.summaryLine}</MovieCopy></p> : null}
               </div>
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
@@ -144,12 +147,18 @@ function PickResultPanel({
                   <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
                 ) : null}
               </div>
+              {showCompanion ? <div className="pick-movie-utilities">
+                <TasteActionBar movie={primaryMovie} compact disabled={refreshDisabled} showSeenAction={false} showSkipAction={false} showVibeAction={false} />
+                {primaryActionLabel === "Watch trailer" && onPrimaryAction ? <button className="pick-share-trigger" type="button" onClick={onPrimaryAction}>Watch trailer</button> : null}
+                <SharePick movie={primaryMovie} why={rationale?.summaryLine || rationale?.decisionSentence || primaryMovie.reason || ''} prompt={sharePrompt} disabled={refreshDisabled} />
+              </div> : null}
               <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
 
               <div className="pick-result-actions-block">
                 <div className="pick-primary-actions">
                   <div className="pick-primary-action-row pick-primary-action-row--primary">
-                    {primaryActionLabel && onPrimaryAction ? (
+                    {showCompanion ? <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="reelbot-inline-button reelbot-inline-button--solid pick-primary-main-action">View details</Link> : null}
+                    {primaryActionLabel && onPrimaryAction && !showCompanion ? (
                       <button type="button" className="reelbot-inline-button reelbot-inline-button--solid pick-primary-main-action" onClick={onPrimaryAction}>
                         {primaryActionLabel}
                       </button>
@@ -159,7 +168,7 @@ function PickResultPanel({
                         {refreshLabel}
                       </button>
                     ) : null}
-                    <TasteActionBar
+                    {!showCompanion ? <TasteActionBar
                       movie={primaryMovie}
                       vibeLabel={vibeLabel}
                       compact
@@ -167,7 +176,7 @@ function PickResultPanel({
                       showVibeAction={false}
                       {...tasteActionProps}
                       buttonClassName="pick-primary-secondary-action"
-                    />
+                    /> : null}
                     {onResetChoices ? (
                       <button
                         type="button"
@@ -182,7 +191,7 @@ function PickResultPanel({
                   {refreshExhaustionMessage ? (
                     <p className="pick-refresh-hint">{refreshExhaustionMessage}</p>
                   ) : null}
-                  {showDetailLink ? (
+                  {!showCompanion && showDetailLink ? (
                     <div className="pick-primary-action-row pick-primary-action-row--detail">
                       <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="pick-primary-detail-link">
                         {detailActionLabel}
@@ -266,7 +275,7 @@ function PickResultPanel({
                             <span className="movie-card-chip movie-card-chip--availability">{availabilityStatus.label}</span>
                           </div>
                         ) : null}
-                        {backupMeta.shortLine ? <p className="pick-backup-reason detail-secondary-text">{backupMeta.shortLine}</p> : null}
+                        {backupMeta.shortLine ? <p className="pick-backup-reason detail-secondary-text"><MovieCopy titles={[movie.title, primaryMovie.title]}>{backupMeta.shortLine}</MovieCopy></p> : null}
                       </div>
                     </article>
                   );

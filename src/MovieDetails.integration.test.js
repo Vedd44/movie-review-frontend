@@ -165,7 +165,7 @@ test("keeps the movie page available when Take generation fails", async () => {
   );
 
   expect(await screen.findByRole("heading", { name: "Aliens" })).toBeInTheDocument();
-  expect(await screen.findByText(/fuller viewing read for Aliens is temporarily unavailable/i)).toBeInTheDocument();
+  expect(await screen.findByText((_, element) => element?.className === "detail-take-assessment" && /fuller viewing read for Aliens is temporarily unavailable/i.test(element.textContent))).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Where to Watch" })).toBeInTheDocument();
 });
 

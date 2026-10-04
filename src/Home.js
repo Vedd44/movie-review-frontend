@@ -2040,6 +2040,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             rationale={resultRationale}
             summary={null}
             primaryMovie={activePick}
+            sharePrompt={originalPickPrompt}
             backupMovies={visibleBackupPicks}
             vibeLabel={pickVibeLabel}
             emptyCopy="Nothing here yet. Tell ReelBot what you want to watch."

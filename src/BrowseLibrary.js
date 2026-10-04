@@ -384,7 +384,7 @@ function BrowseLibrary() {
         });
       } else {
         trackProductEvent("recommendation_returned", { page: "browse", latency_ms: Date.now() - startedAt, outcome: response.data?.performance?.outcome || "pick" });
-        setPickResult(normalizedPayload);
+        setPickResult({ ...normalizedPayload, sharePrompt: nextPreferences.prompt });
         setSwapQueue(buildSwapQueueFromPayload(normalizedPayload));
         setCandidatePoolIds(Array.isArray(normalizedPayload.candidate_pool_ids) ? normalizedPayload.candidate_pool_ids : []);
         setRefinementState(normalizedPayload.resolved_refinement || options.refinement || null);
@@ -610,6 +610,7 @@ function BrowseLibrary() {
                 rationale={libraryRationale}
                 summary={null}
                 primaryMovie={pickResult?.primary}
+                sharePrompt={pickResult?.sharePrompt || ""}
                 backupMovies={pickResult?.alternates || []}
                 vibeLabel={libraryVibeLabel}
                 emptyCopy="Let ReelBot choose from these filters, or add one detail."

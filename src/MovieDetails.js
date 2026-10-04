@@ -1,3 +1,5 @@
+import MovieCopy from "./components/MovieCopy";
+import { parseSharedPick } from "./sharedPick";
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -137,12 +139,14 @@ function CastAndDetails({ movie }) {
   );
 }
 
+
 function MovieDetails() {
   const [showFullSynopsis, setShowFullSynopsis] = useState(false);
   const { legacyMovieId, movieSlug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [movie, setMovie] = useState(null);
+  const sharedPick = useMemo(() => parseSharedPick(location.search, movie?.id), [location.search, movie?.id]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [genericTake, setGenericTake] = useState(null);
@@ -307,13 +311,13 @@ function MovieDetails() {
   }, [movie, movieDescription]);
 
   usePageMetadata({
-    title: movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
-    description: movie ? `Explore ${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.` : "Explore movie details, cast, runtime, where to watch, ReelBot’s take, and similar movies.",
-    path: movie ? getMoviePath(movie) : location.pathname,
+    title: sharedPick && movie ? `Tonight’s pick: ${movie.title} | ReelBot` : movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
+    description: sharedPick ? (sharedPick.brief ? `Picked by ReelBot for: ${sharedPick.brief}` : "A movie worth making time for. Picked by ReelBot.") : movie ? `Explore ${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.` : "Explore movie details, cast, runtime, where to watch, ReelBot’s take, and similar movies.",
+    path: movie ? getMoviePath(movie) + (sharedPick ? location.search : "") : location.pathname,
     enabled: !loading,
-    robots: error ? "noindex,follow" : "index,follow",
+    robots: error || sharedPick ? "noindex,follow" : "index,follow",
     type: "video.movie",
-    image: movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
+    image: sharedPick ? `/api/pick-image?movie=${sharedPick.id}` : movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
     structuredData: detailStructuredData,
   });
 
@@ -346,11 +350,12 @@ function MovieDetails() {
           {canTryAnother ? <button type="button" className="detail-text-action detail-topbar-return" onClick={backToPick}>Back to your pick</button> : null}
         </nav>
 
+
         <section className="detail-hero" style={movie.backdrop_path ? { backgroundImage: `linear-gradient(90deg, rgba(8, 11, 22, 0.92), rgba(8, 11, 22, 0.78)), url(https://image.tmdb.org/t/p/w1280${movie.backdrop_path})` } : undefined}>
           <div className="detail-poster-column">{movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} srcSet={`https://image.tmdb.org/t/p/w185${movie.poster_path} 185w, https://image.tmdb.org/t/p/w500${movie.poster_path} 500w`} sizes="(max-width: 599px) 100px, (max-width: 900px) 230px, 260px" alt={`${movie.title} poster`} className="detail-poster" width="500" height="750" fetchPriority="high" decoding="async" /> : <ArtworkFallback className="detail-poster no-poster" />}</div>
           <div className="detail-content-column">
             <div className="detail-identity">
-              {previewMode ? <div className="detail-eyebrow">Coming Soon</div> : null}
+              {sharedPick ? <div className="detail-eyebrow">Picked by ReelBot</div> : previewMode ? <div className="detail-eyebrow">Coming Soon</div> : null}
               <div className="detail-title-row">
                 <h1 className="movie-title detail-title">{movie.title}</h1>
                 {isSuperAdmin ? (
@@ -383,6 +388,8 @@ function MovieDetails() {
           </div>
         </section>
 
+        {sharedPick ? <section className="shared-pick-context" aria-label="Shared ReelBot pick"><p className="pick-share-eyebrow">PICKED BY REELBOT</p><h2>A movie for tonight.</h2>{sharedPick.brief ? <div><h3>The brief</h3><p>{sharedPick.brief}</p></div> : null}{sharedPick.why ? <div><h3>Why this fits</h3><p><MovieCopy titles={[movie.title]}>{sharedPick.why}</MovieCopy></p></div> : null}<Link className="detail-text-action" to="/#pick-for-me">Find your own movie <span aria-hidden="true">→</span></Link></section> : null}
+
         <section className="detail-info-card detail-reelbot-take">
           <div className="detail-section-head"><img className="detail-take-mark" src="/brand/reelbot-icon.svg" width="24" height="28" alt="" aria-hidden="true" /><h2 className="detail-section-title">{reelbotTake.heading}</h2></div>
           {genericTakeLoading && !reelbotTake.hasReliableProvenance ? (
@@ -391,10 +398,10 @@ function MovieDetails() {
             </div>
           ) : (
             <>
-              <p className="detail-take-assessment">{reelbotTake.assessment}</p>
+              <p className="detail-take-assessment"><MovieCopy titles={[movie.title]}>{reelbotTake.assessment}</MovieCopy></p>
               <dl className="detail-take-fit">
-                <div><dt>Good fit if</dt><dd>{reelbotTake.goodFit}</dd></div>
-                <div><dt>Maybe not if</dt><dd>{reelbotTake.maybeNot}</dd></div>
+                <div><dt>Good fit if</dt><dd><MovieCopy titles={[movie.title]}>{reelbotTake.goodFit}</MovieCopy></dd></div>
+                <div><dt>Maybe not if</dt><dd><MovieCopy titles={[movie.title]}>{reelbotTake.maybeNot}</MovieCopy></dd></div>
               </dl>
             </>
           )}

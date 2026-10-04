@@ -1,4 +1,5 @@
 const copy = require('../src/productCopy');
+const { parseSharedPick } = require('../src/sharedPick');
 const ORIGIN = 'https://reelbot.movie';
 const API = 'https://movie-review-backend-zevb.onrender.com';
 const DEFAULT_IMAGE = `${ORIGIN}/brand/reelbot-social.png`;
@@ -79,6 +80,10 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     if (!m?.id || !m.canonical_slug) return missing(path);
     const canonicalPath = moviePath(m);
     if (path !== canonicalPath) return {redirect:canonicalPath};
+    const shared = parseSharedPick(params.toString(), m.id);
+    if (shared) return {path: `${path}?${new URLSearchParams({pick: JSON.stringify(shared)})}`, title: `Tonight’s pick: ${m.title} | ReelBot`, heading:m.title,
+      description:shared.brief ? `Picked by ReelBot for: ${shared.brief}` : 'A movie worth making time for. Picked by ReelBot.', robots:'noindex,follow', privatePage:true,
+      image:`${ORIGIN}/api/pick-image?movie=${m.id}`, content:`<p>Picked by ReelBot</p>${shared.brief ? `<h2>The brief</h2><p>${escapeHtml(shared.brief)}</p>` : ''}${shared.why ? `<h2>Why this fits</h2><p>${escapeHtml(shared.why)}</p>` : ''}<p>${link(path,'Movie details')}. ${link('/#pick-for-me','Find your own movie')}</p>`};
     const year = m.release_year || m.release_date?.slice(0,4);
     const title = `${m.title}${year ? ` (${year})` : ''}: Cast, Where to Watch & More | ReelBot`;
     const description = `Explore ${m.title}${year ? ` (${year})` : ''}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.`;

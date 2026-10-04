@@ -1,6 +1,10 @@
 {
   "redirects": [
-    { "source": "/index.html", "destination": "/", "permanent": true }
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    }
   ],
   "rewrites": [
     {
@@ -66,6 +70,10 @@
   "functions": {
     "api/page.js": {
       "includeFiles": "server/generated/**",
+      "maxDuration": 30
+    },
+    "api/pick-image.js": {
+      "includeFiles": "public/brand/reelbot-icon.svg",
       "maxDuration": 30
     }
   }

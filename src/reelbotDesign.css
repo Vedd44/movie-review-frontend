@@ -1129,3 +1129,52 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .pick-refine-more > div { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 8px; }
 
 .home-result-section > .section-header > div { width: 100%; min-width: 0; }
+
+/* One action hierarchy on every shareable picker. */
+.pick-result-stage--shareable .pick-primary-title { order: 0; }
+.pick-result-stage--shareable .pick-primary-content .movie-card-meta { order: 1; margin: 0 0 4px; }
+.pick-movie-utilities { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; order: 2; margin-bottom: 18px; }
+.pick-movie-utilities .taste-action-bar { margin: 0; }
+.pick-movie-utilities .taste-action-button, .pick-share-trigger { min-height: 44px; padding: 8px 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--rb-muted); font: inherit; font-size: .8rem; cursor: pointer; }
+.pick-share-trigger { display: inline-flex; align-items: center; gap: 7px; }
+.pick-movie-utilities button:hover { color: var(--rb-gold); }
+.pick-result-stage--shareable .pick-primary-fit-row { order: 3; }
+.pick-result-stage--shareable .pick-primary-content > .provider-badge-row { order: 4; }
+.pick-result-stage--shareable .pick-result-actions-block { order: 5; }
+.pick-result-stage--shareable .pick-primary-action-row--primary { display: flex; flex-wrap: wrap; gap: 10px; }
+.pick-result-stage--shareable .pick-primary-main-action { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; text-decoration: none; }
+.pick-result-stage--shareable .pick-result-reset { flex: 0 0 auto; border: 0; background: none; color: var(--rb-muted); padding-inline: 8px; box-shadow: none; }
+.pick-result-stage--shareable .pick-feedback-row { margin-top: 8px; }
+.pick-result-stage--shareable .pick-feedback-row .taste-action-bar { width: auto; gap: 20px; }
+.pick-result-stage--shareable .pick-feedback-row .taste-action-button { width: auto; min-height: 44px; margin: 0; }
+.pick-share-dialog { box-sizing: border-box; width: min(480px, calc(100% - 32px)); max-height: calc(100dvh - 48px); overflow: auto; padding: 28px; border: 1px solid var(--rb-line); border-radius: 16px; color: var(--rb-text); background: #11161c; box-shadow: 0 20px 80px #0008; }
+.pick-share-dialog::backdrop { background: #000b; }
+.pick-share-dialog h2 { margin: 8px 0 22px; font-size: 1.55rem; }
+.pick-share-close { position: absolute; right: 12px; top: 10px; width: 44px; height: 44px; background: none; border: 0; color: var(--rb-muted); font-size: 1.6rem; cursor: pointer; }
+.pick-share-eyebrow { margin: 0; color: var(--rb-gold); font-size: .7rem; letter-spacing: .1em; }
+.pick-share-preview { display: flex; align-items: center; gap: 18px; }
+.pick-share-preview img { width: 72px; height: 108px; border-radius: 5px; object-fit: cover; }
+.pick-share-preview strong { font-size: 1.1rem; }
+.pick-share-preview p, .pick-share-note { color: var(--rb-muted); font-size: .85rem; line-height: 1.5; }
+.pick-share-option { display: flex; gap: 10px; align-items: center; min-height: 44px; margin-top: 16px; font-size: .875rem; }
+.pick-share-option input { accent-color: var(--rb-gold); width: 18px; height: 18px; }
+.pick-share-dialog blockquote { margin: 8px 0 16px; border-left: 2px solid var(--rb-gold); padding-left: 14px; font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
+.pick-share-dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.pick-share-dialog [role=status] { font-size: .8rem; line-height: 1.5; }
+.shared-pick-context { border-block: 1px solid var(--rb-line); padding: 24px 0; margin-bottom: 24px; }
+.shared-pick-context h2 { margin: 10px 0 20px; font-size: 1.5rem; }
+.shared-pick-context h3 { font-size: .75rem; color: var(--rb-gold); margin: 16px 0 6px; }
+.shared-pick-context p:not(.pick-share-eyebrow) { max-width: 70ch; font-size: .95rem; line-height: 1.65; overflow-wrap: anywhere; }
+@media (max-width: 599px) {
+ .pick-result-stage--shareable .pick-primary-card { grid-template-rows: auto auto auto auto; column-gap: 16px; row-gap: 10px; }
+ .pick-result-stage--shareable .pick-primary-poster-link { grid-row: 1 / 4; }
+ .pick-result-stage--shareable .pick-movie-utilities { grid-column: 2; grid-row: 3; margin: 0; gap: 0 14px; align-self: start; }
+ .pick-result-stage--shareable .pick-movie-utilities .taste-action-bar { display: flex; }
+ .pick-result-stage--shareable .pick-primary-fit-row { grid-row: 4; margin-top: 14px; }
+ .pick-result-stage--shareable .pick-primary-action-row--primary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+ .pick-result-stage--shareable .pick-primary-action-row--primary > a, .pick-result-stage--shareable .pick-primary-action-row--primary > button { width: 100%; min-width: 0; box-sizing: border-box; font-size: .8rem; padding-inline: 8px; }
+ .pick-result-stage--shareable .pick-result-reset { grid-column: 1 / -1; justify-self: start; width: auto !important; min-height: 40px; padding-left: 0 !important; text-align: left; }
+ .pick-result-stage--shareable .pick-companion { padding-top: 16px; margin-top: 18px; }
+ .pick-refine-more { align-self: flex-start; }
+ .pick-share-dialog { padding: 24px; }
+}
