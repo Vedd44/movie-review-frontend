@@ -10,6 +10,17 @@ import { API_BASE_URL, formatMovieDate, getMoviePath, getPersonPath } from "./di
 import { buildBreadcrumbJsonLd, buildItemListJsonLd, usePageMetadata } from "./seo";
 import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 
+// Cast role descriptions can contain job titles. Classify the Actor prefix
+// before examining crew jobs so character names never become crew credits.
+const getCreditRole = (role) => {
+  const credit = String(role || "").trim();
+  if (/^Actor(?::|$)/i.test(credit)) return "Actor";
+  if (/^Director$/i.test(credit)) return "Director";
+  if (/Produc/i.test(credit)) return "Producer";
+  if (/Writ|Screenplay|Story/i.test(credit)) return "Writer";
+  return null;
+};
+
 const getCreditTime = (movie) => {
   const date = movie?.release_date ? new Date(movie.release_date) : null;
   return date instanceof Date && !Number.isNaN(date.getTime()) ? date.getTime() : null;
@@ -93,11 +104,8 @@ function PersonDetails() {
     const roles = new Set();
     (person?.movie_credits || []).forEach((movie) => {
       (movie.roles || []).forEach((role) => {
-        const normalized = String(role || "");
-        if (/^Actor(?::|$)/i.test(normalized)) roles.add("Actor");
-        else if (/Director/i.test(normalized)) roles.add("Director");
-        else if (/Produc/i.test(normalized)) roles.add("Producer");
-        else if (/Writ|Screenplay|Story/i.test(normalized)) roles.add("Writer");
+        const category = getCreditRole(role);
+        if (category) roles.add(category);
       });
     });
     return ["Actor", "Director", "Producer", "Writer"].filter((role) => roles.has(role));
@@ -110,7 +118,7 @@ function PersonDetails() {
       const appearanceOnly = roles.length && roles.every(role => /^Actor:.*(?:\bSelf\b|\bHimself\b|\bHerself\b|archive footage)/i.test(role));
       if (!includeAppearances && appearanceOnly) return false;
       const roleMatch = roleFilter === "all"
-        || roles.some((role) => roleFilter === "Actor" ? /^Actor(?::|$)/i.test(role) : roleFilter === "Writer" ? /Writ|Screenplay|Story/i.test(role) : new RegExp(roleFilter, "i").test(role));
+        || roles.some((role) => getCreditRole(role) === roleFilter);
       const time = getCreditTime(movie);
       const releaseMatch = releaseFilter === "all"
         || (releaseFilter === "upcoming" ? time === null || time > now : time !== null && time <= now);

@@ -60,3 +60,30 @@ test('a missing portrait and biography do not block a one-film filmography', asy
   expect(screen.queryByRole('button',{name:'Read biography'})).not.toBeInTheDocument();
   expect(screen.getByRole('link',{name:'Open Aliens'})).toBeInTheDocument();
 });
+
+test('character job titles do not count as crew roles, while genuine mixed credits remain', async () => {
+  axios.get.mockResolvedValue({data:{...person,name:'Steven Spielberg',canonical_slug:'steven-spielberg',movie_credits:[
+    {id:817,title:'Austin Powers in Goldmember',release_date:'2002-07-26',roles:["Actor: Steven Spielberg / Famous Director ('Austinpussy')"]},
+    {id:100,title:'Acting Cameo',release_date:'2000-01-01',roles:['Actor: Producer and Screenwriter']},
+    {id:101,title:'War Horse',release_date:'2011-12-25',roles:['Director','Producer']},
+    {id:102,title:'Acts and Directs',release_date:'2001-01-01',roles:['Actor: Director','Director']},
+    {id:103,title:'Written Film',release_date:'2001-01-01',roles:['Screenplay']},
+    {id:104,title:'Assistant Credit',release_date:'2001-01-01',roles:['First Assistant Director']},
+  ]}});
+  render(<MemoryRouter initialEntries={['/people/steven-spielberg']}><Routes><Route path="/people/:personSlug" element={<PersonDetails/>}/></Routes></MemoryRouter>);
+  const role=await screen.findByRole('combobox',{name:'Filter by role'});
+  fireEvent.change(role,{target:{value:'Director'}});
+  expect(screen.queryByRole('link',{name:'Open Austin Powers in Goldmember'})).not.toBeInTheDocument();
+  expect(screen.queryByRole('link',{name:'Open Assistant Credit'})).not.toBeInTheDocument();
+  expect(screen.getByRole('link',{name:'Open War Horse'})).toBeInTheDocument();
+  expect(screen.getByRole('link',{name:'Open Acts and Directs'})).toBeInTheDocument();
+  fireEvent.change(role,{target:{value:'Actor'}});
+  expect(screen.getByRole('link',{name:'Open Austin Powers in Goldmember'})).toBeInTheDocument();
+  expect(screen.getByRole('link',{name:'Open Acts and Directs'})).toBeInTheDocument();
+  fireEvent.change(role,{target:{value:'Producer'}});
+  expect(screen.getByRole('link',{name:'Open War Horse'})).toBeInTheDocument();
+  expect(screen.queryByRole('link',{name:'Open Acting Cameo'})).not.toBeInTheDocument();
+  fireEvent.change(role,{target:{value:'Writer'}});
+  expect(screen.getByRole('link',{name:'Open Written Film'})).toBeInTheDocument();
+  expect(screen.queryByRole('link',{name:'Open Acting Cameo'})).not.toBeInTheDocument();
+});
