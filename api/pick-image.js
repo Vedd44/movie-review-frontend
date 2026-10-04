@@ -35,7 +35,7 @@ module.exports = async (req,res) => {
       layers.push({input,left,top});
     }
     await addText('ReelBot',32,'#f4c55e',510,78,true);
-    await addText('TONIGHT’S PICK',22,'#b7b8bc',452,173);
+    await addText('REELBOT’S PICK',22,'#b7b8bc',452,173);
     for (let i=0;i<lines.length;i++) await addText(lines[i],49,'#f7f3ea',450,222+i*57,true);
     await addText('A movie worth making time for.',23,'#b7b8bc',452,552);
     const image = await sharp({create:{width:1200,height:630,channels:4,background:'#0b0e12'}}).composite(layers).jpeg({quality:90}).toBuffer();

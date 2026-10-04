@@ -27,7 +27,7 @@ export default function SharePick({ movie, why = '', prompt = '', disabled = fal
   if(sharing || preparing || disabled || !sharedUrl)return;
   setSharing(true);setStatus('');
   try {
-   if(!copyOnly && nativeShare){await navigator.share({title:`Tonight’s pick: ${movie.title}`,text:`ReelBot picked ${movie.title} for me. What do you think?`,url:sharedUrl});setStatus('Shared');}
+   if(!copyOnly && nativeShare){await navigator.share({title:`ReelBot’s pick: ${movie.title}`,text:`ReelBot picked ${movie.title} for me. What do you think?`,url:sharedUrl});setStatus('Shared');}
    else if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(sharedUrl);setStatus('Link copied. Ready to send.');}
    else setStatus('Select the link above to copy it.');
    trackProductEvent('pick_shared',{movie_id:Number(movie.id),includes_request:includeRequest});

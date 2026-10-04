@@ -321,13 +321,13 @@ function MovieDetails() {
   }, [movie, movieDescription]);
 
   usePageMetadata({
-    title: sharedPick && movie ? `Tonight’s pick: ${movie.title} | ReelBot` : movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
+    title: sharedPick && movie ? `ReelBot’s pick: ${movie.title} | ReelBot` : movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
     description: sharedPick ? (sharedPick.brief ? `Picked by ReelBot for: ${sharedPick.brief}` : "A movie worth making time for. Picked by ReelBot.") : movie ? `Explore ${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.` : "Explore movie details, cast, runtime, where to watch, ReelBot’s take, and similar movies.",
     path: shareId ? location.pathname : movie ? getMoviePath(movie) + (sharedPick ? location.search : "") : location.pathname,
     enabled: !loading,
     robots: error || sharedPick ? "noindex,follow" : "index,follow",
     type: "video.movie",
-    image: sharedPick ? `/api/pick-image?movie=${sharedPick.id}&v=2` : movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
+    image: sharedPick ? `/api/pick-image?movie=${sharedPick.id}&v=3` : movie?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : movie?.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
     structuredData: detailStructuredData,
   });
 

@@ -12,13 +12,13 @@ test('shared movie has server-rendered metadata and escaped personal context; no
  const options={fetcher:async()=>({ok:true,status:200,json:async()=>movie})};
  const query=new URLSearchParams(sharedPickQuery(movie,'Warm adventure','<script>alert(1)</script>'));
  const data=await getPageData('/movies/harry-potter-2001',query,options);
- assert.match(data.title,/Tonight’s pick:/);assert.match(data.image,/pick-image\?movie=671/);
+ assert.match(data.title,/ReelBot’s pick:/);assert.match(data.image,/pick-image\?movie=671/);
  assert.equal(data.privatePage,true);assert.equal(data.robots,'noindex,follow');
  assert.match(data.content,/&lt;script&gt;/);assert.doesNotMatch(data.content,/<script>/);
  const html=renderPage('<html><head></head><body><div id="root"></div></body></html>',data);
  assert.match(html,/og:image/);assert.match(html,/twitter:card/);assert.match(html,/Why this fits/);
  const normal=await getPageData('/movies/harry-potter-2001',new URLSearchParams(),options);
- assert.doesNotMatch(normal.title,/Tonight’s pick/);assert.notEqual(normal.privatePage,true);
+ assert.doesNotMatch(normal.title,/ReelBot’s pick/);assert.notEqual(normal.privatePage,true);
 });
 test('preview contains true movie title with safe wrapping for long titles',()=>{
  const {titleLines}=require('../api/pick-image');
@@ -27,6 +27,6 @@ test('preview contains true movie title with safe wrapping for long titles',()=>
 test('short share URLs render movie metadata and saved context without a query string',async()=>{
  const snapshot={v:1,id:671,why:'A warm adventure',brief:'Something magical'};let calls=[];
  const data=await getPageData('/p/Abcdef123456',new URLSearchParams(),{fetcher:async url=>{calls.push(url);return {ok:true,status:200,json:async()=>url.includes('/reelbot/shares/') ? snapshot : movie};}});
- assert.equal(data.path,'/p/Abcdef123456');assert.match(data.title,/Tonight’s pick/);assert.match(data.content,/The request/);assert.match(data.content,/Why ReelBot chose it/);assert.equal(calls.length,2);
+ assert.equal(data.path,'/p/Abcdef123456');assert.match(data.title,/ReelBot’s pick/);assert.match(data.content,/The request/);assert.match(data.content,/Why ReelBot chose it/);assert.equal(calls.length,2);
  const missing=await getPageData('/p/bad',new URLSearchParams());assert.equal(missing.status,404);
 });
