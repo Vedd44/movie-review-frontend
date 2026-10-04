@@ -1068,3 +1068,64 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
     padding-inline: 24px;
   }
 }
+
+/* One result inset aligns the heading, status, movie and alternatives. */
+.home-result-section { --pick-inset: 32px; }
+.home-result-section > .section-header { padding: 28px var(--pick-inset) 0; }
+.home-page .home-result-section .pick-result-stage { padding: 24px var(--pick-inset) 32px; box-sizing: border-box; }
+.home-page .home-result-section .pick-result-stage.is-live .pick-primary-card--hero { padding: 0; }
+.home-result-section .pick-result-stage > .reelbot-loading-state { padding-inline: 0; }
+.pick-request-context { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-top: 14px; width: 100%; min-width: 0; }
+.pick-request-context > div { min-width: 0; }
+.pick-request-context span { font-size: .7rem; color: var(--rb-faint); text-transform: uppercase; letter-spacing: .08em; }
+.pick-request-context p { margin: 5px 0 0; font-size: .875rem; line-height: 1.5; color: var(--rb-muted); overflow-wrap: anywhere; }
+.pick-request-context button { flex: 0 0 auto; min-height: 44px; padding: 8px 0 8px 12px; border: 0; background: none; color: var(--rb-gold); font: inherit; font-size: .8rem; cursor: pointer; }
+.rb-intro--request-sent .rb-night-composer { display: none; }
+.rb-intro--request-sent .rb-intro-copy { display: block; }
+.rb-intro--request-sent { padding-block: 22px; }
+/* Refinement is for tonight; Watched/Not for me update future picks. */
+.pick-companion { padding: 20px 0 0; margin: 24px 0 0; border-top: 1px solid var(--rb-line); }
+.pick-adjust-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; }
+.pick-adjust-label { font-size: .75rem; color: var(--rb-muted); }
+.pick-companion-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick-adjust-chip { min-height: 40px; padding: 8px 13px; border: 1px solid var(--rb-line); border-radius: 999px; background: transparent; color: var(--rb-text); font: inherit; font-size: .8rem; cursor: pointer; }
+.pick-adjust-chip:hover { border-color: var(--rb-gold); color: var(--rb-gold); }
+.pick-feedback-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; }
+.pick-companion .taste-action-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 0; }
+.pick-companion .taste-action-button, .pick-share-link { border: 0; border-radius: 0; background: none; box-shadow: none; min-height: 44px; padding: 8px 0; color: var(--rb-muted); font: inherit; font-size: .8rem; cursor: pointer; }
+.pick-companion .taste-action-button.is-active { color: var(--rb-gold); }
+.pick-share-link { display: inline-flex; gap: 8px; align-items: center; }
+.pick-share-link:hover, .pick-companion .taste-action-button:hover { color: var(--rb-gold); }
+.pick-feedback-reasons { margin-top: 12px; padding: 14px 16px; border-left: 2px solid var(--rb-gold); background: var(--rb-surface); }
+.pick-feedback-reasons p { margin: 0 0 10px; font-size: .8rem; color: var(--rb-muted); }
+.pick-feedback-reasons .pick-companion-actions { margin-top: 10px; }
+.pick-share-status { display: flex; flex-wrap: wrap; gap: 12px; font-size: .8rem; color: var(--rb-muted); }
+.pick-companion button:disabled, .pick-request-context button:disabled { opacity: .5; cursor: default; }
+/* Optional Browse filters stay together behind one disclosure. */
+.browse-filter-disclosure { margin-top: 12px; }
+.browse-filter-disclosure summary { display: flex; align-items: center; gap: 12px; min-height: 44px; color: var(--rb-text); font-size: .85rem; cursor: pointer; list-style: none; }
+.browse-filter-disclosure summary::-webkit-details-marker { display: none; }
+.browse-filter-disclosure summary::after { content: '+'; margin-left: auto; color: var(--rb-muted); font-size: 1.2rem; }
+.browse-filter-disclosure[open] summary::after { content: '−'; }
+.browse-filter-disclosure summary span { font-size: .75rem; color: var(--rb-muted); }
+.browse-filter-disclosure .rb-browse-filters { margin-top: 12px; }
+.browse-library-page .library-discovery-controls { margin-bottom: 8px; }
+.browse-library-page .library-discovery-controls .browse-tabs--library { display: flex; flex-flow: row nowrap; gap: 20px; overflow-x: auto; }
+.browse-library-page .library-discovery-controls .browse-tabs--library button { flex: 0 0 auto; width: auto; min-height: 44px; padding: 10px 0; }
+.detail-reelbot-take .detail-take-cta { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; max-width: 100%; min-width: 0; white-space: normal; }
+.detail-take-cta-label { min-width: 0; overflow-wrap: anywhere; }
+.detail-take-cta > span:last-child { flex: 0 0 auto; }
+@media (max-width: 599px) {
+  .home-result-section { --pick-inset: 24px; }
+  .home-page .home-result-section .pick-result-stage { padding-top: 20px; }
+  .home-result-section .pick-result-stage > .reelbot-loading-state:not(.pick-active-loading-state) { padding-inline: 0; }
+  .pick-adjust-row { display: block; }
+  .pick-adjust-row .pick-companion-actions { margin-top: 10px; }
+  .browse-library-page .browse-hero { padding-top: 20px; padding-bottom: 12px; }
+  .browse-library-page .browse-title { font-size: clamp(1.8rem, 7vw, 2.4rem); }
+  .browse-library-page .rb-page-dek { margin-block: 10px 0; font-size: .9rem; }
+}
+.pick-refine-more summary { min-height: 40px; padding: 8px 10px; font-size: .8rem; color: var(--rb-muted); cursor: pointer; }
+.pick-refine-more > div { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 8px; }
+
+.home-result-section > .section-header > div { width: 100%; min-width: 0; }

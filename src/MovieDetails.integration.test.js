@@ -77,7 +77,7 @@ test("presents one contextual ReelBot entry point and factual watch providers", 
   expect(screen.queryByRole("link", { name: /Netflix/i })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: /See current viewing options/i })).toHaveAttribute("href", movie.watch_providers.link);
 
-  fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot about Aliens/i }));
+  fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot about this movie/i }));
   expect(askListener).toHaveBeenCalled();
   window.removeEventListener("reelbot:open-ask", askListener);
 });

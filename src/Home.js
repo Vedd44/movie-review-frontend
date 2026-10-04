@@ -696,6 +696,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [includeTheatrical, setIncludeTheatrical] = useState(() => Boolean(
     initialPickSession.includeTheatrical ?? initialPickSession.currentPick?.resolved_preferences?.include_theatrical
   ));
+  const [isRequestEditing, setIsRequestEditing] = useState(false);
   const [originalPickPrompt, setOriginalPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
   const [isHeroInputFocused, setIsHeroInputFocused] = useState(false);
@@ -1641,6 +1642,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
       clearRestoreTimer();
       setOriginalPickPrompt(nextPrompt);
+      setIsRequestEditing(false);
       setSwapHistory([]);
       setSwapQueue([]);
       setSwapCount(0);
@@ -1688,6 +1690,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setPickPrompt("");
     setIncludeTheatrical(false);
     setOriginalPickPrompt("");
+    setIsRequestEditing(false);
     setActivePromptSuggestion("");
     setPickError(null);
     setPickValidation("");
@@ -1851,6 +1854,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setOnboardingResultActive(false);
     setLastPickMode("surprise");
     setOriginalPickPrompt("");
+    setIsRequestEditing(false);
     setSwapCount(0);
     setHasExpandedSwapPool(false);
     await submitPick(
@@ -1876,6 +1880,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       setPickValidation("");
       setLastPickMode("surprise");
       setOriginalPickPrompt("");
+    setIsRequestEditing(false);
       setSwapCount(0);
       setHasExpandedSwapPool(false);
       await submitPick(
@@ -1945,13 +1950,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   return (
     <div className={`browse-page home-page${isFeedRoute ? " feed-page" : ""}`}>
-      {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}`} aria-labelledby="home-hero-title">
+      {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}${shouldRenderPickResultSection && !isRequestEditing ? " rb-intro--request-sent" : ""}`} aria-labelledby="home-hero-title">
         <div className="rb-intro-copy">
           <span className="rb-eyebrow">A better way to choose.</span>
           <h1 id="home-hero-title">{homeHeadline}</h1>
           <p className="rb-intro-dek">{productCopy.intro}</p>
           {!activePick ? <WatchCheckIn /> : null}
-          <div className={`rb-night-composer${isHeroInputFocused ? " is-focused" : ""}`}>
+          <div hidden={shouldRenderPickResultSection && !isRequestEditing} className={`rb-night-composer${isHeroInputFocused ? " is-focused" : ""}`}>
               <ReelbotPromptComposer
                 multiline
                 inputId="pick-prompt-input"
@@ -2010,6 +2015,11 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
                 <h2 className="section-title">ReelBot’s pick</h2>
+                <div className="pick-request-context"><div><span>Your request</span><p>{originalPickPrompt || "Surprise me with something worth watching"}</p></div><button type="button" disabled={isPickBusy} onClick={() => {
+                  setPickPrompt(originalPickPrompt); setIsRequestEditing(true);
+                  document.getElementById("pick-for-me")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  window.requestAnimationFrame(() => document.getElementById("pick-prompt-input")?.focus({ preventScroll: true }));
+                }}>Edit</button></div>
             </div>
           </div>
 
@@ -2065,7 +2075,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             recoveryTitle={pickRecoveryTitle}
             recoveryMessage={pickRecoveryMessage}
             refineActions={contextualRefineActions}
-            onRefineAction={activePick && !isPickBusy ? handleInlineRefinement : undefined}
+            onRefineAction={activePick ? handleInlineRefinement : undefined}
             refineStatusLabel={inlineRefineStatus}
             hasActiveSession={hasActivePickSession}
             showEmptyState={shouldShowEmptyPickState}

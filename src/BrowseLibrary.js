@@ -30,11 +30,11 @@ import { getPromptCategory, trackProductEvent } from "./analytics";
 const LIBRARY_PROMPTS = [...DISCOVERY_PROMPTS, "Popular sci-fi with real payoff", "A punchy action movie with a real star"];
 const BROWSE_VIEW_OPTIONS = VIEW_OPTIONS;
 const LIBRARY_REFINE_ACTIONS = [
-  { id: "lighter", label: "Lighter", loadingMessage: "Looking for something a little lighter…" },
+  { id: "shorter", label: "Shorter", loadingMessage: "Finding something shorter…" },
+  { id: "lighter", label: "Lighter", loadingMessage: "Finding something lighter…" },
+  { id: "different_angle", label: "Different angle", loadingMessage: "Trying a different angle…" },
   { id: "darker", label: "Darker", loadingMessage: "Taking this in a darker direction…" },
-  { id: "shorter", label: "Shorter", loadingMessage: "Tightening the runtime a bit…" },
   { id: "more_like_this", label: "More like this", loadingMessage: "Staying close to this pick…" },
-  { id: "different_angle", label: "Different angle", loadingMessage: "Trying a nearby angle…" },
 ];
 const getAvailabilityStatus = (movie) => movie?.availability_status || null;
 const shouldShowAvailabilityChip = (status) => Boolean(status?.theater_only && status?.label);
@@ -511,7 +511,7 @@ function BrowseLibrary() {
   });
 
   return (
-    <div className="browse-page">
+    <div className="browse-page browse-library-page">
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
@@ -533,11 +533,11 @@ function BrowseLibrary() {
             </div>
           </div>
 
-          <div className="rb-browse-filters">
+          <details className="browse-filter-disclosure"><summary>Filters <span>{activeFilterChips.length ? `${activeFilterChips.length} active` : "Mood, genre & length"}</span></summary><div className="rb-browse-filters">
             <label>Mood<select aria-label="Mood" value={normalizedMood} onChange={(event) => updateFilters({ mood: event.target.value })}>{MOOD_FILTERS.map((filter) => <option key={filter.id} value={filter.id}>{filter.label}</option>)}</select></label>
             <label>Genre<select aria-label="Genre" value={normalizedGenre} onChange={(event) => updateFilters({ genre: event.target.value })} disabled={genreLoading}><option value="all">All genres</option>{genres.map((genre) => <option key={genre.id} value={String(genre.id)}>{genre.name}</option>)}</select></label>
             <label>Length<select aria-label="Runtime" value={normalizedRuntime} onChange={(event) => updateFilters({ runtime: event.target.value })}>{PICK_RUNTIME_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
-          </div>
+          </div></details>
         </section>
 
         <div id="library-results" className="section-header section-header--stacked-mobile library-results-head">
@@ -553,13 +553,13 @@ function BrowseLibrary() {
           </div>
         </div>
 
-        <div className="browse-filter-summary-chips" aria-label="Active filters">
+        {activeFilterChips.length ? <div className="browse-filter-summary-chips" aria-label="Active filters">
           {activeFilterChips.map((chip) => (
             <button key={chip.id} type="button" className="pick-summary-chip pick-summary-chip--dismissable" onClick={() => handleRemoveFilter(chip.id)} aria-label={`Remove ${chip.label}`}>
               <span>{chip.label}</span><span className="pick-summary-chip-x" aria-hidden="true">×</span>
             </button>
           ))}
-        </div>
+        </div> : null}
 
         {showReelbotPicker || pickResult?.primary || pickError || pickLoading ? (
           <section id="library-reelbot-picker" className="pick-for-me-card library-reelbot-card library-reelbot-card--inline">
@@ -621,6 +621,8 @@ function BrowseLibrary() {
                 onResetChoices={pickResult?.primary ? handleStartFreshLibraryPick : undefined}
                 refineActions={pickResult?.primary ? LIBRARY_REFINE_ACTIONS : []}
                 onRefineAction={pickResult?.primary ? handleRefineLibraryPick : undefined}
+                showCompanion
+                tasteActionProps={{ showSeenAction: false, showSkipAction: false, showVibeAction: false }}
                 refreshDisabled={pickLoading}
               />
             </div>

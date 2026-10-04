@@ -71,3 +71,18 @@ test('a feed route starts with its own heading and exposes crawlable pagination'
   expect(screen.queryByRole('heading',{name:'What should I watch?'})).not.toBeInTheDocument();
   expect(await screen.findByRole('link',{name:'Next →'})).toHaveAttribute('href','/trending?page=2');
 });
+
+test('keeps submitted request beside the pick and Edit restores it without another request',async()=>{
+  HTMLElement.prototype.scrollIntoView = jest.fn();
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input=await screen.findByPlaceholderText(/A mood, a movie you love/i);
+  fireEvent.change(input,{target:{value:'A clever mystery under 100 minutes'}});
+  fireEvent.click(screen.getByRole('button',{name:'Find my movie'}));
+  await screen.findByRole('heading',{name:'Aliens'});
+  expect(screen.getByText('A clever mystery under 100 minutes')).toBeVisible();
+  expect(input).not.toBeVisible();
+  const calls=axios.post.mock.calls.length;
+  fireEvent.click(screen.getByRole('button',{name:'Edit',exact:true}));
+  expect(input).toHaveValue('A clever mystery under 100 minutes');
+  expect(axios.post.mock.calls.length).toBe(calls);
+});

@@ -107,7 +107,7 @@ function PickResultPanel({
             <div className="reelbot-loading-state pick-active-loading-state" role="status" aria-live="polite">
               <span className="reelbot-loading-dot" aria-hidden="true"></span>
               <div className="reelbot-loading-copy">
-                <p className="reelbot-loading-title"><span>{refineStatusLabel || loaderCopy}</span><span className="reelbot-loading-ellipsis" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+                <p className="reelbot-loading-title"><span>{String(refineStatusLabel || loaderCopy).replace(/[.…]+$/u, "")}</span><span className="reelbot-loading-ellipsis" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
               </div>
             </div>
           ) : null}
@@ -190,7 +190,7 @@ function PickResultPanel({
                     </div>
                   ) : null}
                   {rationale?.tasteCue ? <p className="pick-taste-cue detail-secondary-text">{rationale.tasteCue}</p> : null}
-                  {availableRefineActions.length && onRefineAction ? (
+                  {!showCompanion && availableRefineActions.length && onRefineAction ? (
                   <div className="pick-refine-panel">
                       <div className="pick-refine-label">Refine this</div>
                       <div className="pick-refine-grid">
@@ -214,7 +214,7 @@ function PickResultPanel({
             </div>
           </article>
 
-          {showCompanion ? <PickCompanion movie={primaryMovie} alternatives={visibleBackupMovies} onRefine={onRefineAction} disabled={refreshDisabled} /> : null}
+          {showCompanion ? <PickCompanion movie={primaryMovie} alternatives={visibleBackupMovies} refineActions={availableRefineActions} onRefine={onRefineAction} disabled={refreshDisabled} /> : null}
 
           {shouldShowInlineRecovery ? (
             <div className="pick-session-recovery">

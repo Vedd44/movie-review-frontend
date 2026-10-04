@@ -398,7 +398,7 @@ function MovieDetails() {
               </dl>
             </>
           )}
-          <button type="button" className="detail-text-action detail-take-cta" onClick={() => openAskReelbot({ prompt: `What should I know about ${movie.title}?` })}>Ask ReelBot about {movie.title} <span aria-hidden="true">→</span></button>
+          <button type="button" className="detail-text-action detail-take-cta" onClick={() => openAskReelbot({ prompt: `What should I know about ${movie.title}?` })}><span className="detail-take-cta-label">Ask ReelBot about this movie</span><span aria-hidden="true">→</span></button>
         </section>
 
         <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movie={movie} />

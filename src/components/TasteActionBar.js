@@ -7,6 +7,7 @@ function TasteActionBar({
   movie,
   vibeLabel = "",
   compact = false,
+  disabled = false,
   className = "",
   buttonClassName = "",
   showSaveAction = true,
@@ -61,7 +62,7 @@ function TasteActionBar({
     return null;
   }
 
-  const isBusy = Boolean(pendingAction);
+  const isBusy = Boolean(pendingAction) || disabled;
 
   const handleAction = async (actionKey, handler) => {
     if (isBusy) {
@@ -88,7 +89,7 @@ function TasteActionBar({
             : "";
       if (eventName) trackProductEvent(eventName, { authenticated: Boolean(user), movie_id: Number(movie.id) });
       if (typeof onInteraction === "function") {
-        onInteraction(actionKey);
+        onInteraction(actionKey, { active: actionKey === "hidden" ? !tasteState.skipped : actionKey === "seen" ? !tasteState.seen : actionKey === "watchlist" ? !tasteState.inWatchlist : !tasteState.likedVibe });
       }
       // The Save button itself reflects watchlist state (Save/Saved), so avoid a second
       // success line that changes the action-row height and knocks controls out of alignment.
