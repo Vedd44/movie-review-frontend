@@ -52,3 +52,7 @@ test('shared choice URLs are not indexed and do not cause recommendation or deta
   const page=await getPageData('/movie-night',new URLSearchParams('movies=1,2,3&choice=2'),{fetcher:()=>{throw new Error('Must not fetch');}});
   assert.equal(page.robots,'noindex,follow');
 });
+test('HTML uses slim metadata with cast links and upstream retry semantics',async()=>{
+let endpoint;const data=await getPageData('/movies/interstellar-2014',new URLSearchParams(),{fetcher:async url=>{endpoint=url;return response({...movie,top_cast_credits:[{name:'Matthew McConaughey',canonical_path:'/person/10297'}]});}});assert.match(endpoint,/view=metadata$/);assert.match(data.content,/href="\/person\/10297"/);
+await assert.rejects(()=>getPageData('/movies/interstellar-2014',new URLSearchParams(),{fetcher:async()=>({ok:false,status:429,headers:{get:()=> '6'}})}),error=>error.status===429&&error.retryAfter==='6');
+});

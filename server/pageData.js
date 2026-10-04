@@ -4,7 +4,7 @@ const ORIGIN = 'https://reelbot.movie';
 const API = 'https://movie-review-backend-zevb.onrender.com';
 const DEFAULT_IMAGE = `${ORIGIN}/brand/reelbot-social.png`;
 const moviePath = (movie) => `/movies/${movie.canonical_slug || movie.slug || ''}`;
-const personPath = (person) => `/people/${person.canonical_slug}`;
+const personPath = (person) => person.canonical_path || `/people/${person.canonical_slug}`;
 const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const link = (href, label) => `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
 const breadcrumbs = (items) => ({ '@context':'https://schema.org', '@type':'BreadcrumbList', itemListElement: items.map(([name,path],i)=>({'@type':'ListItem',position:i+1,name,item:ORIGIN+path})) });
@@ -14,7 +14,12 @@ const missing = (path) => ({status:404,path,title:'Page not found | ReelBot',des
 async function apiJson(endpoint, fetcher) {
   const response = await fetcher(API+endpoint, {signal: AbortSignal.timeout(12000)});
   if (response.status === 404 || response.status === 400) return null;
-  if (!response.ok) throw new Error(`Movie data unavailable (${response.status})`);
+  if (!response.ok) {
+    const error = new Error(`Movie data unavailable (${response.status})`);
+    error.status = response.status === 429 ? 429 : 503;
+    error.retryAfter = /^\d+$/.test(response.headers?.get('retry-after') || '') ? response.headers.get('retry-after') : '60';
+    throw error;
+  }
   return response.json();
 }
 const STATIC = {
@@ -42,7 +47,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   if (shortShare) {
     const shared = await apiJson(`/reelbot/shares/${shortShare[1]}`,fetcher);
     if (!shared || !parseSharedPick(new URLSearchParams({pick:JSON.stringify(shared)}).toString())) return missing(path);
-    const movie = await apiJson(`/movies/${shared.id}`,fetcher);
+    const movie = await apiJson(`/movies/${shared.id}?view=metadata`,fetcher);
     if (!movie?.id) return missing(path);
     return {path,title:`ReelBot’s pick: ${movie.title} | ReelBot`,heading:movie.title,
       description:shared.brief ? `Picked by ReelBot for: ${shared.brief}` : 'A movie worth making time for. Picked by ReelBot.',robots:'noindex,follow',privatePage:true,
@@ -87,7 +92,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   const numericMovie = path.match(/^\/(?:movie|movies)\/(\d+)(?:\/[^/]+)?$/);
   const movieMatch = path.match(/^\/movies\/([^/]+)$/);
   if (numericMovie || movieMatch) {
-    const m = await apiJson(numericMovie ? `/movies/${numericMovie[1]}` : `/movies/resolve/${encodeURIComponent(movieMatch[1])}`,fetcher);
+    const m = await apiJson(numericMovie ? `/movies/${numericMovie[1]}?view=metadata` : `/movies/resolve/${encodeURIComponent(movieMatch[1])}?view=metadata`,fetcher);
     if (!m?.id || !m.canonical_slug) return missing(path);
     const canonicalPath = moviePath(m);
     if (path !== canonicalPath) return {redirect:canonicalPath};
@@ -100,7 +105,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     const description = `Explore ${m.title}${year ? ` (${year})` : ''}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.`;
     const facts = [year,m.runtime ? `${m.runtime} min` : '',m.certification,...(m.genre_names || []),m.rating ? `TMDB ${Number(m.rating).toFixed(1)}/10` : ''].filter(Boolean).join(' · ');
     return {path,title,heading:m.title,description,type:'video.movie',image:m.backdrop_path ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}` : m.poster_path ? `https://image.tmdb.org/t/p/w780${m.poster_path}` : DEFAULT_IMAGE,
-      content:`<p>${escapeHtml(facts)}</p><h2>Overview</h2><p>${escapeHtml(m.description || '')}</p>`+(m.director_credit?.canonical_slug ? `<p>Directed by ${link(personPath(m.director_credit),m.director_credit.name)}</p>` : '')+'<h2>Cast</h2><ul>'+(m.top_cast_credits || []).filter(p=>p.canonical_slug).map(p=>`<li>${link(personPath(p),p.name)}${p.character ? ` — ${escapeHtml(p.character)}` : ''}</li>`).join('')+'</ul>',
+      content:`<p>${escapeHtml(facts)}</p><h2>Overview</h2><p>${escapeHtml(m.description || '')}</p>`+((m.director_credit?.canonical_slug || m.director_credit?.canonical_path) ? `<p>Directed by ${link(personPath(m.director_credit),m.director_credit.name)}</p>` : '')+'<h2>Cast</h2><ul>'+(m.top_cast_credits || []).filter(p=>p.canonical_slug || p.canonical_path).map(p=>`<li>${link(personPath(p),p.name)}${p.character ? ` — ${escapeHtml(p.character)}` : ''}</li>`).join('')+'</ul>',
       schema:[breadcrumbs([['Home','/'],['Browse','/browse'],[m.title,path]]),{'@context':'https://schema.org','@type':'Movie',name:m.title,url:ORIGIN+path,description:m.description || undefined,image:m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : undefined,datePublished:m.release_date || undefined,duration:m.runtime ? `PT${m.runtime}M` : undefined,contentRating:m.certification || undefined,genre:m.genre_names,director:m.director ? {'@type':'Person',name:m.director} : undefined,actor:(m.top_cast || []).map(name=>({'@type':'Person',name}))}]};
   }
   const numericPerson = path.match(/^\/person\/(\d+)$/);
