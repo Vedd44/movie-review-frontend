@@ -9,7 +9,11 @@ test('production batching makes no network request while a first pick is pending
  jest.resetModules();jest.useFakeTimers();const previous=process.env.NODE_ENV;process.env.NODE_ENV='production';
  const old=window.crypto;let number=0;Object.defineProperty(window,'crypto',{configurable:true,value:{randomUUID:()=>`00000000-0000-4000-8000-${String(++number).padStart(12,'0')}`}});
  global.fetch=jest.fn().mockResolvedValue({ok:true});
+ const consent=require('./cookieConsent');
  const telemetry=require('./productTelemetry');
+ telemetry.recordProductTelemetry('page_viewed');
+ expect(window.sessionStorage.getItem('reelbot:metrics-session')).toBeNull();
+ consent.setCookieChoice('accepted');
  telemetry.recordProductTelemetry('recommendation_requested',{authenticated:false});
  jest.advanceTimersByTime(10000);expect(global.fetch).not.toHaveBeenCalled();
  telemetry.recordProductTelemetry('page_viewed',{authenticated:true});
@@ -17,5 +21,10 @@ test('production batching makes no network request while a first pick is pending
  telemetry.recordProductTelemetry('recommendation_returned',{outcome:'pick',latency_ms:9000});
  jest.advanceTimersByTime(5000);await Promise.resolve();expect(global.fetch).toHaveBeenCalledTimes(1);
  expect(JSON.parse(global.fetch.mock.calls[0][1].body).events).toHaveLength(3);
- jest.clearAllTimers();jest.useRealTimers();process.env.NODE_ENV=previous;Object.defineProperty(window,'crypto',{configurable:true,value:old});
+ telemetry.recordProductTelemetry('movie_saved',{movie_id:42});
+ consent.setCookieChoice('rejected');
+ jest.advanceTimersByTime(10000);await Promise.resolve();
+ expect(global.fetch).toHaveBeenCalledTimes(1);
+ expect(window.sessionStorage.getItem('reelbot:metrics-session')).toBeNull();
+ window.localStorage.clear();jest.clearAllTimers();jest.useRealTimers();process.env.NODE_ENV=previous;Object.defineProperty(window,'crypto',{configurable:true,value:old});
 });

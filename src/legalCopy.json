@@ -24,7 +24,7 @@
       ],
       [
         "Cookies and browser storage",
-        "We use cookies or similar browser storage for sign-in, preferences, recent picks and usage measurement. Google Analytics uses cookies. Dismissing our cookie notice does not disable analytics. You can block cookies and tracking or clear stored information through your browser settings; this may affect sign-in and saved preferences."
+        "We use cookies or similar browser storage for sign-in, preferences, recent picks and usage measurement. Google Analytics uses cookies. Optional Google Analytics, Vercel usage/performance analytics and ReelBot product metrics stay off until you select Accept analytics. Reject analytics keeps them off. You can change or withdraw your choice using Cookie settings in the footer; withdrawal reloads the page to stop loaded analytics scripts. We remember your choice for up to six months. You can block cookies and tracking or clear stored information through your browser settings; this may affect sign-in and saved preferences."
       ],
       [
         "Storage and your choices",

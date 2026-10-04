@@ -1,8 +1,10 @@
 import { trackProductEvent } from './analytics';
 import { setAnalyticsAuthenticated, telemetrySurface } from './productTelemetry';
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import Home from "./Home";
+import CookieConsent from "./components/CookieConsent";
+import { openCookieSettings, subscribeCookieChoice } from "./cookieConsent";
 import NotFound from "./NotFound";
 import AuthModal from "./components/AuthModal";
 import ProfileMenu from "./components/ProfileMenu";
@@ -18,7 +20,7 @@ import "./productPolish.css";
 import "./reelbotDesign.css";
 import "./pickerEditorial.css";
 
-const COOKIE_NOTICE_KEY = "reelbotCookieNoticeAccepted";
+
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
 const MovieNight = lazy(() => import("./MovieNight"));
@@ -221,58 +223,23 @@ function SiteFooter() {
         <NavLink to="/how-reelbot-works" className="site-footer-link site-footer-link--secondary">How it works</NavLink>
         <button type="button" className="site-footer-link site-footer-link--secondary site-footer-feedback" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback"><span className="site-footer-feedback-icon" aria-hidden="true">◌</span>Feedback</button>
       </div></nav>
-      <div className="site-footer-bottom-bar"><p className="site-footer-credit">© 2026 ReelBot · Movie data by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a></p><nav className="site-footer-legal" aria-label="Legal"><NavLink to="/privacy">Privacy</NavLink><NavLink to="/terms">Terms</NavLink></nav></div>
+      <div className="site-footer-bottom-bar"><p className="site-footer-credit">© 2026 ReelBot · Movie data by <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a></p><nav className="site-footer-legal" aria-label="Legal"><NavLink to="/privacy">Privacy</NavLink><NavLink to="/terms">Terms</NavLink><button type="button" onClick={openCookieSettings}>Cookie settings</button></nav></div>
     </div></footer>
     <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
   </>;
-}
-
-function CookieNotice() {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") {
-      return true;
-    }
-
-    return window.localStorage.getItem(COOKIE_NOTICE_KEY) === "true";
-  });
-
-  const handleDismiss = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(COOKIE_NOTICE_KEY, "true");
-    }
-
-    setDismissed(true);
-  }, []);
-
-  useEffect(() => {
-    if (dismissed || typeof window === "undefined") return undefined;
-    const startY = window.scrollY;
-    const handleScroll = () => {
-      if (Math.abs(window.scrollY - startY) >= 24) handleDismiss();
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [dismissed, handleDismiss]);
-
-  if (dismissed) {
-    return null;
-  }
-
-  return (
-    <div className="cookie-notice" role="status" aria-live="polite">
-      <p className="cookie-notice-copy">ReelBot uses cookies to improve performance and understand usage. Scroll to continue.</p>
-      <button type="button" className="cookie-notice-button" onClick={handleDismiss} aria-label="Dismiss cookie notice">
-        Dismiss
-      </button>
-    </div>
-  );
 }
 
 function AppShell() {
   const location = useLocation();
   const { user, authReady } = useAuth();
   const analyticsSignedIn = Boolean(user);
-  useEffect(() => { if (!authReady) return; setAnalyticsAuthenticated(analyticsSignedIn); if (!location.pathname.startsWith("/admin")) trackProductEvent("page_viewed", { page: telemetrySurface(location.pathname), authenticated: analyticsSignedIn }); }, [authReady, analyticsSignedIn, location.pathname]);
+  useEffect(() => {
+    if (!authReady) return undefined;
+    setAnalyticsAuthenticated(analyticsSignedIn);
+    const recordPage = () => { if (!location.pathname.startsWith("/admin")) trackProductEvent("page_viewed", { page: telemetrySurface(location.pathname), authenticated: analyticsSignedIn }); };
+    recordPage();
+    return subscribeCookieChoice(recordPage);
+  }, [authReady, analyticsSignedIn, location.pathname]);
   const navigationType = useNavigationType();
   useEffect(() => {
     if (navigationType !== "POP" && !location.hash) window.scrollTo({ top: 0, behavior: "instant" });
@@ -314,7 +281,7 @@ function AppShell() {
         </main>
         <SiteFooter />
         <MobileBottomNav />
-        <CookieNotice />
+        <CookieConsent />
         <AuthModal />
         <AskReelbotLayer />
       </div>

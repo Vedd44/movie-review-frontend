@@ -1,3 +1,4 @@
+import { hasAnalyticsConsent } from './cookieConsent';
 import { recordProductTelemetry } from './productTelemetry';
 const cleanProperties = (properties = {}) => Object.fromEntries(
   Object.entries(properties).filter(([, value]) => ["string", "number", "boolean"].includes(typeof value))
@@ -15,10 +16,13 @@ export const getPromptCategory = (prompt = "") => {
 
 export const trackProductEvent = (name, properties = {}) => {
   const safeProperties = cleanProperties(properties);
+  // Local movie personalization remains functional regardless of analytics consent.
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent("reelbot:analytics", { detail: { name, properties: safeProperties } }));
+  if (!hasAnalyticsConsent()) return;
   recordProductTelemetry(name, safeProperties);
 
   if (typeof window !== "undefined") {
-    // GA4 is loaded directly in public/index.html. Calling gtag here means the
+    // GA4 is loaded only after explicit analytics consent. Calling gtag here means the
     // same product event names used by ReelBot's internal/Vercel analytics also
     // reach GA4 without duplicating event logic in GTM.
     try {
@@ -31,7 +35,7 @@ export const trackProductEvent = (name, properties = {}) => {
       // Analytics must never interrupt a product action.
     }
 
-    window.dispatchEvent(new CustomEvent("reelbot:analytics", { detail: { name, properties: safeProperties } }));
+
   }
 
   if (process.env.NODE_ENV === "production") {
