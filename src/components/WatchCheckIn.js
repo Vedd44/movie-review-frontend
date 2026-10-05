@@ -1,45 +1,86 @@
 import React, { useState } from 'react';
 import useTasteProfile from '../hooks/useTasteProfile';
 import { useAuth } from '../context/AuthContext';
-import TasteActionBar from './TasteActionBar';
+import { trackProductEvent } from '../analytics';
 
-export function findWatchCheckIn(profile, dismissed = [], now = Date.now()) {
+export function findWatchCheckIn(profile, dismissed = [], now = Date.now(), snoozed = {}) {
   return (profile.recentRecommendations || []).find(movie => {
     const age = now - Date.parse(movie.recommended_at);
     return age >= 86400000 && age <= 30 * 86400000 && movie.title &&
       !dismissed.includes(Number(movie.id)) &&
+      !(Number(snoozed[movie.id]) > now) &&
       !(profile.seen || []).some(item => Number(item.id) === Number(movie.id)) &&
       !(profile.skipped || []).some(item => Number(item.id) === Number(movie.id));
   });
 }
-export default function WatchCheckIn() {
-  const { profile } = useTasteProfile();
-  const { user } = useAuth();
-  const key = `reelbot:watch-check-in:${user?.id || 'guest'}`;
-  const [dismissedByOwner, setDismissedByOwner] = useState({});
-  let stored = [];
-  try { const value = JSON.parse(localStorage.getItem(key) || '[]'); if (Array.isArray(value)) stored = value.map(Number); } catch {}
-  const dismissed = dismissedByOwner[key] || stored;
-  const movie = findWatchCheckIn(profile, dismissed);
-  if (!movie) return null;
-  const dismiss = () => {
-    const next = [...dismissed, Number(movie.id)].slice(-30);
-    setDismissedByOwner(previous => ({ ...previous, [key]: next }));
-    try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+
+function WatchCheckInPrompt({ movie, actions, getMovieState, user, onBegin, onPause, onHide }) {
+  const [status, setStatus] = useState('idle');
+  const watched = async () => {
+    if (status === 'saving') return;
+    onBegin();
+    setStatus('saving');
+    try {
+      if (!getMovieState(movie.id).seen) await actions.toggleSeen(movie);
+      trackProductEvent('movie_watched', { authenticated: Boolean(user), movie_id: Number(movie.id) });
+      setStatus('saved');
+    } catch {
+      setStatus('error');
+    }
   };
+  if (status === 'saved') return (
+    <section className="watch-check-in watch-check-in--saved" aria-label="Watch status saved">
+      <p role="status"><strong>{movie.title}</strong> is now in Watched. We’ll leave it out of future picks.</p>
+      <button className="watch-check-in-dismiss" type="button" onClick={onHide}>Done</button>
+    </section>
+  );
   return (
-    <details className="watch-check-in" key={movie.id}>
+    <details className="watch-check-in">
       <summary>
         <span>Did you watch <strong>{movie.title}</strong>?</span>
         <svg className="watch-check-in-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </summary>
       <div className="watch-check-in-body">
-        <p>A quick update helps shape your next pick.</p>
+        <p>Mark it as watched to keep it out of future picks. This won’t record whether you liked it.</p>
         <div className="watch-check-in-actions">
-          <TasteActionBar movie={movie} compact showSaveAction={false} showVibeAction vibeLabel={movie.source_prompt || movie.title} seenLabel="Watched" />
-          <button className="watch-check-in-dismiss" type="button" onClick={dismiss}>Not yet</button>
+          <button className="watch-check-in-answer" type="button" disabled={status === 'saving'} onClick={watched}>{status === 'saving' ? 'Saving…' : 'Yes, I watched it'}</button>
+          <button className="watch-check-in-answer" type="button" disabled={status === 'saving'} onClick={onPause}>Not yet</button>
+          <button className="watch-check-in-dismiss" type="button" disabled={status === 'saving'} onClick={onHide}>Hide question</button>
         </div>
+        <p className="watch-check-in-note">“Not yet” pauses this reminder for a week. Hide it anytime without updating your preferences.</p>
+        {status === 'error' ? <p className="watch-check-in-error" role="alert">Couldn’t save your watch status. Please try again.</p> : null}
       </div>
     </details>
   );
+}
+
+export default function WatchCheckIn() {
+  const { profile, actions, getMovieState } = useTasteProfile();
+  const { user } = useAuth();
+  const key = `reelbot:watch-check-in:${user?.id || 'guest'}`;
+  const snoozeKey = `${key}:snoozed`;
+  const [dismissedByOwner, setDismissedByOwner] = useState({});
+  const [quietOwners, setQuietOwners] = useState({});
+  const [selection, setSelection] = useState(null);
+  let stored = [], snoozed = {};
+  try { const value = JSON.parse(localStorage.getItem(key) || '[]'); if (Array.isArray(value)) stored = value.map(Number); } catch {}
+  try { const value = JSON.parse(localStorage.getItem(snoozeKey) || '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) snoozed = value; } catch {}
+  const dismissed = dismissedByOwner[key] || stored;
+  const movie = selection?.owner === key ? selection.movie : findWatchCheckIn(profile, dismissed, Date.now(), snoozed);
+  if (!movie || quietOwners[key]) return null;
+  const quiet = () => setQuietOwners(previous => ({ ...previous, [key]: true }));
+  const hide = () => {
+    const next = [...dismissed, Number(movie.id)].slice(-30);
+    setDismissedByOwner(previous => ({ ...previous, [key]: next }));
+    try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+    quiet();
+  };
+  const pause = () => {
+    const now = Date.now();
+    const next = Object.fromEntries(Object.entries(snoozed).filter(([, until]) => Number(until) > now));
+    next[movie.id] = now + 7 * 86400000;
+    try { localStorage.setItem(snoozeKey, JSON.stringify(next)); } catch {}
+    quiet();
+  };
+  return <WatchCheckInPrompt key={`${key}:${movie.id}`} movie={movie} actions={actions} getMovieState={getMovieState} user={user} onBegin={() => setSelection({ owner: key, movie })} onPause={pause} onHide={hide} />;
 }
