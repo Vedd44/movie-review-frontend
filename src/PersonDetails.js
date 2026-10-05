@@ -1,3 +1,4 @@
+import personDescription from './personDescription';
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -137,7 +138,7 @@ function PersonDetails() {
 
   usePageMetadata({
     title: person?.name ? `${person.name} Movies & Filmography | ReelBot` : "Movie Filmography | ReelBot",
-    description: person?.name ? `Explore ${person.name}'s movie filmography on ReelBot, including film credits, roles, release dates, ratings, and movie details.` : "Explore movie filmographies, credits, roles, release dates, ratings, and movie details on ReelBot.",
+    description: person?.name ? personDescription(person.name) : "Explore movie filmographies, credits, roles, release dates, ratings, and movie details on ReelBot.",
     path: person ? getPersonPath(person) : location.pathname,
     enabled: !loading,
     robots: error ? "noindex,follow" : "index,follow",
