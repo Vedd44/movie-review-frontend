@@ -60,7 +60,6 @@ function AccountSettings() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="rb-eyebrow">Your ReelBot</div>
             <h1 className="browse-title">Account</h1>
             <p className="rb-page-dek">A little about you. The rest is in your movies.</p>
             <Link className="rb-account-library" to="/my-movies">Back to My Movies →</Link>

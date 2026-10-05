@@ -39,7 +39,7 @@ export default function SharePick({ movie, why = '', prompt = '', disabled = fal
   <button className="pick-share-trigger" type="button" disabled={disabled} onClick={()=>{setIsOpen(true);dialog.current.showModal();}}><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 11v9h14v-9" /></svg>Share this pick</button>
   <dialog ref={dialog} className="pick-share-dialog" aria-labelledby="share-pick-title" onClose={()=>{setIsOpen(false);setStatus('');}}>
    <button className="pick-share-close" type="button" aria-label="Close sharing" onClick={close}>×</button>
-   <p className="pick-share-eyebrow">A PICK WORTH SHARING</p><h2 id="share-pick-title">Share your pick</h2>
+   <h2 id="share-pick-title">Share your pick</h2>
    <div className="pick-share-preview">{movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`} alt="" /> : null}<div><span className="pick-share-preview-label">REELBOT’S PICK</span><strong>{movie.title}</strong><p>The movie and why ReelBot chose it.</p><p className="pick-share-note">Anyone with this link can see the pick{includeRequest ? ' and your request' : ''}.</p></div></div>
    {prompt.trim() ? <label className="pick-share-option"><input type="checkbox" checked={includeRequest} onChange={event=>setIncludeRequest(event.target.checked)} /><span>Include what I asked for<small>Give them the mood behind the movie.</small></span></label> : null}
    {includeRequest ? <blockquote>{prompt}</blockquote> : null}

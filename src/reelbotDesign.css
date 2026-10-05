@@ -1297,3 +1297,12 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .cookie-consent-actions button:focus-visible, .site-footer-legal button:focus-visible { outline: 2px solid var(--rb-gold); outline-offset: 3px; }
 .site-footer-legal button { color: var(--rb-muted); background: none; border: 0; font: inherit; padding: 10px 0; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
 @media (max-width: 800px) { .cookie-consent { flex-direction: column; align-items: stretch; gap: 12px; } .cookie-consent-actions button { flex: 1; } }
+
+/* Headings stand on their own when no contextual caption is needed. */
+.rb-intro-copy > h1:first-child,
+.browse-copy > .browse-title:first-child,
+.collection-hero > .browse-title:first-child,
+.auth-value-proposition > h2:first-child,
+.global-search-head > div > h2:first-child,
+.collection-preview-copy > h2:first-child,
+.pick-share-close + h2 { margin-top: 0; }

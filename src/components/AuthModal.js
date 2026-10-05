@@ -48,7 +48,6 @@ function AuthModal() {
           ×
         </button>
         <div className="auth-value-proposition">
-          <div className="browse-kicker">Your ReelBot</div>
           <h2 id="auth-modal-title">Make ReelBot yours.</h2>
           <p>Save movies, remember what you’ve watched, and get better picks over time.</p>
         </div>

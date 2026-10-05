@@ -25,7 +25,7 @@ test("search escapes the header containing block and restores keyboard focus", a
   render(<MemoryRouter><header style={{backdropFilter: "blur(12px)"}}><GlobalMovieSearch /></header></MemoryRouter>);
   const trigger = screen.getByRole("button", { name: "Search movies" });
   fireEvent.click(trigger);
-  const dialog = screen.getByRole("dialog", { name: "Movies & people" });
+  const dialog = screen.getByRole("dialog", { name: "Search movies & people" });
   expect(dialog.closest("header")).toBeNull();
   expect(dialog.parentElement.parentElement).toBe(document.body);
   fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });

@@ -56,8 +56,7 @@ export function CollectionsIndex() {
     <div className="browse-page collections-page">
       <div className="container browse-shell">
         <section className="collection-hero">
-          <div className="browse-kicker">ReelBot Collections</div>
-          <h1 className="browse-title">Find your next movie.</h1>
+          <h1 className="browse-title">Movie collections</h1>
           <p className="collection-dek">Handpicked collections for every mood, genre, era, and kind of movie night.</p>
         </section>
         <section className="collections-discovery" aria-label="Filter collections">
@@ -168,7 +167,6 @@ export default function CollectionPage() {
       <div className="container browse-shell">
         <nav className="collection-breadcrumb" aria-label="Breadcrumb"><Link to="/collections">Collections</Link><span> / </span><span>{collection.title}</span></nav>
         <section className="collection-hero">
-          <div className="browse-kicker">{collection.eyebrow}</div>
           <h1 className="browse-title">{collection.title}</h1>
           <p className="collection-dek">{collection.description}</p>
           <button type="button" className="collection-share-button" onClick={shareCollection} aria-label={`Share ${collection.title}`}>

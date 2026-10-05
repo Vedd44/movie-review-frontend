@@ -2,7 +2,7 @@
 module.exports = {
   title: "What Should I Watch? Movie Recommendations | ReelBot",
   description: "Find a movie for your mood, time and taste. ReelBot gives you one recommendation, explains why it fits and offers alternatives.",
-  intro: "Tell ReelBot what you're in the mood for. Get one movie, why it fits, and a few good alternatives.",
+  intro: "Tell ReelBot what you're in the mood for. Get a movie recommendation, why it fits, and a few alternatives.",
   placeholder: "A mood, a movie you love, or how much time you have…",
   howTitle: "How ReelBot Works | ReelBot",
   howIntro: "Describe what you want, explore your pick and refine it until it feels right.",

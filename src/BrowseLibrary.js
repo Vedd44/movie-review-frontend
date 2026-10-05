@@ -521,8 +521,7 @@ function BrowseLibrary() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="browse-kicker">Explore</div>
-            <h1 className="browse-title">Find something worth watching.</h1>
+            <h1 className="browse-title">Browse movies</h1>
             <p className="rb-page-dek">Follow your mood, revisit a favorite genre, or let ReelBot make the call.</p>
           </div>
         </section>
@@ -548,7 +547,6 @@ function BrowseLibrary() {
 
         <div id="library-results" className="section-header section-header--stacked-mobile library-results-head">
           <div>
-            <div className="detail-description-label">Browse results</div>
             <h2 className="section-title">Movies</h2>
           </div>
           <div className="library-results-actions">

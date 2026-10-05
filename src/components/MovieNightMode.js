@@ -93,7 +93,6 @@ function MovieNightMode({
       {!embedded ? (
         <div className="section-header section-header--compact section-header--stacked-mobile">
           <div>
-            <div className="detail-description-label">Group picks</div>
             <h2 className="section-title">Movie Night Mode</h2>
             <p className="section-subtitle">Use this when the room needs one easy yes, not just your personal best-fit pick.</p>
           </div>
