@@ -61,7 +61,7 @@ test('home and how-it-works expose the same product explanation before hydration
   let calls=0;
   const home=await getPageData('/',new URLSearchParams(),{fetcher:async()=>{calls++;return response({results:[]});}});
   assert.equal(home.title,copy.title);assert.equal(home.description,copy.description);
-  assert.match(home.content,/Get one movie/);assert.equal(calls,1);
+  assert.match(home.content,/Get a movie recommendation/);assert.equal(calls,1);
   assert.deepEqual(home.schema.map(s=>s['@type']),['Organization','WebSite','WebApplication']);
   const how=await getPageData('/how-reelbot-works',new URLSearchParams(),{fetcher:()=>{throw new Error('Must not fetch');}});
   assert.match(how.content,/Is ReelBot an AI movie picker/);assert.match(how.content,/Your current request comes first/);
