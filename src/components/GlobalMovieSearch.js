@@ -184,8 +184,7 @@ function GlobalMovieSearch() {
           >
             <div className="global-search-head">
               <div>
-                <div className="detail-description-label">Search</div>
-                <h2 id="global-search-title">Movies & people</h2>
+                <h2 id="global-search-title">Search movies & people</h2>
               </div>
               <button type="button" className="global-search-close" onClick={() => closeSearch()} aria-label="Close movie search">×</button>
             </div>

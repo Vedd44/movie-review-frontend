@@ -49,7 +49,7 @@ export default function FeedbackModal({ open, onClose }) {
         <p>Feedback like this is how ReelBot gets better.</p>
         <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={onClose}>Done</button>
       </div> : <>
-        <span className="browse-kicker">Help shape ReelBot</span><h2 id="feedback-title">What should we improve?</h2>
+        <h2 id="feedback-title">What should we improve?</h2>
         <p className="feedback-modal-intro">Found something off or have an idea? Send it straight to us.</p>
         <form className="feedback-form" onSubmit={submit}>
           <div className="feedback-type-grid">{TYPES.map(([value,label])=><button key={value} type="button" className={`feedback-type${type===value?" is-active":""}`} onClick={()=>setType(value)}>{label}</button>)}</div>

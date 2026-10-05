@@ -23,7 +23,6 @@ function WatchAvailability({ availability, sectionId, movie }) {
     <section id={sectionId} className="detail-info-card detail-info-card--utility detail-info-card--providers detail-info-card--watch-now detail-anchor-target">
       <div className="detail-section-head detail-section-head--with-count watch-now-head">
         <div>
-          <div className="detail-description-label">Current availability</div>
           <h2 className="detail-section-title">Where to Watch</h2>
           <p className="detail-secondary-text">Availability reported for {regionLabel} and subject to change.</p>
         </div>

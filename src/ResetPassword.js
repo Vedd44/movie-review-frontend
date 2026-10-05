@@ -84,7 +84,6 @@ function ResetPassword() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo">
           <div className="browse-copy">
-            <div className="browse-kicker">Account</div>
             <h1 className="browse-title">Reset your password</h1>
             <p className="browse-subtitle browse-subtitle--hero">Set a new password, then return to your account.</p>
           </div>

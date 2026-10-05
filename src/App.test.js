@@ -23,7 +23,7 @@ test('exposes the core navigation and global movie search', async () => {
   expect(screen.getAllByRole('link', { name: 'My Movies' }).length).toBeGreaterThan(0);
 
   fireEvent.click(screen.getByRole('button', { name: 'Search movies' }));
-  expect(screen.getByRole('dialog', { name: 'Movies & people' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: 'Search movies & people' })).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search movies and people' })).toHaveFocus());
 });
 

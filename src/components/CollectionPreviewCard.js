@@ -30,7 +30,6 @@ export default function CollectionPreviewCard({ collection, compact = false }) {
         <span className="collection-preview-shade"></span>
       </div>
       <div className="collection-preview-copy">
-        <span className="detail-description-label">{collection.eyebrow}</span>
         <h2>{collection.title}</h2>
         {!compact ? <p>{collection.description}</p> : null}
         <span className="collection-preview-cta">Explore collection <span aria-hidden="true">→</span></span>

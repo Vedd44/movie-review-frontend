@@ -150,7 +150,6 @@ function SearchResults() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo search-results-hero">
           <div className="browse-copy search-results-hero-copy">
-            <div className="browse-kicker">ReelBot Search</div>
             <h1 className="browse-title">Results for “{searchQuery || "your search"}”</h1>
 
           </div>

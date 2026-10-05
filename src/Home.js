@@ -1953,7 +1953,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     <div className={`browse-page home-page${isFeedRoute ? " feed-page" : ""}`}>
       {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}${shouldRenderPickResultSection && !isRequestEditing ? " rb-intro--request-sent" : ""}`} aria-labelledby="home-hero-title">
         <div className="rb-intro-copy">
-          <span className="rb-eyebrow">A better way to choose.</span>
           <h1 id="home-hero-title">{homeHeadline}</h1>
           <p className="rb-intro-dek">{productCopy.intro}</p>
           {!activePick ? <WatchCheckIn /> : null}
@@ -2102,7 +2101,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         <section id="movie-grid" className="home-browse-section">
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-              <div className="detail-description-label">Explore</div>
               {isFeedRoute ? <h1 className="section-title feed-title">{heading}</h1> : <h2 className="section-title">Browse movies</h2>}
             </div>
           </div>
@@ -2233,7 +2231,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <section className="home-collections-section" aria-labelledby="home-collections-title">
             <div className="section-header home-collections-head">
               <div>
-                <div className="detail-description-label">Curated by ReelBot</div>
                 <h2 id="home-collections-title" className="section-title">Explore our latest collections</h2>
                 <p className="section-subtitle">A few useful places to start when you know the kind of movie you want.</p>
               </div>
@@ -2247,7 +2244,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
         {!isFeedRoute ? <section className="home-magic-section" aria-labelledby="home-magic-title">
           <div className="home-magic-intro">
-            <div className="detail-description-label">More than a search</div>
             <h2 id="home-magic-title" className="home-magic-title">Tell ReelBot the part you can't put into a filter.</h2>
             <p>Just say what you're looking for.</p>
           </div>

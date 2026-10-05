@@ -208,7 +208,6 @@ export default function AdminPanel() {
               <section className="admin-card">
                 <div className="admin-card-head">
                   <div>
-                    <span className="admin-kicker">Account pulse</span>
                     <h2>Recent users</h2>
                   </div>
                   <button onClick={() => setTab("users")}>View all</button>
@@ -229,7 +228,6 @@ export default function AdminPanel() {
               <section className="admin-card">
                 <div className="admin-card-head">
                   <div>
-                    <span className="admin-kicker">Product pulse</span>
                     <h2>Latest activity</h2>
                   </div>
                   <button onClick={() => setTab("activity")}>View all</button>
@@ -255,7 +253,6 @@ export default function AdminPanel() {
           <section className="admin-card admin-card--full">
             <div className="admin-card-head admin-card-head--users">
               <div>
-                <span className="admin-kicker">Directory</span>
                 <h2>Users</h2>
               </div>
               <input
@@ -334,7 +331,6 @@ export default function AdminPanel() {
           <section className="admin-card admin-card--full">
             <div className="admin-card-head">
               <div>
-                <span className="admin-kicker">Event stream</span>
                 <h2>Recent activity</h2>
               </div>
             </div>
@@ -364,7 +360,6 @@ export default function AdminPanel() {
           <section className="admin-card admin-card--full">
             <div className="admin-card-head">
               <div>
-                <span className="admin-kicker">Inbox</span>
                 <h2>User feedback</h2>
               </div>
             </div>

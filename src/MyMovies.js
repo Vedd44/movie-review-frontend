@@ -146,7 +146,6 @@ function MyMovies() {
       <div className="container browse-shell">
         <section className="browse-hero browse-hero--compact browse-hero--solo my-movies-hero">
           <div className="browse-copy">
-            <div className="rb-eyebrow">Your personal collection</div>
             <h1 className="browse-title">My movies</h1>
             {user ? <p className="browse-subtitle browse-subtitle--hero">Good movies deserve a place to come back to.</p> : null}
             {user && askCandidateIds.length ? (
