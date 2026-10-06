@@ -5,7 +5,7 @@ import {
   normalizeInteractions,
 } from "../behavioralMemory";
 
-import { getWatchCooldownIds, isExplicitRewatchRequest } from "../watchHistoryPolicy";
+import { getWatchCooldownIds, isExplicitRewatchRequest, isExplicitUnseenRequest } from "../watchHistoryPolicy";
 
 const STORAGE_KEY = "reelbotTasteProfile";
 const LEGACY_STORAGE_KEY = "reelbot:taste-profile:v1";
@@ -699,6 +699,7 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
     getWatchCooldownIds(safeProfile.behavioralMemory?.watchedAt).forEach((movieId) => excludedIds.add(movieId));
   }
   const watchedIds = new Set(safeProfile.behavioralMemory?.seenMovieIds || []);
+  if (isExplicitUnseenRequest(preferences?.prompt)) watchedIds.forEach(id => excludedIds.add(id));
 
   (safeProfile.recentRecommendations || []).slice(0, 24).forEach((movie) => {
     if (movie?.id && !isRewatchRequest && !watchedIds.has(movie.id)) {

@@ -73,11 +73,11 @@ test("movie-detail question chips submit movie questions through the active movi
     </MemoryRouter>
   );
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
-  fireEvent.click(screen.getByRole("button", { name: "How intense is it?" }));
+  fireEvent.click(screen.getByRole("button", { name: "Is it actually good?" }));
 
   await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
     expect.stringContaining("/reelbot/ask"),
-    expect.objectContaining({ prompt: "How intense is it?", page_context: expect.objectContaining({ movieId: 679 }) }),
+    expect.objectContaining({ prompt: "Is it actually good?", page_context: expect.objectContaining({ movieId: 679 }) }),
     expect.anything()
   ));
 });
@@ -110,14 +110,14 @@ test("replaces starter chips with returned follow-ups and continues the conversa
     </MemoryRouter>
   );
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot/i }));
-  expect(screen.getByRole("button", { name: "How intense is it?" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Is it actually good?" })).toBeInTheDocument();
 
   const input = screen.getByRole("textbox", { name: "Ask ReelBot" });
   fireEvent.change(input, { target: { value: "Is it good for a group?" } });
   fireEvent.click(screen.getByRole("button", { name: "Ask" }));
 
   expect(await screen.findByRole("button", { name: "What makes it R-rated?" })).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "How intense is it?" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Is it actually good?" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "What makes it R-rated?" }));
 
   await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
@@ -147,7 +147,7 @@ test('closing Ask cancels the pending request and ignores a late answer', async 
   axios.post.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   render(<MemoryRouter initialEntries={['/movies/aliens-1986']}><AskReelbotProvider><ContextRegistration context={{ page: 'movie_detail', movieId: 679, movieTitle: 'Aliens' }} /><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
   fireEvent.click(screen.getByRole('button', { name: /Ask ReelBot/i }));
-  fireEvent.click(screen.getByRole('button', { name: 'How intense is it?' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Is it actually good?' }));
   const signal = axios.post.mock.calls[0][2].signal;
   fireEvent.click(screen.getByRole('button', { name: 'Close Ask ReelBot' }));
   expect(signal.aborted).toBe(true);
@@ -180,4 +180,14 @@ test("Escape returns focus to the actual contextual launcher", async () => {
   fireEvent.keyDown(window,{key:'Escape'});
   await waitFor(() => expect(launcher).toHaveFocus());
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+
+test("can request a rewatch from a Watched-only library without requiring saved movies", async () => {
+  render(<MemoryRouter initialEntries={["/my-movies"]}><AskReelbotProvider><ContextRegistration context={{page:"my_movies",savedMovieIds:[],watchedMovieIds:[2049]}}/><AskReelbotLayer/></AskReelbotProvider></MemoryRouter>);
+  fireEvent(window, new CustomEvent("reelbot:open-ask"));
+  fireEvent.change(screen.getByRole("textbox", {name:"Ask ReelBot"}), {target:{value:"Pick something to rewatch"}});
+  fireEvent.click(screen.getByRole("button", {name:"Ask"}));
+  await waitFor(() => expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/reelbot/ask"), expect.objectContaining({prompt:"Pick something to rewatch",page_context:expect.objectContaining({watchedMovieIds:[2049]})}), expect.anything()));
+  expect(screen.queryByText(/Save a few movies first/)).not.toBeInTheDocument();
 });

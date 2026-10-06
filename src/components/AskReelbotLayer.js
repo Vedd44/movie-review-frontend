@@ -9,6 +9,7 @@ import TasteActionBar from "./TasteActionBar";
 import { getPromptCategory, trackProductEvent } from "../analytics";
 import { classifyAskIntent, getAskLoadingCopy } from "../askIntent";
 import { addHistoryStatus, createAskConversation } from "../askConversation";
+import { isExplicitRewatchRequest } from "../watchHistoryPolicy";
 
 const GENERAL_ACTIONS = [
   ["Find me something to watch", "something worth watching tonight"],
@@ -304,13 +305,17 @@ function AskReelbotLayer() {
     requestController.current = controller;
     const version = ++requestVersion.current;
     const nextPreferences = { prompt: normalizedPrompt };
+    const wantsRewatch = isExplicitRewatchRequest(normalizedPrompt);
+    const rejectedIds = new Set((conversation.recommendationHistory || []).filter(entry => ["rejected", "skipped"].includes(entry.status)).map(entry => Number(entry.id)));
+    const historyExcludedIds = wantsRewatch ? excludedIds.filter(id => rejectedIds.has(Number(id))) : excludedIds;
     const requestExcludedIds = dedupeIds([
-      ...getPickExcludedIds(nextPreferences, excludedIds),
+      ...getPickExcludedIds(nextPreferences, historyExcludedIds),
       ...(options.extraExcludedIds || []),
     ]);
 
-    if (context.page === "my_movies" && !(context.savedMovieIds || context.candidateMovieIds || []).length) {
-      setError("Save a few movies first, then ReelBot can choose from them.");
+    const hasMyMovieCandidates = wantsRewatch ? (context.watchedMovieIds || []).length : (context.savedMovieIds || context.candidateMovieIds || []).length;
+    if (context.page === "my_movies" && !hasMyMovieCandidates) {
+      setError(wantsRewatch ? "Mark a few movies Watched first, then ReelBot can choose a rewatch." : "Save a few movies first, then ReelBot can choose from them.");
       return;
     }
 

@@ -148,9 +148,9 @@ function MyMovies() {
           <div className="browse-copy">
             <h1 className="browse-title">My movies</h1>
             {user ? <p className="browse-subtitle browse-subtitle--hero">Good movies deserve a place to come back to.</p> : null}
-            {user && askCandidateIds.length ? (
-              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: "choose a movie from my saved list that I have not watched" })}>
-                Pick from my movies
+            {user && (askCandidateIds.length || profile.seen.length) ? (
+              <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: activeTab === "seen" || !askCandidateIds.length ? "Choose a movie from Watched to rewatch" : "choose a movie from my saved list that I have not watched" })}>
+                {activeTab === "seen" || !askCandidateIds.length ? "Pick a rewatch" : "Pick from my movies"}
               </button>
             ) : null}
           </div>

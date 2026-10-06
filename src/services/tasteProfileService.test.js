@@ -54,6 +54,7 @@ test("older Watched history does not invent a viewing date or permanently exclud
   let profile = tasteProfileService.recordPickResult(tasteProfileService.createEmptyProfile(), {prompt:"sci-fi"}, {primary:movie, alternates:[]});
   profile = tasteProfileService.toggleSeen(profile, movie);
   expect(profile.seen[0].watched_at).toBeUndefined();
+  expect(tasteProfileService.getPickExcludedIds(profile, {prompt:"something I have not watched"})).toContain(movie.id);
   expect(tasteProfileService.getPickExcludedIds(profile, {prompt:"sci-fi"})).not.toContain(movie.id);
 });
 test("recent watch survives persistence and saved toggles; rewatch overrides only cooldown", () => {
