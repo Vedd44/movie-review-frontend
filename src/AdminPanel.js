@@ -1,3 +1,4 @@
+import AdminRequestLog from "./components/AdminRequestLog";
 import React, {
   useCallback,
   useEffect,
@@ -25,6 +26,8 @@ export default function AdminPanel() {
     path: "/admin",
     robots: "noindex,nofollow",
   });
+  const [hideMine,setHideMine]=useState(()=>{try{return localStorage.getItem('reelbot:admin-hide-mine')!=='false';}catch{return true;}});
+  useEffect(()=>{try{localStorage.setItem('reelbot:admin-hide-mine',String(hideMine));}catch{}},[hideMine]);
   const requestRef = useRef(null);
   useEffect(() => () => requestRef.current?.abort(), []);
   const getFreshToken = useCallback(async () => {
@@ -52,7 +55,7 @@ export default function AdminPanel() {
     setError("");
     try {
       const token = await getFreshToken();
-      const r = await fetch("/api/admin-overview", {
+      const r = await fetch(`/api/admin-overview?hide_mine=${hideMine ? 1 : 0}`, {
         signal: controller.signal,
         headers: { Authorization: "Bearer " + token },
       });
@@ -65,7 +68,7 @@ export default function AdminPanel() {
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [getFreshToken]);
+  }, [getFreshToken,hideMine]);
   useEffect(() => {
     setData(null);
     if (user?.app_metadata?.role === "super_admin") load();
@@ -123,6 +126,7 @@ export default function AdminPanel() {
             <h1>Admin console</h1>
             <p>Users, product activity and account health in one place.</p>
           </div>
+          <label className="admin-hide-mine"><input type="checkbox" checked={hideMine} onChange={event=>setHideMine(event.target.checked)} /> Hide my activity</label>
           <button className="admin-refresh" onClick={load} disabled={loading}>
             {loading ? "Refreshing…" : "Refresh data"}
           </button>
@@ -327,6 +331,7 @@ export default function AdminPanel() {
             </div>
           </section>
         ) : null}
+        {data && tab === "activity" ? <AdminRequestLog rows={usage?.request_log || []} /> : null}
         {data && tab === "activity" ? (
           <section className="admin-card admin-card--full">
             <div className="admin-card-head">

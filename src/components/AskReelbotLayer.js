@@ -1,3 +1,4 @@
+import { createActivityRequestId, recordRequestActivity } from "../productTelemetry";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -338,6 +339,7 @@ function AskReelbotLayer() {
     setLoading(true);
     setError("");
     const startedAt = Date.now();
+    const activityRequestId = createActivityRequestId();
     trackProductEvent("ask_reelbot_submitted", { page: context.page || "general", prompt_category: getPromptCategory(normalizedPrompt), kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer" });
     try {
       const response = await axios.post(`${API_BASE_URL}/reelbot/ask`, {
@@ -361,6 +363,7 @@ function AskReelbotLayer() {
         const subject = askSubjectKey(context, response.data.conversation_state || requestConversation);
         setAnsweredQuestions(current => [...current, { subject, question: normalizedPrompt }]);
         setTurns(current => [...current, { question: normalizedPrompt, answer: response.data.answer }].slice(-12));
+        recordRequestActivity({request_id:activityRequestId,prompt:normalizedPrompt,page:context.page,kind:"answer",result_text:response.data.answer,outcome:"pick",latency_ms:Date.now()-startedAt});
         setAnswerResult(response.data);
         setResult(null);
         setLastTurn({ prompt: normalizedPrompt, intent: response.data.intent, answer: response.data.answer });
@@ -373,12 +376,14 @@ function AskReelbotLayer() {
         setResult(null);
         setAnswerResult(null);
         trackProductEvent("ask_reelbot_result", { kind: "recommendation", outcome: "no_match", latency_ms: Date.now() - startedAt });
+        recordRequestActivity({request_id:activityRequestId,prompt:normalizedPrompt,page:context.page,kind:"recommendation",result_text:response.data.recommendation.user_message,outcome:"no_match",latency_ms:Date.now()-startedAt});
         setError(response.data.recommendation.user_message);
         return;
       }
       if (!payload?.primary) throw new Error("no_pick");
       setAnswerResult(null);
       setTurns(current => [...current, { question: normalizedPrompt, answer: payload.rationale?.primary_reason || payload.primary.reason || payload.summary, movie: payload.primary }].slice(-12));
+      recordRequestActivity({request_id:activityRequestId,prompt:normalizedPrompt,page:context.page,kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",movie_id:Number(payload.primary?.id),movie_title:payload.primary?.title,alternate_titles:(payload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:payload.rationale?.primary_reason || payload.primary?.reason || payload.summary,outcome:response.data?.recommendation?.performance?.outcome||"pick",latency_ms:Date.now()-startedAt});
       setResult(payload);
       setLastTurn({ prompt: normalizedPrompt, intent: response.data?.intent, movie_id: payload.primary.id, movie_title: payload.primary.title });
       void tasteActions.recordPickResult({
@@ -394,6 +399,7 @@ function AskReelbotLayer() {
       setExcludedIds((current) => dedupeIds([...current, payload.primary.id]));
     } catch (requestError) {
       if (controller.signal.aborted || version !== requestVersion.current) return;
+      recordRequestActivity({request_id:activityRequestId,prompt:normalizedPrompt,page:context.page,kind:/RECOMMENDATION/.test(predictedIntent)?"recommendation":"answer",outcome:requestError?.message === "no_pick"?"no_match":"failed",latency_ms:Date.now()-startedAt});
       trackProductEvent("ask_reelbot_failed", { kind: /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer", outcome: requestError?.message === "no_pick" ? "no_match" : "failed", page: context.page || "general", latency_ms: Date.now() - startedAt });
       setError(requestError?.message === "no_pick" ? "Nothing great matched that exactly. Try loosening one detail." : "ReelBot hit a snag. Try that again.");
     } finally {

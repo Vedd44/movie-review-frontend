@@ -18,6 +18,7 @@ const pickPayload = {
 };
 
 beforeEach(() => {
+  Element.prototype.scrollIntoView = jest.fn();
   window.localStorage.clear();
   useTasteProfile.mockReturnValue({
     profile: { skipped: [], seen: [] },

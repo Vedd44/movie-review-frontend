@@ -35,3 +35,24 @@ test('pending Ask requests never count as completed recommendations or identific
  const metrics=buildProductMetrics([pending],now);assert.equal(metrics.total.requests,1);assert.equal(metrics.total.completed,0);assert.equal(metrics.total.identifications,0);
  const finished=buildProductMetrics([pending,batch(1,[event(22,'ask_reelbot_result',{kind:'recommendation',outcome:'pick',latency_ms:8000}),event(23,'ask_reelbot_result',{kind:'identification',outcome:'identification'})])],now);assert.equal(finished.total.completed,1);assert.equal(finished.total.identifications,1);
 });
+
+test('request log pairs prompt and result, keeps source and later actions, and hides only verified owner activity',()=>{
+ const mine=normalizeBatch({...batch(1,[event(101,'request_logged',{request_id:id(501),prompt:'A clever thriller',movie_id:5,movie_title:'The Prestige',kind:'recommendation',authenticated:true}),event(102,'movie_saved',{movie_id:5,authenticated:true})]),acquisition:{channel:'paid',source:'instagram',campaign:'test'}},now);
+ mine.events.forEach(e=>{e.owner='verified-owner';});
+ const guest=normalizeBatch(batch(2,[event(103,'request_logged',{request_id:id(502),prompt:'Is it scary?',result_text:'It is tense.',kind:'answer',authenticated:false})]),now);
+ const all=buildProductMetrics([mine,guest],now,false,{viewerOwner:'verified-owner'});
+ assert.equal(all.request_log.length,2);assert.equal(all.request_log.find(r=>r.is_mine).acquisition.channel,'paid');assert.deepEqual(all.request_log.find(r=>r.is_mine).actions,['Saved']);
+ const hidden=buildProductMetrics([mine,guest],now,false,{viewerOwner:'verified-owner',excludeOwner:'verified-owner'});
+ assert.equal(hidden.request_log.length,1);assert.equal(hidden.total.sessions,1);assert.equal(hidden.request_log[0].prompt,'Is it scary?');
+ assert.equal(hidden.request_log[0].result_text,'It is tense.');
+});
+test('public clients cannot inject owner identity, private fields in ordinary metrics or arbitrary detail fields',()=>{
+ const normalized=normalizeBatch({...batch(1,[{...event(200,'request_logged',{prompt:'Email a@b.com',account_id:'private',user_id:'owner'}),owner:'forged'}]),owner:'forged'},now);
+ assert.equal(normalized.owner,undefined);assert.equal(normalized.events[0].owner,undefined);assert.equal(normalized.events[0].properties.user_id,undefined);
+ assert.equal(normalized.events[0].properties.prompt,'Email [email removed]');
+});
+test('retention deletes expired private batches but leaves current dates intact',async()=>{
+ const {pruneTelemetry}=require('./productTelemetry');const removed=[];
+ const storage={list:async prefix=>({data:prefix===''?[{name:'2026-09-20'},{name:'2026-10-03'}]:[{name:'old.json'}]}),remove:async paths=>{removed.push(...paths);return {};}};
+ await pruneTelemetry({storage:{from:()=>storage}},now);assert.deepEqual(removed,['2026-09-20/old.json']);
+});

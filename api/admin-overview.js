@@ -1,3 +1,4 @@
+const {ownerDigest,ownerCookie}=require('../server/telemetryIdentity');
 const { readProductTelemetry } = require('../server/productTelemetry');
 const { buildAdminMetrics } = require("../server/adminMetrics");
 const { createClient } = require("@supabase/supabase-js");
@@ -80,6 +81,8 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
         res.setHeader("Allow", "GET, POST");
         return send(res, 405, { error: "Method not allowed." });
       }
+      const cookie=ownerCookie(me.id);if(cookie)res.setHeader('Set-Cookie',cookie);
+      const hideMine=String(req.query?.hide_mine||'')==='1';
       const warnings = [];
       const raw = [];
       for (let page = 1; page <= 20; page += 1) {
@@ -157,7 +160,7 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
         ),
       ]);
       let productUsage = null;
-      try { productUsage = await getTelemetry(db); } catch { warnings.push("Guest and product activity could not be loaded. Refresh to try again."); }
+      try { productUsage = await getTelemetry(db,Date.now(),{viewerOwner:ownerDigest(me.id),excludeOwner:hideMine?ownerDigest(me.id):null}); } catch { warnings.push("Guest and product activity could not be loaded. Refresh to try again."); }
       const movies = moviesResult.data || [];
       const countsComplete = moviesResult.data !== null && movies.length < 1000;
       if (movies.length >= 1000)
@@ -183,7 +186,8 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
         }))
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       const byId = new Map(users.map((user) => [user.id, user]));
-      const activity = (sessionsResult.data || [])
+      const visibleSessions = Array.isArray(sessionsResult.data) ? sessionsResult.data.filter(row=>!hideMine||row.user_id!==me.id) : null;
+      const activity = (visibleSessions || [])
         .flatMap((row) => (Array.isArray(row.payload?.interactions) ? row.payload.interactions : [])
           .slice(0, 25)
           .map((entry, i) => ({
@@ -212,8 +216,9 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
           feedback_count: feedbackCount.count,
           feedback_7d: weekFeedback.count,
         },
-        operations: buildAdminMetrics(sessionsResult.data),
+        operations: buildAdminMetrics(visibleSessions),
         product_usage: productUsage,
+        activity_filter: {hide_mine:hideMine},
         users,
         activity: activity.slice(0, 200),
         feedback: feedbackResult.data || [],

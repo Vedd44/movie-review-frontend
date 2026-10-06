@@ -21406,3 +21406,13 @@ body,
 }
 
 }
+
+.admin-hide-mine { display:flex; align-items:center; gap:8px; color:var(--text-secondary); }
+.admin-hide-mine input { width:18px; height:18px; accent-color:#e9c46a; }
+.admin-request-filters { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.admin-request-filters label { display:flex; gap:8px; align-items:center; }
+.admin-request-filters select { padding:8px; background:var(--bg-secondary,#151a20); color:var(--text-primary); border:1px solid var(--border-color,#34383d); border-radius:6px; }
+.admin-request-table td { vertical-align:top; overflow-wrap:anywhere; min-width:160px; max-width:400px; white-space:normal; }
+.admin-request-table td:nth-child(3), .admin-request-table td:nth-child(4) { min-width:240px; }
+.admin-request-table p { margin:8px 0; }
+.admin-request-table small { color:var(--text-secondary); }

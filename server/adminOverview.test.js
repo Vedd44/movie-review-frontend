@@ -6,6 +6,7 @@ function fixture({
   targetRole = "",
   queryError = false,
   bannedUntil,
+  getTelemetry,
 } = {}) {
   let mutations = 0,
     reads = 0;
@@ -48,9 +49,9 @@ function fixture({
       return q;
     },
   };
-  const handler = createAdminHandler({ getClient: () => db });
+  const handler = createAdminHandler({ getClient: () => db, ...(getTelemetry?{getTelemetry}:{}) });
   return {
-    run: async (method, body = {}, auth = "Bearer valid") => {
+    run: async (method, body = {}, auth = "Bearer valid", query = {}) => {
       const res = {
         status(n) {
           this.code = n;
@@ -64,7 +65,7 @@ function fixture({
           return this;
         },
       };
-      await handler({ method, headers: { authorization: auth }, body }, res);
+      await handler({ method, headers: { authorization: auth }, body, query }, res);
       return res;
     },
     mutations: () => mutations,
@@ -105,4 +106,16 @@ test("read-only overview uses exact aggregate totals", async () => {
   const r = await f.run("GET");
   assert.equal(r.body.stats.feedback_count, 5);
   assert.equal(f.mutations(), 0);
+});
+
+test("hide-my-activity forwards a server-owned exclusion and keeps the toggle state", async () => {
+ const previous=process.env.SUPABASE_SECRET_KEY;process.env.SUPABASE_SECRET_KEY='test-only-key';
+ try {
+  let options;const f=fixture({getTelemetry:async(db,now,value)=>{options=value;return {};}});
+  const hidden=await f.run('GET',{},'Bearer valid',{hide_mine:'1'});
+  assert.equal(hidden.body.activity_filter.hide_mine,true);
+  assert.equal(options.excludeOwner,options.viewerOwner);assert.match(options.viewerOwner,/^[a-f0-9]{64}$/);
+  assert.match(hidden['Set-Cookie'],/HttpOnly; Secure; SameSite=Lax/);
+  await f.run('GET');assert.equal(options.excludeOwner,null);
+ } finally {if(previous===undefined)delete process.env.SUPABASE_SECRET_KEY;else process.env.SUPABASE_SECRET_KEY=previous;}
 });

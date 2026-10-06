@@ -1,3 +1,4 @@
+import { createActivityRequestId, recordRequestActivity } from "./productTelemetry";
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -306,6 +307,7 @@ function BrowseLibrary() {
 
   const requestLibraryPick = async (options = {}) => {
     const startedAt = Date.now();
+    const activityRequestId = createActivityRequestId();
     const nextPreferences = {
       view: normalizedView,
       mood: normalizedMood,
@@ -386,6 +388,7 @@ function BrowseLibrary() {
           return mergedQueue;
         });
       } else {
+        recordRequestActivity({request_id:activityRequestId,prompt:nextPreferences.prompt,page:"browse",kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",movie_id:Number(normalizedPayload.primary?.id),movie_title:normalizedPayload.primary?.title,alternate_titles:(normalizedPayload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:normalizedPayload.rationale?.primary_reason || normalizedPayload.rationale?.decisionSentence || normalizedPayload.primary?.reason || normalizedPayload.summary,outcome:response.data?.performance?.outcome||"pick",latency_ms:Date.now()-startedAt});
         trackProductEvent("recommendation_returned", { page: "browse", latency_ms: Date.now() - startedAt, outcome: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : response.data?.performance?.outcome || "pick" });
         setPickResult({ ...normalizedPayload, sharePrompt: nextPreferences.prompt });
         setSwapQueue(buildSwapQueueFromPayload(normalizedPayload));
@@ -397,6 +400,7 @@ function BrowseLibrary() {
     } catch (requestError) {
       console.error("Error fetching library ReelBot pick:", requestError);
       if (!options.backgroundRefill) {
+        recordRequestActivity({request_id:activityRequestId,prompt:nextPreferences.prompt,page:"browse",kind:"recommendation",outcome:"failed",latency_ms:Date.now()-startedAt});
         trackProductEvent("recommendation_failed", { page: "browse", latency_ms: Date.now() - startedAt });
         setPickError("ReelBot could not narrow the library right now.");
       }
