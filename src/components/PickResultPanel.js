@@ -136,7 +136,6 @@ function PickResultPanel({
               <div className="pick-primary-fit-row">
                 <span className="pick-primary-fit-label">{bestFitLabel}</span>
                 {rationale?.summaryLine ? <p className="pick-primary-hook"><MovieCopy titles={[primaryMovie.title]}>{rationale.summaryLine}</MovieCopy></p> : null}
-                {rationale?.personalizationHint ? <p className="picker-personalization"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg><span>{rationale.personalizationHint}</span></p> : null}
               </div>
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>

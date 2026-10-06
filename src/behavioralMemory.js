@@ -164,132 +164,21 @@ export const inferMoviePace = (movie = {}) => {
   return ["steady"];
 };
 
-const applyFingerprintWeight = (target, movie, weight, mode = "positive") => {
-  const fingerprint = deriveMovieFingerprint(movie);
-  const genreTarget = mode === "negative" ? target.avoidedGenres : target.preferredGenres;
-
-  fingerprint.genreIds.forEach((genreId) => addWeight(genreTarget, String(genreId), weight));
-  fingerprint.toneLanes.forEach((lane) => addWeight(target.tonePreferences, lane, mode === "negative" ? -weight : weight));
-  fingerprint.paceLanes.forEach((lane) => addWeight(target.pacePreferences, lane, mode === "negative" ? -weight : weight));
-
-  if (fingerprint.runtimeBucket) {
-    addWeight(target.runtimePreference, fingerprint.runtimeBucket, mode === "negative" ? -weight : weight);
-  }
+// A saved title expresses interest, not enjoyment. Only repeated interest across
+// distinct titles can gently influence genre ranking; never infer tone or pace.
+const buildSavedInterest = (movies = []) => {
+  const counts = {};
+  const distinct = new Map(movies.filter(movie => movie?.id).map(movie => [Number(movie.id), movie]));
+  distinct.forEach(movie => getGenreIds(movie).forEach(id => addWeight(counts, String(id), 1)));
+  return Object.fromEntries(Object.entries(counts).filter(([, count]) => count >= 3)
+    .map(([id, count]) => [id, Math.min(1.2, (count - 2) * 0.4)]));
 };
 
-const applySwapFingerprint = (target, movie, weight) => {
-  const fingerprint = deriveMovieFingerprint(movie);
-
-  fingerprint.genreIds.forEach((genreId) => addWeight(target.swapPatterns.genres, String(genreId), weight));
-  fingerprint.toneLanes.forEach((lane) => addWeight(target.swapPatterns.tones, lane, weight));
-  fingerprint.paceLanes.forEach((lane) => addWeight(target.swapPatterns.pace, lane, weight));
-
-  if (fingerprint.runtimeBucket) {
-    addWeight(target.swapPatterns.runtime, fingerprint.runtimeBucket, weight);
-  }
-};
-
-const getRecentPatternSummary = (movies = []) => {
-  const genreWeights = {};
-  const toneWeights = {};
-  const runtimeWeights = {};
-
-  movies.slice(0, 8).forEach((movie, index) => {
-    const weight = Math.max(0.35, 1.2 - index * 0.14);
-    const fingerprint = deriveMovieFingerprint(movie);
-
-    fingerprint.genreIds.forEach((genreId) => addWeight(genreWeights, String(genreId), weight));
-    fingerprint.toneLanes.forEach((lane) => addWeight(toneWeights, lane, weight));
-    if (fingerprint.runtimeBucket) {
-      addWeight(runtimeWeights, fingerprint.runtimeBucket, weight);
-    }
-  });
-
-  const dominantRuntime = Object.entries(runtimeWeights).sort((left, right) => right[1] - left[1])[0]?.[0] || "";
-
-  return {
-    genres: Object.keys(sortEntries(genreWeights, 4)),
-    tones: Object.keys(sortEntries(toneWeights, 3)),
-    runtime: dominantRuntime,
-  };
-};
-
-const getTopKeys = (entries = {}, maxItems = 3) => Object.keys(sortEntries(entries, maxItems));
-
-const buildUserProfile = (memory = {}, profile = {}) => {
-  const watchlist = Array.isArray(profile.watchlist) ? profile.watchlist : [];
-  const seenMovies = Array.isArray(profile.seen) ? profile.seen : [];
-  const recentMovies = Array.isArray(profile.recentMovies) ? profile.recentMovies : [];
-  const skippedMovies = Array.isArray(profile.skipped) ? profile.skipped : [];
-  const likedGenreWeights = {};
-  const preferredPaceWeights = {};
-  const preferredToneWeights = {};
-  const preferredRuntimeWeights = {};
-  const skippedPaceWeights = {};
-  const skippedToneWeights = {};
-  const skippedRuntimeWeights = {};
-
-  const applyPositiveProfileWeights = (movie, weight) => {
-    const fingerprint = deriveMovieFingerprint(movie);
-    fingerprint.genreIds.forEach((genreId) => addWeight(likedGenreWeights, String(genreId), weight));
-    fingerprint.paceLanes.forEach((lane) => addWeight(preferredPaceWeights, lane, weight));
-    fingerprint.toneLanes.forEach((lane) => addWeight(preferredToneWeights, lane, weight));
-    if (fingerprint.runtimeBucket) {
-      addWeight(preferredRuntimeWeights, fingerprint.runtimeBucket, weight);
-    }
-  };
-
-  watchlist.slice(0, 18).forEach((movie, index) => {
-    applyPositiveProfileWeights(movie, Math.max(0.9, 1.7 - index * 0.08));
-  });
-
-  seenMovies.filter(movie => movie.taste_feedback !== false).slice(0, 14).forEach((movie, index) => {
-    applyPositiveProfileWeights(movie, Math.max(0.35, 0.85 - index * 0.05));
-  });
-
-  recentMovies.slice(0, 8).forEach((movie, index) => {
-    applyPositiveProfileWeights(movie, Math.max(0.2, 0.55 - index * 0.04));
-  });
-
-  skippedMovies.filter(movie => movie.taste_feedback !== false).slice(0, 10).forEach((movie, index) => {
-    const weight = Math.max(0.5, 1.1 - index * 0.08);
-    const fingerprint = deriveMovieFingerprint(movie);
-    fingerprint.paceLanes.forEach((lane) => addWeight(skippedPaceWeights, lane, weight));
-    fingerprint.toneLanes.forEach((lane) => addWeight(skippedToneWeights, lane, weight));
-    if (fingerprint.runtimeBucket) {
-      addWeight(skippedRuntimeWeights, fingerprint.runtimeBucket, weight);
-    }
-  });
-
-  const likedGenres = getTopKeys(likedGenreWeights, 4).map((value) => Number.parseInt(value, 10)).filter(Boolean);
-  const dislikedGenres = getTopKeys(memory.avoidedGenres, 4).map((value) => Number.parseInt(value, 10)).filter(Boolean);
-  const preferredPace = getTopKeys(preferredPaceWeights, 2);
-  const avoidPace = getTopKeys(skippedPaceWeights, 2);
-  const preferredTone = getTopKeys(preferredToneWeights, 3);
-  const avoidTone = getTopKeys(skippedToneWeights, 2);
-  const preferredRuntime = getTopKeys(preferredRuntimeWeights, 2);
-  const avoidRuntime = getTopKeys(skippedRuntimeWeights, 2);
-
-  return {
-    likedGenres,
-    dislikedGenres,
-    preferredTraits: {
-      pace: preferredPace,
-      tone: preferredTone,
-      runtime: preferredRuntime,
-    },
-    avoidTraits: {
-      pace: avoidPace,
-      tone: avoidTone,
-      runtime: avoidRuntime,
-    },
-    recentlyViewed: recentMovies.slice(0, 6).map((movie) => ({
-      id: movie?.id,
-      title: movie?.title || "Unknown title",
-    })).filter((movie) => movie.id),
-    hardAvoidMovieIds: normalizeIdList(memory.hiddenMovieIds),
-  };
-};
+const buildUserProfile = (memory = {}, profile = {}) => ({
+  ...DEFAULT_BEHAVIORAL_MEMORY.userProfile,
+  recentlyViewed: (profile.recentMovies || []).slice(0, 6).map(movie => ({id: movie.id, title: movie.title})),
+  hardAvoidMovieIds: normalizeIdList(memory.hiddenMovieIds),
+});
 
 export const buildBehavioralMemory = ({ profile = {}, interactions = [] } = {}) => {
   const nextMemory = {
@@ -310,50 +199,28 @@ export const buildBehavioralMemory = ({ profile = {}, interactions = [] } = {}) 
   const recentMovies = Array.isArray(profile.recentMovies) ? profile.recentMovies : [];
   const cappedInteractions = (Array.isArray(interactions) ? interactions : []).slice(0, MAX_STORED_INTERACTIONS);
 
-  watchlist.forEach((movie) => applyFingerprintWeight(nextMemory, movie, 3, "positive"));
-  seen.filter(movie => movie.taste_feedback !== false).forEach((movie) => applyFingerprintWeight(nextMemory, movie, 1.3, "positive"));
-  skipped.filter(movie => movie.taste_feedback !== false).forEach((movie) => applyFingerprintWeight(nextMemory, movie, 3.1, "negative"));
-  recentMovies.forEach((movie, index) => applyFingerprintWeight(nextMemory, movie, Math.max(0.45, 0.9 - index * 0.08), "positive"));
+  nextMemory.signalPolicyVersion = 2;
+  nextMemory.preferredGenres = buildSavedInterest(watchlist);
 
   cappedInteractions.forEach((entry) => {
-    const movie = entry?.movie || null;
-
     switch (entry?.type) {
       case "save":
         nextMemory.interactionStats.saves += 1;
-        if (movie) {
-          applyFingerprintWeight(nextMemory, movie, 2.8, "positive");
-        }
         break;
       case "seen":
         nextMemory.interactionStats.seen += 1;
-        if (movie && entry.metadata?.taste_feedback !== false) {
-          applyFingerprintWeight(nextMemory, movie, 1.2, "positive");
-        }
         break;
       case "hidden":
         nextMemory.interactionStats.hidden += 1;
-        if (movie && entry.metadata?.taste_feedback !== false) {
-          applyFingerprintWeight(nextMemory, movie, 3.2, "negative");
-        }
         break;
       case "swap_used":
         nextMemory.interactionStats.swaps += 1;
-        if (movie) {
-          applySwapFingerprint(nextMemory, movie, 1.15);
-        }
         break;
       case "detail_view":
         nextMemory.interactionStats.detailViews += 1;
-        if (movie) {
-          applyFingerprintWeight(nextMemory, movie, 0.55, "positive");
-        }
         break;
       case "provider_click":
         nextMemory.interactionStats.providerClicks += 1;
-        if (movie) {
-          applyFingerprintWeight(nextMemory, movie, 0.95, "positive");
-        }
         break;
       case "pick_shown":
         nextMemory.interactionStats.picksShown += 1;
@@ -383,7 +250,7 @@ export const buildBehavioralMemory = ({ profile = {}, interactions = [] } = {}) 
     pace: sortEntries(nextMemory.swapPatterns.pace, 3),
     runtime: sortEntries(nextMemory.swapPatterns.runtime, 3),
   };
-  nextMemory.recentPatterns = getRecentPatternSummary(recentMovies);
+  // Recent browsing prevents exact repeats; it does not define taste.
   nextMemory.hiddenMovieIds = normalizeIdList(skipped.map((movie) => movie?.id));
   nextMemory.seenMovieIds = normalizeIdList(seen.map((movie) => movie?.id));
   nextMemory.watchedAt = Object.fromEntries(seen.filter((movie) => movie.watched_at).map((movie) => [movie.id, movie.watched_at]));
@@ -514,7 +381,7 @@ export const scoreMovieForBehavioralMemory = (movie = {}, memory = {}, options =
   }
 
   return {
-    score: clamp(Number((score * multiplier).toFixed(2)), -18, 18),
+    score: clamp(Number((score * multiplier).toFixed(2)), -18, 3),
     reasons,
   };
 };
