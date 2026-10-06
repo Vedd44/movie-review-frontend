@@ -191,3 +191,27 @@ test("can request a rewatch from a Watched-only library without requiring saved 
   await waitFor(() => expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/reelbot/ask"), expect.objectContaining({prompt:"Pick something to rewatch",page_context:expect.objectContaining({watchedMovieIds:[2049]})}), expect.anything()));
   expect(screen.queryByText(/Save a few movies first/)).not.toBeInTheDocument();
 });
+
+test('cast question does not return after two intervening answers and resets for a fresh panel', async () => {
+  const data = (answer, follow_ups) => ({data:{kind:'answer',answer,follow_ups,conversation_state:{anchorMovie:{id:679,title:'Aliens'}}}});
+  axios.post.mockResolvedValueOnce(data('The cast includes Sigourney Weaver.', ['Who directed it?']))
+    .mockResolvedValueOnce(data('It is fictional.', ['Who directed it?']))
+    .mockResolvedValueOnce(data('James Cameron directed it.', ['Who stars in it?', 'Who is in the cast?', 'Who directed it?', 'How long is it?']));
+  render(<MemoryRouter initialEntries={['/movies/aliens-1986']}><AskReelbotProvider><ContextRegistration context={{page:'movie_detail',movieId:679,movieTitle:'Aliens'}}/><AskReelbotLayer/></AskReelbotProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button',{name:/Ask ReelBot/i}));
+  for (const [question,answer] of [['Who stars in it?','The cast includes Sigourney Weaver.'],['Is this based on a true story?','It is fictional.'],['Who directed it?','James Cameron directed it.']]) {
+    fireEvent.change(screen.getByRole('textbox',{name:'Ask ReelBot'}),{target:{value:question}});
+    fireEvent.click(screen.getByRole('button',{name:'Ask'}));
+    await screen.findByText(answer);
+  }
+  expect(screen.queryByRole('button',{name:'Who stars in it?'})).toBeNull();
+  expect(screen.queryByRole('button',{name:'Who is in the cast?'})).toBeNull();
+  expect(screen.queryByRole('button',{name:'Who directed it?'})).toBeNull();
+  expect(screen.getByRole('button',{name:'How long is it?'})).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'Close Ask ReelBot'}));
+  fireEvent.click(screen.getByRole('button',{name:/Ask ReelBot/i}));
+  axios.post.mockResolvedValueOnce(data('A fresh answer.', ['Who stars in it?']));
+  fireEvent.change(screen.getByRole('textbox',{name:'Ask ReelBot'}),{target:{value:'Is it good?'}});
+  fireEvent.click(screen.getByRole('button',{name:'Ask'}));
+  expect(await screen.findByRole('button',{name:'Who stars in it?'})).toBeInTheDocument();
+});

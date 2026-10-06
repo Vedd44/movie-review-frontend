@@ -9,6 +9,7 @@ import TasteActionBar from "./TasteActionBar";
 import { getPromptCategory, trackProductEvent } from "../analytics";
 import { classifyAskIntent, getAskLoadingCopy } from "../askIntent";
 import { addHistoryStatus, createAskConversation } from "../askConversation";
+import { askSubjectKey, filterAskedFollowUps } from "../askFollowUps";
 import { isExplicitRewatchRequest } from "../watchHistoryPolicy";
 
 const GENERAL_ACTIONS = [
@@ -175,6 +176,7 @@ function AskReelbotLayer() {
   const [loadingIntent, setLoadingIntent] = useState("");
   const [error, setError] = useState("");
   const [turns, setTurns] = useState([]);
+  const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [pendingQuestion, setPendingQuestion] = useState("");
   const retryPrompt = useRef("");
   const returnFocusRef = useRef(null);
@@ -200,6 +202,7 @@ function AskReelbotLayer() {
       setAnswerResult(null);
       setLastTurn(null);
       setTurns([]);
+      setAnsweredQuestions([]);
       setPendingQuestion("");
       setExcludedIds([]);
       setError("");
@@ -230,6 +233,7 @@ function AskReelbotLayer() {
       setConversation(createAskConversation(contextRef.current));
       setLastTurn(null);
       setTurns([]);
+      setAnsweredQuestions([]);
       setPendingQuestion("");
       setExcludedIds([]);
       setOpen(true);
@@ -286,6 +290,7 @@ function AskReelbotLayer() {
     setAnswerResult(null);
     setLastTurn(null);
       setTurns([]);
+      setAnsweredQuestions([]);
       setPendingQuestion("");
     setError("");
     setExcludedIds([]);
@@ -353,6 +358,8 @@ function AskReelbotLayer() {
       if (controller.signal.aborted || version !== requestVersion.current) return;
       if (response.data?.conversation_state) setConversation(response.data.conversation_state);
       if (response.data?.kind === "answer") {
+        const subject = askSubjectKey(context, response.data.conversation_state || requestConversation);
+        setAnsweredQuestions(current => [...current, { subject, question: normalizedPrompt }]);
         setTurns(current => [...current, { question: normalizedPrompt, answer: response.data.answer }].slice(-12));
         setAnswerResult(response.data);
         setResult(null);
@@ -412,7 +419,7 @@ function AskReelbotLayer() {
   const resultReason = result?.rationale?.primary_reason || result?.primary?.reason || rationaleLines.filter(Boolean).slice(0, 2).join(" ") || result?.summary;
   const loadingCopy = getAskLoadingCopy(loadingIntent);
   const answerMovieTitle = answerResult?.conversation_state?.anchorMovie?.title || conversation.anchorMovie?.title || context.movie?.title || context.movieTitle || "this movie";
-  const contextualFollowUps = normalizeAskFollowUps(answerResult?.follow_ups);
+  const contextualFollowUps = filterAskedFollowUps(normalizeAskFollowUps(answerResult?.follow_ups), answeredQuestions, askSubjectKey(context, answerResult?.conversation_state || conversation));
   const triggerLabel = isCollection ? "Pick for me" : context.page === "person" ? "Help me choose" : "Ask ReelBot";
   const [pastHomeHero, setPastHomeHero] = useState(location.pathname !== "/");
 
@@ -432,6 +439,7 @@ function AskReelbotLayer() {
     setConversation(createAskConversation(context));
     setLastTurn(null);
       setTurns([]);
+      setAnsweredQuestions([]);
       setPendingQuestion("");
     setExcludedIds([]);
     setOpen(true);
