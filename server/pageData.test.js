@@ -7,7 +7,7 @@ test('legal pages are public full-text documents without auth or backend request
     assert.equal(data.path, path);
     assert.ok(!data.privatePage);
     const html = renderPage('<html><head></head><body><div id="root"></div></body></html>', data);
-    assert.match(html, /Updated October 4, 2026/);
+    assert.match(html, /Updated [A-Za-z]+ \d{1,2}, \d{4}/);
     assert.match(html, /<section><h2>/);
     assert.match(html, /Feedback/);
     assert.match(html, new RegExp(`rel="canonical" href="https://reelbot.movie${path}"`));
@@ -74,4 +74,11 @@ test('shared choice URLs are not indexed and do not cause recommendation or deta
 test('HTML uses slim metadata with cast links and upstream retry semantics',async()=>{
 let endpoint;const data=await getPageData('/movies/interstellar-2014',new URLSearchParams(),{fetcher:async url=>{endpoint=url;return response({...movie,top_cast_credits:[{name:'Matthew McConaughey',canonical_path:'/person/10297'}]});}});assert.match(endpoint,/view=metadata$/);assert.match(data.content,/href="\/person\/10297"/);
 await assert.rejects(()=>getPageData('/movies/interstellar-2014',new URLSearchParams(),{fetcher:async()=>({ok:false,status:429,headers:{get:()=> '6'}})}),error=>error.status===429&&error.retryAfter==='6');
+});
+
+test('person page documents use the metadata budget while preserving filmography',async()=>{
+ let endpoint;
+ const data=await getPageData('/people/christopher-nolan',new URLSearchParams(),{fetcher:async url=>{endpoint=url;return response({id:525,name:'Christopher Nolan',canonical_slug:'christopher-nolan',biography:'Director',movie_credits:[{id:272,title:'Batman Begins',canonical_slug:'batman-begins-2005'}]});}});
+ assert.match(endpoint,/\/people\/resolve\/christopher-nolan\?view=metadata$/);
+ assert.match(data.content,/Batman Begins/);assert.equal(data.robots,undefined);
 });

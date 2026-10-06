@@ -115,7 +115,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   const numericPerson = path.match(/^\/person\/(\d+)$/);
   const personMatch = path.match(/^\/people\/([^/]+)$/);
   if (numericPerson || personMatch) {
-    const person = await apiJson(numericPerson ? `/person/${numericPerson[1]}` : `/people/resolve/${encodeURIComponent(personMatch[1])}`,fetcher);
+    const person = await apiJson(numericPerson ? `/person/${numericPerson[1]}?view=metadata` : `/people/resolve/${encodeURIComponent(personMatch[1])}?view=metadata`,fetcher);
     if (!person?.id || !person.canonical_slug) return missing(path);
     if (path !== personPath(person)) return {redirect:personPath(person)};
     const description = personDescription(person.name);
