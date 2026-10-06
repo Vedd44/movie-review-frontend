@@ -93,3 +93,10 @@ test('public title templates stay compact for long movies, people and collection
  const data=await getPageData('/movies/long-film-2007',new URLSearchParams(),{fetcher:async()=>response(longMovie)});
  assert.equal(data.title,movieTitle(longMovie.title,2007));assert.equal(data.heading,longMovie.title);assert.ok(data.title.length<=60);
 });
+
+test('known collection slugs use verified IDs instead of repeating title search',async()=>{
+ const catalog=require('../src/generatedCollectionMovies.json');let requested;
+ const film=catalog['dial-code-santa-claus-1990'];
+ const page=await getPageData('/movies/dial-code-santa-claus-1990',new URLSearchParams(),{movies:catalog,fetcher:async url=>{requested=url;return response(film);}});
+ assert.match(requested,/\/movies\/46959\?view=metadata$/);assert.equal(page.heading,'Dial Code Santa Claus');
+});

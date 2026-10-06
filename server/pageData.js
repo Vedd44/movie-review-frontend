@@ -97,7 +97,8 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   const numericMovie = path.match(/^\/(?:movie|movies)\/(\d+)(?:\/[^/]+)?$/);
   const movieMatch = path.match(/^\/movies\/([^/]+)$/);
   if (numericMovie || movieMatch) {
-    const m = await apiJson(numericMovie ? `/movies/${numericMovie[1]}?view=metadata` : `/movies/resolve/${encodeURIComponent(movieMatch[1])}?view=metadata`,fetcher);
+    const knownId = numericMovie?.[1] || movies[movieMatch?.[1]]?.id;
+    const m = await apiJson(knownId ? `/movies/${knownId}?view=metadata` : `/movies/resolve/${encodeURIComponent(movieMatch[1])}?view=metadata`,fetcher);
     if (!m?.id || !m.canonical_slug) return missing(path);
     const canonicalPath = moviePath(m);
     if (path !== canonicalPath) return {redirect:canonicalPath};
