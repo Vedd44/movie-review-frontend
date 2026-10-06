@@ -1,3 +1,4 @@
+import { movieTitle } from "./seoTitles";
 import MovieCopy from "./components/MovieCopy";
 import { parseSharedPick } from "./sharedPick";
 import ArtworkFallback from "./components/ArtworkFallback";
@@ -321,7 +322,7 @@ function MovieDetails() {
   }, [movie, movieDescription]);
 
   usePageMetadata({
-    title: sharedPick && movie ? `ReelBot’s pick: ${movie.title} | ReelBot` : movie ? `${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}: Cast, Where to Watch & More | ReelBot` : "Movie Details | ReelBot",
+    title: sharedPick && movie ? `ReelBot’s pick: ${movie.title} | ReelBot` : movie ? movieTitle(movie.title, movie.release_year) : "Movie Details | ReelBot",
     description: sharedPick ? (sharedPick.brief ? `Picked by ReelBot for: ${sharedPick.brief}` : "A movie worth making time for. Picked by ReelBot.") : movie ? `Explore ${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.` : "Explore movie details, cast, runtime, where to watch, ReelBot’s take, and similar movies.",
     path: shareId ? location.pathname : movie ? getMoviePath(movie) + (sharedPick ? location.search : "") : location.pathname,
     enabled: !loading,

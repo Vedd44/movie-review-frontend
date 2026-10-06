@@ -1,3 +1,4 @@
+import { personTitle } from "./seoTitles";
 import personDescription from './personDescription';
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
@@ -137,7 +138,7 @@ function PersonDetails() {
   }), [person, personId, sortedCredits]));
 
   usePageMetadata({
-    title: person?.name ? `${person.name} Movies & Filmography | ReelBot` : "Movie Filmography | ReelBot",
+    title: person?.name ? personTitle(person.name) : "Movie Filmography | ReelBot",
     description: person?.name ? personDescription(person.name) : "Explore movie filmographies, credits, roles, release dates, ratings, and movie details on ReelBot.",
     path: person ? getPersonPath(person) : location.pathname,
     enabled: !loading,

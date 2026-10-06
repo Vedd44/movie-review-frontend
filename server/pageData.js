@@ -1,3 +1,4 @@
+const {movieTitle, personTitle, collectionTitle} = require('../src/seoTitles');
 const personDescription = require('../src/personDescription');
 const copy = require('../src/productCopy');
 const legalCopy = require('../src/legalCopy.json');
@@ -91,7 +92,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     const c = collections.find(c=>c.slug===collectionMatch[1]);
     if (!c) return missing(path);
     const entries = c.movies.filter(slug=>slug!==c.anchorMovie).map(slug=>movies[slug]).filter(Boolean);
-    return {path,title:`${c.title} | ReelBot Collections`,heading:c.title,description:c.description,image:`${ORIGIN}/social/collections/${c.slug}-v5.jpg`,content:movieLinks(entries),schema:[breadcrumbs([['Home','/'],['Collections','/collections'],[c.title,path]]),itemList(entries)]};
+    return {path,title:collectionTitle(c.title),heading:c.title,description:c.description,image:`${ORIGIN}/social/collections/${c.slug}-v5.jpg`,content:movieLinks(entries),schema:[breadcrumbs([['Home','/'],['Collections','/collections'],[c.title,path]]),itemList(entries)]};
   }
   const numericMovie = path.match(/^\/(?:movie|movies)\/(\d+)(?:\/[^/]+)?$/);
   const movieMatch = path.match(/^\/movies\/([^/]+)$/);
@@ -105,7 +106,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
       description:shared.brief ? `Picked by ReelBot for: ${shared.brief}` : 'A movie worth making time for. Picked by ReelBot.', robots:'noindex,follow', privatePage:true,
       image:`${ORIGIN}/api/pick-image?movie=${m.id}&v=3`, content:`<p>Picked by ReelBot</p>${shared.brief ? `<h2>The brief</h2><p>${escapeHtml(shared.brief)}</p>` : ''}${shared.why ? `<h2>Why this fits</h2><p>${escapeHtml(shared.why)}</p>` : ''}<p>${link(path,'Movie details')}. ${link('/#pick-for-me','Find your own movie')}</p>`};
     const year = m.release_year || m.release_date?.slice(0,4);
-    const title = `${m.title}${year ? ` (${year})` : ''}: Cast, Where to Watch & More | ReelBot`;
+    const title = movieTitle(m.title, year);
     const description = `Explore ${m.title}${year ? ` (${year})` : ''}, including ReelBot’s take, cast, runtime, where to watch, and similar movies worth adding to your list.`;
     const facts = [year,m.runtime ? `${m.runtime} min` : '',m.certification,...(m.genre_names || []),m.rating ? `TMDB ${Number(m.rating).toFixed(1)}/10` : ''].filter(Boolean).join(' · ');
     return {path,title,heading:m.title,description,type:'video.movie',image:m.backdrop_path ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}` : m.poster_path ? `https://image.tmdb.org/t/p/w780${m.poster_path}` : DEFAULT_IMAGE,
@@ -119,7 +120,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     if (!person?.id || !person.canonical_slug) return missing(path);
     if (path !== personPath(person)) return {redirect:personPath(person)};
     const description = personDescription(person.name);
-    return {path,title:`${person.name} Movies & Filmography | ReelBot`,heading:person.name,description,type:'profile',image:person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : DEFAULT_IMAGE,content:`<p>${escapeHtml(person.known_for_department || '')}</p><p>${escapeHtml(person.biography || '')}</p><h2>Filmography</h2>`+movieLinks((person.movie_credits || []).map(m=>({...m,canonical_slug:m.canonical_slug || m.slug || `${String(m.title).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}${m.release_date ? '-'+m.release_date.slice(0,4) : ''}`}))),schema:[breadcrumbs([['Home','/'],[person.name,path]]),{'@context':'https://schema.org','@type':'Person',name:person.name,url:ORIGIN+path,description:person.biography || undefined,jobTitle:person.known_for_department || undefined}]};
+    return {path,title:personTitle(person.name),heading:person.name,description,type:'profile',image:person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : DEFAULT_IMAGE,content:`<p>${escapeHtml(person.known_for_department || '')}</p><p>${escapeHtml(person.biography || '')}</p><h2>Filmography</h2>`+movieLinks((person.movie_credits || []).map(m=>({...m,canonical_slug:m.canonical_slug || m.slug || `${String(m.title).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}${m.release_date ? '-'+m.release_date.slice(0,4) : ''}`}))),schema:[breadcrumbs([['Home','/'],[person.name,path]]),{'@context':'https://schema.org','@type':'Person',name:person.name,url:ORIGIN+path,description:person.biography || undefined,jobTitle:person.known_for_department || undefined}]};
   }
   return missing(path);
 }

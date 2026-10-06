@@ -82,3 +82,14 @@ test('person page documents use the metadata budget while preserving filmography
  assert.match(endpoint,/\/people\/resolve\/christopher-nolan\?view=metadata$/);
  assert.match(data.content,/Batman Begins/);assert.equal(data.robots,undefined);
 });
+
+test('public title templates stay compact for long movies, people and collections',async()=>{
+ const {movieTitle,personTitle,collectionTitle}=require('../src/seoTitles');
+ const manifest=require('../src/generatedCollectionMovies.json');
+ for(const m of Object.values(manifest)) assert.ok(movieTitle(m.title,m.release_year || m.release_date?.slice(0,4)).length<=60,m.title);
+ for(const c of require('./collections').readCollections()) assert.ok(collectionTitle(c.title).length<=60,c.title);
+ assert.ok(personTitle('An Extremely Long Person Name That Exceeds The Normal Search Title Space').length<=60);
+ const longMovie={...movie,title:'The Assassination of Jesse James by the Coward Robert Ford',canonical_slug:'long-film-2007',release_year:2007};
+ const data=await getPageData('/movies/long-film-2007',new URLSearchParams(),{fetcher:async()=>response(longMovie)});
+ assert.equal(data.title,movieTitle(longMovie.title,2007));assert.equal(data.heading,longMovie.title);assert.ok(data.title.length<=60);
+});

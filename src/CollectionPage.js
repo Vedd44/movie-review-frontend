@@ -1,3 +1,4 @@
+import { collectionTitle } from "./seoTitles";
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -112,7 +113,7 @@ export default function CollectionPage() {
   ].filter(Boolean) : [], [collection, movies]);
 
   usePageMetadata({
-    title: collection ? `${collection.title} | ReelBot Collections` : "Movie Collections | ReelBot",
+    title: collection ? collectionTitle(collection.title) : "Movie Collections | ReelBot",
     description: collection?.description,
     image: collection ? `/social/collections/${collection.slug}-v5.jpg` : undefined,
     path: collection ? `/collections/${collection.slug}` : "/collections",
