@@ -10,7 +10,7 @@ module.exports = {
   steps: [
     ["Tell ReelBot what you want", "A mood, a favourite movie, a time limit. Say it the way you'd say it to a friend."],
     ["Get a pick that fits", "ReelBot weighs your request against real movies and gives you one pick, why it fits and a few alternatives."],
-    ["Make it feel right", "Want something shorter or lighter? Refine your pick. Mark movies Watched or Not for me to keep them out of future picks."]
+    ["Make it feel right", "Want something shorter or lighter? Refine your pick. Mark movies Watched to prioritize new discoveries, or Not for me to leave them out of future picks."]
   ],
   faqQuestion: "Is ReelBot an AI movie picker?",
   faqAnswer: "Yes. AI helps understand what you want and rank existing movies. You choose what to watch, with a reason for each pick and room to change your mind."

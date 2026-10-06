@@ -21,7 +21,7 @@ function WatchCheckInPrompt({ movie, actions, getMovieState, user, onBegin, onPa
     onBegin();
     setStatus('saving');
     try {
-      if (!getMovieState(movie.id).seen) await actions.toggleSeen(movie);
+      if (!getMovieState(movie.id).seen) await actions.toggleSeen(movie, { watchedAt: new Date().toISOString() });
       trackProductEvent('movie_watched', { authenticated: Boolean(user), movie_id: Number(movie.id) });
       setStatus('saved');
     } catch {
@@ -30,7 +30,7 @@ function WatchCheckInPrompt({ movie, actions, getMovieState, user, onBegin, onPa
   };
   if (status === 'saved') return (
     <section className="watch-check-in watch-check-in--saved" aria-label="Watch status saved">
-      <p role="status"><strong>{movie.title}</strong> is now in Watched. We’ll leave it out of future picks.</p>
+      <p role="status"><strong>{movie.title}</strong> is now in Watched. We’ll prioritize movies you haven’t seen.</p>
       <button className="watch-check-in-dismiss" type="button" onClick={onHide}>Done</button>
     </section>
   );
@@ -41,9 +41,9 @@ function WatchCheckInPrompt({ movie, actions, getMovieState, user, onBegin, onPa
         <svg className="watch-check-in-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </summary>
       <div className="watch-check-in-body">
-        <p>Mark it as watched to keep it out of future picks. This won’t record whether you liked it.</p>
+        <p>Recently watched it? We’ll give it a break for three months and prioritize movies you haven’t seen. You can still ask for a rewatch.</p>
         <div className="watch-check-in-actions">
-          <button className="watch-check-in-answer" type="button" disabled={status === 'saving'} onClick={watched}>{status === 'saving' ? 'Saving…' : 'Yes, I watched it'}</button>
+          <button className="watch-check-in-answer" type="button" disabled={status === 'saving'} onClick={watched}>{status === 'saving' ? 'Saving…' : 'Yes, I just watched it'}</button>
           <button className="watch-check-in-answer" type="button" disabled={status === 'saving'} onClick={onPause}>Not yet</button>
           <button className="watch-check-in-dismiss" type="button" disabled={status === 'saving'} onClick={onHide}>Hide question</button>
         </div>

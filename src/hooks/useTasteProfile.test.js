@@ -70,12 +70,13 @@ test("logged-in Saved, Watched, rejected and recent history reach recommendation
     await first.actions.toggleSkipped({ ...movie, id: 552 });
     await first.actions.addRecentMovie({ ...movie, id: 553 });
   });
+  expect(first.getPickExcludedIds({ prompt: "something good" })).not.toContain(551);
   const profile = first.profile;
   expect(first.behavioralMemory.savedMovieIds).toContain(550);
   expect(first.behavioralMemory.seenMovieIds).toContain(551);
   expect(first.behavioralMemory.hiddenMovieIds).toContain(552);
   expect(first.behavioralMemory.recentMovieIds).toContain(553);
-  expect(first.getPickExcludedIds({ prompt: "something good" })).toEqual(expect.arrayContaining([551, 552]));
+  expect(first.getPickExcludedIds({ prompt: "something good" })).toEqual(expect.arrayContaining([552]));
   view.unmount();
   reelbotCloudService.bootstrapUserState.mockResolvedValue({ ...empty(), profile });
   render(app()); await ready();

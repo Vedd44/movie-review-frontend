@@ -21,7 +21,7 @@ const TAB_CONFIG = [
     id: "seen",
     label: "Watched",
     emptyTitle: "Nothing marked as watched yet.",
-    emptyCopy: "Movies you’ve watched will stay out of future decisions.",
+    emptyCopy: "Movies you’ve watched stay here. We’ll prioritize new discoveries, and you can still ask for a rewatch.",
     description: "Movies you’ve already watched.",
   },
   {

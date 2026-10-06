@@ -30,3 +30,11 @@ test("a library retains more than 36 saved movies", () => {
   for(let id=1;id<=45;id++) profile=tasteProfileService.toggleWatchlist(profile,{id,title:`Movie ${id}`});
   expect(profile.watchlist).toHaveLength(45);
 });
+
+test("cloud movie rows preserve explicit recent viewing dates without inventing dates for older history", () => {
+  const dated = {id:10,title:"Just watched",watched_at:"2026-10-06T12:00:00Z"};
+  const undated = {id:11,title:"Seen before"};
+  const rows = buildMovieRows("a", {seen:[dated,undated]});
+  expect(rows.find(row => row.movie_id === 10).movie_data.watched_at).toBe(dated.watched_at);
+  expect(rows.find(row => row.movie_id === 11).movie_data.watched_at).toBeUndefined();
+});

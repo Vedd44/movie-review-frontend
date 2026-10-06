@@ -5,6 +5,8 @@ import {
   normalizeInteractions,
 } from "../behavioralMemory";
 
+import { getWatchCooldownIds, isExplicitRewatchRequest } from "../watchHistoryPolicy";
+
 const STORAGE_KEY = "reelbotTasteProfile";
 const LEGACY_STORAGE_KEY = "reelbot:taste-profile:v1";
 const SESSION_RECOMMENDATION_CONTEXT_KEY = "reelbot:session-recommendations:v1";
@@ -84,6 +86,7 @@ const normalizeMovieEntry = (movie = {}, extra = {}) => ({
   source_type: movie.source_type || "",
   overview: movie.overview || movie.description || "",
   saved_at: new Date().toISOString(),
+  ...(movie.watched_at ? { watched_at: movie.watched_at } : {}),
   ...extra,
 });
 
@@ -351,7 +354,7 @@ const applyMovieBucketState = (profile, movie, nextState = {}) => {
   return {
     ...baseProfile,
     watchlist: nextState.watchlist ? upsertMovieEntry(baseProfile.watchlist, movie) : baseProfile.watchlist,
-    seen: nextState.seen ? upsertMovieEntry(baseProfile.seen, movie) : baseProfile.seen,
+    seen: nextState.seen ? upsertMovieEntry(baseProfile.seen, { ...profile.seen?.find((item) => item.id === movieId), ...movie }) : baseProfile.seen,
     skipped: nextState.skipped ? upsertMovieEntry(baseProfile.skipped, movie) : baseProfile.skipped,
     recentMovies: nextState.seen ? upsertMovieEntry(baseProfile.recentMovies, movie, {}, 18) : (baseProfile.recentMovies || []),
   };
@@ -404,7 +407,11 @@ const toggleWatchlist = (profile, movie) => {
   return rebuildProfile(nextProfile);
 };
 
-const toggleSeen = (profile, movie) => {
+const toggleSeen = (profile, movie, options = {}) => {
+  // A generic Watched action records history only; never infer a viewing date.
+  if (options.watchedAt && Number.isFinite(Date.parse(options.watchedAt))) {
+    movie = { ...movie, watched_at: new Date(options.watchedAt).toISOString() };
+  }
   const currentState = getMovieTasteState(profile, movie?.id);
   const alreadySeen = currentState.seen;
   const nextProfile = alreadySeen
@@ -685,15 +692,16 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
   const excludedIds = new Set(dedupeStrings(extraIds));
   const safeProfile = rebuildProfile(profile || DEFAULT_PROFILE);
   const signature = buildPickPreferenceSignature(preferences);
-  const isSwapRequest = Boolean(preferences?.is_swap);
+  const isRewatchRequest = isExplicitRewatchRequest(preferences?.prompt);
 
   (safeProfile.behavioralMemory?.hiddenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
-  if (!isSwapRequest) {
-    (safeProfile.behavioralMemory?.seenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
+  if (!isRewatchRequest) {
+    getWatchCooldownIds(safeProfile.behavioralMemory?.watchedAt).forEach((movieId) => excludedIds.add(movieId));
   }
+  const watchedIds = new Set(safeProfile.behavioralMemory?.seenMovieIds || []);
 
   (safeProfile.recentRecommendations || []).slice(0, 24).forEach((movie) => {
-    if (movie?.id) {
+    if (movie?.id && !isRewatchRequest && !watchedIds.has(movie.id)) {
       excludedIds.add(movie.id);
     }
   });
@@ -702,7 +710,9 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
     .filter((entry) => entry.signature === signature)
     .slice(0, 4)
     .forEach((entry) => {
-      (entry.movie_ids || []).forEach((movieId) => excludedIds.add(movieId));
+      (entry.movie_ids || []).forEach((movieId) => {
+        if (!isRewatchRequest && !watchedIds.has(movieId)) excludedIds.add(movieId);
+      });
     });
 
   return Array.from(excludedIds);

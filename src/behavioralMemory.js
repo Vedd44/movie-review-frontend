@@ -386,6 +386,7 @@ export const buildBehavioralMemory = ({ profile = {}, interactions = [] } = {}) 
   nextMemory.recentPatterns = getRecentPatternSummary(recentMovies);
   nextMemory.hiddenMovieIds = normalizeIdList(skipped.map((movie) => movie?.id));
   nextMemory.seenMovieIds = normalizeIdList(seen.map((movie) => movie?.id));
+  nextMemory.watchedAt = Object.fromEntries(seen.filter((movie) => movie.watched_at).map((movie) => [movie.id, movie.watched_at]));
   nextMemory.savedMovieIds = normalizeIdList(watchlist.map((movie) => movie?.id));
   nextMemory.recentMovieIds = normalizeIdList(recentMovies.map((movie) => movie?.id));
   nextMemory.userProfile = buildUserProfile(nextMemory, profile);
@@ -507,7 +508,7 @@ export const scoreMovieForBehavioralMemory = (movie = {}, memory = {}, options =
     reasons.push("seen-deprioritized");
   }
 
-  if (recentIds.has(movieId)) {
+  if (recentIds.has(movieId) && !seenIds.has(movieId)) {
     score -= 7;
     reasons.push("recent-deprioritized");
   }

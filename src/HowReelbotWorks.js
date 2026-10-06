@@ -41,7 +41,7 @@ function HowReelbotWorks() {
           <h2 className="section-title">Make it yours</h2>
           <div className="how-it-works-features">
             <div><strong>Save</strong><span>Keep a movie for later.</span></div>
-            <div><strong>Watched</strong><span>Keep movies you’ve seen out of future picks.</span></div>
+            <div><strong>Watched</strong><span>Keep track of movies you’ve seen. We’ll prioritize new discoveries, with rewatches still available.</span></div>
             <div><strong>Not for me</strong><span>Tell ReelBot not to recommend it again.</span></div>
             <div><strong>Ask ReelBot</strong><span>Ask follow-up questions about a movie or recommendation.</span></div>
           </div>

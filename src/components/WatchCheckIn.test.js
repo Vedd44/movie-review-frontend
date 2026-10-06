@@ -29,9 +29,11 @@ afterEach(cleanup);
 test('watch status saves before confirmation and does not ask for an opinion', async () => {
   render(<WatchCheckIn />);
   expect(screen.queryByRole('button', { name: 'Not for me' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Yes, I watched it' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Yes, I just watched it' }));
   await waitFor(() => expect(screen.getByRole('status').textContent).toContain('is now in Watched'));
   expect(actions.toggleSeen).toHaveBeenCalledTimes(1);
+  expect(actions.toggleSeen).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }), { watchedAt: expect.any(String) });
+  expect(screen.getByRole("status").textContent).toContain("prioritize movies you haven’t seen");
   fireEvent.click(screen.getByRole('button', { name: 'Done' }));
   expect(screen.queryByRole('status')).toBeNull();
 });
@@ -58,8 +60,8 @@ test('not yet snoozes rather than permanently dismissing the movie', () => {
 test('failed watch update stays retryable and does not show success', async () => {
   actions.toggleSeen.mockRejectedValue(new Error('offline'));
   render(<WatchCheckIn />);
-  fireEvent.click(screen.getByRole('button', { name: 'Yes, I watched it' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Yes, I just watched it' }));
   await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Couldn’t save'));
   expect(screen.queryByRole('status')).toBeNull();
-  expect(screen.getByRole('button', { name: 'Yes, I watched it' }).disabled).toBe(false);
+  expect(screen.getByRole('button', { name: 'Yes, I just watched it' }).disabled).toBe(false);
 });

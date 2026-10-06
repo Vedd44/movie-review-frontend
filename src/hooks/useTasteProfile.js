@@ -140,7 +140,7 @@ function useSharedTasteProfile() {
   const actions = useMemo(
     () => ({
       toggleWatchlist: (movie) => commit((currentProfile) => tasteProfileService.toggleWatchlist(currentProfile, movie)),
-      toggleSeen: (movie) => commit((currentProfile) => tasteProfileService.toggleSeen(currentProfile, movie)),
+      toggleSeen: (movie, options) => commit((currentProfile) => tasteProfileService.toggleSeen(currentProfile, movie, options)),
       toggleSkipped: (movie) => commit((currentProfile) => tasteProfileService.toggleSkipped(currentProfile, movie)),
       toggleLikedVibe: (movie, vibeLabel) => commit((currentProfile) => tasteProfileService.toggleLikedVibe(currentProfile, movie, vibeLabel)),
       addRecentMovie: (movie) => commit((currentProfile) => tasteProfileService.addRecentMovie(currentProfile, movie)),
