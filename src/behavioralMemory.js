@@ -243,7 +243,7 @@ const buildUserProfile = (memory = {}, profile = {}) => {
     applyPositiveProfileWeights(movie, Math.max(0.9, 1.7 - index * 0.08));
   });
 
-  seenMovies.slice(0, 14).forEach((movie, index) => {
+  seenMovies.filter(movie => movie.taste_feedback !== false).slice(0, 14).forEach((movie, index) => {
     applyPositiveProfileWeights(movie, Math.max(0.35, 0.85 - index * 0.05));
   });
 
@@ -251,7 +251,7 @@ const buildUserProfile = (memory = {}, profile = {}) => {
     applyPositiveProfileWeights(movie, Math.max(0.2, 0.55 - index * 0.04));
   });
 
-  skippedMovies.slice(0, 10).forEach((movie, index) => {
+  skippedMovies.filter(movie => movie.taste_feedback !== false).slice(0, 10).forEach((movie, index) => {
     const weight = Math.max(0.5, 1.1 - index * 0.08);
     const fingerprint = deriveMovieFingerprint(movie);
     fingerprint.paceLanes.forEach((lane) => addWeight(skippedPaceWeights, lane, weight));
@@ -311,8 +311,8 @@ export const buildBehavioralMemory = ({ profile = {}, interactions = [] } = {}) 
   const cappedInteractions = (Array.isArray(interactions) ? interactions : []).slice(0, MAX_STORED_INTERACTIONS);
 
   watchlist.forEach((movie) => applyFingerprintWeight(nextMemory, movie, 3, "positive"));
-  seen.forEach((movie) => applyFingerprintWeight(nextMemory, movie, 1.3, "positive"));
-  skipped.forEach((movie) => applyFingerprintWeight(nextMemory, movie, 3.1, "negative"));
+  seen.filter(movie => movie.taste_feedback !== false).forEach((movie) => applyFingerprintWeight(nextMemory, movie, 1.3, "positive"));
+  skipped.filter(movie => movie.taste_feedback !== false).forEach((movie) => applyFingerprintWeight(nextMemory, movie, 3.1, "negative"));
   recentMovies.forEach((movie, index) => applyFingerprintWeight(nextMemory, movie, Math.max(0.45, 0.9 - index * 0.08), "positive"));
 
   cappedInteractions.forEach((entry) => {
@@ -327,13 +327,13 @@ export const buildBehavioralMemory = ({ profile = {}, interactions = [] } = {}) 
         break;
       case "seen":
         nextMemory.interactionStats.seen += 1;
-        if (movie) {
+        if (movie && entry.metadata?.taste_feedback !== false) {
           applyFingerprintWeight(nextMemory, movie, 1.2, "positive");
         }
         break;
       case "hidden":
         nextMemory.interactionStats.hidden += 1;
-        if (movie) {
+        if (movie && entry.metadata?.taste_feedback !== false) {
           applyFingerprintWeight(nextMemory, movie, 3.2, "negative");
         }
         break;

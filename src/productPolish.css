@@ -191,81 +191,22 @@ body:has(.global-search-backdrop) :is(.mobile-ask-launcher, .mobile-bottom-nav, 
 .pick-companion a, .movie-night-grid a { overflow-wrap: anywhere; }
 
 /* Returning-viewer feedback stays subordinate to the movie request. */
-.home-page .watch-check-in {
-  margin-block: 20px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, .09);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, .015);
-}
-.home-page .watch-check-in summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 48px;
-  padding-block: 12px;
-  list-style: none;
-  color: var(--text-secondary);
-  font-size: .92rem;
-  font-weight: 400;
-  line-height: 1.5;
-}
-.home-page .watch-check-in summary::-webkit-details-marker { display: none; }
-.home-page .watch-check-in summary strong { color: var(--text-primary); font-weight: 600; overflow-wrap: anywhere; }
-.home-page .watch-check-in-chevron { flex-shrink: 0; transition: transform .15s ease; }
-.home-page .watch-check-in[open] .watch-check-in-chevron { transform: rotate(180deg); }
-.home-page .watch-check-in-body { padding: 0 0 12px; }
-.home-page .watch-check-in-body > p { margin: 0 0 12px; color: var(--text-secondary); font-size: .85rem; line-height: 1.5; }
-.home-page .watch-check-in-actions { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px; }
-.home-page .watch-check-in .taste-action-bar { flex: 0 1 auto; width: auto; gap: 8px; }
-.home-page .watch-check-in .taste-action-button {
-  min-height: 44px;
-  padding: 8px 14px;
-  border-radius: 6px;
-  background: transparent;
-  font-size: .85rem;
-  font-weight: 500;
-  line-height: 1.35;
-}
-.home-page .watch-check-in .taste-action-button.is-active { background: rgba(242, 197, 86, .07); }
-.home-page .watch-check-in .taste-action-feedback { flex-basis: 100%; }
-.home-page .watch-check-in-dismiss {
-  min-height: 44px;
-  padding: 8px 4px;
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: .85rem;
-  cursor: pointer;
-}
-.home-page .watch-check-in-dismiss:hover { color: var(--text-primary); }
-.home-page .watch-check-in summary:focus-visible,
-.home-page .watch-check-in-dismiss:focus-visible { outline: 2px solid var(--accent-primary, #e9c46a); outline-offset: 4px; border-radius: 4px; }
-@media (max-width: 600px) {
-  .home-page .watch-check-in .taste-action-bar { width: 100%; }
-  .home-page .watch-check-in .taste-action-button { flex: 1 1 100px; }
-  .home-page .watch-check-in-dismiss { margin-left: auto; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .home-page .watch-check-in-chevron { transition: none; }
-}
-
-.home-page .watch-check-in-answer {
-  min-height: 44px; padding: 8px 14px; border: 1px solid rgba(255,255,255,.12);
-  border-radius: 6px; background: transparent; color: var(--text-primary);
-  font: inherit; font-size: .85rem; font-weight: 500; line-height: 1.35; cursor: pointer;
-}
+.home-page .watch-check-in { margin-block: 20px; padding: 12px 16px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: rgba(255,255,255,.015); }
+.home-page .watch-check-in-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.home-page .watch-check-in-header p { margin: 0; color: var(--text-secondary); font-size: .92rem; line-height: 1.5; overflow-wrap: anywhere; }
+.home-page .watch-check-in strong { color: var(--text-primary); font-weight: 600; }
+.home-page .watch-check-in-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-page .watch-check-in-answer { min-height: 44px; padding: 8px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; background: transparent; color: var(--text-primary); font: inherit; font-size: .85rem; font-weight: 500; line-height: 1.35; cursor: pointer; }
 .home-page .watch-check-in-answer:hover:not(:disabled) { background: rgba(255,255,255,.04); border-color: rgba(242,197,86,.3); }
-.home-page .watch-check-in-answer:focus-visible { outline: 2px solid #e9c46a; outline-offset: 3px; }
+.home-page .watch-check-in-dismiss { min-height: 44px; padding: 8px 4px; border: 0; background: transparent; color: var(--text-secondary); font: inherit; font-size: .85rem; cursor: pointer; }
+.home-page .watch-check-in-close { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; }
+.home-page .watch-check-in-dismiss:hover { color: var(--text-primary); }
+.home-page .watch-check-in button:focus-visible { outline: 2px solid var(--accent-primary, #e9c46a); outline-offset: 3px; border-radius: 4px; }
 .home-page .watch-check-in button:disabled { opacity: .6; cursor: wait; }
-.home-page .watch-check-in-body > .watch-check-in-note { margin: 12px 0 0; font-size: .78rem; }
-.home-page .watch-check-in-body > .watch-check-in-error { margin: 12px 0 0; color: #efa5a5; }
-.home-page .watch-check-in--saved { padding: 12px 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
-.home-page .watch-check-in--saved > p { flex: 1 1 240px; margin: 0; font-size: .85rem; line-height: 1.5; color: var(--text-secondary); }
-.home-page .watch-check-in--saved strong { color: var(--text-primary); }
+.home-page .watch-check-in .watch-check-in-error { margin: 12px 0 0; color: #efa5a5; font-size: .85rem; }
+.home-page .watch-check-in--saved { display: flex; align-items: center; gap: 16px; }
+.home-page .watch-check-in--saved > p { flex: 1; margin: 0; font-size: .85rem; line-height: 1.5; color: var(--text-secondary); }
 @media (max-width: 600px) {
-  .home-page .watch-check-in-answer { flex: 1 1 130px; }
-  .home-page .watch-check-in-dismiss { margin-left: 0; }
+  .home-page .watch-check-in-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .home-page .watch-check-in-answer { padding-inline: 8px; }
 }

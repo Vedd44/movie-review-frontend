@@ -87,6 +87,7 @@ const normalizeMovieEntry = (movie = {}, extra = {}) => ({
   overview: movie.overview || movie.description || "",
   saved_at: new Date().toISOString(),
   ...(movie.watched_at ? { watched_at: movie.watched_at } : {}),
+  ...(movie.taste_feedback === false ? { taste_feedback: false } : {}),
   ...extra,
 });
 
@@ -356,7 +357,7 @@ const applyMovieBucketState = (profile, movie, nextState = {}) => {
     watchlist: nextState.watchlist ? upsertMovieEntry(baseProfile.watchlist, movie) : baseProfile.watchlist,
     seen: nextState.seen ? upsertMovieEntry(baseProfile.seen, { ...profile.seen?.find((item) => item.id === movieId), ...movie }) : baseProfile.seen,
     skipped: nextState.skipped ? upsertMovieEntry(baseProfile.skipped, movie) : baseProfile.skipped,
-    recentMovies: nextState.seen ? upsertMovieEntry(baseProfile.recentMovies, movie, {}, 18) : (baseProfile.recentMovies || []),
+    recentMovies: nextState.seen && movie.taste_feedback !== false ? upsertMovieEntry(baseProfile.recentMovies, movie, {}, 18) : (baseProfile.recentMovies || []),
   };
 };
 
@@ -408,6 +409,7 @@ const toggleWatchlist = (profile, movie) => {
 };
 
 const toggleSeen = (profile, movie, options = {}) => {
+  if (options.historyOnly) movie = { ...movie, taste_feedback: false };
   // A generic Watched action records history only; never infer a viewing date.
   if (options.watchedAt && Number.isFinite(Date.parse(options.watchedAt))) {
     movie = { ...movie, watched_at: new Date(options.watchedAt).toISOString() };
@@ -427,13 +429,14 @@ const toggleSeen = (profile, movie, options = {}) => {
       });
 
   if (!alreadySeen && movie?.id) {
-    appendInteraction({ type: "seen", movie, metadata: { source: "taste_action" } });
+    appendInteraction({ type: "seen", movie, metadata: { source: "taste_action", ...(movie.taste_feedback === false ? { taste_feedback: false } : {}) } });
   }
 
   return rebuildProfile(nextProfile);
 };
 
-const toggleSkipped = (profile, movie) => {
+const toggleSkipped = (profile, movie, options = {}) => {
+  if (options.titleOnly) movie = { ...movie, taste_feedback: false };
   const currentState = getMovieTasteState(profile, movie?.id);
   const alreadySkipped = currentState.skipped;
   const nextProfile = alreadySkipped
@@ -449,7 +452,7 @@ const toggleSkipped = (profile, movie) => {
       });
 
   if (!alreadySkipped && movie?.id) {
-    appendInteraction({ type: "hidden", movie, metadata: { source: "taste_action" } });
+    appendInteraction({ type: "hidden", movie, metadata: { source: "taste_action", ...(movie.taste_feedback === false ? { taste_feedback: false } : {}) } });
   }
 
   return rebuildProfile(nextProfile);

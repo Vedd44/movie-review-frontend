@@ -74,3 +74,31 @@ test("expired viewing date restores eligibility without clearing Watched", () =>
   expect(tasteProfileService.getPickExcludedIds(profile, {prompt:"sci-fi"})).not.toContain(movie.id);
   expect(profile.seen).toHaveLength(1);
 });
+
+test("Seen it persists history without inferring a viewing date or positive taste", () => {
+  const film = {...movie, genre_ids:[878], runtime:164, overview:"A dark futuristic thriller"};
+  let profile = tasteProfileService.toggleSeen(tasteProfileService.createEmptyProfile(), film, {historyOnly:true});
+  tasteProfileService.save(profile);
+  profile = tasteProfileService.load();
+  expect(profile.seen[0]).toMatchObject({id:movie.id, taste_feedback:false});
+  expect(profile.seen[0].watched_at).toBeUndefined();
+  expect(profile.behavioralMemory.seenMovieIds).toContain(movie.id);
+  expect(profile.behavioralMemory.preferredGenres).toEqual({});
+  expect(profile.behavioralMemory.userProfile.likedGenres).toEqual([]);
+  expect(profile.recentMovies).toEqual([]);
+  expect(tasteProfileService.getPickExcludedIds(profile, {prompt:"sci-fi"})).not.toContain(movie.id);
+});
+test("Not interested excludes only the title, survives reload and can be undone", () => {
+  const film = {...movie, genre_ids:[878], runtime:164, overview:"A dark futuristic thriller"};
+  let profile = tasteProfileService.toggleSkipped(tasteProfileService.createEmptyProfile(), film, {titleOnly:true});
+  tasteProfileService.save(profile);
+  profile = tasteProfileService.load();
+  expect(profile.skipped[0]).toMatchObject({id:movie.id, taste_feedback:false});
+  expect(tasteProfileService.getPickExcludedIds(profile, {prompt:"sci-fi"})).toContain(movie.id);
+  expect(profile.behavioralMemory.avoidedGenres).toEqual({});
+  expect(profile.behavioralMemory.userProfile.avoidTraits).toEqual({pace:[],tone:[],runtime:[]});
+  profile = tasteProfileService.toggleSkipped(profile, film);
+  expect(profile.skipped).toEqual([]);
+  expect(tasteProfileService.getPickExcludedIds(profile, {prompt:"sci-fi"})).not.toContain(movie.id);
+  expect(profile.behavioralMemory.avoidedGenres).toEqual({});
+});

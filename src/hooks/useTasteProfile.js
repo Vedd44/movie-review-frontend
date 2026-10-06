@@ -141,7 +141,7 @@ function useSharedTasteProfile() {
     () => ({
       toggleWatchlist: (movie) => commit((currentProfile) => tasteProfileService.toggleWatchlist(currentProfile, movie)),
       toggleSeen: (movie, options) => commit((currentProfile) => tasteProfileService.toggleSeen(currentProfile, movie, options)),
-      toggleSkipped: (movie) => commit((currentProfile) => tasteProfileService.toggleSkipped(currentProfile, movie)),
+      toggleSkipped: (movie, options) => commit((currentProfile) => tasteProfileService.toggleSkipped(currentProfile, movie, options)),
       toggleLikedVibe: (movie, vibeLabel) => commit((currentProfile) => tasteProfileService.toggleLikedVibe(currentProfile, movie, vibeLabel)),
       addRecentMovie: (movie) => commit((currentProfile) => tasteProfileService.addRecentMovie(currentProfile, movie)),
       savePickPreferences: (preferences) => commit((currentProfile) => tasteProfileService.savePickPreferences(currentProfile, preferences)),

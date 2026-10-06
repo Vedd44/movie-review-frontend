@@ -38,3 +38,11 @@ test("cloud movie rows preserve explicit recent viewing dates without inventing 
   expect(rows.find(row => row.movie_id === 10).movie_data.watched_at).toBe(dated.watched_at);
   expect(rows.find(row => row.movie_id === 11).movie_data.watched_at).toBeUndefined();
 });
+
+test("cloud rows preserve neutral history and title-only feedback", () => {
+  const rows = buildMovieRows("a", {seen:[{id:10,title:"Seen",taste_feedback:false}], skipped:[{id:11,title:"Not interested",taste_feedback:false}]});
+  expect(rows).toEqual(expect.arrayContaining([
+    expect.objectContaining({movie_id:10,status:"seen",movie_data:expect.objectContaining({taste_feedback:false})}),
+    expect.objectContaining({movie_id:11,status:"hidden",movie_data:expect.objectContaining({taste_feedback:false})}),
+  ]));
+});
