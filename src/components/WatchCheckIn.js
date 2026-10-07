@@ -34,7 +34,7 @@ function WatchCheckInPrompt({ movie, actions, getMovieState, user, onBegin, onPa
   };
   if (status === 'saved') return (
     <section className="watch-check-in watch-check-in--saved" aria-label="Movie update saved">
-      <p role="status"><strong>{movie.title}</strong>{choice === 'seen' ? ' is now in Watched. We’ll prioritize movies you haven’t seen.' : ' is now in Not for me. We won’t recommend this movie.'}</p>
+      <p role="status"><strong>{movie.title}</strong>{choice === 'seen' ? ' is now in Watched. We’ll prioritize movies you haven’t seen.' : ' is now in Not for me. We’ll leave this out of future picks. You can change this in My Movies.'}</p>
       <button className="watch-check-in-dismiss" type="button" onClick={onHide}>Done</button>
     </section>
   );
