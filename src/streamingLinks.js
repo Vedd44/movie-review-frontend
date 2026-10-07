@@ -64,4 +64,18 @@ export const buildAvailabilityLink = (availabilityLink = "") => {
   return href ? { kind: "tmdb_availability", href, label: "View availability" } : null;
 };
 
-export const safeProviderUrl = value => isHttpsLink(value) ? new URL(value).href : "";
+export const safeProviderUrl = value => {
+  if (!isHttpsLink(value)) return "";
+  const url = new URL(value);
+  // The API can include a third party's affiliate tags. Keep movie routing
+  // parameters such as playableId and gti, while using ordinary outbound links.
+  const affiliateKeys = /(^|\.)apple\.com$/.test(url.hostname)
+    ? new Set(["at", "ct", "itscg", "itsct"])
+    : /(^|\.)amazon\./.test(url.hostname)
+      ? new Set(["tag", "ascsubtag", "linkcode", "linkid", "creative", "creativeasin", "camp"])
+      : new Set();
+  for (const key of [...url.searchParams.keys()]) {
+    if (affiliateKeys.has(key.toLowerCase())) url.searchParams.delete(key);
+  }
+  return url.href;
+};
