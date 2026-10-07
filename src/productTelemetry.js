@@ -2,7 +2,7 @@ import { getSupabaseClient } from './lib/supabaseClient';
 import { acquisitionFromLocation, sanitizeRequestDetails } from './telemetryDetails';
 import { hasAnalyticsConsent, subscribeCookieChoice } from './cookieConsent';
 // Private admin request details are separate from external analytics.
-const ALLOWED=new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
+const ALLOWED=new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','watch_options_viewed','provider_clicked','viewing_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
 const initialAcquisition=typeof window!=="undefined"?acquisitionFromLocation(window.location.href,document.referrer):null;
 let acquisition=null;
 let queue=[],timer=null,busy=false,sending=false,authenticated=false,sessionId='',initialized=false;
@@ -10,7 +10,7 @@ const uuid=()=>window.crypto?.randomUUID?.() || '';
 export const telemetrySurface=path=>path==='/'?'home':path.startsWith('/p/')?'shared_pick':path.startsWith('/browse')?'browse':path.startsWith('/collections/')?'collection':path.startsWith('/movies/')||path.startsWith('/movie/')?'movie':path.startsWith('/people/')||path.startsWith('/person/')?'person':path==='/my-movies'?'my_movies':path==='/search'?'search':'other';
 export const setAnalyticsAuthenticated=value=>{authenticated=Boolean(value);};
 export function sanitizeTelemetryProperties(p={}) {
- const safe={};for(const key of ['movie_id','latency_ms','request_type','outcome','kind','prompt_category'])if(['string','number'].includes(typeof p[key]))safe[key]=p[key];
+ const safe={};for(const key of ['movie_id','latency_ms','request_type','outcome','kind','prompt_category','provider_id','provider_name','availability_type','source'])if(['string','number'].includes(typeof p[key]))safe[key]=p[key];
  safe.authenticated=typeof p.authenticated==='boolean'?p.authenticated:authenticated;
  safe.page=['home','browse','collection','movie','person','shared_pick','my_movies','search','ask'].includes(p.page)?p.page:telemetrySurface(window.location.pathname);
  return safe;

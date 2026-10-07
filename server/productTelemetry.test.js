@@ -56,3 +56,12 @@ test('retention deletes expired private batches but leaves current dates intact'
  const storage={list:async prefix=>({data:prefix===''?[{name:'2026-09-20'},{name:'2026-10-03'}]:[{name:'old.json'}]}),remove:async paths=>{removed.push(...paths);return {};}};
  await pruneTelemetry({storage:{from:()=>storage}},now);assert.deepEqual(removed,['2026-09-20/old.json']);
 });
+
+test('watch views and provider clicks reach private metrics with source/type and owner exclusion',()=>{
+ const mine=normalizeBatch(batch(1,[event(401,'watch_options_viewed',{movie_id:278,source:'watchmode'}),event(402,'provider_clicked',{movie_id:278,provider_id:203,provider_name:'Netflix',availability_type:'subscription',source:'watchmode',url:'https://private.example'})]),now);
+ mine.events=mine.events.map(e=>({...e,owner:'mine'}));
+ const guest=normalizeBatch(batch(2,[event(403,'watch_options_viewed',{movie_id:679,source:'tmdb'}),event(404,'viewing_options_clicked',{movie_id:679,source:'tmdb'})]),now);
+ assert.equal(mine.events[1].properties.url,undefined);
+ const all=buildProductMetrics([mine,guest],now);assert.equal(all.total.watch_views,2);assert.equal(all.total.provider_clicks,1);assert.equal(all.total.tmdb_clicks,1);assert.equal(all.provider_clicks[0].name,'Netflix');
+ const hidden=buildProductMetrics([mine,guest],now,false,{excludeOwner:'mine'});assert.equal(hidden.total.watch_views,1);assert.equal(hidden.total.provider_clicks,0);assert.deepEqual(hidden.provider_clicks,[]);
+});

@@ -63,3 +63,5 @@ export const buildAvailabilityLink = (availabilityLink = "") => {
   if (!isHttpsLink(href) || !["www.themoviedb.org", "themoviedb.org"].includes(new URL(href).hostname)) return null;
   return href ? { kind: "tmdb_availability", href, label: "View availability" } : null;
 };
+
+export const safeProviderUrl = value => isHttpsLink(value) ? new URL(value).href : "";

@@ -1,7 +1,7 @@
 const {sanitizeAcquisition,sanitizeRequestDetails}=require('../src/telemetryDetails');
 const BUCKET = 'reelbot-product-events';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EVENTS = new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
+const EVENTS = new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','watch_options_viewed','provider_clicked','viewing_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
 const SURFACES = new Set(['home','browse','collection','movie','person','shared_pick','my_movies','search','other','ask']);
 function normalizeBatch(body, now=Date.now()) {
  if (!UUID.test(body?.session_id || '') || !UUID.test(body?.batch_id || '') || !Array.isArray(body.events) || !body.events.length || body.events.length>30) return null;
@@ -18,6 +18,10 @@ function normalizeBatch(body, now=Date.now()) {
   if(typeof p.authenticated==='boolean')properties.authenticated=p.authenticated;
   if(Number.isSafeInteger(p.movie_id)&&p.movie_id>0)properties.movie_id=p.movie_id;
   if(Number.isFinite(p.latency_ms)&&p.latency_ms>=0&&p.latency_ms<=180000)properties.latency_ms=Math.round(p.latency_ms);
+  if (Number.isSafeInteger(p.provider_id) && p.provider_id > 0) properties.provider_id=p.provider_id;
+  if (typeof p.provider_name === 'string') properties.provider_name=p.provider_name.slice(0,120);
+  if (['subscription','rent','buy','free','cable'].includes(p.availability_type)) properties.availability_type=p.availability_type;
+  if (['watchmode','tmdb'].includes(p.source)) properties.source=p.source;
   if(event.name === "request_logged") Object.assign(properties,sanitizeRequestDetails(p));
   events.push({id:event.id,name:event.name,time,properties});
  }
@@ -81,16 +85,22 @@ function buildProductMetrics(batches,now=Date.now(),capped=false,options={}) {
    if(e.name==='movie_saved')p.saved=true;
    if(e.name==='movie_watched')p.watched=true;
   }
-  return {sessions:sessions.size,page_views:scoped.filter(e=>e.name==='page_viewed').length,requests:requested.length,completed:recommendation.length,picks:recommendation.filter(e=>['pick','fallback'].includes(e.properties.outcome)).length,no_match:recommendation.filter(e=>e.properties.outcome==='no_match').length,failed:recommendation.filter(e=>e.properties.outcome==='failed'||e.name==='recommendation_failed'&&!e.properties.outcome).length,identifications:outcomes.filter(e=>e.properties.kind==='identification'||e.properties.outcome==='identification').length,median_ms:percentile(.5),p95_ms:percentile(.95),presented:picks.size,chosen:[...picks.values()].filter(p=>p.chosen).length,details:[...picks.values()].filter(p=>p.details).length,saved:[...picks.values()].filter(p=>p.saved).length,watched:[...picks.values()].filter(p=>p.watched).length,save_attempts:scoped.filter(e=>e.name==='save_clicked').length,swaps:scoped.filter(e=>e.name==='another_pick_clicked').length,refinements:scoped.filter(e=>e.name==='refine_clicked').length,shares:scoped.filter(e=>e.name==='pick_shared').length};
+  return {watch_views:scoped.filter(e=>e.name==='watch_options_viewed').length,provider_clicks:scoped.filter(e=>e.name==='provider_clicked').length,tmdb_clicks:scoped.filter(e=>e.name==='viewing_options_clicked').length,sessions:sessions.size,page_views:scoped.filter(e=>e.name==='page_viewed').length,requests:requested.length,completed:recommendation.length,picks:recommendation.filter(e=>['pick','fallback'].includes(e.properties.outcome)).length,no_match:recommendation.filter(e=>e.properties.outcome==='no_match').length,failed:recommendation.filter(e=>e.properties.outcome==='failed'||e.name==='recommendation_failed'&&!e.properties.outcome).length,identifications:outcomes.filter(e=>e.properties.kind==='identification'||e.properties.outcome==='identification').length,median_ms:percentile(.5),p95_ms:percentile(.95),presented:picks.size,chosen:[...picks.values()].filter(p=>p.chosen).length,details:[...picks.values()].filter(p=>p.details).length,saved:[...picks.values()].filter(p=>p.saved).length,watched:[...picks.values()].filter(p=>p.watched).length,save_attempts:scoped.filter(e=>e.name==='save_clicked').length,swaps:scoped.filter(e=>e.name==='another_pick_clicked').length,refinements:scoped.filter(e=>e.name==='refine_clicked').length,shares:scoped.filter(e=>e.name==='pick_shared').length};
  };
  const surfaces=[...SURFACES].map(page=>{const views=events.filter(e=>e.name==='page_viewed'&&e.properties.page===page);return {page,views:views.length,guest_sessions:new Set(views.filter(e=>!e.properties.authenticated).map(e=>e.session)).size};}).filter(row=>row.views).sort((a,b)=>b.views-a.views);
  const requests=events.filter(e=>e.name==='request_logged');
- const actionLabels={movie_saved:'Saved',pick_chosen:'Chosen to watch',pick_details_clicked:'Opened details',movie_detail_opened:'Opened details',another_pick_clicked:'Asked for another',watch_options_clicked:'Opened watch options',pick_shared:'Shared'};
+ const actionLabels={movie_saved:'Saved',pick_chosen:'Chosen to watch',pick_details_clicked:'Opened details',movie_detail_opened:'Opened details',another_pick_clicked:'Asked for another',watch_options_clicked:'Opened watch options',pick_shared:'Shared',provider_clicked:'Opened streaming service',viewing_options_clicked:'Opened TMDB viewing options'};
  const requestLog=requests.map((e,index)=>{
   const next=requests.slice(index+1).find(item=>item.session===e.session);
   const actions=[...new Set(events.filter(item=>item.session===e.session&&item.time>=e.time&&(!next||item.time<next.time)&&actionLabels[item.name]&&(!item.properties.movie_id||item.properties.movie_id===e.properties.movie_id)).map(item=>actionLabels[item.name]))];
   return {id:e.properties.request_id||e.id,session:e.session.slice(0,8),time:new Date(e.time).toISOString(),is_mine:e.is_mine,acquisition:e.acquisition,actions,...e.properties};
  }).reverse().slice(0,200);
- return {request_log:requestLog,surfaces,scope:'Browser-reported activity sample · last 7 days',coverage:`Includes guests and signed-in sessions from this release. Sessions are visits in a browser tab, not unique people. A visitor who signs in can appear in both groups. Consented request text and results are redacted and shown only to super admins. Account IDs and full referral URLs are not stored. Activity is reported for 7 days; stored batches are pruned after 8 days. Up to 40 recent event batches per day are read; ${capped?'this sample has reached that limit.':'the read limit has not been reached.'} Blocked tracking and missing browser events are excluded.`,capped,total:summary('all'),guests:summary('guest'),signed_in:summary('signed_in')};
+ const providerClicks=new Map();
+ for(const event of events.filter(e=>e.name==='provider_clicked')) {
+  const p=event.properties; const key=`${p.source}:${p.provider_id}:${p.availability_type}`;
+  const row=providerClicks.get(key)||{source:p.source,provider_id:p.provider_id,name:p.provider_name||'Provider',availability_type:p.availability_type,clicks:0};
+  row.clicks++;providerClicks.set(key,row);
+ }
+ return {provider_clicks:[...providerClicks.values()].sort((a,b)=>b.clicks-a.clicks),request_log:requestLog,surfaces,scope:'Browser-reported activity sample · last 7 days',coverage:`Includes guests and signed-in sessions from this release. Sessions are visits in a browser tab, not unique people. A visitor who signs in can appear in both groups. Consented request text and results are redacted and shown only to super admins. Account IDs and full referral URLs are not stored. Activity is reported for 7 days; stored batches are pruned after 8 days. Up to 40 recent event batches per day are read; ${capped?'this sample has reached that limit.':'the read limit has not been reached.'} Blocked tracking and missing browser events are excluded.`,capped,total:summary('all'),guests:summary('guest'),signed_in:summary('signed_in')};
 }
 module.exports={BUCKET,EVENTS,normalizeBatch,createTelemetryStore,readProductTelemetry,buildProductMetrics,pruneTelemetry};
