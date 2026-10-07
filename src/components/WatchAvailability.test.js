@@ -32,7 +32,7 @@ test('keeps TMDB availability on a quota or API fallback',async()=>{
  fetchWatchmodeAvailability.mockResolvedValue(null);
  render(<WatchAvailability movie={{id:278}} availability={fallback}/>);
  await act(async()=>visibility([{isIntersecting:true}]));
- expect(screen.getByText('Netflix')).toBeInTheDocument();expect(screen.queryByRole('link',{name:'Watch on Netflix'})).toBeNull();
+ expect(screen.getByRole('link',{name:'View Netflix options on TMDB'})).toBeInTheDocument();expect(screen.queryByRole('link',{name:'Watch on Netflix'})).toBeNull();
  expect(screen.getByText('Provider data from JustWatch via TMDB.')).toBeInTheDocument();
  expect(screen.getByRole('link',{name:/See current viewing options/})).toHaveAttribute('href',fallback.link);
  expect(trackProductEvent).toHaveBeenCalledWith('watch_options_viewed',{movie_id:278,source:'tmdb'});
@@ -42,11 +42,20 @@ test('ignores a previous movie lookup completing after navigation',async()=>{
  const view=render(<WatchAvailability movie={{id:278}} availability={fallback}/>);
  act(()=>visibility([{isIntersecting:true}]));
  view.rerender(<WatchAvailability movie={{id:679}} availability={{...fallback,subscription:[{id:9,name:'Hulu'}]}}/>);
- await act(async()=>resolve(enhanced));expect(screen.queryByRole('link',{name:'Watch on Netflix'})).toBeNull();expect(screen.getByText('Hulu')).toBeInTheDocument();
+ await act(async()=>resolve(enhanced));expect(screen.queryByRole('link',{name:'Watch on Netflix'})).toBeNull();expect(screen.getByRole('link',{name:'View Hulu options on TMDB'})).toBeInTheDocument();
  await act(async()=>visibility([{isIntersecting:true}]));await waitFor(()=>expect(screen.getByRole('link',{name:'Watch on Netflix'})).toBeInTheDocument());
 });
 test('never renders unsafe provider URLs as links',async()=>{
  fetchWatchmodeAvailability.mockResolvedValue({...enhanced,subscription:[{id:1,name:'Unsafe',direct_url:'javascript:alert(1)'}]});
  render(<WatchAvailability movie={{id:278}} availability={fallback}/>);await act(async()=>visibility([{isIntersecting:true}]));
  expect(screen.queryByRole('link',{name:'Watch on Unsafe'})).toBeNull();
+});
+
+test('additional providers visibly use TMDB options with separate click attribution',async()=>{
+ render(<WatchAvailability movie={{id:278}} availability={{...fallback,rent:[{id:3,name:'YouTube',logo_path:'/youtube.jpg'}]}}/>);
+ await act(async()=>visibility([{isIntersecting:true}]));
+ const link=screen.getByRole('link',{name:'View YouTube options on TMDB'});
+ expect(link).toHaveAttribute('href',fallback.link);expect(link.textContent).toContain('options');
+ fireEvent.click(link);expect(trackProductEvent).toHaveBeenCalledWith('viewing_options_clicked',{movie_id:278,provider_id:3,provider_name:'YouTube',availability_type:'rent',source:'tmdb'});
+ expect(screen.getByText(/Additional options from JustWatch via TMDB/)).toBeInTheDocument();
 });

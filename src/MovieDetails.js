@@ -426,8 +426,8 @@ function MovieDetails() {
 
         <WatchAvailability availability={movie.watch_providers} sectionId="where-to-watch" movie={movie} />
         {featuredCollections.length ? (
-          <section className="detail-featured-collections" aria-labelledby="featured-in-heading">
-            <div id="featured-in-heading" className="detail-description-label">Featured in</div>
+          <section className="detail-featured-collections" aria-labelledby="related-collections-heading">
+            <div id="related-collections-heading" className="detail-description-label">Related collections</div>
             <div className="detail-featured-collection-links">
               {featuredCollections.map((collection) => (
                 <Link key={collection.slug} to={`/collections/${collection.slug}`} className="detail-featured-collection-link">{collection.title}</Link>

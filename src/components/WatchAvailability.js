@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
+import "./WatchAvailability.css";
 import { trackProductEvent } from "../analytics";
 import { buildAvailabilityLink, safeProviderUrl } from "../streamingLinks";
+import { mergeWatchAvailability } from "../watchAvailability";
 import { fetchWatchmodeAvailability } from "../services/watchmodeService";
 
 const GROUP_LABELS = {
@@ -52,13 +54,10 @@ function WatchAvailability({ availability, sectionId, movie }) {
     return () => { active = false; window.removeEventListener("scroll",check); window.removeEventListener("resize",check); };
   }, [movieId]);
   const watchedAvailability = enhanced?.id === movieId ? enhanced.availability : null;
-  const displayed = watchedAvailability || availability;
+  const displayed = mergeWatchAvailability(availability, watchedAvailability);
   const providerGroups = getProviderGroups(displayed);
   const source = watchedAvailability ? "watchmode" : "tmdb";
-  const logoProviders = availability?.region === displayed?.region
-    ? getProviderGroups(availability).flatMap(group => group.providers) : [];
-  const logoFor = provider => provider.logo_path || logoProviders.find(candidate => candidate.name.toLowerCase() === provider.name.toLowerCase())?.logo_path;
-  const clickProperties = (provider, group) => ({movie_id:movieId || 0,provider_id:Number(provider.id)||0,provider_name:provider.name,availability_type:group,source});
+  const clickProperties = (provider, group) => ({movie_id:movieId || 0,provider_id:Number(provider.id)||0,provider_name:provider.name,availability_type:group,source:provider.source});
   const availabilityAction = buildAvailabilityLink(availability?.region === displayed?.region ? availability?.link : `https://www.themoviedb.org/movie/${movieId}/watch?locale=US`);
   const regionLabel = displayed?.region === "US" ? "the U.S." : displayed?.region || "your region";
 
@@ -77,28 +76,26 @@ function WatchAvailability({ availability, sectionId, movie }) {
             <div key={group.id} className="watch-availability-row">
               <h3>{group.label}</h3>
               <ul aria-label={`${group.label} providers`}>
-                {group.providers.map((provider) => (
-                  <li key={`${group.id}-${provider.id}`}>
-                    {safeProviderUrl(provider.direct_url) ? (
-                      <a
-                        href={safeProviderUrl(provider.direct_url)}
-                        onClick={() => trackProductEvent("provider_clicked", clickProperties(provider, group.id))}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`${group.id === "rent" ? "Rent" : group.id === "buy" ? "Buy" : "Watch"} on ${provider.name}` }
-                        style={{ display: "flex", alignItems: "center", gap: "inherit", color: "inherit", textDecoration: "none" }}
-                      >
-                        {logoFor(provider) ? <img src={`https://image.tmdb.org/t/p/w92${logoFor(provider)}`} alt="" aria-hidden="true" loading="lazy" /> : null}
-                        <span>{provider.name} <span aria-hidden="true">↗</span></span>
-                      </a>
-                    ) : (
-                      <>
-                        {logoFor(provider) ? <img src={`https://image.tmdb.org/t/p/w92${logoFor(provider)}`} alt="" aria-hidden="true" loading="lazy" /> : null}
-                        <span>{provider.name}</span>
-                      </>
-                    )}
-                  </li>
-                ))}
+                {group.providers.map((provider) => {
+                  const direct = provider.destination === "provider";
+                  const href = direct ? safeProviderUrl(provider.direct_url) : availabilityAction?.href;
+                  const label = direct
+                    ? `${group.id === "rent" ? "Rent" : group.id === "buy" ? "Buy" : "Watch"} on ${provider.name}`
+                    : `View ${provider.name} options on TMDB`;
+                  const icon = provider.logo_path ? <img src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`} alt="" aria-hidden="true" loading="lazy" /> : <span className="watch-provider-icon-placeholder" aria-hidden="true">{provider.name.charAt(0)}</span>;
+                  return (
+                    <li key={`${group.id}-${provider.source}-${provider.id}`}>
+                      {href ? (
+                        <a href={href}
+                          onClick={() => trackProductEvent(direct ? "provider_clicked" : "viewing_options_clicked", clickProperties(provider, group.id))}
+                          target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
+                          className="watch-provider-link">
+                          {icon}<span>{provider.name}{!direct ? <span className="watch-provider-options-label"> · options</span> : null} <span aria-hidden="true">↗</span></span>
+                        </a>
+                      ) : <>{icon}<span>{provider.name}</span></>}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
@@ -113,7 +110,7 @@ function WatchAvailability({ availability, sectionId, movie }) {
             See current viewing options <span aria-hidden="true">↗</span>
           </a>
         ) : null}
-        <p className="detail-secondary-text watch-now-footnote">{watchedAvailability ? <>Streaming data powered by <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">Watchmode</a>.</> : "Provider data from JustWatch via TMDB."}</p>
+        <p className="detail-secondary-text watch-now-footnote">{watchedAvailability ? <>Streaming data powered by <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">Watchmode</a>.{displayed.has_tmdb_options ? " Additional options from JustWatch via TMDB." : ""}</> : "Provider data from JustWatch via TMDB."}</p>
       </div>
     </section>
   );
