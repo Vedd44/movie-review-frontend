@@ -27,6 +27,8 @@ function sanitizeRequestDetails(p = {}) {
   details.result_text = redactText(p.result_text, 1200).trim();
   details.movie_title = redactText(p.movie_title, 180).trim();
   details.alternate_titles = redactText(p.alternate_titles, 360).trim();
+  if (Number.isSafeInteger(p.started_at) && p.started_at>0) details.started_at=p.started_at;
+  if (Array.isArray(p.alternate_ids)) details.alternate_ids=[...new Set(p.alternate_ids.filter(id=>Number.isSafeInteger(id)&&id>0))].slice(0,3);
   return details;
 }
 module.exports = {redactText, acquisitionFromLocation, sanitizeAcquisition, sanitizeRequestDetails};

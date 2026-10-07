@@ -65,3 +65,22 @@ test('watch views and provider clicks reach private metrics with source/type and
  const all=buildProductMetrics([mine,guest],now);assert.equal(all.total.watch_views,2);assert.equal(all.total.provider_clicks,1);assert.equal(all.total.tmdb_clicks,1);assert.equal(all.provider_clicks[0].name,'Netflix');
  const hidden=buildProductMetrics([mine,guest],now,false,{excludeOwner:'mine'});assert.equal(hidden.total.watch_views,1);assert.equal(hidden.total.provider_clicks,0);assert.deepEqual(hidden.provider_clicks,[]);
 });
+
+test('follow-through includes alternate clicks, browsing and providers; stops when another request starts',()=>{
+ const t=now-120000;
+ const b=batch(1,[event(601,'request_logged',{movie_id:5,alternate_ids:[6]},t),event(602,'alternate_clicked',{movie_id:6},t+1000),event(603,'movie_detail_opened',{movie_id:6},t+2000),event(604,'page_viewed',{page:'movie'},t+2001),event(605,'provider_clicked',{movie_id:6,provider_name:'Tubi TV'},t+3000),event(606,'page_viewed',{page:'collection'},t+4000),event(607,'request_logged',{movie_id:7,started_at:t+5000},t+10000),event(608,'pick_details_clicked',{movie_id:5},t+7000)]);
+ const metrics=buildProductMetrics([b,b],now);
+ const row=metrics.request_log.find(r=>r.movie_id===5);
+ assert.equal(row.follow_through.result_clicks,2);assert.equal(row.follow_through.opened_details,true);assert.equal(row.follow_through.continued_browsing,true);assert.equal(row.follow_through.page_views,2);assert.deepEqual(row.follow_through.clicked_providers,['Tubi TV']);assert.equal(row.follow_through.asked_again,true);assert.equal(row.follow_through.last_activity_seconds,4);
+});
+test('absent events, unrelated sessions and later visits never claim a bounce or result click',()=>{
+ const t=now-3600000;
+ const m=buildProductMetrics([batch(1,[event(701,'request_logged',{movie_id:5},t),event(702,'pick_details_clicked',{movie_id:5},t+31*60000)]),batch(2,[event(703,'provider_clicked',{movie_id:5},t+1000)])],now);
+ const f=m.request_log[0].follow_through;
+ assert.equal(f.result_clicks,0);assert.equal(f.recorded_activity,false);assert.equal(f.continued_browsing,false);assert.equal(f.last_activity_seconds,null);
+ assert.equal(f.bounced,undefined);
+});
+test('request attribution bounds and alternate IDs are validated at ingestion',()=>{
+ const n=normalizeBatch(batch(1,[event(801,'request_logged',{started_at:now+5000,alternate_ids:[5,-1,6,5,'7',8,9]},now-1000)]),now);
+ assert.equal(n.events[0].properties.started_at,undefined);assert.deepEqual(n.events[0].properties.alternate_ids,[5,6,8]);
+});

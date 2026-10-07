@@ -2,7 +2,7 @@ import { getSupabaseClient } from './lib/supabaseClient';
 import { acquisitionFromLocation, sanitizeRequestDetails } from './telemetryDetails';
 import { hasAnalyticsConsent, subscribeCookieChoice } from './cookieConsent';
 // Private admin request details are separate from external analytics.
-const ALLOWED=new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','watch_options_viewed','provider_clicked','viewing_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
+const ALLOWED=new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','pick_trailer_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','watch_options_viewed','provider_clicked','viewing_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
 const initialAcquisition=typeof window!=="undefined"?acquisitionFromLocation(window.location.href,document.referrer):null;
 let acquisition=null;
 let queue=[],timer=null,busy=false,sending=false,authenticated=false,sessionId='',initialized=false;

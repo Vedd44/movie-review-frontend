@@ -1496,6 +1496,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       const noPickError = new Error("No matching pick.");
       noPickError.code = PICK_STATUS.EXHAUSTED;
       noPickError.userMessage = response.data.user_message;
+      noPickError.intent = response.data.intent;
       throw noPickError;
     }
 
@@ -1563,7 +1564,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         setSwapHistory([]);
       }
       void tasteActions.recordPickResult(nextPreferences, nextPayload).catch(() => {});
-      recordRequestActivity({request_id:activityRequestId,prompt:nextPreferences.prompt,page:"home",kind:nextPayload.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation",movie_id:Number(nextPayload.primary?.id),movie_title:nextPayload.primary?.title,alternate_titles:(nextPayload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:nextPayload.rationale?.primary_reason || nextPayload.rationale?.decisionSentence || nextPayload.primary?.reason || nextPayload.summary,outcome:nextPayload.performance?.outcome || "pick",latency_ms:Date.now()-startedAt});
+      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:nextPreferences.prompt,page:"home",kind:nextPayload.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation",movie_id:Number(nextPayload.primary?.id),movie_title:nextPayload.primary?.title,alternate_ids:(nextPayload.alternates||[]).map(movie=>Number(movie.id)),alternate_titles:(nextPayload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:nextPayload.rationale?.primary_reason || nextPayload.rationale?.decisionSentence || nextPayload.primary?.reason || nextPayload.summary,outcome:nextPayload.performance?.outcome || "pick",latency_ms:Date.now()-startedAt});
       trackProductEvent("recommendation_returned", {
         latency_ms: Date.now() - startedAt,
         outcome: nextPayload.intent === "MOVIE_IDENTIFICATION" ? "identification" : nextPayload.performance?.outcome || "pick",
@@ -1581,7 +1582,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         return null;
       }
 
-      recordRequestActivity({request_id:activityRequestId,prompt:nextPreferences.prompt,page:"home",kind:"recommendation",outcome:requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed",latency_ms:Date.now()-startedAt});
+      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:nextPreferences.prompt,page:"home",kind:requestError?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",result_text:requestError?.userMessage,outcome:requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed",latency_ms:Date.now()-startedAt});
       console.error("Error fetching ReelBot pick:", requestError);
       trackProductEvent("recommendation_failed", { outcome: requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed", latency_ms: Date.now() - startedAt, theaters_toggle: Boolean(nextPreferences.include_theatrical) });
       const nextStatus = requestError?.code === PICK_STATUS.EXHAUSTED ? PICK_STATUS.EXHAUSTED : PICK_STATUS.ERROR;

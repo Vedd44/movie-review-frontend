@@ -1,7 +1,7 @@
 const {sanitizeAcquisition,sanitizeRequestDetails}=require('../src/telemetryDetails');
 const BUCKET = 'reelbot-product-events';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EVENTS = new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','watch_options_viewed','provider_clicked','viewing_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
+const EVENTS = new Set(['page_viewed','recommendation_requested','recommendation_returned','recommendation_failed','pick_presented','pick_chosen','pick_choice_removed','another_pick_clicked','refine_clicked','alternate_clicked','pick_details_clicked','pick_trailer_clicked','movie_detail_opened','save_clicked','movie_saved','movie_unsaved','movie_watched','movie_unwatched','not_for_me_added','not_for_me_removed','pick_shared','watch_options_clicked','watch_options_viewed','provider_clicked','viewing_options_clicked','ask_reelbot_submitted','ask_reelbot_result','ask_reelbot_failed','request_logged']);
 const SURFACES = new Set(['home','browse','collection','movie','person','shared_pick','my_movies','search','other','ask']);
 function normalizeBatch(body, now=Date.now()) {
  if (!UUID.test(body?.session_id || '') || !UUID.test(body?.batch_id || '') || !Array.isArray(body.events) || !body.events.length || body.events.length>30) return null;
@@ -22,7 +22,7 @@ function normalizeBatch(body, now=Date.now()) {
   if (typeof p.provider_name === 'string') properties.provider_name=p.provider_name.slice(0,120);
   if (['subscription','rent','buy','free','cable'].includes(p.availability_type)) properties.availability_type=p.availability_type;
   if (['watchmode','tmdb'].includes(p.source)) properties.source=p.source;
-  if(event.name === "request_logged") Object.assign(properties,sanitizeRequestDetails(p));
+  if(event.name === "request_logged") { Object.assign(properties,sanitizeRequestDetails(p)); if(properties.started_at>time || properties.started_at<time-600000) delete properties.started_at; }
   events.push({id:event.id,name:event.name,time,properties});
  }
  return {v:2,acquisition:sanitizeAcquisition(body.acquisition),session_id:body.session_id,batch_id:body.batch_id,received_at:new Date(now).toISOString(),events};
@@ -91,9 +91,29 @@ function buildProductMetrics(batches,now=Date.now(),capped=false,options={}) {
  const requests=events.filter(e=>e.name==='request_logged');
  const actionLabels={movie_saved:'Saved',pick_chosen:'Chosen to watch',pick_details_clicked:'Opened details',movie_detail_opened:'Opened details',another_pick_clicked:'Asked for another',watch_options_clicked:'Opened watch options',pick_shared:'Shared',provider_clicked:'Opened streaming service',viewing_options_clicked:'Opened TMDB viewing options'};
  const requestLog=requests.map((e,index)=>{
-  const next=requests.slice(index+1).find(item=>item.session===e.session);
-  const actions=[...new Set(events.filter(item=>item.session===e.session&&item.time>=e.time&&(!next||item.time<next.time)&&actionLabels[item.name]&&(!item.properties.movie_id||item.properties.movie_id===e.properties.movie_id)).map(item=>actionLabels[item.name]))];
-  return {id:e.properties.request_id||e.id,session:e.session.slice(0,8),time:new Date(e.time).toISOString(),is_mine:e.is_mine,acquisition:e.acquisition,actions,...e.properties};
+  const start = Number.isFinite(e.properties.started_at) ? e.properties.started_at : e.time;
+  const next = requests.filter(item=>item.session===e.session && (item.properties.started_at || item.time)>start)
+    .sort((a,b)=>(a.properties.started_at || a.time)-(b.properties.started_at || b.time))[0];
+  const nextStart = next ? next.properties.started_at || next.time : Infinity;
+  const end = Math.min(nextStart,e.time+30*60000);
+  const later = events.filter(item=>item.session===e.session && item.time>e.time && item.time<end);
+  const resultIds = new Set([e.properties.movie_id,...(e.properties.alternate_ids || []),...later.filter(item=>item.name==='alternate_clicked').map(item=>item.properties.movie_id)].filter(Boolean));
+  const resultAction = item => !item.properties.movie_id || resultIds.has(item.properties.movie_id);
+  const actions = [...new Set(later.filter(item=>actionLabels[item.name] && resultAction(item)).map(item=>actionLabels[item.name]))];
+  const clicks = later.filter(item=>['pick_details_clicked','alternate_clicked','pick_trailer_clicked','provider_clicked','viewing_options_clicked'].includes(item.name) && resultAction(item));
+  const pages = later.filter(item=>item.name==='page_viewed');
+  const destinations = [...new Set(pages.map(item=>item.properties.page).filter(Boolean))];
+  const followThrough = {
+    result_clicks: clicks.length,
+    opened_details: later.some(item=>['pick_details_clicked','movie_detail_opened'].includes(item.name) && resultIds.has(item.properties.movie_id)),
+    continued_browsing: pages.length>0 || later.some(item=>item.name==='movie_detail_opened' && !resultIds.has(item.properties.movie_id)),
+    page_views: pages.length, destinations,
+    clicked_providers: [...new Set(later.filter(item=>item.name==='provider_clicked' && resultAction(item)).map(item=>item.properties.provider_name || 'Streaming service'))],
+    asked_again: nextStart<=e.time+30*60000,
+    last_activity_seconds: later.length ? Math.round((later[later.length-1].time-e.time)/1000) : null,
+    recorded_activity: later.some(item=>!['pick_presented','recommendation_returned','ask_reelbot_result'].includes(item.name)) || nextStart<=e.time+30*60000,
+  };
+  return {id:e.properties.request_id||e.id,session:e.session.slice(0,8),time:new Date(e.time).toISOString(),is_mine:e.is_mine,acquisition:e.acquisition,actions,...e.properties,follow_through:followThrough};
  }).reverse().slice(0,200);
  const providerClicks=new Map();
  for(const event of events.filter(e=>e.name==='provider_clicked')) {

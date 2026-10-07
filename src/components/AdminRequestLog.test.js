@@ -13,3 +13,8 @@ test('filters requests by acquisition source and guest status while showing the 
  expect(screen.queryByText('A clever thriller')).toBeNull();
  expect(screen.getByText(/No recorded requests match/)).toBeInTheDocument();
 });
+
+test('labels public explanations and distinguishes recorded follow-through from missing activity',()=>{
+ render(<AdminRequestLog rows={[{id:'1',time:'2026-10-06T14:00:00Z',result_text:'A waitress faces danger during the overnight diner shift.',follow_through:{result_clicks:2,opened_details:true,continued_browsing:true,destinations:['movie','collection'],clicked_providers:['Tubi TV'],asked_again:true,last_activity_seconds:12,recorded_activity:true}},{id:'2',time:'2026-10-06T15:00:00Z',follow_through:{result_clicks:0,recorded_activity:false}}]}/>);
+ expect(screen.getByText('User-facing explanation')).toBeInTheDocument();expect(screen.getByText('2 result link clicks')).toBeInTheDocument();expect(screen.getByText('Opened movie details')).toBeInTheDocument();expect(screen.getByText('Continued browsing: movie, collection')).toBeInTheDocument();expect(screen.getByText('Provider: Tubi TV')).toBeInTheDocument();expect(screen.getByText('Submitted another request')).toBeInTheDocument();expect(screen.getByText('No further activity recorded')).toBeInTheDocument();
+});
