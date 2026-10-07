@@ -58,8 +58,8 @@ function WatchAvailability({ availability, sectionId, movie }) {
   const providerGroups = getProviderGroups(displayed);
   const source = watchedAvailability ? "watchmode" : "tmdb";
   const clickProperties = (provider, group) => ({movie_id:movieId || 0,provider_id:Number(provider.id)||0,provider_name:provider.name,availability_type:group,source:provider.source});
-  const availabilityAction = buildAvailabilityLink(availability?.region === displayed?.region ? availability?.link : `https://www.themoviedb.org/movie/${movieId}/watch?locale=US`);
-  const regionLabel = displayed?.region === "US" ? "the U.S." : displayed?.region || "your region";
+  const availabilityAction = buildAvailabilityLink(availability?.region === displayed?.region ? availability?.link : "") || buildAvailabilityLink(movieId ? `https://www.themoviedb.org/movie/${movieId}/watch?locale=US` : "");
+  const regionLabel = !displayed?.region || displayed.region === "US" ? "the U.S." : displayed.region;
 
   return (
     <section ref={sectionRef} id={sectionId} className="detail-info-card detail-info-card--utility detail-info-card--providers detail-info-card--watch-now detail-anchor-target">
@@ -77,20 +77,17 @@ function WatchAvailability({ availability, sectionId, movie }) {
               <h3>{group.label}</h3>
               <ul aria-label={`${group.label} providers`}>
                 {group.providers.map((provider) => {
-                  const direct = provider.destination === "provider";
-                  const href = direct ? safeProviderUrl(provider.direct_url) : availabilityAction?.href;
-                  const label = direct
-                    ? `${group.id === "rent" ? "Rent" : group.id === "buy" ? "Buy" : "Watch"} on ${provider.name}`
-                    : `View ${provider.name} options on TMDB`;
+                  const href = safeProviderUrl(provider.direct_url);
+                  const label = `${group.id === "rent" ? "Rent" : group.id === "buy" ? "Buy" : "Watch"} on ${provider.name}`;
                   const icon = provider.logo_path ? <img src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`} alt="" aria-hidden="true" loading="lazy" /> : <span className="watch-provider-icon-placeholder" aria-hidden="true">{provider.name.charAt(0)}</span>;
                   return (
                     <li key={`${group.id}-${provider.source}-${provider.id}`}>
                       {href ? (
                         <a href={href}
-                          onClick={() => trackProductEvent(direct ? "provider_clicked" : "viewing_options_clicked", clickProperties(provider, group.id))}
+                          onClick={() => trackProductEvent("provider_clicked", clickProperties(provider, group.id))}
                           target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
                           className="watch-provider-link">
-                          {icon}<span>{provider.name}{!direct ? <span className="watch-provider-options-label"> · options</span> : null} <span aria-hidden="true">↗</span></span>
+                          {icon}<span>{provider.name} <span aria-hidden="true">↗</span></span>
                         </a>
                       ) : <>{icon}<span>{provider.name}</span></>}
                     </li>
@@ -101,16 +98,16 @@ function WatchAvailability({ availability, sectionId, movie }) {
           ))}
         </div>
       ) : (
-        <p className="detail-secondary-text watch-availability-empty">Streaming, rental, and purchase options are not listed for this title right now.</p>
+        <p className="detail-secondary-text watch-availability-empty">Use TMDB to see current streaming, rental, and purchase options.</p>
       )}
 
       <div className="watch-availability-footer">
         {availabilityAction ? (
           <a onClick={() => trackProductEvent("viewing_options_clicked", { movie_id: Number(movie?.id) || 0, source })} href={availabilityAction.href} target="_blank" rel="noopener noreferrer" className="detail-text-action watch-now-primary-cta">
-            See current viewing options <span aria-hidden="true">↗</span>
+            See all current viewing options <span aria-hidden="true">↗</span>
           </a>
         ) : null}
-        <p className="detail-secondary-text watch-now-footnote">{watchedAvailability ? <>Streaming data powered by <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">Watchmode</a>.{displayed.has_tmdb_options ? " Additional options from JustWatch via TMDB." : ""}</> : "Provider data from JustWatch via TMDB."}</p>
+        <p className="detail-secondary-text watch-now-footnote">{watchedAvailability ? <>Streaming data powered by <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">Watchmode</a>.</> : "Provider data from JustWatch via TMDB."}</p>
       </div>
     </section>
   );

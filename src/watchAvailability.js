@@ -1,4 +1,4 @@
-import {safeProviderUrl} from './streamingLinks';
+import {usableWatchProviderUrl} from './streamingLinks';
 export const WATCH_GROUPS = ['subscription','rent','buy','free','cable'];
 const compact = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g,'');
 // Explicit equivalent storefront/channel names only. Do not collapse base
@@ -23,24 +23,17 @@ export function mergeWatchAvailability(tmdb, watchmode) {
   const sameRegion = !direct || direct.region === tmdb?.region;
   const fallback = sameRegion ? tmdb : null;
   const logos = fallback ? WATCH_GROUPS.flatMap(group => fallback[group] || []) : [];
-  const result = {...(direct || fallback),source:direct?'watchmode':'tmdb',has_tmdb_options:false};
+  const result = {...(direct || fallback),source:direct?'watchmode':'tmdb'};
   for (const group of WATCH_GROUPS) {
     const providers = [], seen = new Set();
     for (const provider of direct?.[group] || []) {
       const identity = providerIdentity(provider.name);
       if (seen.has(identity)) continue;
-      const directUrl = safeProviderUrl(provider.direct_url);
+      const directUrl = usableWatchProviderUrl(provider.direct_url);
       // An unusable direct URL must not swallow an independently listed option.
       if (!directUrl) continue;
       seen.add(identity);
       providers.push({...provider,direct_url:directUrl,logo_path:providerLogo(provider,logos),source:'watchmode',destination:'provider'});
-    }
-    for (const provider of fallback?.[group] || []) {
-      const identity = providerIdentity(provider.name);
-      if (seen.has(identity)) continue;
-      seen.add(identity);
-      providers.push({...provider,logo_path:providerLogo(provider,logos),source:'tmdb',destination:'tmdb'});
-      result.has_tmdb_options = true;
     }
     result[group] = providers;
   }

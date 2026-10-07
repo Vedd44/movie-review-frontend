@@ -73,9 +73,31 @@ export const safeProviderUrl = value => {
     ? new Set(["at", "ct", "itscg", "itsct"])
     : /(^|\.)amazon\./.test(url.hostname)
       ? new Set(["tag", "ascsubtag", "linkcode", "linkid", "creative", "creativeasin", "camp"])
-      : new Set();
+      : url.hostname === "play.google.com"
+        ? new Set(["paffiliateid"])
+        : new Set();
   for (const key of [...url.searchParams.keys()]) {
     if (affiliateKeys.has(key.toLowerCase())) url.searchParams.delete(key);
   }
   return url.href;
+};
+
+// Confirmed destination failures are filtered even when the source data is
+// already cached. Do not rewrite or invent replacement movie destinations.
+const UNAVAILABLE_YOUTUBE_VIDEOS = new Set(["SHoh9cb9fT8"]);
+export const usableWatchProviderUrl = value => {
+  const href = safeProviderUrl(value);
+  if (!href) return "";
+  const url = new URL(href);
+  const host = url.hostname.toLowerCase();
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  // Home pages, generic search pages, and live guides cannot open this movie.
+  if (/^\/(?:[a-z]{2}\/)?(?:home|search|browse|live-tv|watch\/live-tv)?$/i.test(path)) return "";
+  if (/(^|\.)pluto\.tv$/.test(host) && /\/(?:search|live-tv)(?:\/|$)/i.test(path)) return "";
+  if (/(^|\.)philo\.com$/.test(host) && /\/player\/player(?:\/|$)/i.test(path)) return "";
+  if (/(^|\.)youtube\.com$/.test(host) || host === "youtu.be") {
+    const id = host === "youtu.be" ? path.slice(1) : url.searchParams.get("v");
+    if (!id || UNAVAILABLE_YOUTUBE_VIDEOS.has(id)) return "";
+  }
+  return href;
 };
