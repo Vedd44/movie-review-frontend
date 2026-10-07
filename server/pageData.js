@@ -15,7 +15,19 @@ const itemList = (movies) => ({ '@context':'https://schema.org', '@type':'ItemLi
 const movieLinks = (movies) => `<ul>${movies.map(m=>`<li>${link(moviePath(m), m.title)}${m.release_date ? ` (${escapeHtml(m.release_date.slice(0,4))})` : ''}</li>`).join('')}</ul>`;
 const missing = (path) => ({status:404,path,title:'Page not found | ReelBot',description:'This page could not be found. Explore movies and collections on ReelBot.',robots:'noindex,follow',heading:'Page not found'});
 async function apiJson(endpoint, fetcher) {
-  const response = await fetcher(API+endpoint, {signal: AbortSignal.timeout(12000)});
+  const signal = AbortSignal.timeout(12000);
+  let response;
+  // Brief metadata contention should not turn a crawlable page into an error.
+  // Honor only short Retry-After delays within the existing request deadline.
+  for (let attempt = 0; ; attempt++) {
+    response = await fetcher(API+endpoint, {signal});
+    const header = response.headers?.get('retry-after');
+    const retryAfter = /^\d+$/.test(header || '') ? Number(header) : 1;
+    if (response.status !== 429 || !endpoint.includes('view=metadata') || attempt >= 2 || retryAfter > 2) break;
+    await response.body?.cancel?.();
+    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+    signal.throwIfAborted();
+  }
   if (response.status === 404 || response.status === 400) return null;
   if (!response.ok) {
     const error = new Error(`Movie data unavailable (${response.status})`);

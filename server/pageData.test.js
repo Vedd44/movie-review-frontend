@@ -100,3 +100,23 @@ test('known collection slugs use verified IDs instead of repeating title search'
  const page=await getPageData('/movies/dial-code-santa-claus-1990',new URLSearchParams(),{movies:catalog,fetcher:async url=>{requested=url;return response(film);}});
  assert.match(requested,/\/movies\/46959\?view=metadata$/);assert.equal(page.heading,'Dial Code Santa Claus');
 });
+
+
+test('short metadata throttling retries within one deadline without delaying successful reads',async()=>{
+ let calls=0;const signals=[];
+ const page=await getPageData('/movies/interstellar-2014',new URLSearchParams(),{fetcher:async(url,options)=>{
+  calls++;signals.push(options.signal);
+  return calls===1 ? {status:429,ok:false,headers:{get:()=> '0'}} : response(movie);
+ }});
+ assert.equal(page.heading,'Interstellar');assert.equal(calls,2);assert.equal(signals[0],signals[1]);
+ calls=0;await getPageData('/movies/interstellar-2014',new URLSearchParams(),{fetcher:async()=>{calls++;return response(movie);}});assert.equal(calls,1);
+});
+test('persistent or long metadata throttling remains bounded and preserves retry status',async()=>{
+ for(const [retryAfter,expectedCalls] of [['0',3],['60',1]]){
+  let calls=0;
+  await assert.rejects(getPageData('/people/fixture',new URLSearchParams(),{fetcher:async()=>{
+   calls++;return {status:429,ok:false,headers:{get:()=>retryAfter}};
+  }}),error=>error.status===429 && error.retryAfter===retryAfter);
+  assert.equal(calls,expectedCalls);
+ }
+});
