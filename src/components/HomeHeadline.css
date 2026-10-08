@@ -1,4 +1,5 @@
-.rb-intro h1.rb-conversation-headline { max-width: none; line-height: 1.05; }
+.rb-intro h1.rb-conversation-headline { max-width: none; font-size: clamp(2.4rem, 4.16vw, 4.24rem); line-height: 1.05; margin: 16px 0 14px; }
+.rb-conversation-headline + .sr-only + .rb-intro-dek { margin-bottom: 18px; }
 .headline-intro { display: block; }
 .rb-conversation-headline .headline-phrase { display: grid; width: 100%; min-height: 44px; margin: .3em 0 0; padding: 0; border: 0; border-radius: 4px; background: none; color: inherit; font: inherit; font-size: .64em; line-height: 1.18; letter-spacing: -.035em; text-align: left; cursor: pointer; }
 /* Every full phrase shares one grid cell, reserving the tallest wrapped height. */
@@ -7,6 +8,17 @@
 .headline-phrase-visible { align-self: start; }
 .headline-phrase:hover .headline-phrase-visible { text-decoration: underline; text-decoration-color: var(--rb-gold); text-decoration-thickness: 1px; text-underline-offset: .12em; }
 .headline-phrase:focus-visible { outline: 2px solid var(--rb-gold); outline-offset: 6px; }
-.headline-cursor { display: inline-block; width: 2px; height: .78em; margin-left: .12em; background: var(--rb-gold); opacity: .55; }
-.headline-cursor.is-resting { visibility: hidden; }
-@media (prefers-reduced-motion: reduce) { .headline-cursor { visibility: hidden; } }
+.headline-phrase-outgoing { align-self: start; pointer-events: none; animation: headline-fade-out .4s ease both; }
+.headline-phrase-visible.is-entering { animation: headline-fade-in .4s ease both; }
+.headline-phrase.is-hidden > span { animation-play-state: paused; }
+.headline-phrase.is-settled > span { animation: none; }
+@keyframes headline-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes headline-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@media (max-width: 1140px) { .rb-intro h1.rb-conversation-headline { font-size: 3.16rem; } }
+@media (max-width: 900px) { .rb-intro h1.rb-conversation-headline { font-size: 2.78rem; } }
+@media (max-width: 640px) { .rb-intro h1.rb-conversation-headline { font-size: clamp(2.16rem, 9.24vw, 2.58rem); } }
+@media (max-width: 374px) { .rb-intro h1.rb-conversation-headline { font-size: 2.16rem; } }
+@media (prefers-reduced-motion: reduce) {
+  .headline-phrase > span { animation: none !important; }
+  .headline-phrase-outgoing { display: none; }
+}

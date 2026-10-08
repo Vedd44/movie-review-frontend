@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import HomeHeadline, { HEADLINE_PHRASES, HEADLINE_HOLD_MS, HEADLINE_TYPE_MS, headlineRequest } from './HomeHeadline';
+import HomeHeadline, { HEADLINE_PHRASES, HEADLINE_HOLD_MS, HEADLINE_SEQUENCE_LENGTH, headlineRequest } from './HomeHeadline';
 
 let motion;
 let visibility;
@@ -28,22 +28,24 @@ test.each(HEADLINE_PHRASES.map((phrase, index) => [index, phrase]))('starts at r
   expect(onSelect).toHaveBeenCalledWith(headlineRequest(phrase));
 });
 
-test('holds readable phrases, types only the changing text, makes one unique pass and stops', () => {
+test('crossfades complete phrases twice over 8.4 seconds, without repeating or looping', () => {
   const { container } = render(<HomeHeadline onSelect={jest.fn()} />);
   const seen = [visibleText(container)];
-  for (let index = 1; index < HEADLINE_PHRASES.length; index += 1) {
+  for (let index = 1; index < HEADLINE_SEQUENCE_LENGTH; index += 1) {
     advance(HEADLINE_HOLD_MS - 1);
     expect(visibleText(container)).toBe(HEADLINE_PHRASES[index - 1]);
     advance(1);
-    expect(visibleText(container)).toBe(HEADLINE_PHRASES[index].slice(0, 1));
+    expect(visibleText(container)).toBe(HEADLINE_PHRASES[index]);
+    expect(container.querySelector('.headline-phrase-outgoing')).toHaveTextContent(HEADLINE_PHRASES[index - 1]);
+    expect(container.querySelector('.headline-phrase-visible')).toHaveClass('is-entering');
     expect(screen.getByText('I want to watch...')).toBeVisible();
-    for (let char = 1; char < HEADLINE_PHRASES[index].length; char += 1) advance(HEADLINE_TYPE_MS);
     seen.push(visibleText(container));
   }
-  expect(seen).toEqual(HEADLINE_PHRASES);
+  expect(seen).toEqual(HEADLINE_PHRASES.slice(0, 3));
+  expect(container.querySelector('.headline-cursor')).toBeNull();
   expect(jest.getTimerCount()).toBe(0);
   advance(60000);
-  expect(visibleText(container)).toBe(HEADLINE_PHRASES[4]);
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[2]);
   expect(Math.random).toHaveBeenCalledTimes(1);
 });
 
@@ -55,11 +57,11 @@ test('pauses while the page is hidden, resumes without catching up, and cleans u
   fireEvent(document, new Event('visibilitychange'));
   expect(jest.getTimerCount()).toBe(0);
   advance(60000);
-  expect(visibleText(container)).toBe('a');
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[1]);
   visibility.mockReturnValue(false);
   fireEvent(document, new Event('visibilitychange'));
-  advance(HEADLINE_TYPE_MS);
-  expect(visibleText(container)).toBe('a ');
+  advance(HEADLINE_HOLD_MS);
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[2]);
   unmount();
   expect(jest.getTimerCount()).toBe(0);
   expect(motion.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
@@ -76,7 +78,7 @@ test.each(['pointerdown', 'keydown', 'touchstart', 'wheel'])('settles on the ful
   expect(visibleText(container)).toBe(HEADLINE_PHRASES[1]);
 });
 
-test('focus settles the full accessible phrase without announcing individual typed characters', () => {
+test('focus settles the full accessible phrase without repeated live announcements', () => {
   const select = jest.fn();
   const { container } = render(<HomeHeadline onSelect={select} />);
   advance(HEADLINE_HOLD_MS);
@@ -102,7 +104,7 @@ test('reduced motion gives a static usable phrase and no timers', () => {
   expect(select).toHaveBeenCalledWith("Something that'll keep me guessing");
 });
 
-test('changing the motion preference or pausing during typing completes the phrase and cancels timers', () => {
+test('changing the motion preference or pausing during a crossfade preserves the phrase and cancels timers', () => {
   const { container, rerender } = render(<HomeHeadline onSelect={jest.fn()} />);
   advance(HEADLINE_HOLD_MS);
   motion.matches = true;
@@ -124,4 +126,38 @@ test('an existing or focused request stops animation immediately', () => {
   expect(jest.getTimerCount()).toBe(0);
   rerender(<HomeHeadline onSelect={jest.fn()} />);
   expect(jest.getTimerCount()).toBe(0);
+});
+
+test('wraps from the last random starting phrase without repeating during the short sequence', () => {
+  Math.random.mockReturnValue(.99);
+  const { container } = render(<HomeHeadline onSelect={jest.fn()} />);
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[4]);
+  advance(HEADLINE_HOLD_MS);
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[0]);
+  advance(HEADLINE_HOLD_MS);
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[1]);
+  expect(jest.getTimerCount()).toBe(0);
+});
+
+test('hover settles a crossfade immediately on a complete phrase, removing the outgoing text', () => {
+  const { container } = render(<HomeHeadline onSelect={jest.fn()} />);
+  advance(HEADLINE_HOLD_MS);
+  expect(container.querySelector('.headline-phrase-outgoing')).not.toBeNull();
+  fireEvent.pointerEnter(screen.getByRole('button'));
+  expect(container.querySelector('.headline-phrase-outgoing')).toBeNull();
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[1]);
+  expect(jest.getTimerCount()).toBe(0);
+});
+
+test('a visit initially hidden does no animation work and reserves every complete phrase', () => {
+  visibility.mockReturnValue(true);
+  const { container } = render(<HomeHeadline onSelect={jest.fn()} />);
+  expect(jest.getTimerCount()).toBe(0);
+  const measurements = [...container.querySelectorAll('.headline-phrase-measure')];
+  expect(measurements.map(node => node.textContent)).toEqual(HEADLINE_PHRASES);
+  measurements.forEach(node => expect(node).toHaveAttribute('aria-hidden', 'true'));
+  visibility.mockReturnValue(false);
+  fireEvent(document, new Event('visibilitychange'));
+  advance(HEADLINE_HOLD_MS);
+  expect(visibleText(container)).toBe(HEADLINE_PHRASES[1]);
 });
