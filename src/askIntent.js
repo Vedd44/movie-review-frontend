@@ -37,6 +37,8 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
   if (nextPattern.test(value) && hasRecommendation) return ASK_INTENTS.NEXT_RECOMMENDATION;
   if (hasActiveHomePick && homePickRefinementPattern.test(value)) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (page === "home" && homeDiscoveryPattern.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
+  if (/\b(?:new topic|start fresh|start over|forget (?:that|the previous|my previous)(?: request)?|change (?:the )?topic)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
+  if (hasAnchor && /^(?:is|was|does|do|how|who|why|what)\b/i.test(value) && questionPattern.test(value) && !recommendationPattern.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (refinementPattern.test(value) && hasRecommendation) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (hasRecommendation && hasAnchor && /^(?:why|is|was|does|how|what).*(?:this|that|it|one|pick)/i.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (page === "person" || page === "collection") return ASK_INTENTS.CURRENT_SET_RECOMMENDATION;

@@ -16,6 +16,7 @@ function ContextRegistration({ context }) {
 beforeEach(() => {
   useTasteProfile.mockReturnValue({
     behavioralMemory: {},
+    getMovieState: jest.fn(() => ({})),
     getPickExcludedIds: jest.fn(() => []),
     actions: { recordPickResult: jest.fn().mockResolvedValue() },
   });
@@ -214,4 +215,21 @@ test('cast question does not return after two intervening answers and resets for
   fireEvent.change(screen.getByRole('textbox',{name:'Ask ReelBot'}),{target:{value:'Is it good?'}});
   fireEvent.click(screen.getByRole('button',{name:'Ask'}));
   expect(await screen.findByRole('button',{name:'Who stars in it?'})).toBeInTheDocument();
+});
+
+test('another no-match keeps the successful movie and a fresh topic clears session exclusions', async()=>{
+ axios.post.mockResolvedValueOnce({data:{kind:'recommendation',recommendation:{primary:{id:100,title:'Successful pick',reason:'A grounded recommendation.'},alternates:[]},conversation_state:{activeRequest:'A short adult comedy',activeIntent:'GENERAL_RECOMMENDATION',anchorMovie:{id:100,title:'Successful pick'},recommendationHistory:[{id:100,status:'recommended'}]}}})
+ .mockResolvedValueOnce({data:{kind:'recommendation',recommendation:{primary:null,user_message:'No more close matches under that runtime.'},conversation_state:{activeRequest:'A short adult comedy',activeIntent:'NEXT_RECOMMENDATION',anchorMovie:{id:100,title:'Successful pick'}}}})
+ .mockResolvedValueOnce({data:{kind:'recommendation',recommendation:{primary:{id:200,title:'Fresh epic',reason:'A sweeping adventure.'},alternates:[]}}});
+ render(<MemoryRouter initialEntries={['/movies/aliens-1986']}><AskReelbotProvider><ContextRegistration context={{page:'movie_detail',movieId:679,movieTitle:'Aliens'}}/><AskReelbotLayer/></AskReelbotProvider></MemoryRouter>);
+ fireEvent.click(screen.getByRole('button',{name:/Ask ReelBot/i}));
+ const input=screen.getByRole('textbox',{name:'Ask ReelBot'});
+ fireEvent.change(input,{target:{value:'New topic: a short adult comedy'}});fireEvent.click(screen.getByRole('button',{name:'Ask',exact:true}));
+ await screen.findByRole('heading',{name:'Successful pick'});
+ fireEvent.click(screen.getByRole('button',{name:'Another option'}));
+ await screen.findByText('No more close matches under that runtime.');
+ expect(screen.getByRole('button',{name:'View movie'})).toBeInTheDocument();
+ fireEvent.change(input,{target:{value:'Start fresh: a sweeping epic'}});fireEvent.click(screen.getByRole('button',{name:'Ask',exact:true}));
+ await screen.findByRole('heading',{name:'Fresh epic'});
+ expect(axios.post.mock.calls[2][1].page_context.excludedMovieIds).not.toContain(100);
 });

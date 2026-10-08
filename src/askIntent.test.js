@@ -33,3 +33,9 @@ test("keeps homepage discovery general while allowing active-pick refinements", 
   expect(classifyAskIntent({ prompt: "Find something like this", context })).toBe(ASK_INTENTS.REFINE_RECOMMENDATION);
   expect(classifyAskIntent({ prompt: "I've already seen this", context })).toBe(ASK_INTENTS.REFINE_RECOMMENDATION);
 });
+
+test('questions and explicit topic changes do not become refinements', () => {
+ const conversation={activeRequest:'Adult science fiction under 95 minutes',activeIntent:ASK_INTENTS.GENERAL_RECOMMENDATION,anchorMovie:{id:1}};
+ expect(classifyAskIntent({prompt:'Is it shorter than two hours?',conversation})).toBe(ASK_INTENTS.CURRENT_MOVIE_QUESTION);
+ expect(classifyAskIntent({prompt:'Actually, start fresh: a romantic comedy',conversation})).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
+});

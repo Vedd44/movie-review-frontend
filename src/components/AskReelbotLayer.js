@@ -310,10 +310,12 @@ function AskReelbotLayer() {
     const controller = new AbortController();
     requestController.current = controller;
     const version = ++requestVersion.current;
+    const predictedIntent = classifyAskIntent({ prompt: normalizedPrompt, context, conversation });
+    const continuesRequest = ["NEXT_RECOMMENDATION", "REFINE_RECOMMENDATION"].includes(predictedIntent);
     const nextPreferences = { prompt: normalizedPrompt };
     const wantsRewatch = isExplicitRewatchRequest(normalizedPrompt);
     const rejectedIds = new Set((conversation.recommendationHistory || []).filter(entry => ["rejected", "skipped"].includes(entry.status)).map(entry => Number(entry.id)));
-    const historyExcludedIds = wantsRewatch ? excludedIds.filter(id => rejectedIds.has(Number(id))) : excludedIds;
+    const historyExcludedIds = continuesRequest ? (wantsRewatch ? excludedIds.filter(id => rejectedIds.has(Number(id))) : excludedIds) : [];
     const requestExcludedIds = dedupeIds([
       ...getPickExcludedIds(nextPreferences, historyExcludedIds),
       ...(options.extraExcludedIds || []),
@@ -334,7 +336,6 @@ function AskReelbotLayer() {
     const requestConversation = result && /^\s*(?:not that one|no,? not that|skip)/i.test(normalizedPrompt)
       ? addHistoryStatus(conversation, result.primary, "rejected")
       : conversation;
-    const predictedIntent = classifyAskIntent({ prompt: normalizedPrompt, context, conversation: requestConversation });
     setLoadingIntent(predictedIntent);
     setLoading(true);
     setError("");
@@ -373,7 +374,7 @@ function AskReelbotLayer() {
       }
       const payload = normalizePickPayload(response.data?.recommendation, requestExcludedIds);
       if (response.data?.recommendation?.user_message && !payload?.primary) {
-        setResult(null);
+        if (!continuesRequest) setResult(null);
         setAnswerResult(null);
         trackProductEvent("ask_reelbot_result", { kind: "recommendation", outcome: "no_match", latency_ms: Date.now() - startedAt });
         recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:"recommendation",result_text:response.data.recommendation.user_message,outcome:"no_match",latency_ms:Date.now()-startedAt});
@@ -396,7 +397,7 @@ function AskReelbotLayer() {
       }, payload).catch(() => {});
       trackProductEvent("ask_reelbot_intent", { intent: response.data?.intent || "UNKNOWN", page: context.page || "general" });
       trackProductEvent("ask_reelbot_result", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: response.data?.recommendation?.performance?.outcome || "pick", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
-      setExcludedIds((current) => dedupeIds([...current, payload.primary.id]));
+      setExcludedIds((current) => dedupeIds([...(continuesRequest ? current : []), payload.primary.id]));
     } catch (requestError) {
       if (controller.signal.aborted || version !== requestVersion.current) return;
       recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:/RECOMMENDATION/.test(predictedIntent)?"recommendation":"answer",outcome:requestError?.message === "no_pick"?"no_match":"failed",latency_ms:Date.now()-startedAt});
@@ -503,7 +504,7 @@ function AskReelbotLayer() {
                   ))}
                 </div>
               </article>
-            ) : !loading && !error && result ? (
+            ) : !loading && result ? (
               <article className="ask-reelbot-answer">
                 {shouldShowPickLabel ? <div className="ask-reelbot-answer-label">Your pick</div> : null}
                 <div className="ask-reelbot-answer-main">
