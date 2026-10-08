@@ -9,6 +9,17 @@ import { useAuth } from "./context/AuthContext";
 const browsePadding = Array.from({ length: 11 }, (_, i) => ({ id: 8000 + i, title: `Catalog fixture ${i}`, genre_ids: [28], poster_path: "/fixture.jpg", release_date: "2000-01-01", popularity: 20, vote_count: 100 }));
 
 jest.mock("axios");
+test('failed continuation keeps the successful pick and visibly explains the limit', async () => {
+ render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+ await screen.findByRole('heading', {name:'Movies'});
+ fireEvent.click(screen.getByRole('button', {name:'Ask ReelBot to pick one'}));
+ fireEvent.click(screen.getByRole('button', {name:'Ask ReelBot',exact:true}));
+ await screen.findByRole('link', {name:'View details'});
+ axios.post.mockResolvedValueOnce({data:{primary:null,alternates:[],no_pick_reason:'no_suitable_candidate',user_message:'No other film fits the active runtime limit. Would you like to relax it?'}});
+ fireEvent.click(screen.getByRole('button', {name:'Get another pick'}));
+ expect(await screen.findByText('No other film fits the active runtime limit. Would you like to relax it?')).toBeInTheDocument();
+ expect(screen.getByRole('link', {name:'View details'})).toBeInTheDocument();
+});
 jest.mock("./hooks/useTasteProfile");
 jest.mock("./context/AuthContext", () => ({ useAuth: jest.fn() }));
 

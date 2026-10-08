@@ -93,7 +93,7 @@ function PickResultPanel({
 
   return (
     <div id={id} aria-busy={loading || undefined} className={`pick-result-stage${showCompanion ? " pick-result-stage--shareable picker-editorial" : ""}${primaryMovie ? " is-live" : ""}${isActivePickLoading ? " is-updating" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
-      {!hasPrimaryMovie && error && !shouldShowFallbackState ? <p className="error-message">{error}</p> : null}
+      {error && !shouldShowFallbackState ? <p className="error-message" role="status">{error}</p> : null}
 
       {!error && shouldShowStandaloneLoading ? (
         <div className="reelbot-loading-state" role="status">
