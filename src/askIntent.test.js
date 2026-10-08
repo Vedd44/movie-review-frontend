@@ -45,7 +45,7 @@ test('questions and explicit topic changes do not become refinements', () => {
 
 test.each(['home','browse','movie_detail','general'])('keeps modified continuations active on %s',page=>{
  const conversation={activeRequest:'A sci-fi thriller, no horror, under 100 minutes',activeIntent:ASK_INTENTS.GENERAL_RECOMMENDATION,anchorMovie:{id:1}};
- for(const prompt of ['Another pick please','Another under 90 minutes','One more, but no horror','Something else','Make it under 90 minutes']) {
+ for(const prompt of ['Another pick please','Another under 90 minutes','One more, but no horror','Something else','Make it under 90 minutes','Change the limit to under 110 minutes','Set my runtime cap to 90 minutes']) {
   expect(classifyAskIntent({prompt,context:{page},conversation})).toMatch(/^(NEXT|REFINE)_RECOMMENDATION$/);
  }
  expect(classifyAskIntent({prompt:'Actually, start fresh: a romantic comedy',context:{page},conversation})).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
