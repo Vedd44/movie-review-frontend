@@ -78,7 +78,7 @@ test('logo always navigates home without restoring an active pick hash', async (
   window.history.pushState({}, '', '/browse');
   render(<App />);
 
-  fireEvent.click(screen.getAllByRole('link', { name: 'ReelBot' })[0]);
+  fireEvent.click(within(screen.getByRole('banner')).getByRole('link', { name: 'ReelBot home', exact: true }));
 
   await waitFor(() => expect(window.location.pathname).toBe('/'));
   expect(window.location.hash).toBe('');

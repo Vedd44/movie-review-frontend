@@ -133,3 +133,45 @@ test('a single exhausted swap does not claim five tries',async()=>{
  expect(screen.queryByText(/five fresh tries/)).not.toBeInTheDocument();
  expect(screen.getByRole('heading',{name:'Aliens'})).toBeInTheDocument();
 });
+
+const headlineExamples = [
+  ["something that'll keep me guessing.", "Something that'll keep me guessing"],
+  ['a movie everyone will love.', 'A movie everyone will love'],
+  ["something that'll make me laugh.", "Something that'll make me laugh"],
+  ["something I've never heard of.", "Something I've never heard of"],
+  ["a movie I won't stop thinking about.", "A movie I won't stop thinking about"],
+];
+
+test.each(headlineExamples.map(([phrase, request], index) => [phrase, request, index]))('headline %s populates an editable request and only submits through the existing flow', async (phrase, request, index) => {
+  const random = jest.spyOn(Math, 'random').mockReturnValue((index + .1) / headlineExamples.length);
+  try {
+    render(<MemoryRouter><Home /></MemoryRouter>);
+    const input = await screen.findByRole('textbox', {name: 'Describe the movie you want'});
+    const calls = axios.post.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', {name: `Use this example: ${phrase}`}));
+    expect(input).toHaveValue(request);
+    expect(input).toHaveFocus();
+    expect(axios.post.mock.calls.length).toBe(calls);
+    fireEvent.change(input, {target: {value: `${request} tonight`}});
+    expect(input).toHaveValue(`${request} tonight`);
+    fireEvent.change(input, {target: {value: request}});
+    fireEvent.click(screen.getByRole('button', {name: 'Find my movie'}));
+    await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
+      expect.stringContaining('/reelbot/pick'),
+      expect.objectContaining({prompt: request, view: 'popular', mood: 'all', runtime: 'any', source: 'library', company: 'any', include_theatrical: false, is_swap: false}),
+      expect.anything()
+    ));
+    await screen.findByRole('heading', {name: 'Aliens'});
+  } finally { random.mockRestore(); }
+});
+
+test.each(['My own request', '   '])('headline preserves existing input %p without submitting', async existing => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', {name: 'Describe the movie you want'});
+  fireEvent.change(input, {target: {value: existing}});
+  const calls = axios.post.mock.calls.length;
+  fireEvent.click(screen.getByRole('button', {name: /^Use this example:/}));
+  expect(input).toHaveValue(existing);
+  expect(input).toHaveFocus();
+  expect(axios.post.mock.calls.length).toBe(calls);
+});

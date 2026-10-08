@@ -72,7 +72,8 @@ test("uses stored recommendation rationale only with active recommendation prove
       },
     },
   });
-  expect(take.heading).toBe("Why ReelBot Picked This");
+  expect(take.heading).toBe("ReelBot’s Take");
+  expect(take.hasReliableProvenance).toBe(true);
   expect(take.assessment).toContain("sustained siege pressure");
   expect(take.goodFit).toContain("directly matches");
   expect(take.maybeNot).toContain("poor fit");

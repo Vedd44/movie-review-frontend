@@ -1,0 +1,12 @@
+.rb-intro h1.rb-conversation-headline { max-width: none; line-height: 1.05; }
+.headline-intro { display: block; }
+.rb-conversation-headline .headline-phrase { display: grid; width: 100%; min-height: 44px; margin: .3em 0 0; padding: 0; border: 0; border-radius: 4px; background: none; color: inherit; font: inherit; font-size: .64em; line-height: 1.18; letter-spacing: -.035em; text-align: left; cursor: pointer; }
+/* Every full phrase shares one grid cell, reserving the tallest wrapped height. */
+.headline-phrase > span { grid-area: 1 / 1; min-width: 0; }
+.headline-phrase-measure { visibility: hidden; pointer-events: none; }
+.headline-phrase-visible { align-self: start; }
+.headline-phrase:hover .headline-phrase-visible { text-decoration: underline; text-decoration-color: var(--rb-gold); text-decoration-thickness: 1px; text-underline-offset: .12em; }
+.headline-phrase:focus-visible { outline: 2px solid var(--rb-gold); outline-offset: 6px; }
+.headline-cursor { display: inline-block; width: 2px; height: .78em; margin-left: .12em; background: var(--rb-gold); opacity: .55; }
+.headline-cursor.is-resting { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .headline-cursor { visibility: hidden; } }

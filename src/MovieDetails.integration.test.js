@@ -3,8 +3,10 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import axios from "axios";
 import MovieDetails from "./MovieDetails";
 import useTasteProfile from "./hooks/useTasteProfile";
+import { fetchWatchmodeAvailability } from "./services/watchmodeService";
 
 jest.mock("axios");
+jest.mock("./services/watchmodeService");
 jest.mock("./hooks/useTasteProfile");
 
 const movie = {
@@ -46,6 +48,8 @@ const generatedTake = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  window.localStorage.clear();
+  fetchWatchmodeAvailability.mockResolvedValue(null);
   axios.get.mockImplementation((url) => Promise.resolve(
     String(url).includes("/reelbot-take") ? { data: { take: generatedTake } } : { data: movie }
   ));
@@ -59,6 +63,11 @@ beforeEach(() => {
 });
 
 test("presents one contextual ReelBot entry point and factual watch providers", async () => {
+  fetchWatchmodeAvailability.mockResolvedValue({
+    source: 'watchmode', region: 'US',
+    subscription: [{id: 203, name: 'Netflix', direct_url: 'https://www.netflix.com/title/123'}],
+    rent: [], buy: [], free: [], cable: [],
+  });
   const askListener = jest.fn();
   window.addEventListener("reelbot:open-ask", askListener);
 
@@ -73,9 +82,9 @@ test("presents one contextual ReelBot entry point and factual watch providers", 
   expect(screen.queryByText("Decision help")).not.toBeInTheDocument();
   expect(screen.queryByText("Why ReelBot recommends this")).not.toBeInTheDocument();
   expect(screen.queryByText("Quick Take or deeper check?")).not.toBeInTheDocument();
-  expect(screen.getByText("Netflix")).toBeInTheDocument();
-  expect(screen.queryByRole("link", { name: /Netflix/i })).not.toBeInTheDocument();
-  expect(screen.getByRole("link", { name: /See current viewing options/i })).toHaveAttribute("href", movie.watch_providers.link);
+  expect(await screen.findByRole("link", { name: "Watch on Netflix" })).toHaveAttribute("href", "https://www.netflix.com/title/123");
+  expect(screen.getByRole("link", {name: "Watchmode"})).toHaveAttribute("href", "https://www.watchmode.com/");
+  expect(screen.getByRole("link", { name: /See all current viewing options/i })).toHaveAttribute("href", movie.watch_providers.link);
 
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot about this movie/i }));
   expect(askListener).toHaveBeenCalled();
@@ -148,7 +157,7 @@ test("preserves active recommendation provenance alongside the movie-specific ta
     </MemoryRouter>
   );
 
-  expect(await screen.findByRole("heading", { name: "Why ReelBot Picked This" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "ReelBot’s Take" })).toBeInTheDocument();
   expect(await screen.findByText(generatedTake.assessment)).toBeInTheDocument();
   expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/reelbot-take"), expect.objectContaining({ signal: expect.anything() }));
 });
@@ -206,8 +215,10 @@ test("partial movie data keeps identity and Save without inventing availability"
   render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/></Routes></MemoryRouter>);
   expect(await screen.findByRole('heading',{name:title})).toBeInTheDocument();
   expect(screen.getByRole('img',{name:'Artwork unavailable'})).toBeInTheDocument();
-  expect(screen.getByText(/options are not listed for this title right now/)).toBeInTheDocument();
-  expect(screen.queryByRole('link',{name:/See current viewing options/})).not.toBeInTheDocument();
+  expect(screen.getByText('Use TMDB to see current streaming, rental, and purchase options.')).toBeInTheDocument();
+  expect(screen.getByRole('link',{name:/See all current viewing options/})).toHaveAttribute('href', 'https://www.themoviedb.org/movie/679/watch?locale=US');
+  expect(screen.queryByRole('link',{name:/Watch on/})).not.toBeInTheDocument();
+  expect(screen.getByText('Provider data from JustWatch via TMDB.')).toBeInTheDocument();
   expect(screen.getByRole('button',{name:'Save'})).toBeInTheDocument();
 });
 
@@ -231,3 +242,27 @@ test.each([[404, 'Movie not found'], [503, 'Unable to load this movie']])('movie
   expect(screen.getByTestId("location")).toHaveTextContent("/p/Abcdef123456");
   expect(screen.queryByText(movie.description)).not.toBeInTheDocument();
  });
+
+
+test.each([true, false])('failed Take uses stored rationale only for an active matching recommendation visit (%s)', async active => {
+  const hook = useTasteProfile();
+  hook.getRecommendationContextForMovie.mockReturnValue({
+    source: 'reelbot_pick', prompt: 'tense sci-fi', intent: {tone: ['tense']},
+    rationale: {decisionSentence: 'Stored recommendation rationale for this request.'},
+  });
+  axios.get.mockImplementation(url => String(url).includes('/reelbot-take')
+    ? Promise.reject(new Error('unavailable')) : Promise.resolve({data: movie}));
+  render(<MemoryRouter initialEntries={[{pathname:'/movies/aliens-1986', state: {source:'reelbot_pick', recommendationVisit:{movieId:active ? 679 : 123}}}]}>
+    <Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/></Routes>
+  </MemoryRouter>);
+  expect(await screen.findByRole('heading', {name:'ReelBot’s Take'})).toBeInTheDocument();
+  if (active) expect(await screen.findByText('Stored recommendation rationale for this request.')).toBeInTheDocument();
+  else {
+    await waitFor(() => expect(screen.queryByRole('status', {name:'Loading ReelBot’s Take'})).not.toBeInTheDocument());
+    expect(screen.queryByText('Stored recommendation rationale for this request.')).not.toBeInTheDocument();
+    expect(document.querySelector('.detail-take-assessment')).toHaveTextContent('temporarily unavailable');
+  }
+  expect(screen.queryByText('Netflix')).not.toBeInTheDocument();
+  expect(screen.getByRole('link', {name:/See all current viewing options/})).toHaveAttribute('href', movie.watch_providers.link);
+  expect(screen.getByText('Provider data from JustWatch via TMDB.')).toBeInTheDocument();
+});

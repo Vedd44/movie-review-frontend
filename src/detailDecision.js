@@ -306,8 +306,8 @@ const buildReelbotTake = ({ movie, recommendationContext = null, genericTake = n
 
   // A recommendation explains why ReelBot surfaced the movie, but it should
   // not replace the richer movie-specific editorial read. Prefer the dedicated
-  // take whenever it is available and retain provenance through the heading
-  // and the recommendation context elsewhere on the page.
+  // take whenever it is available. Keep the universal heading; provenance
+  // remains explicit in hasReliableProvenance and the stored-rationale fallback.
   const content = movieSpecificTake
     || recommendationTake
     || buildLocalTakeFallback(movie);

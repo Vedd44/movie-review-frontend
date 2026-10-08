@@ -20,7 +20,7 @@ export const REELBOT_LOADING_QUOTES = Object.freeze([
   { quote: "I feel the need—the need for speed!", movie: "Top Gun" },
   { quote: "Hasta la vista, baby.", movie: "Terminator 2" },
   { quote: "Keep your friends close, but your enemies closer.", movie: "The Godfather Part II" },
-  { quote: "They may take our lives, but they'll never take our freedom!", movie: "Braveheart" },
+  { quote: "…but they'll never take our freedom!", movie: "Braveheart" },
   { quote: "I’m the king of the world!", movie: "Titanic" },
   { quote: "You can’t handle the truth!", movie: "A Few Good Men" },
   { quote: "Houston, we have a problem.", movie: "Apollo 13" },

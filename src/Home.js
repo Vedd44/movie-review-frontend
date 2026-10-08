@@ -2,6 +2,7 @@ import { createActivityRequestId, recordRequestActivity } from "./productTelemet
 import productCopy from "./productCopy";
 import WatchCheckIn from "./components/WatchCheckIn";
 import ArtworkFallback from "./components/ArtworkFallback";
+import HomeHeadline from "./components/HomeHeadline";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -684,7 +685,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const hasCompletedOnboardingRef = useRef(readLocalFlag(ONBOARDING_COMPLETED_STORAGE_KEY));
   const hasDismissedOnboardingRef = useRef(readSessionFlag(ONBOARDING_DISMISSED_SESSION_KEY));
 
-  const [homeHeadline] = useState("What should I watch?");
   const [movies, setMovies] = useState(() => initialFeedState.movies);
   const [loading, setLoading] = useState(() => initialFeedState.loading);
   const [, setIsFeedRefreshing] = useState(() => initialFeedState.refreshing);
@@ -1957,7 +1957,17 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     <div className={`browse-page home-page${isFeedRoute ? " feed-page" : ""}`}>
       {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}${shouldRenderPickResultSection && !isRequestEditing ? " rb-intro--request-sent" : ""}`} aria-labelledby="home-hero-title">
         <div className="rb-intro-copy">
-          <h1 id="home-hero-title">{homeHeadline}</h1>
+          {shouldRenderPickResultSection && !isRequestEditing ? <h1 id="home-hero-title">What should I watch?</h1> : <HomeHeadline
+            paused={isHeroInputFocused || Boolean(pickPrompt) || isPickBusy}
+            onSelect={(request) => {
+              if (!pickPrompt) {
+                setPickPrompt(request);
+                setActivePromptSuggestion("");
+                if (pickValidation) setPickValidation("");
+              }
+              document.getElementById("pick-prompt-input")?.focus({ preventScroll: true });
+            }}
+          />}
           <p className="rb-intro-dek">{productCopy.intro}</p>
           {!activePick ? <WatchCheckIn /> : null}
           <div hidden={shouldRenderPickResultSection && !isRequestEditing} className={`rb-night-composer${isHeroInputFocused ? " is-focused" : ""}`}>
