@@ -76,7 +76,7 @@ function BrowseLibrary() {
   const [pickLoading, setPickLoading] = useState(false);
   const [pickError, setPickError] = useState(null);
   const [pickResult, setPickResult] = useState(null);
-  const [swapQueue, setSwapQueue] = useState([]);
+  const [, setSwapQueue] = useState([]);
   const [candidatePoolIds, setCandidatePoolIds] = useState([]);
   const [, setRefinementState] = useState(null);
   const { profile, behavioralMemory, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
