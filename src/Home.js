@@ -1462,6 +1462,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       behavioral_memory: behavioralMemory,
       trigger: "user_click",
       is_swap: Boolean(options.isSwap),
+      ...(options.isSwap ? { original_prompt: nextPreferences.prompt } : {}),
     };
 
     if (options.intentSnapshot || ((options.isSwap || options.isRefinement) && pickResult?.resolved_intent)) {
@@ -1623,6 +1624,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       company: "any",
       prompt: pickPrompt,
       include_theatrical: includeTheatrical,
+      ...(options.isSwap ? pickResult?.resolved_preferences : {}),
       ...overrides,
     };
 
@@ -1638,7 +1640,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       nextPreferences.variation_focus = variationFocus;
     }
 
-    if (Object.prototype.hasOwnProperty.call(overrides, "prompt")) {
+    if (Object.prototype.hasOwnProperty.call(overrides, "prompt") && !options.isSwap) {
       setPickPrompt(nextPreferences.prompt);
     }
 
@@ -1781,7 +1783,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     // of the visible alternates. Keep the current card in place while loading
     // and exclude everything already shown in this session.
     await submitPick(
-      {},
+      { prompt: originalPickPrompt },
       {
         isSwap: true,
         scrollToResults: true,
@@ -1804,7 +1806,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     trackProductEvent("refine_clicked", { page: "home", refinement: action.id, theaters_toggle: includeTheatrical });
 
     await submitPick(
-      {},
+      { prompt: originalPickPrompt },
       {
         isSwap: true,
         isRefinement: true,
@@ -1821,6 +1823,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           label: action.label,
           source_movie_id: pickResult.primary.id,
           source_movie_title: pickResult.primary.title,
+          source_movie_runtime: pickResult.primary.runtime,
         },
       },
       null,
@@ -1846,7 +1849,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setOriginalPickPrompt(pickPrompt.trim());
     setSwapCount(0);
     setHasExpandedSwapPool(false);
-    await submitPick({}, { scrollToResults: true }, null, lastPickMeta);
+    await submitPick({}, { scrollToResults: true });
   };
 
   const handleSurprisePick = async () => {

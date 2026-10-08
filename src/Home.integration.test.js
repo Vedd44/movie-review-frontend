@@ -91,3 +91,32 @@ test('keeps submitted request beside the pick and Edit restores it without anoth
   expect(screen.getByText('A clever mystery under 100 minutes')).toBeVisible();
   expect(axios.post.mock.calls.length).toBe(calls);
 });
+
+
+test('another pick preserves the committed request after the composer is cleared',async()=>{
+  const prompt='Movie where people work late night at a food place';
+  axios.post.mockResolvedValueOnce({data:{...pickPayload,resolved_preferences:{prompt},primary:{...pickPayload.primary,title:'The Last Shift'}}})
+    .mockResolvedValueOnce({data:{...pickPayload,resolved_preferences:{prompt},primary:{...pickPayload.primary,id:78,title:'Waiting…'}}});
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input=await screen.findByPlaceholderText(/A mood, a movie you love/i);
+  fireEvent.change(input,{target:{value:prompt}});fireEvent.click(screen.getByRole('button',{name:'Find my movie'}));
+  await screen.findByRole('heading',{name:'The Last Shift'});expect(input).toHaveValue('');
+  fireEvent.click(screen.getByRole('button',{name:'Get another pick'}));
+  await screen.findByRole('heading',{name:'Waiting…'});
+  expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({prompt,original_prompt:prompt,is_swap:true}));
+  expect(axios.post.mock.calls[1][1].excluded_ids).toContain(679);
+  expect(input).toHaveValue('');
+});
+
+test('refining a pick uses the committed request rather than the empty composer',async()=>{
+  const prompt='A sci-fi movie under 150 minutes';
+  axios.post.mockResolvedValueOnce({data:{...pickPayload,resolved_preferences:{prompt},primary:{...pickPayload.primary,runtime:137}}})
+    .mockResolvedValueOnce({data:{...pickPayload,resolved_preferences:{prompt},primary:{...pickPayload.primary,id:78,title:'Arrival'}}});
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input=await screen.findByPlaceholderText(/A mood, a movie you love/i);
+  fireEvent.change(input,{target:{value:prompt}});fireEvent.click(screen.getByRole('button',{name:'Find my movie'}));
+  await screen.findByRole('heading',{name:'Aliens'});
+  fireEvent.click(screen.getByRole('button',{name:'Different angle'}));
+  await screen.findByRole('heading',{name:'Arrival'});
+  expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({prompt,original_prompt:prompt,refinement:expect.objectContaining({id:'different_angle'})}));
+});

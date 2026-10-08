@@ -314,9 +314,10 @@ function BrowseLibrary() {
       runtime: normalizedRuntime,
       source: "library",
       company: "any",
-      prompt: pickPrompt,
       genre: normalizedGenre,
       include_theatrical: includeTheatrical,
+      ...(options.isSwap ? pickResult?.resolved_preferences : {}),
+      prompt: options.isSwap ? (pickResult?.sharePrompt ?? submittedLibraryPrompt) : pickPrompt,
     };
 
     try {
@@ -349,6 +350,7 @@ function BrowseLibrary() {
           refresh_key: options.refreshKey,
           trigger: "user_click",
           is_swap: Boolean(options.isSwap),
+          ...(options.isSwap ? { original_prompt: nextPreferences.prompt } : {}),
           refinement: options.refinement,
           intent_snapshot: options.intentSnapshot || ((options.isSwap || options.isRefinement) ? pickResult?.resolved_intent : undefined),
           candidate_pool_ids: options.disableCandidatePoolReuse
@@ -429,7 +431,7 @@ function BrowseLibrary() {
       runtime: normalizedRuntime,
       source: "library",
       company: "any",
-      prompt: pickPrompt,
+      prompt: pickResult?.sharePrompt ?? submittedLibraryPrompt,
       genre: normalizedGenre,
       include_theatrical: pickResult?.resolved_preferences?.include_theatrical ?? includeTheatrical,
     };
@@ -470,6 +472,7 @@ function BrowseLibrary() {
         label: action.label,
         source_movie_id: pickResult.primary.id,
         source_movie_title: pickResult.primary.title,
+        source_movie_runtime: pickResult.primary.runtime,
       },
       intentSnapshot: pickResult?.resolved_intent,
       disableCandidatePoolReuse: true,

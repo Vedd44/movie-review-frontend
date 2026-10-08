@@ -5,6 +5,9 @@ import BrowseLibrary from "./BrowseLibrary";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { useAuth } from "./context/AuthContext";
 
+// Keep pagination fixtures above the automatic first-grid fill threshold.
+const browsePadding = Array.from({ length: 11 }, (_, i) => ({ id: 8000 + i, title: `Catalog fixture ${i}`, genre_ids: [28], poster_path: "/fixture.jpg", release_date: "2000-01-01", popularity: 20, vote_count: 100 }));
+
 jest.mock("axios");
 jest.mock("./hooks/useTasteProfile");
 jest.mock("./context/AuthContext", () => ({ useAuth: jest.fn() }));
@@ -77,7 +80,7 @@ test("load more appends a unique page and keeps the existing results", async () 
     ], total_pages: 2 } });
     return Promise.resolve({ data: { results: [
       { id: 679, title: "Aliens", genre_ids: [28, 878], poster_path: "/aliens.jpg", release_date: "1986-07-18", popularity: 80, vote_count: 1000 },
-    ], total_pages: 2 } });
+    ].concat(browsePadding), total_pages: 2 } });
   });
 
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
@@ -102,7 +105,7 @@ test("changing source resets progressive results to the new first page", async (
     ], total_pages: 2 } });
     return Promise.resolve({ data: { results: [
       { id: 679, title: "Aliens", genre_ids: [28, 878], poster_path: "/aliens.jpg", release_date: "1986-07-18", popularity: 80, vote_count: 1000 },
-    ], total_pages: 2 } });
+    ].concat(browsePadding), total_pages: 2 } });
   });
 
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
@@ -129,7 +132,7 @@ test("changing a filter resets progressive results to the filtered first page", 
     ], total_pages: 2 } });
     return Promise.resolve({ data: { results: [
       { id: 679, title: "Aliens", genre_ids: [28, 878], poster_path: "/aliens.jpg", release_date: "1986-07-18", popularity: 80, vote_count: 1000 },
-    ], total_pages: 2 } });
+    ].concat(browsePadding), total_pages: 2 } });
   });
 
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
@@ -169,4 +172,23 @@ test("editing and cancelling a Browse request preserves the displayed pick witho
   expect(axios.post).toHaveBeenCalledTimes(count);
   fireEvent.click(within(picker).getByRole("button", {name:"Edit"}));
   expect(within(picker).getByRole("textbox", {name:"Add a vibe"})).toHaveValue("A smart sci-fi movie");
+});
+
+
+test('Browse another pick preserves the submitted prompt after a cancelled edit',async()=>{
+  const prompt='Movie where people work late night at a food place';
+  axios.post.mockResolvedValueOnce({data:{primary:{id:679,title:'The Last Shift',genre_ids:[18]},alternates:[],resolved_preferences:{prompt},candidate_pool_ids:[679]}})
+    .mockResolvedValueOnce({data:{primary:{id:78,title:'Waiting…',genre_ids:[35]},alternates:[],resolved_preferences:{prompt},candidate_pool_ids:[78]}});
+  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button',{name:/Ask ReelBot to pick one/i}));
+  const picker=document.getElementById('library-reelbot-picker');
+  fireEvent.change(within(picker).getByRole('textbox',{name:'Add a vibe'}),{target:{value:prompt}});
+  fireEvent.click(within(picker).getByRole('button',{name:'Ask ReelBot'}));
+  await within(picker).findByRole('heading',{name:'The Last Shift'});
+  fireEvent.click(within(picker).getByRole('button',{name:'Edit'}));
+  fireEvent.change(within(picker).getByRole('textbox',{name:'Add a vibe'}),{target:{value:'Different draft'}});
+  fireEvent.click(within(picker).getByRole('button',{name:'Cancel edit'}));
+  fireEvent.click(within(picker).getByRole('button',{name:'Get another pick'}));
+  await within(picker).findByRole('heading',{name:'Waiting…'});
+  expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({prompt,original_prompt:prompt,is_swap:true}));
 });
