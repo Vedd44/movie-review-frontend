@@ -1,6 +1,9 @@
 import { ASK_INTENTS, classifyAskIntent, getAskLoadingCopy } from "./askIntent";
 
 const movieContext = { page: "movie_detail", movie: { id: 348, title: "Alien" } };
+test('a complete new description on a movie page requests a recommendation', () => {
+ expect(classifyAskIntent({prompt:'A movie about a woman receiving messages from the future',context:movieContext})).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
+});
 
 test.each([
   ["who's in this?", ASK_INTENTS.CURRENT_MOVIE_QUESTION, "Checking…"],

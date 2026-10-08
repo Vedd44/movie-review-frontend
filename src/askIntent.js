@@ -48,6 +48,7 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
     if (page === "movie_detail" || context.movie?.id || context.movieId) return ASK_INTENTS.MOVIE_RECOMMENDATION;
     return ASK_INTENTS.GENERAL_RECOMMENDATION;
   }
+  if (initialRecommendationPattern.test(value) && /^(?:a|an|some|something|anything|i want|i would like|i[’\']d like|movie|film)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
   if (page === "movie_detail" || context.movie?.id || context.movieId || (hasAnchor && activeIntent === ASK_INTENTS.CURRENT_MOVIE_QUESTION.toLowerCase())) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (page === "browse" || page === "now_playing") return ASK_INTENTS.CURRENT_SET_RECOMMENDATION;
   if (page === "my_movies") return ASK_INTENTS.ACCOUNT_LIBRARY_RECOMMENDATION;
