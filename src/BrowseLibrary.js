@@ -236,7 +236,6 @@ function BrowseLibrary() {
     [pickResult, profile]
   );
   const libraryVibeLabel = useMemo(() => pickPrompt.trim() || selectedMoodConfig.label, [pickPrompt, selectedMoodConfig.label]);
-  const queuedSwapIds = useMemo(() => swapQueue.map((movie) => movie?.id).filter(Boolean), [swapQueue]);
   const askReelbotPageContext = useMemo(() => ({
     page: "browse",
     activeFilters: {
@@ -345,7 +344,7 @@ function BrowseLibrary() {
         `${API_BASE_URL}/reelbot/pick`,
         {
           ...nextPreferences,
-          excluded_ids: getPickExcludedIds(nextPreferences, options.extraExcludedIds || []),
+          excluded_ids: getPickExcludedIds({ ...nextPreferences, is_swap: Boolean(options.isSwap) }, options.extraExcludedIds || []),
           behavioral_memory: behavioralMemory,
           refresh_key: options.refreshKey,
           trigger: "user_click",
@@ -440,11 +439,10 @@ function BrowseLibrary() {
       void tasteActions.recordSwapFeedback(pickResult.primary, swapPreferences).catch(() => {});
     }
 
-    const currentDeckIds = [pickResult?.primary?.id, ...((pickResult?.alternates || []).map((movie) => movie.id)), ...queuedSwapIds].filter(Boolean);
+    const currentDeckIds = [pickResult?.primary?.id].filter(Boolean);
 
-    // Match the homepage swap behavior: "Get another pick" is a fresh
-    // recommendation search, not promotion of a visible alternate. Keep the
-    // current card in place while loading and exclude the entire visible deck.
+    // Match Home: keep the request and exclude the previous main pick.
+    // Unselected alternatives remain eligible for the next recommendation.
     setSwapQueue([]);
     await requestLibraryPick({
       extraExcludedIds: currentDeckIds,

@@ -102,3 +102,13 @@ test("Not interested excludes only the title, survives reload and can be undone"
   expect(tasteProfileService.getPickExcludedIds(profile, {prompt:"sci-fi"})).not.toContain(movie.id);
   expect(profile.behavioralMemory.avoidedGenres).toEqual({});
 });
+
+
+test('another pick excludes previous winners but keeps unselected alternatives eligible',()=>{
+ const prompt='People working overnight at a diner';
+ const preferences={prompt,source:'library',view:'popular',mood:'all',runtime:'any',company:'any'};
+ const profile=tasteProfileService.recordPickResult(tasteProfileService.createEmptyProfile(),preferences,{primary:{id:101,title:'First'},alternates:[{id:102,title:'Other option'}]});
+ expect(tasteProfileService.getPickExcludedIds(profile,{...preferences,is_swap:true},[101])).toContain(101);
+ expect(tasteProfileService.getPickExcludedIds(profile,{...preferences,is_swap:true},[101])).not.toContain(102);
+ expect(tasteProfileService.getPickExcludedIds(profile,preferences)).toContain(102);
+});

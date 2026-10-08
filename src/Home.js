@@ -1322,9 +1322,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     () => activePick ? getContextualRefineActions(activePick, originalPickPrompt || pickPrompt, pickResult?.resolved_intent || {}) : [],
     [activePick, originalPickPrompt, pickPrompt, pickResult?.resolved_intent]
   );
-  const queuedSwapIds = useMemo(() => swapQueue.map((movie) => movie?.id).filter(Boolean), [swapQueue]);
   const swapHistoryExcludedIds = useMemo(
-    () => Array.from(new Set(swapHistory.flatMap((entry) => getPickSessionMovieIds(entry)))),
+    () => Array.from(new Set(swapHistory.map((entry) => entry?.primary?.id).filter(Boolean))),
     [swapHistory]
   );
   const persistentExcludedIds = useMemo(
@@ -1342,9 +1341,11 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const pickFallbackCopy = pickError || PICK_REQUEST_FALLBACK_MESSAGE;
   const candidatePoolExhausted = pickStatus === PICK_STATUS.EXHAUSTED;
   const refreshExhausted = swapCount >= MAX_FRESH_PICK_ATTEMPTS;
-  const refreshExhaustionMessage = candidatePoolExhausted || refreshExhausted
+  const refreshExhaustionMessage = refreshExhausted
     ? "That’s five fresh tries. Start fresh with a new request, or refine this pick."
-    : "";
+    : candidatePoolExhausted
+      ? "I couldn’t find another close fit for this request. Your last pick is still here."
+      : "";
   const pickRecoveryTitle =
     pickStatus === PICK_STATUS.LOADING_SWAP
       ? "Swapping your pick…"
@@ -1454,7 +1455,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }, [hasSeenFirstPickSummary, isFirstPickIntroActive]);
 
   const runPickRequest = async (nextPreferences, options = {}, retryCount = 0, retryExcludedIds = []) => {
-    const baseExcludedIds = options.customExcludedIds || getPickExcludedIds(nextPreferences, options.extraExcludedIds || []);
+    const baseExcludedIds = options.customExcludedIds || getPickExcludedIds({ ...nextPreferences, is_swap: Boolean(options.isSwap) }, options.extraExcludedIds || []);
     const excludedIds = dedupeIds([...(Array.isArray(baseExcludedIds) ? baseExcludedIds : []), ...retryExcludedIds]);
     const requestPayload = {
       ...nextPreferences,
@@ -1745,11 +1746,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
     const previousPick = pickResult;
     const nextSwapCount = swapCount + 1;
-    const currentDeckIds = [
-      previousPick.primary?.id,
-      ...((previousPick.alternates || []).map((movie) => movie?.id)),
-      ...queuedSwapIds,
-    ].filter(Boolean);
+    const currentDeckIds = [previousPick.primary?.id].filter(Boolean);
     const excludedIds = dedupeIds([
       ...currentDeckIds,
       ...swapHistoryExcludedIds,
@@ -1779,9 +1776,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setPickLoadingMessageOverride("Finding a fresh pick…");
     scrollToPickResults({ skipIfVisible: true });
 
-    // "Get another pick" is a new recommendation search, not promotion of one
-    // of the visible alternates. Keep the current card in place while loading
-    // and exclude everything already shown in this session.
+    // Another pick preserves the request and excludes previous main picks.
+    // An unselected alternative remains eligible; it may be the next best fit.
     await submitPick(
       { prompt: originalPickPrompt },
       {

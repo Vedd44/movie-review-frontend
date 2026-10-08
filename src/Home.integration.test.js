@@ -120,3 +120,16 @@ test('refining a pick uses the committed request rather than the empty composer'
   await screen.findByRole('heading',{name:'Arrival'});
   expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({prompt,original_prompt:prompt,refinement:expect.objectContaining({id:'different_angle'})}));
 });
+
+
+test('a single exhausted swap does not claim five tries',async()=>{
+ axios.post.mockResolvedValueOnce({data:pickPayload}).mockResolvedValueOnce({data:{primary:null,alternates:[],no_pick_reason:'no_suitable_candidate'}});
+ render(<MemoryRouter><Home /></MemoryRouter>);
+ fireEvent.change(await screen.findByPlaceholderText(/A mood, a movie you love/i),{target:{value:'A movie about a night shift'}});
+ fireEvent.click(screen.getByRole('button',{name:'Find my movie'}));
+ await screen.findByRole('heading',{name:'Aliens'});
+ fireEvent.click(screen.getByRole('button',{name:'Get another pick'}));
+ expect(await screen.findByText(/couldn’t find another close fit/)).toBeVisible();
+ expect(screen.queryByText(/five fresh tries/)).not.toBeInTheDocument();
+ expect(screen.getByRole('heading',{name:'Aliens'})).toBeInTheDocument();
+});
