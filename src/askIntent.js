@@ -5,6 +5,7 @@ export const ASK_INTENTS = Object.freeze({
   CURRENT_SET_RECOMMENDATION: "CURRENT_SET_RECOMMENDATION",
   GENERAL_RECOMMENDATION: "GENERAL_RECOMMENDATION",
   GENERAL_INFORMATION_QUESTION: "GENERAL_INFORMATION_QUESTION",
+  MOVIE_IDENTIFICATION: "MOVIE_IDENTIFICATION",
   ACCOUNT_LIBRARY_RECOMMENDATION: "ACCOUNT_LIBRARY_RECOMMENDATION",
   REFINE_RECOMMENDATION: "REFINE_RECOMMENDATION",
   NEXT_RECOMMENDATION: "NEXT_RECOMMENDATION",
@@ -17,6 +18,9 @@ const spoilerQuestionPattern = /\b(?:give|tell|show)\s+me\s+(?:the\s+)?spoilers?
 const comparisonPattern = /\b(?:better than|compare|which should i watch|this or|it or|versus|vs\.?|should i watch (?:this|it) or)\b/i;
 const questionPattern = /^(?:is|are|does|do|will|would|can|could|should|how|what|who|when|where|why)\b|\b(?:scary|violent|violence|gore|jump scare|sad|funny|confusing|slow|appropriate|good for|happy ending|runtime|how long|toddler|kid|child|group|date movie)\b/i;
 const nextPattern = /^(?:okay,?\s*)?(?:another|another one|next|next one|one more)(?:\s+please)?[.!?]*$/i;
+const continuationPattern = /^(?:okay[, ]+)?(?:(?:find|give)(?: me)?\s+)?(?:another(?:\s+(?:one|pick|movie|film))?|next(?:\s+(?:one|pick))?|one more|(?:something|anything) else)\b/i;
+const constraintChangePattern = /^(?:(?:make|keep|set|change)\s+(?:it|that|this)(?:\s+to)?\b|(?:under|less than|at most|no longer than|no more than)\s+\d)/i;
+const identificationPattern = /\b(?:what(?:['’]s)?|which)\s+(?:(?:was|is)\s+)?(?:that|the)\s+(?:movie|film)\b|\b(?:what|which)\s+(?:movie|film)\s+(?:was|is|had|has|where)\b|\b(?:remember|identify|recall)\b.*\b(?:movie|film)\b|\b(?:movie|film)\b.*\b(?:can't|cannot|don't)\s+remember\b/i;
 const refinementPattern = /^(?:no[, ]+|actually[, ]+|i meant\b|not\b)|\b(?:not that one|lighter|darker|shorter|funnier|less scary|less intense|less violent|newer|more recent|more mainstream|i(?:[’']ve| have) (?:already )?seen (?:that|this|it)|rather than|instead of)\b/i;
 const initialRecommendationPattern = /\b(?:movie|watch|action|comedy|drama|thriller|horror|sci-?fi|funny|spooky|smart but easy|easy watch|date night|mainstream)\b/i;
 const homePickRefinementPattern = /^(?:something|anything)\s+(?:gentler|lighter|darker|shorter|funnier|less intense|less scary|more like this)|^(?:find|give me)\s+something\s+like\s+this|\b(?:i(?:'|’)ve already seen this|another one like this)\b/i;
@@ -27,14 +31,17 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
   const page = normalize(context.page);
   const activeIntent = normalize(conversation.activeIntent);
   const hasAnchor = Boolean(context.movie?.id || context.movieId || conversation.anchorMovie?.id);
-  const hasRecommendation = /recommendation/.test(activeIntent) || Boolean(conversation.activeRequest);
+  const hasRecommendation = /recommendation/.test(activeIntent) || (Boolean(conversation.activeRequest) && normalize(conversation.activeTask || activeIntent) !== 'movie_identification');
   const hasActiveHomePick = page === "home" && Boolean(context.currentPick?.id);
   if (!value) return ASK_INTENTS.UNKNOWN;
+  if (/\b(?:new topic|start fresh|start over|forget (?:that|the previous|my previous)(?: request)?|change (?:the )?topic)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
+  if (identificationPattern.test(value) || (normalize(conversation.activeTask || conversation.activeIntent)==='movie_identification' && /^(?:it\b|he\b|she\b|they\b|there\b|i remember\b|actually\b|no\b|the (?:man|woman|guy|movie|film)\b)/i.test(value) && !recommendationPattern.test(value))) return ASK_INTENTS.MOVIE_IDENTIFICATION;
   // Spoiler requests are questions about the anchored movie, never discovery prompts.
   // This must precede recommendation matching (e.g. "give me ...").
   if (hasAnchor && spoilerQuestionPattern.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (comparisonPattern.test(value)) return ASK_INTENTS.MOVIE_COMPARISON;
   if (nextPattern.test(value) && hasRecommendation) return ASK_INTENTS.NEXT_RECOMMENDATION;
+  if (hasRecommendation && (continuationPattern.test(value) || constraintChangePattern.test(value))) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (hasActiveHomePick && homePickRefinementPattern.test(value)) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (page === "home" && homeDiscoveryPattern.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
   if (/\b(?:new topic|start fresh|start over|forget (?:that|the previous|my previous)(?: request)?|change (?:the )?topic)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;

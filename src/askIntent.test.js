@@ -42,3 +42,17 @@ test('questions and explicit topic changes do not become refinements', () => {
  expect(classifyAskIntent({prompt:'Is it shorter than two hours?',conversation})).toBe(ASK_INTENTS.CURRENT_MOVIE_QUESTION);
  expect(classifyAskIntent({prompt:'Actually, start fresh: a romantic comedy',conversation})).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
 });
+
+test.each(['home','browse','movie_detail','general'])('keeps modified continuations active on %s',page=>{
+ const conversation={activeRequest:'A sci-fi thriller, no horror, under 100 minutes',activeIntent:ASK_INTENTS.GENERAL_RECOMMENDATION,anchorMovie:{id:1}};
+ for(const prompt of ['Another pick please','Another under 90 minutes','One more, but no horror','Something else','Make it under 90 minutes']) {
+  expect(classifyAskIntent({prompt,context:{page},conversation})).toMatch(/^(NEXT|REFINE)_RECOMMENDATION$/);
+ }
+ expect(classifyAskIntent({prompt:'Actually, start fresh: a romantic comedy',context:{page},conversation})).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
+});
+
+test('identification survives intervening questions and explicit new topics override clues',()=>{
+ const conversation={activeIntent:'CURRENT_MOVIE_QUESTION',activeTask:'MOVIE_IDENTIFICATION',activeRequest:'What was that movie where a man uses tattoos?',anchorMovie:{id:77}};
+ expect(classifyAskIntent({prompt:'He used Polaroid photographs too.',conversation})).toBe('MOVIE_IDENTIFICATION');
+ expect(classifyAskIntent({prompt:'Actually, start fresh: a romantic comedy',conversation})).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
+});
