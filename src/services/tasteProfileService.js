@@ -696,6 +696,7 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
   const safeProfile = rebuildProfile(profile || DEFAULT_PROFILE);
   const signature = buildPickPreferenceSignature(preferences);
   const isRewatchRequest = isExplicitRewatchRequest(preferences?.prompt);
+  const hasExplicitRequest = Boolean(String(preferences?.prompt || "").trim());
 
   (safeProfile.behavioralMemory?.hiddenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
   if (!isRewatchRequest) {
@@ -704,14 +705,16 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
   const watchedIds = new Set(safeProfile.behavioralMemory?.seenMovieIds || []);
   if (isExplicitUnseenRequest(preferences?.prompt)) watchedIds.forEach(id => excludedIds.add(id));
 
-  (!preferences?.is_swap ? (safeProfile.recentRecommendations || []) : []).slice(0, 24).forEach((movie) => {
+  // Explicit fresh requests lead over passive recommendation history. Keep
+  // discovery novel, but do not exhaust a niche request across Home and Browse.
+  (!preferences?.is_swap && !hasExplicitRequest ? (safeProfile.recentRecommendations || []) : []).slice(0, 24).forEach((movie) => {
     if (movie?.id && !isRewatchRequest && !watchedIds.has(movie.id)) {
       excludedIds.add(movie.id);
     }
   });
 
   (safeProfile.pickHistory || [])
-    .filter((entry) => entry.signature === signature || (preferences?.is_swap && String(preferences.prompt || "").trim() && entry.preferences?.prompt === String(preferences.prompt).trim()))
+    .filter((entry) => (preferences?.is_swap || !hasExplicitRequest) && (entry.signature === signature || (preferences?.is_swap && hasExplicitRequest && entry.preferences?.prompt === String(preferences.prompt).trim())))
     .slice(0, 4)
     .forEach((entry) => {
       (preferences?.is_swap ? (entry.movie_ids || []).slice(0, 1) : (entry.movie_ids || [])).forEach((movieId) => {

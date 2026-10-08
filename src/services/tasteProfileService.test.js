@@ -110,5 +110,7 @@ test('another pick excludes previous winners but keeps unselected alternatives e
  const profile=tasteProfileService.recordPickResult(tasteProfileService.createEmptyProfile(),preferences,{primary:{id:101,title:'First'},alternates:[{id:102,title:'Other option'}]});
  expect(tasteProfileService.getPickExcludedIds(profile,{...preferences,is_swap:true},[101])).toContain(101);
  expect(tasteProfileService.getPickExcludedIds(profile,{...preferences,is_swap:true},[101])).not.toContain(102);
- expect(tasteProfileService.getPickExcludedIds(profile,preferences)).toContain(102);
+ expect(tasteProfileService.getPickExcludedIds(profile,preferences)).not.toContain(102);
+ expect(tasteProfileService.getPickExcludedIds(profile,preferences)).not.toContain(101);
+ expect(tasteProfileService.getPickExcludedIds(profile,{prompt:''})).toContain(102);
 });
