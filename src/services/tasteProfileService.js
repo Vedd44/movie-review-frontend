@@ -698,7 +698,8 @@ const getPickExcludedIds = (profile, preferences, extraIds = []) => {
   const isRewatchRequest = isExplicitRewatchRequest(preferences?.prompt);
   const hasExplicitRequest = Boolean(String(preferences?.prompt || "").trim());
 
-  (safeProfile.behavioralMemory?.hiddenMovieIds || []).forEach((movieId) => excludedIds.add(movieId));
+  // Explicit rejections outlive the bounded taste-memory summary.
+  (safeProfile.skipped || []).forEach((movie) => excludedIds.add(Number(movie.id)));
   if (!isRewatchRequest) {
     getWatchCooldownIds(safeProfile.behavioralMemory?.watchedAt).forEach((movieId) => excludedIds.add(movieId));
   }

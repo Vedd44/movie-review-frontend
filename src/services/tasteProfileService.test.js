@@ -114,3 +114,14 @@ test('another pick excludes previous winners but keeps unselected alternatives e
  expect(tasteProfileService.getPickExcludedIds(profile,preferences)).not.toContain(101);
  expect(tasteProfileService.getPickExcludedIds(profile,{prompt:''})).toContain(102);
 });
+
+test('all saved rejections remain excluded after the taste summary reaches its limit', () => {
+ let profile = tasteProfileService.createEmptyProfile();
+ for (let id = 1; id <= 40; id += 1) profile = tasteProfileService.toggleSkipped(profile, {id, title:`Film ${id}`});
+ tasteProfileService.save(profile);
+ profile = tasteProfileService.load();
+ expect(profile.skipped).toHaveLength(40);
+ expect(tasteProfileService.getPickExcludedIds(profile, {prompt:'a comedy'})).toEqual(expect.arrayContaining(Array.from({length:40}, (_, index) => index + 1)));
+ profile = tasteProfileService.toggleSkipped(profile, {id:1, title:'Film 1'});
+ expect(tasteProfileService.getPickExcludedIds(profile, {prompt:'a comedy'})).not.toContain(1);
+});

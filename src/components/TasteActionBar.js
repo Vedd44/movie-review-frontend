@@ -13,6 +13,7 @@ function TasteActionBar({
   showSaveAction = true,
   showSaveIcon = false,
   showFeedbackIcons = false,
+  showFeedbackConfirmation = false,
   showSeenAction = true,
   showSkipAction = true,
   showVibeAction = true,
@@ -21,7 +22,6 @@ function TasteActionBar({
   seenLabel = "Seen",
   skipLabel = "Not for me",
   skipActiveLabel = "Not for me",
-  onInteraction = null,
 }) {
   const { actions, getMovieState, isCloudSyncing } = useTasteProfile();
   const { user, requestMovieSaveAuth } = useAuth();
@@ -90,12 +90,9 @@ function TasteActionBar({
             ? (tasteState.skipped ? "not_for_me_removed" : "not_for_me_added")
             : "";
       if (eventName) trackProductEvent(eventName, { authenticated: Boolean(user), movie_id: Number(movie.id) });
-      if (typeof onInteraction === "function") {
-        onInteraction(actionKey, { active: actionKey === "hidden" ? !tasteState.skipped : actionKey === "seen" ? !tasteState.seen : actionKey === "watchlist" ? !tasteState.inWatchlist : !tasteState.likedVibe });
-      }
       // The Save button itself reflects watchlist state (Save/Saved), so avoid a second
       // success line that changes the action-row height and knocks controls out of alignment.
-      if (actionKey !== "watchlist") {
+      if (actionKey !== "watchlist" && !(showFeedbackConfirmation && ["seen", "hidden"].includes(actionKey))) {
         setFeedback(feedbackMap[actionKey] || "Saved");
       }
     } catch (error) {
@@ -157,6 +154,14 @@ function TasteActionBar({
       ) : null}
       {pendingAction && user && isCloudSyncing && pendingAction !== "watchlist" ? <span className="taste-action-feedback">Saving…</span> : null}
       {actionError ? <span className="taste-action-feedback taste-action-feedback--error">{actionError}</span> : null}
+      {showFeedbackConfirmation && !pendingAction && !actionError && (tasteState.skipped || tasteState.seen) ? (
+        <div className="taste-action-feedback taste-action-confirmation" role="status">
+          <p>{tasteState.skipped ? "Got it. We won't recommend this movie again." : "Marked as watched."}</p>
+          <p>{user
+            ? (tasteState.skipped ? "You can change this anytime in My Movies." : "You can manage your watched movies in My Movies.")
+            : `Saved on this device. Select ${tasteState.skipped ? skipLabel : seenLabel} again to undo.`}</p>
+        </div>
+      ) : null}
       {feedback ? <span className="taste-action-feedback">{feedback}</span> : null}
     </div>
   );

@@ -56,7 +56,6 @@
 .picker-editorial .picker-feedback .taste-action-bar { gap: 8px; }
 .picker-editorial .picker-feedback .taste-action-button { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; min-height: 44px; border: 1px solid var(--rb-line); border-radius: 6px; font-size: .8rem; }
 .picker-editorial .picker-feedback .taste-action-button.is-active { border-color: var(--rb-gold); }
-.picker-editorial .pick-feedback-reasons { padding: 12px 0; border: 0; background: none; }
 .picker-editorial .pick-backups-block { margin-top: 24px; padding-top: 24px; }
 .picker-editorial .pick-backups-head { margin-bottom: 18px; }
 .picker-editorial .pick-backups-copy { margin-top: 5px; font-size: .82rem; }

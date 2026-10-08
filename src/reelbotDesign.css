@@ -1096,9 +1096,8 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .pick-companion .taste-action-button.is-active { color: var(--rb-gold); }
 .pick-share-link { display: inline-flex; gap: 8px; align-items: center; }
 .pick-share-link:hover, .pick-companion .taste-action-button:hover { color: var(--rb-gold); }
-.pick-feedback-reasons { margin-top: 12px; padding: 14px 16px; border-left: 2px solid var(--rb-gold); background: var(--rb-surface); }
-.pick-feedback-reasons p { margin: 0 0 10px; font-size: .8rem; color: var(--rb-muted); }
-.pick-feedback-reasons .pick-companion-actions { margin-top: 10px; }
+.taste-action-confirmation p { margin: 0; }
+.taste-action-confirmation p + p { color: var(--rb-muted); }
 .pick-share-status { display: flex; flex-wrap: wrap; gap: 12px; font-size: .8rem; color: var(--rb-muted); }
 .pick-companion button:disabled, .pick-request-context button:disabled { opacity: .5; cursor: default; }
 /* Optional Browse filters stay together behind one disclosure. */

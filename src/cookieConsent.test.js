@@ -1,10 +1,14 @@
 import { getCookieChoice, hasAnalyticsConsent, setCookieChoice, loadGoogleAnalytics } from './cookieConsent';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CookieConsent from './components/CookieConsent';
 import { trackProductEvent } from './analytics';
+import ConsentAnalytics from './components/ConsentAnalytics';
+import { recordProductTelemetry } from './productTelemetry';
+jest.mock('./productTelemetry', () => ({ recordProductTelemetry: jest.fn() }));
+jest.mock('./components/OptionalAnalytics', () => () => <div data-testid="optional-analytics" />);
 
 beforeEach(() => {
- window.localStorage.clear(); window.sessionStorage.clear();
+ jest.clearAllMocks(); window.localStorage.clear(); window.sessionStorage.clear();
  document.querySelectorAll('script[data-reelbot-gtag]').forEach(s => s.remove());
  window.gtag = jest.fn(); window.va = jest.fn(); window.dataLayer = [];
 });
@@ -16,12 +20,18 @@ test('a previous scroll dismissal is not consent and cannot load analytics', () 
  expect(window.gtag).not.toHaveBeenCalled(); expect(window.va).not.toHaveBeenCalled(); expect(window.dataLayer).toEqual([]);
 });
 test('scrolling leaves a real choice available and rejection persists without blocking the page', () => {
- render(<CookieConsent />); fireEvent.scroll(window, {target: {scrollY: 500}});
+ render(<CookieConsent />);
+ expect(screen.getByText('Cookie preferences')).toBeVisible();
+ expect(screen.getByText('Essential cookies keep ReelBot working. Optional analytics help us understand how people use the site and improve the experience.')).toBeVisible();
+ expect(screen.getByRole('link', {name: 'Privacy Policy'})).toHaveAttribute('href', '/privacy');
+ fireEvent.scroll(window, {target: {scrollY: 500}});
  expect(screen.getByRole('button', {name: 'Accept analytics'})).toBeInTheDocument();
  fireEvent.click(screen.getByRole('button', {name: 'Reject analytics'}));
  expect(hasAnalyticsConsent()).toBe(false); expect(getCookieChoice()).toBe('rejected');
  expect(screen.queryByRole('region', {name: 'Cookie preferences'})).not.toBeInTheDocument();
  loadGoogleAnalytics(); expect(document.querySelector('script[data-reelbot-gtag]')).toBeNull();
+ trackProductEvent('movie_watched', {movie_id: 42});
+ expect(window.gtag).not.toHaveBeenCalled(); expect(window.va).not.toHaveBeenCalled();
 });
 test('explicit acceptance loads Google once, and settings allows withdrawing consent', () => {
  render(<CookieConsent />);
@@ -43,4 +53,25 @@ test('local personalization signals remain available when analytics is rejected'
  trackProductEvent('movie_saved',{movie_id:42});
  expect(listener).toHaveBeenCalledTimes(1); expect(window.gtag).not.toHaveBeenCalled();
  window.removeEventListener('reelbot:analytics',listener);
+});
+
+
+test('rejection blocks optional analytics providers and telemetry after remount; acceptance enables them', async () => {
+ const app = () => <><CookieConsent /><ConsentAnalytics /></>;
+ let view = render(app());
+ expect(screen.queryByTestId('optional-analytics')).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button', {name: 'Reject analytics'}));
+ trackProductEvent('movie_watched', {movie_id: 42});
+ expect(recordProductTelemetry).not.toHaveBeenCalled();
+ expect(window.gtag).not.toHaveBeenCalled(); expect(window.va).not.toHaveBeenCalled();
+ view.unmount(); view = render(app());
+ expect(screen.queryByTestId('optional-analytics')).not.toBeInTheDocument();
+ expect(screen.queryByRole('region', {name: 'Cookie preferences'})).not.toBeInTheDocument();
+ expect(document.querySelector('script[data-reelbot-gtag]')).toBeNull();
+ fireEvent(window, new Event('reelbot:cookie-settings'));
+ fireEvent.click(screen.getByRole('button', {name: 'Accept analytics'}));
+ await waitFor(() => expect(screen.getByTestId('optional-analytics')).toBeInTheDocument());
+ expect(document.querySelectorAll('script[data-reelbot-gtag]')).toHaveLength(1);
+ trackProductEvent('movie_watched', {movie_id: 42});
+ expect(recordProductTelemetry).toHaveBeenCalledWith('movie_watched', {movie_id: 42});
 });

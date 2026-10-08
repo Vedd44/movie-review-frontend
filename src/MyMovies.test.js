@@ -86,3 +86,31 @@ test("library search filters locally and clearing it preserves the saved list", 
   expect(screen.getByRole("heading", { name: "The Town" })).toBeInTheDocument();
   expect(reelbotCloudService.saveUserState).not.toHaveBeenCalled();
 });
+
+test("My Movies switches a rejected title to Watched and can restore recommendation eligibility", async () => {
+  const profile = tasteProfileService.toggleSkipped(tasteProfileService.createEmptyProfile(), movie);
+  reelbotCloudService.bootstrapUserState.mockResolvedValue(snapshot(profile));
+  renderLibrary();
+  await waitFor(() => expect(reelbotCloudService.bootstrapUserState).toHaveBeenCalled());
+  fireEvent.click(lists().getByRole('button', { name: /^Not for me/ }));
+  await screen.findByRole('heading', { name: movie.title });
+  let menu = statuses();
+  expect(menu.getByRole('button', { name: 'Not for me' })).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(menu.getByRole('button', { name: 'Watched' }));
+  await screen.findByText('Nothing marked not for me.');
+  await waitFor(() => expect(screen.queryByText('Saving your changes…')).not.toBeInTheDocument());
+  fireEvent.click(lists().getByRole('button', { name: /^Watched/ }));
+  menu = statuses();
+  expect(menu.getByRole('button', { name: 'Watched' })).toHaveAttribute('aria-pressed', 'true');
+  expect(menu.getByRole('button', { name: 'Not for me' })).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.click(menu.getByRole('button', { name: 'Not for me' }));
+  await screen.findByText('Nothing marked as watched yet.');
+  await waitFor(() => expect(screen.queryByText('Saving your changes…')).not.toBeInTheDocument());
+  fireEvent.click(lists().getByRole('button', { name: /^Not for me/ }));
+  fireEvent.click(statuses().getByRole('button', { name: 'Not for me' }));
+  await screen.findByText('Nothing marked not for me.');
+  await waitFor(() => expect(screen.queryByText('Saving your changes…')).not.toBeInTheDocument());
+  const restored = reelbotCloudService.saveUserState.mock.calls.at(-1)[1];
+  expect(restored.skipped).toEqual([]);
+  expect(tasteProfileService.getPickExcludedIds(restored, { prompt: 'a crime movie' })).not.toContain(movie.id);
+});

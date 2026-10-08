@@ -13,7 +13,7 @@ export default function CookieConsent() {
   if (choice && !editing) return null;
   const choose = value => { setCookieChoice(value); setChoice(value); setEditing(false); };
   return <section className="cookie-consent" aria-label="Cookie preferences">
-    <div><strong>Cookies, your choice.</strong><p>Essential storage keeps sign-in and movie preferences working. Optional analytics helps us improve ReelBot. <a href="/privacy">Privacy Policy</a></p></div>
+    <div><strong>Cookie preferences</strong><p>Essential cookies keep ReelBot working. Optional analytics help us understand how people use the site and improve the experience. <a href="/privacy">Privacy Policy</a></p></div>
     <div className="cookie-consent-actions">
       <button type="button" onClick={() => choose('rejected')}>Reject analytics</button>
       <button type="button" onClick={() => choose('accepted')}>Accept analytics</button>
