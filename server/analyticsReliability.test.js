@@ -23,7 +23,7 @@ test('isolated A–F, I–J journeys persist once, refresh, and link only signed
   const f=fixture();assert.equal((await readProductTelemetry(f.db,now)).request_log.length,0);
   const guest=await f.send(1,101,[event(1,'request_logged',{page:'home',prompt:'First',outcome:'pick',kind:'recommendation'}),event(2,'request_logged',{page:'home',prompt:'Second',outcome:'no_match',kind:'recommendation'})]);
   assert.equal(guest.code,202);const cookie=guest['Set-Cookie'];assert.equal(readVisitCookie(cookie,now).session,id(1));
-  const events=[event(3,'login',{authenticated:true,method:'google'}),event(4,'request_logged',{page:'browse',prompt:'Browse',authenticated:true,kind:'recommendation',outcome:'pick'})];
+  const events=[event(9,'sign_up',{authenticated:true,method:'email'}),event(3,'login',{authenticated:true,method:'google'}),event(4,'request_logged',{page:'browse',prompt:'Browse',authenticated:true,kind:'recommendation',outcome:'pick'})];
   assert.equal((await f.send(1,102,events,{token:'account-a',cookie})).code,202);
   await f.send(1,102,events,{token:'account-a',cookie});
   await f.send(2,103,[event(5,'request_logged',{page:'home',prompt:'Unrelated guest'})]);
@@ -32,7 +32,7 @@ test('isolated A–F, I–J journeys persist once, refresh, and link only signed
   assert.equal(f.files.size,4);assert.equal(refreshed.request_log.length,6);
   assert.equal(refreshed.request_log.filter(r=>r.linked_account_ref).length,2);
   assert.equal(refreshed.request_log.find(r=>r.prompt==='Unrelated guest').linked_account_ref,null);
-  assert.equal(refreshed.request_log.find(r=>r.prompt==='Follow up').page,'ask');assert.equal(refreshed.total.logins,1);
+  assert.equal(refreshed.request_log.find(r=>r.prompt==='Follow up').page,'ask');assert.equal(refreshed.total.logins,1);assert.equal(refreshed.total.signups,1);assert.deepEqual(refreshed.accounts[ownerDigest('account-a')],{page_views:0,requests:3,linked_guest_requests:2,sessions:2});
   const hidden=await readProductTelemetry(f.db,now,{excludeOwners:[ownerDigest('account-a')]});assert.equal(hidden.request_log.length,1);
   await f.send(2,105,[event(8,'login',{authenticated:true})],{token:'account-b'});
   assert.equal((await readProductTelemetry(f.db,now)).request_log.find(r=>r.prompt==='Unrelated guest').linked_account_ref,null);
