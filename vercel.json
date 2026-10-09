@@ -104,6 +104,9 @@
     }
   ],
   "functions": {
+    "api/resend-inbound.js": {
+      "maxDuration": 60
+    },
     "api/page.js": {
       "includeFiles": "server/generated/**",
       "maxDuration": 30
