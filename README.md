@@ -98,9 +98,11 @@ reads `RESEND_API_KEY` and `REELBOT_ALERT_EMAIL`, and uses the shared hardcoded 
 `ReelBot <alerts@reelbot.movie>` for both paths. It contains no `onboarding@resend.dev`
 sender. Both enabled database triggers (`auth.users` signup and `public.feedback`
 feedback) call this same function; neither calls Resend directly or specifies a
-sender. Version 2 was last updated September 29, 2026 at 11:53 AM EDT. The reported
-onboarding-sender message cannot be attributed without its timestamp/delivery
-evidence, but it does not match the current deployed configuration. No separate
+sender. Version 2 was last updated September 29, 2026 at 11:53 AM EDT. Resend's most
+recent feedback delivery in the available 15-day view was sent from
+`onboarding@resend.dev` at 11:43 AM EDT that day, ten minutes before the current
+function update. This explains why the retained feedback message shows the older
+sender; the current deployed source uses `alerts@reelbot.movie`. No separate
 sender environment variable exists: a feedback-only sender change needs a small
 conditional code change and an approved Edge Function deployment. No feedback
 sender change is included here; the existing signup workflow remains intact.
