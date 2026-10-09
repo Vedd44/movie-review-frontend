@@ -36,6 +36,33 @@ test('pending Ask requests never count as completed recommendations or identific
  const finished=buildProductMetrics([pending,batch(1,[event(22,'ask_reelbot_result',{kind:'recommendation',outcome:'pick',latency_ms:8000}),event(23,'ask_reelbot_result',{kind:'identification',outcome:'identification'})])],now);assert.equal(finished.total.completed,1);assert.equal(finished.total.identifications,1);
 });
 
+test('coverage describes optional consent, separate profile records and omitted catalog searches',()=>{
+ const metrics=buildProductMetrics([],now);
+ assert.match(metrics.coverage,/only analytics-consenting guest and signed-in sessions/);
+ assert.match(metrics.coverage,/separate from functional account profile records/);
+ assert.match(metrics.coverage,/Catalog searches are not recorded as requests/);
+ assert.match(metrics.coverage,/reported for 7 days; stored batches are pruned after 8 days/);
+ assert.match(metrics.coverage,/Up to 40 recent event batches per day/);
+});
+
+test('identification answers and failures use kind without affecting recommendation health',()=>{
+ const metrics=buildProductMetrics([batch(1,[
+  event(30,'recommendation_returned',{outcome:'pick',latency_ms:9000}),
+  event(31,'ask_reelbot_result',{kind:'identification',latency_ms:1000}),
+  event(32,'ask_reelbot_failed',{kind:'identification',outcome:'failed',latency_ms:2000}),
+  event(33,'ask_reelbot_result',{kind:'identification',outcome:'no_match',latency_ms:3000}),
+  event(34,'ask_reelbot_result',{kind:'answer',latency_ms:500}),
+  event(35,'recommendation_failed',{kind:'identification',outcome:'no_match',latency_ms:1500}),
+  event(36,'recommendation_failed',{kind:'identification',outcome:'failed',latency_ms:2500}),
+ ])],now);
+ assert.equal(metrics.total.identifications,5);
+ assert.equal(metrics.total.completed,1);
+ assert.equal(metrics.total.picks,1);
+ assert.equal(metrics.total.failed,0);
+ assert.equal(metrics.total.no_match,0);
+ assert.equal(metrics.total.median_ms,9000);
+});
+
 test('request log pairs prompt and result, keeps source and later actions, and hides only verified owner activity',()=>{
  const mine=normalizeBatch({...batch(1,[event(101,'request_logged',{request_id:id(501),prompt:'A clever thriller',movie_id:5,movie_title:'The Prestige',kind:'recommendation',authenticated:true}),event(102,'movie_saved',{movie_id:5,authenticated:true})]),acquisition:{channel:'paid',source:'instagram',campaign:'test'}},now);
  mine.events.forEach(e=>{e.owner='verified-owner';});
@@ -83,4 +110,21 @@ test('absent events, unrelated sessions and later visits never claim a bounce or
 test('request attribution bounds and alternate IDs are validated at ingestion',()=>{
  const n=normalizeBatch(batch(1,[event(801,'request_logged',{started_at:now+5000,alternate_ids:[5,-1,6,5,'7',8,9]},now-1000)]),now);
  assert.equal(n.events[0].properties.started_at,undefined);assert.deepEqual(n.events[0].properties.alternate_ids,[5,6,8]);
+});
+
+
+test('retries across UTC midnight retain one immutable storage key and one counted event',async()=>{
+ const files=new Map();const paths=[];
+ const db={storage:{getBucket:async()=>({data:{id:BUCKET}}),from:()=>({upload:async(path,body,options)=>{
+  paths.push(path);assert.equal(options.upsert,false);
+  if(files.has(path))return {error:{message:'The resource already exists'}};
+  files.set(path,JSON.parse(body));return {};
+ }})}};
+ const before=Date.parse('2026-10-04T23:59:59Z');const after=before+5000;
+ const body=batch(1,[event(1,'page_viewed',{page:'home'},before-1000)]);
+ const store=createTelemetryStore(db);
+ await store.write(normalizeBatch(body,before));
+ await store.write(normalizeBatch(body,after));
+ assert.equal(paths[0],paths[1]);assert.equal(files.size,1);
+ assert.equal(buildProductMetrics([...files.values()],after).surfaces.find(s=>s.page==='home').views,1);
 });

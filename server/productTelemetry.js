@@ -32,7 +32,10 @@ function createTelemetryStore(db) {
  return {async write(batch) {
   if(!ready)ready=(async()=>{const found=await db.storage.getBucket(BUCKET);if(!found.error){if(found.data?.public)throw Error('Activity storage must be private');return;}const created=await db.storage.createBucket(BUCKET,{public:false,fileSizeLimit:16384,allowedMimeTypes:['application/json']});if(created.error&&!/already exists|duplicate/i.test(created.error.message || ''))throw created.error;})().catch(error=>{ready=null;throw error;});
   await ready;
-  const path=`${batch.received_at.slice(0,10)}/${batch.batch_id}.json`;
+  // Event times are unchanged on retries; receipt time can cross UTC midnight.
+  // Keep one immutable key even when an accepted response was lost.
+  const eventDay=new Date(Math.max(...batch.events.map(event=>event.time))).toISOString().slice(0,10);
+  const path=`${eventDay}/${batch.batch_id}.json`;
   const result=await db.storage.from(BUCKET).upload(path,JSON.stringify(batch),{contentType:'application/json',upsert:false});
   if(result.error&&!/already exists|duplicate/i.test(result.error.message || ''))throw result.error;
   if(cleanedDay!==batch.received_at.slice(0,10)){cleanedDay=batch.received_at.slice(0,10);await pruneTelemetry(db,Date.parse(batch.received_at)).catch(()=>{});}
@@ -121,6 +124,6 @@ function buildProductMetrics(batches,now=Date.now(),capped=false,options={}) {
   const row=providerClicks.get(key)||{source:p.source,provider_id:p.provider_id,name:p.provider_name||'Provider',availability_type:p.availability_type,clicks:0};
   row.clicks++;providerClicks.set(key,row);
  }
- return {provider_clicks:[...providerClicks.values()].sort((a,b)=>b.clicks-a.clicks),request_log:requestLog,surfaces,scope:'Browser-reported activity sample · last 7 days',coverage:`Includes guests and signed-in sessions from this release. Sessions are visits in a browser tab, not unique people. A visitor who signs in can appear in both groups. Consented request text and results are redacted and shown only to super admins. Account IDs and full referral URLs are not stored. Activity is reported for 7 days; stored batches are pruned after 8 days. Up to 40 recent event batches per day are read; ${capped?'this sample has reached that limit.':'the read limit has not been reached.'} Blocked tracking and missing browser events are excluded.`,capped,total:summary('all'),guests:summary('guest'),signed_in:summary('signed_in')};
+ return {provider_clicks:[...providerClicks.values()].sort((a,b)=>b.clicks-a.clicks),request_log:requestLog,surfaces,scope:'Browser-reported activity sample · last 7 days',coverage:`Includes only analytics-consenting guest and signed-in sessions from this release, separate from functional account profile records. Catalog searches are not recorded as requests. Sessions are visits in a browser tab, not unique people. A visitor who signs in can appear in both groups. Consented request text and results are redacted and shown only to super admins. Account IDs and full referral URLs are not stored. Activity is reported for 7 days; stored batches are pruned after 8 days. Up to 40 recent event batches per day are read; ${capped?'this sample has reached that limit.':'the read limit has not been reached.'} Blocked tracking and missing browser events are excluded.`,capped,total:summary('all'),guests:summary('guest'),signed_in:summary('signed_in')};
 }
 module.exports={BUCKET,EVENTS,normalizeBatch,createTelemetryStore,readProductTelemetry,buildProductMetrics,pruneTelemetry};

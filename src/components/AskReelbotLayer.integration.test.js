@@ -4,9 +4,13 @@ import axios from "axios";
 import AskReelbotLayer, { normalizeAskFollowUps } from "./AskReelbotLayer";
 import useTasteProfile from "../hooks/useTasteProfile";
 import { AskReelbotProvider, useAskReelbotPageContext } from "../context/AskReelbotContext";
+import { trackProductEvent } from "../analytics";
+import { recordRequestActivity } from "../productTelemetry";
 
 jest.mock("axios");
 jest.mock("../hooks/useTasteProfile");
+jest.mock("../analytics", () => ({ ...jest.requireActual("../analytics"), trackProductEvent: jest.fn() }));
+jest.mock("../productTelemetry", () => ({ ...jest.requireActual("../productTelemetry"), recordRequestActivity: jest.fn() }));
 
 function ContextRegistration({ context }) {
   useAskReelbotPageContext(context);
@@ -14,6 +18,8 @@ function ContextRegistration({ context }) {
 }
 
 beforeEach(() => {
+  trackProductEvent.mockImplementation(jest.requireActual("../analytics").trackProductEvent);
+  recordRequestActivity.mockImplementation(jest.requireActual("../productTelemetry").recordRequestActivity);
   useTasteProfile.mockReturnValue({
     behavioralMemory: {},
     getMovieState: jest.fn(() => ({})),
@@ -232,4 +238,41 @@ test('another no-match keeps the successful movie and a fresh topic clears sessi
  fireEvent.change(input,{target:{value:'Start fresh: a sweeping epic'}});fireEvent.click(screen.getByRole('button',{name:'Ask',exact:true}));
  await screen.findByRole('heading',{name:'Fresh epic'});
  expect(axios.post.mock.calls[2][1].page_context.excludedMovieIds).not.toContain(100);
+});
+
+test.each([
+  ["MOVIE_IDENTIFICATION", "identification"],
+  ["GENERAL_INFORMATION_QUESTION", "answer"],
+])("answer responses preserve %s classification in metrics and request details", async (intent, kind) => {
+  axios.post.mockResolvedValueOnce({ data: { kind: "answer", intent, answer: "That sounds like Memento." } });
+  render(<MemoryRouter><AskReelbotProvider><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
+  fireEvent(window, new CustomEvent("reelbot:open-ask"));
+  fireEvent.change(screen.getByRole("textbox", { name: "Ask ReelBot" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask", exact: true }));
+  await screen.findByText("That sounds like Memento.");
+  expect(trackProductEvent).toHaveBeenCalledWith("ask_reelbot_result", expect.objectContaining({ kind }));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ kind, outcome: "pick", result_text: "That sounds like Memento." }));
+});
+
+test("failed identification requests preserve their kind in metrics and request details", async () => {
+  axios.post.mockRejectedValueOnce(new Error("Network unavailable"));
+  render(<MemoryRouter><AskReelbotProvider><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
+  fireEvent(window, new CustomEvent("reelbot:open-ask"));
+  fireEvent.change(screen.getByRole("textbox", { name: "Ask ReelBot" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask", exact: true }));
+  await screen.findByText("ReelBot hit a snag. Try that again.");
+  expect(trackProductEvent).toHaveBeenCalledWith("ask_reelbot_submitted", expect.objectContaining({ kind: "identification" }));
+  expect(trackProductEvent).toHaveBeenCalledWith("ask_reelbot_failed", expect.objectContaining({ kind: "identification", outcome: "failed" }));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ kind: "identification", outcome: "failed" }));
+});
+
+test("identification no-match responses stay separate from recommendation no matches", async () => {
+  axios.post.mockResolvedValueOnce({ data: { kind: "recommendation", intent: "MOVIE_IDENTIFICATION", recommendation: { primary: null, user_message: "I need another clue to identify it." } } });
+  render(<MemoryRouter><AskReelbotProvider><AskReelbotLayer /></AskReelbotProvider></MemoryRouter>);
+  fireEvent(window, new CustomEvent("reelbot:open-ask"));
+  fireEvent.change(screen.getByRole("textbox", { name: "Ask ReelBot" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask", exact: true }));
+  await screen.findByText("I need another clue to identify it.");
+  expect(trackProductEvent).toHaveBeenCalledWith("ask_reelbot_result", expect.objectContaining({ kind: "identification", outcome: "no_match" }));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ kind: "identification", outcome: "no_match" }));
 });

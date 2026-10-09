@@ -99,3 +99,33 @@ test("request telemetry is quiet and a failed measurement cannot lose a queued S
   expect(first.profile.watchlist.map(movie => movie.id)).toEqual([11]);
   expect(first.cloudSyncError).toBe("");
 });
+
+test.each([
+  ["recommendation_returned", { outcome: "identification" }],
+  ["recommendation_returned", { kind: "identification", outcome: "pick" }],
+  ["recommendation_failed", { kind: "identification", outcome: "no_match" }],
+  ["recommendation_failed", { kind: "identification", outcome: "failed" }],
+  ["ask_reelbot_result", { kind: "identification", outcome: "pick" }],
+  ["ask_reelbot_result", { kind: "identification", outcome: "no_match" }],
+  ["ask_reelbot_failed", { kind: "identification", outcome: "failed" }],
+])("%s identification does not write a recommendation outcome: %j", async (name, properties) => {
+  render(app()); await ready();
+  await act(async () => window.dispatchEvent(new CustomEvent("reelbot:analytics", { detail: { name, properties: { ...properties, latency_ms: 4200 } } })));
+  expect(reelbotCloudService.saveUserState).not.toHaveBeenCalled();
+  expect(tasteProfileService.loadInteractions().filter(item => item.type === "request_result")).toEqual([]);
+});
+
+test.each([
+  ["recommendation_returned", { outcome: "pick" }],
+  ["recommendation_returned", { outcome: "fallback" }],
+  ["recommendation_failed", { outcome: "failed" }],
+  ["ask_reelbot_result", { kind: "recommendation", outcome: "no_match" }],
+  ["ask_reelbot_failed", { kind: "recommendation", outcome: "failed" }],
+])("%s still records recommendation outcomes: %j", async (name, properties) => {
+  render(app()); await ready();
+  await act(async () => window.dispatchEvent(new CustomEvent("reelbot:analytics", { detail: { name, properties: { ...properties, latency_ms: 4200 } } })));
+  await waitFor(() => expect(reelbotCloudService.saveUserState).toHaveBeenCalledTimes(1));
+  expect(tasteProfileService.loadInteractions().filter(item => item.type === "request_result")).toEqual([
+    expect.objectContaining({ metadata: expect.objectContaining({ outcome: properties.outcome, latency_ms: 4200 }) }),
+  ]);
+});

@@ -1,4 +1,4 @@
-import { createActivityRequestId, recordRequestActivity } from "../productTelemetry";
+import { createActivityRequestId, recordRequestActivity, deferProductTelemetry } from "../productTelemetry";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -341,6 +341,7 @@ function AskReelbotLayer() {
     setError("");
     const startedAt = Date.now();
     const activityRequestId = createActivityRequestId();
+    const finishTelemetryRequest = deferProductTelemetry(controller.signal);
     trackProductEvent("ask_reelbot_submitted", { page: context.page || "general", prompt_category: getPromptCategory(normalizedPrompt), kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer" });
     try {
       const response = await axios.post(`${API_BASE_URL}/reelbot/ask`, {
@@ -369,15 +370,15 @@ function AskReelbotLayer() {
         setResult(null);
         setLastTurn({ prompt: normalizedPrompt, intent: response.data.intent, answer: response.data.answer });
         trackProductEvent("ask_reelbot_intent", { intent: response.data.intent, page: context.page || "general" });
-        trackProductEvent("ask_reelbot_result", { kind: "answer", latency_ms: response.data.latency_ms || Date.now() - startedAt });
+        trackProductEvent("ask_reelbot_result", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "answer", latency_ms: response.data.latency_ms || Date.now() - startedAt });
         return;
       }
       const payload = normalizePickPayload(response.data?.recommendation, requestExcludedIds);
       if (response.data?.recommendation?.user_message && !payload?.primary) {
         if (!continuesRequest) setResult(null);
         setAnswerResult(null);
-        trackProductEvent("ask_reelbot_result", { kind: "recommendation", outcome: "no_match", latency_ms: Date.now() - startedAt });
-        recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:"recommendation",result_text:response.data.recommendation.user_message,outcome:"no_match",latency_ms:Date.now()-startedAt});
+        trackProductEvent("ask_reelbot_result", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: "no_match", latency_ms: Date.now() - startedAt });
+        recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",result_text:response.data.recommendation.user_message,outcome:"no_match",latency_ms:Date.now()-startedAt});
         setError(response.data.recommendation.user_message);
         return;
       }
@@ -400,10 +401,11 @@ function AskReelbotLayer() {
       setExcludedIds((current) => dedupeIds([...(continuesRequest ? current : []), payload.primary.id]));
     } catch (requestError) {
       if (controller.signal.aborted || version !== requestVersion.current) return;
-      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:/RECOMMENDATION/.test(predictedIntent)?"recommendation":"answer",outcome:requestError?.message === "no_pick"?"no_match":"failed",latency_ms:Date.now()-startedAt});
-      trackProductEvent("ask_reelbot_failed", { kind: /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer", outcome: requestError?.message === "no_pick" ? "no_match" : "failed", page: context.page || "general", latency_ms: Date.now() - startedAt });
+      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:predictedIntent === "MOVIE_IDENTIFICATION"?"identification":/RECOMMENDATION/.test(predictedIntent)?"recommendation":"answer",outcome:requestError?.message === "no_pick"?"no_match":"failed",latency_ms:Date.now()-startedAt});
+      trackProductEvent("ask_reelbot_failed", { kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer", outcome: requestError?.message === "no_pick" ? "no_match" : "failed", page: context.page || "general", latency_ms: Date.now() - startedAt });
       setError(requestError?.message === "no_pick" ? "Nothing great matched that exactly. Try loosening one detail." : "ReelBot hit a snag. Try that again.");
     } finally {
+      finishTelemetryRequest();
       if (version === requestVersion.current) { setLoading(false); setLoadingIntent(""); setPendingQuestion(""); }
     }
   };

@@ -15,6 +15,8 @@ import "./App.css";
 export default function AdminPanel() {
   const { user, authReady } = useAuth();
   const [data, setData] = useState(null),
+    [fetchedAt, setFetchedAt] = useState(null),
+    [refreshFailed, setRefreshFailed] = useState(false),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [query, setQuery] = useState(""),
@@ -53,24 +55,32 @@ export default function AdminPanel() {
     requestRef.current = controller;
     setLoading(true);
     setError("");
+    setRefreshFailed(false);
     try {
       const token = await getFreshToken();
       const r = await fetch(`/api/admin-overview?hide_mine=${hideMine ? 1 : 0}`, {
         signal: controller.signal,
+        cache: "no-store",
         headers: { Authorization: "Bearer " + token },
       });
       const p = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(p.error || "Could not load admin data.");
-      if (!controller.signal.aborted) setData(p);
+      if (!controller.signal.aborted) {
+        setData(p);
+        setFetchedAt(new Date().toISOString());
+      }
     } catch (e) {
-      if (!controller.signal.aborted)
+      if (!controller.signal.aborted) {
+        setRefreshFailed(true);
         setError(e.message || "Could not load admin data.");
+      }
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
   }, [getFreshToken,hideMine]);
   useEffect(() => {
     setData(null);
+    setFetchedAt(null);
     if (user?.app_metadata?.role === "super_admin") load();
     return () => requestRef.current?.abort();
   }, [load, user?.id, user?.app_metadata?.role]);
@@ -131,10 +141,15 @@ export default function AdminPanel() {
             {loading ? "Refreshing…" : "Refresh data"}
           </button>
         </header>
+        <p className="rb-ops-note">
+          {data && fetchedAt ? <>Snapshot fetched <time dateTime={fetchedAt}>{fmt(fetchedAt)}</time>. </> : null}
+          Refresh data to check for newer activity. This page does not update automatically.
+        </p>
         {error ? (
           <div className="admin-alert" role="alert">
-            <strong>Admin data unavailable</strong>
+            <strong>{refreshFailed && data ? "Refresh failed" : "Admin data unavailable"}</strong>
             <span>{error}</span>
+            {refreshFailed && data ? <span>Showing the previous snapshot. It may be out of date.</span> : null}
           </div>
         ) : null}
         {data?.warnings?.length ? (

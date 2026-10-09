@@ -1,6 +1,6 @@
-import { createActivityRequestId, recordRequestActivity } from "./productTelemetry";
+import { createActivityRequestId, recordRequestActivity, deferProductTelemetry } from "./productTelemetry";
 import ArtworkFallback from "./components/ArtworkFallback";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
@@ -51,6 +51,11 @@ export const mergeBrowseMoviePages = (currentMovies = [], incomingMovies = [], r
 };
 
 function BrowseLibrary() {
+  const pickRequests = useRef(new Set());
+  useEffect(() => () => {
+    pickRequests.current.forEach(controller => controller.abort());
+    pickRequests.current.clear();
+  }, []);
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const normalizedView = VALID_VIEWS.has(searchParams.get("view")) ? searchParams.get("view") : "popular";
@@ -305,6 +310,9 @@ function BrowseLibrary() {
   };
 
   const requestLibraryPick = async (options = {}) => {
+    const controller = new AbortController();
+    pickRequests.current.add(controller);
+    const finishTelemetryRequest = options.backgroundRefill ? () => {} : deferProductTelemetry(controller.signal);
     const startedAt = Date.now();
     const activityRequestId = createActivityRequestId();
     const nextPreferences = {
@@ -360,9 +368,12 @@ function BrowseLibrary() {
           headers: {
             "X-ReelBot-Trigger": "user_click",
           },
+          signal: controller.signal,
+          timeout: 90000,
         }
       );
 
+      if (controller.signal.aborted) return;
       const normalizedPayload = normalizePickPayload(response.data, options.extraExcludedIds || []);
       if (!normalizedPayload) {
         const noPickError = new Error("No valid ReelBot pick returned.");
@@ -394,7 +405,7 @@ function BrowseLibrary() {
         });
       } else {
         recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:nextPreferences.prompt,page:"browse",kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",movie_id:Number(normalizedPayload.primary?.id),movie_title:normalizedPayload.primary?.title,alternate_ids:(normalizedPayload.alternates||[]).map(movie=>Number(movie.id)),alternate_titles:(normalizedPayload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:normalizedPayload.rationale?.primary_reason || normalizedPayload.rationale?.decisionSentence || normalizedPayload.primary?.reason || normalizedPayload.summary,outcome:response.data?.performance?.outcome||"pick",latency_ms:Date.now()-startedAt});
-        trackProductEvent("recommendation_returned", { page: "browse", latency_ms: Date.now() - startedAt, outcome: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : response.data?.performance?.outcome || "pick" });
+        trackProductEvent("recommendation_returned", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", page: "browse", latency_ms: Date.now() - startedAt, outcome: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : response.data?.performance?.outcome || "pick" });
         setPickResult({ ...normalizedPayload, sharePrompt: nextPreferences.prompt });
         setSwapQueue(buildSwapQueueFromPayload(normalizedPayload));
         setCandidatePoolIds(Array.isArray(normalizedPayload.candidate_pool_ids) ? normalizedPayload.candidate_pool_ids : []);
@@ -403,14 +414,17 @@ function BrowseLibrary() {
         document.getElementById("library-reelbot-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     } catch (requestError) {
+      if (controller.signal.aborted) return;
       console.error("Error fetching library ReelBot pick:", requestError);
       if (!options.backgroundRefill) {
         recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:nextPreferences.prompt,page:"browse",kind:requestError?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",result_text:requestError?.userMessage,outcome:requestError?.noMatch?"no_match":"failed",latency_ms:Date.now()-startedAt});
-        trackProductEvent("recommendation_failed", { page: "browse", latency_ms: Date.now() - startedAt });
+        trackProductEvent("recommendation_failed", { kind: requestError?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: requestError?.noMatch ? "no_match" : "failed", page: "browse", latency_ms: Date.now() - startedAt });
         setPickError(requestError?.userMessage || "ReelBot could not narrow the library right now.");
       }
     } finally {
-      if (!options.backgroundRefill) {
+      finishTelemetryRequest();
+      pickRequests.current.delete(controller);
+      if (!controller.signal.aborted && !options.backgroundRefill) {
         setPickLoading(false);
       }
     }

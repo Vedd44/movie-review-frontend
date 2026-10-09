@@ -123,6 +123,9 @@ function useSharedTasteProfile() {
     if (!userId) return undefined;
     const record = ({ detail }) => {
       const { name, properties = {} } = detail || {};
+      // Identification answers share Home's result event but are not
+      // recommendation outcomes (and must never be coerced into failures).
+      if (properties.kind === "identification" || properties.outcome === "identification") return;
       const isPick = name === "recommendation_returned" || (name === "ask_reelbot_result" && properties.kind === "recommendation");
       const isFailure = name === "recommendation_failed" || name === "ask_reelbot_failed";
       if (!isPick && !isFailure) return;

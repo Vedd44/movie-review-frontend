@@ -3,9 +3,13 @@ import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import Home from "./Home";
 import useTasteProfile from "./hooks/useTasteProfile";
+import { trackProductEvent } from "./analytics";
+import { recordRequestActivity } from "./productTelemetry";
 
 jest.mock("axios");
 jest.mock("./hooks/useTasteProfile");
+jest.mock("./analytics", () => ({ ...jest.requireActual("./analytics"), trackProductEvent: jest.fn() }));
+jest.mock("./productTelemetry", () => ({ ...jest.requireActual("./productTelemetry"), recordRequestActivity: jest.fn() }));
 jest.mock("./context/AuthContext", () => ({
   useAuth: () => ({ user: null, openAuthPrompt: jest.fn() }),
 }));
@@ -18,6 +22,8 @@ const pickPayload = {
 };
 
 beforeEach(() => {
+  trackProductEvent.mockImplementation(jest.requireActual("./analytics").trackProductEvent);
+  recordRequestActivity.mockImplementation(jest.requireActual("./productTelemetry").recordRequestActivity);
   Element.prototype.scrollIntoView = jest.fn();
   window.localStorage.clear();
   useTasteProfile.mockReturnValue({
@@ -174,4 +180,26 @@ test.each(['My own request', '   '])('headline preserves existing input %p witho
   expect(input).toHaveValue(existing);
   expect(input).toHaveFocus();
   expect(axios.post.mock.calls.length).toBe(calls);
+});
+
+test("Home identifies successful identification outcomes in both activity streams", async () => {
+  axios.post.mockResolvedValueOnce({ data: { ...pickPayload, intent: "MOVIE_IDENTIFICATION" } });
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByRole("textbox", { name: "Describe the movie you want" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find my movie" }));
+  await screen.findByRole("heading", { name: "Aliens" });
+  expect(trackProductEvent).toHaveBeenCalledWith("recommendation_returned", expect.objectContaining({ kind: "identification", outcome: "identification" }));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ page: "home", kind: "identification", outcome: "pick" }));
+});
+
+test.each([
+  ["MOVIE_IDENTIFICATION", "identification"],
+  [undefined, "recommendation"],
+])("Home no-match preserves known intent %s without guessing from the prompt", async (intent, kind) => {
+  axios.post.mockResolvedValueOnce({ data: { primary: null, alternates: [], no_pick_reason: "no_suitable_candidate", intent, user_message: "Another clue would help." } });
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByRole("textbox", { name: "Describe the movie you want" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find my movie" }));
+  await waitFor(() => expect(trackProductEvent).toHaveBeenCalledWith("recommendation_failed", expect.objectContaining({ kind, outcome: "no_match" })));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ page: "home", kind, outcome: "no_match" }));
 });

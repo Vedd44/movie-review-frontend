@@ -1,14 +1,18 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import BrowseLibrary from "./BrowseLibrary";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { useAuth } from "./context/AuthContext";
+import { trackProductEvent } from "./analytics";
+import { recordRequestActivity } from "./productTelemetry";
 
 // Keep pagination fixtures above the automatic first-grid fill threshold.
 const browsePadding = Array.from({ length: 11 }, (_, i) => ({ id: 8000 + i, title: `Catalog fixture ${i}`, genre_ids: [28], poster_path: "/fixture.jpg", release_date: "2000-01-01", popularity: 20, vote_count: 100 }));
 
 jest.mock("axios");
+jest.mock("./analytics", () => ({ ...jest.requireActual("./analytics"), trackProductEvent: jest.fn() }));
+jest.mock("./productTelemetry", () => ({ ...jest.requireActual("./productTelemetry"), recordRequestActivity: jest.fn() }));
 test('failed continuation keeps the successful pick and visibly explains the limit', async () => {
  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
  await screen.findByRole('heading', {name:'Movies'});
@@ -24,6 +28,8 @@ jest.mock("./hooks/useTasteProfile");
 jest.mock("./context/AuthContext", () => ({ useAuth: jest.fn() }));
 
 beforeEach(() => {
+  trackProductEvent.mockImplementation(jest.requireActual("./analytics").trackProductEvent);
+  recordRequestActivity.mockImplementation(jest.requireActual("./productTelemetry").recordRequestActivity);
   useAuth.mockReturnValue({ user: null, openAuthPrompt: jest.fn(), maybePromptToSavePicks: jest.fn() });
   Element.prototype.scrollIntoView = jest.fn();
   useTasteProfile.mockReturnValue({
@@ -203,3 +209,56 @@ test('Browse another pick preserves the submitted prompt after a cancelled edit'
   await within(picker).findByRole('heading',{name:'Waiting…'});
   expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({prompt,original_prompt:prompt,is_swap:true}));
 });
+
+test("Browse identifies successful identification outcomes in both activity streams", async () => {
+  axios.post.mockResolvedValueOnce({ data: { intent: "MOVIE_IDENTIFICATION", primary: { id: 77, title: "Memento" }, alternates: [] } });
+  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Ask ReelBot to pick one" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Add a vibe" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask ReelBot", exact: true }));
+  await screen.findByRole("heading", { name: "Memento" });
+  expect(trackProductEvent).toHaveBeenCalledWith("recommendation_returned", expect.objectContaining({ page: "browse", kind: "identification", outcome: "identification" }));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ page: "browse", kind: "identification", outcome: "pick" }));
+});
+
+test.each([
+  ["MOVIE_IDENTIFICATION", "identification"],
+  [undefined, "recommendation"],
+])("Browse no-match preserves known intent %s without guessing from the prompt", async (intent, kind) => {
+  axios.post.mockResolvedValueOnce({ data: { primary: null, alternates: [], no_pick_reason: "no_suitable_candidate", intent, user_message: "Another clue would help." } });
+  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Ask ReelBot to pick one" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Add a vibe" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask ReelBot", exact: true }));
+  await screen.findByText("Another clue would help.");
+  expect(trackProductEvent).toHaveBeenCalledWith("recommendation_failed", expect.objectContaining({ page: "browse", kind, outcome: "no_match" }));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ page: "browse", kind, outcome: "no_match" }));
+});
+
+
+test('leaving Browse aborts its pending pick, releases telemetry, and ignores its late result',async()=>{
+ const previous=process.env.NODE_ENV,originalFetch=global.fetch,oldCrypto=window.crypto;
+ const consent=require('./cookieConsent'),telemetry=require('./productTelemetry');
+ let resolvePick;
+ axios.post.mockImplementationOnce(()=>new Promise(resolve=>{resolvePick=resolve;}));
+ const view=render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+ await screen.findByRole('heading',{name:'Movies'});
+ process.env.NODE_ENV='production';let number=0;
+ Object.defineProperty(window,'crypto',{configurable:true,value:{randomUUID:()=>`00000000-0000-4000-8000-${String(++number).padStart(12,'0')}`}});
+ global.fetch=jest.fn().mockResolvedValue({ok:true,status:202});consent.setCookieChoice('accepted');jest.useFakeTimers();
+ try{
+  fireEvent.click(screen.getByRole('button',{name:'Ask ReelBot to pick one'}));
+  fireEvent.click(screen.getByRole('button',{name:'Ask ReelBot',exact:true}));
+  expect(resolvePick).toBeDefined();
+  const options=axios.post.mock.calls[0][2];expect(options.timeout).toBe(90000);expect(options.signal.aborted).toBe(false);
+  view.unmount();expect(options.signal.aborted).toBe(true);
+  const finish=telemetry.deferProductTelemetry();telemetry.recordProductTelemetry('recommendation_requested');finish();
+  telemetry.recordProductTelemetry('page_viewed',{page:'home'});
+  // Use ordinary batching rather than pagehide, which would mask a leaked slot.
+  await act(async()=>{jest.advanceTimersByTime(5000);for(let i=0;i<30;i++)await Promise.resolve();});
+  expect(global.fetch).toHaveBeenCalled();
+  expect(JSON.parse(global.fetch.mock.calls[0][1].body).events.some(e=>e.name==='page_viewed')).toBe(true);
+  await act(async()=>{resolvePick({data:{primary:{id:679,title:'Late result'},alternates:[]}});});
+  expect(useTasteProfile().actions.recordPickResult).not.toHaveBeenCalled();
+ }finally{view.unmount();consent.setCookieChoice('rejected');jest.clearAllTimers();jest.useRealTimers();process.env.NODE_ENV=previous;global.fetch=originalFetch;Object.defineProperty(window,'crypto',{configurable:true,value:oldCrypto});}
+},10000);

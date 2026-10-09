@@ -1,4 +1,4 @@
-import { createActivityRequestId, recordRequestActivity } from "./productTelemetry";
+import { createActivityRequestId, recordRequestActivity, deferProductTelemetry } from "./productTelemetry";
 import productCopy from "./productCopy";
 import WatchCheckIn from "./components/WatchCheckIn";
 import ArtworkFallback from "./components/ArtworkFallback";
@@ -1530,6 +1530,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     pickControllerRef.current = controller;
     const requestVersion = pickRequestVersionRef.current + 1;
     pickRequestVersionRef.current = requestVersion;
+    const finishTelemetryRequest = deferProductTelemetry(controller.signal);
 
     try {
       setPickStatus(options.isSwap ? PICK_STATUS.LOADING_SWAP : PICK_STATUS.LOADING);
@@ -1568,6 +1569,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       void tasteActions.recordPickResult(nextPreferences, nextPayload).catch(() => {});
       recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:nextPreferences.prompt,page:"home",kind:nextPayload.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation",movie_id:Number(nextPayload.primary?.id),movie_title:nextPayload.primary?.title,alternate_ids:(nextPayload.alternates||[]).map(movie=>Number(movie.id)),alternate_titles:(nextPayload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:nextPayload.rationale?.primary_reason || nextPayload.rationale?.decisionSentence || nextPayload.primary?.reason || nextPayload.summary,outcome:nextPayload.performance?.outcome || "pick",latency_ms:Date.now()-startedAt});
       trackProductEvent("recommendation_returned", {
+        kind: nextPayload.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation",
         latency_ms: Date.now() - startedAt,
         outcome: nextPayload.intent === "MOVIE_IDENTIFICATION" ? "identification" : nextPayload.performance?.outcome || "pick",
         fit_tier: nextPayload.fit_tier || "unknown",
@@ -1586,7 +1588,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
       recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:nextPreferences.prompt,page:"home",kind:requestError?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",result_text:requestError?.userMessage,outcome:requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed",latency_ms:Date.now()-startedAt});
       console.error("Error fetching ReelBot pick:", requestError);
-      trackProductEvent("recommendation_failed", { outcome: requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed", latency_ms: Date.now() - startedAt, theaters_toggle: Boolean(nextPreferences.include_theatrical) });
+      trackProductEvent("recommendation_failed", { kind: requestError?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed", latency_ms: Date.now() - startedAt, theaters_toggle: Boolean(nextPreferences.include_theatrical) });
       const nextStatus = requestError?.code === PICK_STATUS.EXHAUSTED ? PICK_STATUS.EXHAUSTED : PICK_STATUS.ERROR;
 
       if (options.isSwap && previousPick?.primary) {
@@ -1601,6 +1603,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
       return null;
     } finally {
+      finishTelemetryRequest();
       if (requestVersion === pickRequestVersionRef.current) {
         setPickLoadingMessageOverride("");
       }
