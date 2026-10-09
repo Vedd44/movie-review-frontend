@@ -300,23 +300,149 @@ test('all attachment pages are fetched, CID survives, bytes are stable and no cr
   }
 });
 
+test('current and documented Resend attachment URLs preserve signed queries and attachment bytes', async t => {
+  const query = 'response-content-disposition=attachment%3B%20filename%3D%22sample.txt%22&Expires=1791580000&Key-Pair-Id=UNIT-TEST-KEY&Signature=unit-test-a%2Bb%2Fc%3D';
+  const urls = [
+    ['current CDN', `https://cdn.resend.app/receiving/${EMAIL_ID}/attachments/${ATTACHMENT_A}?${query}`],
+    ['documented CDN', `https://inbound-cdn.resend.com/${EMAIL_ID}/attachments/${ATTACHMENT_A}?${query}`],
+  ];
+  for (const [name, download_url] of urls) await t.test(name, async () => {
+    const fixture = harness({
+      mail: original({ attachments: [{ id: ATTACHMENT_A }] }),
+      list: async () => ({ data: { data: [attachment(ATTACHMENT_A, { download_url })], has_more: false } }),
+      fetchImpl: async () => new Response(Buffer.from('abc')),
+    });
+    assert.equal((await fixture.run()).statusCode, 200);
+    assert.equal(fixture.calls.fetch.length, 1);
+    assert.equal(fixture.calls.fetch[0][0], download_url);
+    assert.equal(fixture.calls.fetch[0][1].redirect, 'error');
+    assert.equal(fixture.calls.fetch[0][1].headers, undefined);
+    assert.equal(fixture.calls.send.length, 1);
+    assert.equal(fixture.calls.send[0][0].attachments[0].content, 'YWJj');
+  });
+});
+
+test('attachment paths are bound to the current email and attachment without URL normalization bypasses', async t => {
+  for (const [hostname, prefix] of [['cdn.resend.app', '/receiving'], ['inbound-cdn.resend.com', '']]) {
+    const path = `${prefix}/${EMAIL_ID}/attachments/${ATTACHMENT_A}`;
+    const paths = [
+      ['different email', `${prefix}/${SENT_ID}/attachments/${ATTACHMENT_A}`],
+      ['different attachment', `${prefix}/${EMAIL_ID}/attachments/${ATTACHMENT_B}`],
+      ['extra path segment', `${path}/extra`],
+      ['trailing slash', `${path}/`],
+      ['extra prefix', `/unexpected${path}`],
+      ['other CDN path structure', `${prefix ? '' : '/receiving'}/${EMAIL_ID}/attachments/${ATTACHMENT_A}`],
+      ['dot segment', `${prefix}/${EMAIL_ID}/attachments/./${ATTACHMENT_A}`],
+      ['parent segment', `${prefix}/${EMAIL_ID}/attachments/extra/../${ATTACHMENT_A}`],
+      ['encoded parent segment', `${prefix}/${EMAIL_ID}/attachments/extra/%2e%2e/${ATTACHMENT_A}`],
+      ['encoded separator', path.replace('/attachments/', '%2Fattachments%2F')],
+      ['encoded backslash', path.replace('/attachments/', '%5Cattachments%5C')],
+      ['fragment', `${path}#ignored-fragment`],
+    ];
+    for (const [name, pathname] of paths) await t.test(`${hostname}: ${name}`, async () => {
+      const fixture = harness({ list: async () => ({ data: { data: [attachment(ATTACHMENT_A, { download_url: `https://${hostname}${pathname}` })], has_more: false } }) });
+      assert.equal((await fixture.run()).statusCode, 503);
+      assert.equal(fixture.calls.fetch.length, 0);
+      assert.equal(fixture.calls.send.length, 0);
+      assert.equal(fixture.calls.review[0][2], 'attachment_url_invalid');
+    });
+  }
+});
+
 test('attachment URLs cannot send network requests to untrusted hosts, protocols or credentials', async t => {
+  const path = `/receiving/${EMAIL_ID}/attachments/${ATTACHMENT_A}`;
   const urls = [
     'http://inbound-cdn.resend.com/file',
     'https://inbound-cdn.resend.com.attacker.org/file',
+    `http://cdn.resend.app${path}`,
+    `ftp://cdn.resend.app${path}`,
+    `https://cdn.resend.app.attacker.org${path}`,
+    `https://untrusted.resend.app${path}`,
+    `https://attacker.cloudfront.net${path}`,
+    `https://cdn.resend.app@attacker.org${path}`,
+    `https://username:password@cdn.resend.app${path}`,
+    `https://cdn.resend.app:8443${path}`,
     'https://127.0.0.1/private',
+    'https://127.1/private',
+    'https://2130706433/private',
+    'https://0x7f000001/private',
+    'https://10.0.0.1/private',
+    'https://172.16.0.1/private',
+    'https://192.168.0.1/private',
     'https://169.254.169.254/latest/meta-data',
+    'https://localhost/private',
+    'https://[::1]/private',
+    'https://[fc00::1]/private',
+    'https://[fe80::1]/private',
+    'https://[::ffff:127.0.0.1]/private',
     'https://inbound-cdn.resend.com:8443/file',
     'https://username:password@inbound-cdn.resend.com/file',
+    ` https://cdn.resend.app${path}`,
+    `https://cdn.resend.app${path} `,
+    `https://cdn.resend.app${path}?signature=bad value`,
+    `https://cdn.resend.app${path}?signature=bad\u0000value`,
+    `https://cdn.resend.app\n${path}`,
+    `https://cdn.resend.app\\${path}`,
+    `https:cdn.resend.app${path}`,
+    `//cdn.resend.app${path}`,
+    'https://[malformed-ipv6]/private',
     'file:///private/email',
+    'data:text/plain,private',
     'not a url',
+    '',
+    null,
+    undefined,
+    { toString: () => `https://cdn.resend.app${path}` },
   ];
-  for (const download_url of urls) await t.test(download_url, async () => {
+  for (const [index, download_url] of urls.entries()) await t.test(`rejected URL ${index + 1}`, async () => {
     const fixture = harness({ list: async () => ({ data: { data: [attachment(ATTACHMENT_A, { download_url })], has_more: false } }) });
     assert.equal((await fixture.run()).statusCode, 503);
     assert.equal(fixture.calls.fetch.length, 0);
     assert.equal(fixture.calls.send.length, 0);
     assert.equal(fixture.calls.review[0][2], 'attachment_url_invalid');
+  });
+});
+
+test('attachment redirects never follow untrusted or private destinations or send partial forwards', async t => {
+  const download_url = `https://cdn.resend.app/receiving/${EMAIL_ID}/attachments/${ATTACHMENT_A}?Signature=private-test-signature`;
+  for (const status of [301, 302, 303, 307, 308]) {
+    for (const location of ['https://attacker.example/private', 'https://169.254.169.254/latest/meta-data']) await t.test(`${status}: ${new URL(location).hostname}`, async () => {
+      const fixture = harness({
+        mail: original({ attachments: [{ id: ATTACHMENT_A }] }),
+        list: async () => ({ data: { data: [attachment(ATTACHMENT_A, { download_url })], has_more: false } }),
+        fetchImpl: async (url, options) => {
+          assert.equal(url, download_url);
+          assert.equal(options.redirect, 'error');
+          return new Response('', { status, headers: { Location: location } });
+        },
+      });
+      assert.equal((await fixture.run()).statusCode, 503);
+      assert.equal(fixture.calls.fetch.length, 1);
+      assert.equal(fixture.calls.send.length, 0);
+      assert.equal(fixture.calls.retry[0][2], 'attachment_download_unavailable');
+      const logs = JSON.stringify(fixture.calls.logs);
+      assert.equal(logs.includes('private-test-signature'), false);
+      assert.equal(logs.includes(location), false);
+    });
+  }
+  await t.test('native fetch redirect rejection is sanitized', async () => {
+    const fixture = harness({
+      mail: original({ attachments: [{ id: ATTACHMENT_A }] }),
+      list: async () => ({ data: { data: [attachment(ATTACHMENT_A, { download_url })], has_more: false } }),
+      fetchImpl: async (_url, options) => {
+        assert.equal(options.redirect, 'error');
+        throw new TypeError(`fetch failed for ${download_url}`, { cause: new Error('unexpected redirect to https://169.254.169.254/latest/meta-data') });
+      },
+    });
+    const response = await fixture.run();
+    assert.equal(response.statusCode, 503);
+    assert.equal(fixture.calls.fetch.length, 1);
+    assert.equal(fixture.calls.send.length, 0);
+    assert.equal(fixture.calls.retry[0][2], 'processing_unavailable');
+    const output = JSON.stringify({ logs: fixture.calls.logs, response: response.body });
+    assert.equal(output.includes('private-test-signature'), false);
+    assert.equal(output.includes('169.254.169.254'), false);
+    assert.equal(output.includes('cdn.resend.app'), false);
   });
 });
 

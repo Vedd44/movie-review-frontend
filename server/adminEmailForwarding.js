@@ -144,9 +144,17 @@ async function attachmentsFor(resend, emailId, fetchImpl, signal, wait = waitFor
     if (!Number.isSafeInteger(item.size) || item.size < 0) throw new ForwardError('attachments_unavailable');
     if (encodedBytes + 4 * Math.ceil(item.size / 3) > MAX_MESSAGE_BYTES) throw new ForwardError('message_too_large', true);
     let url;
-    try { url = new URL(item.download_url); } catch { throw new ForwardError('attachment_url_invalid', true); }
-    // Only download provider-issued URLs; never follow a redirect or send our API key to the CDN.
-    if (url.protocol !== 'https:' || url.hostname !== 'inbound-cdn.resend.com' || url.port || url.username || url.password) throw new ForwardError('attachment_url_invalid', true);
+    try {
+      if (typeof item.download_url !== 'string' || /[\x00-\x20\x7f\\]/.test(item.download_url)) throw new Error();
+      url = new URL(item.download_url);
+    } catch { throw new ForwardError('attachment_url_invalid', true); }
+    // Exact Resend CDN hosts and the current attachment only; no wildcard storage hosts.
+    const attachmentPath = `/${emailId}/attachments/${item.id}`;
+    const expectedPath = url.hostname === 'cdn.resend.app' ? `/receiving${attachmentPath}`
+      : url.hostname === 'inbound-cdn.resend.com' ? attachmentPath : null;
+    const rawPath = item.download_url.match(/^https:\/\/[^/?#]+([^?#]*)/i)?.[1];
+    if (url.protocol !== 'https:' || !expectedPath || url.pathname !== expectedPath || rawPath !== expectedPath || url.port || url.username || url.password || url.hash) throw new ForwardError('attachment_url_invalid', true);
+    // Preserve the signed query; never follow redirects or send our API key to the CDN.
     const response = await fetchImpl(url.href, {signal, redirect:'error'});
     if (!response.ok || !response.body) throw new ForwardError('attachment_download_unavailable');
     const bytes = await readBounded(response.body, Math.min(item.size, Math.floor((MAX_MESSAGE_BYTES - encodedBytes) * 3 / 4)));
