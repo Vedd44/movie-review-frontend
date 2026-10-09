@@ -14,11 +14,12 @@ function acquisitionFromLocation(href, referrer = '') {
     let ref = ''; try { const host = new URL(referrer).hostname; if(host !== url.hostname) ref = host; } catch {}
     const paid = /^(?:cpc|ppc|paid|paid[_ -]?(?:social|search)|display|cpm|ads?)$/.test(medium) || ['gclid','msclkid'].some(key => params.has(key));
     const search = /(^|\.)(?:google\.[a-z.]+|bing\.com|duckduckgo\.com|search\.yahoo\.com)$/.test(ref);
-    return {channel:paid?'paid':medium==='organic'||search?'organic':source||ref?'referral':'direct',source:source||ref||(paid?'Paid campaign':'Direct / unknown'),medium,campaign,landing_path:url.pathname.slice(0,180)};
-  } catch { return {channel:'direct',source:'Direct / unknown',medium:'',campaign:'',landing_path:'/'}; }
+    return {channel:paid?'paid':medium==='organic'||search?'organic':source||ref?'referral':'direct',source:source||ref||(paid?'Paid campaign':'Direct / no referrer'),medium,campaign,landing_path:url.pathname.slice(0,180)};
+  } catch { return {channel:'unknown',source:'Unknown',medium:'',campaign:'',landing_path:'/'}; }
 }
 function sanitizeAcquisition(value = {}) {
-  return {channel:['paid','organic','referral','direct'].includes(value.channel)?value.channel:'direct',source:cleanLabel(value.source)||'Direct / unknown',medium:cleanLabel(value.medium),campaign:cleanLabel(value.campaign),landing_path:String(value.landing_path||'/').split(/[?#]/)[0].slice(0,180)};
+  value=value && typeof value==='object'?value:{};
+  return {channel:['paid','organic','referral','direct','unknown'].includes(value?.channel)?value.channel:'unknown',source:cleanLabel(value.source)||(value.channel==='direct'?'Direct / no referrer':'Unknown'),medium:cleanLabel(value.medium),campaign:cleanLabel(value.campaign),landing_path:String(value.landing_path||'/').split(/[?#]/)[0].slice(0,180)};
 }
 function sanitizeRequestDetails(p = {}) {
   const details = {};

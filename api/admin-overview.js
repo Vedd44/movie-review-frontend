@@ -83,6 +83,7 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
       }
       const cookie=ownerCookie(me.id);if(cookie)res.setHeader('Set-Cookie',cookie);
       const hideMine=String(req.query?.hide_mine||'')==='1';
+      const hideAdmins=String(req.query?.hide_admins||'')==='1';
       const warnings = [];
       const raw = [];
       for (let page = 1; page <= 20; page += 1) {
@@ -103,6 +104,18 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
           return { data: null, count: null };
         }
       };
+      const excludedUserIds = new Set(raw.filter(user=>(hideMine&&user.id===me.id)||(hideAdmins&&user.app_metadata?.role==='super_admin')).map(user=>user.id));
+      const readPages = async (label, table, columns, order) => {
+        const rows=[];
+        for(let offset=0;offset<20000;offset+=1000){
+          const result=await read(label,db.from(table).select(columns).order(order,{ascending:true}).range(offset,offset+999));
+          if(result.data===null)return {data:null};
+          rows.push(...(result.data||[]));
+          if((result.data||[]).length<1000)return {data:rows,complete:true};
+        }
+        warnings.push(`${label} is incomplete: the 20,000-row safety limit was reached.`);
+        return {data:rows,complete:false};
+      };
       const weekDate = new Date(Date.now() - 604800000).toISOString();
       const [
         moviesResult,
@@ -113,18 +126,8 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
         feedbackCount,
         weekFeedback,
       ] = await Promise.all([
-        read(
-          "Per-user movie counts",
-          db.from("user_movies").select("user_id,status").limit(1000),
-        ),
-        read(
-          "Recent activity",
-          db
-            .from("user_sessions")
-            .select("user_id,last_prompt,payload,updated_at")
-            .order("updated_at", { ascending: false })
-            .limit(250),
-        ),
+        readPages("Per-user movie counts", "user_movies", "user_id,status", "id"),
+        readPages("Retained activity", "user_sessions", "user_id,last_prompt,payload,updated_at", "user_id"),
         read(
           "Recent feedback",
           db
@@ -160,13 +163,9 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
         ),
       ]);
       let productUsage = null;
-      try { productUsage = await getTelemetry(db,Date.now(),{viewerOwner:ownerDigest(me.id),excludeOwner:hideMine?ownerDigest(me.id):null}); } catch { warnings.push("Guest and product activity could not be loaded. Refresh to try again."); }
+      try { productUsage = await getTelemetry(db,Date.now(),{viewerOwner:ownerDigest(me.id),excludeOwner:hideMine?ownerDigest(me.id):null,excludeOwners:[...excludedUserIds].map(ownerDigest)}); } catch { warnings.push("Guest and product activity could not be loaded. Refresh to try again."); }
       const movies = moviesResult.data || [];
-      const countsComplete = moviesResult.data !== null && movies.length < 1000;
-      if (movies.length >= 1000)
-        warnings.push(
-          "Per-user movie counts are unavailable above 1,000 rows; overall movie totals remain exact.",
-        );
+      const countsComplete = moviesResult.data !== null && moviesResult.complete;
       const counts = {};
       movies.forEach((row) => {
         counts[row.user_id] = (counts[row.user_id] || 0) + 1;
@@ -181,12 +180,13 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
           email_verified: Boolean(user.email_confirmed_at),
           banned_until: user.banned_until || null,
           is_suspended: suspended(user),
+          observed_activity_7d: productUsage ? (productUsage.accounts?.[ownerDigest(user.id)] || {page_views:0,requests:0,linked_guest_requests:0,sessions:0}) : null,
           movie_count: countsComplete ? counts[user.id] || 0 : null,
           is_admin: user.app_metadata?.role === "super_admin",
         }))
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       const byId = new Map(users.map((user) => [user.id, user]));
-      const visibleSessions = Array.isArray(sessionsResult.data) ? sessionsResult.data.filter(row=>!hideMine||row.user_id!==me.id) : null;
+      const visibleSessions = Array.isArray(sessionsResult.data) ? sessionsResult.data.filter(row=>!excludedUserIds.has(row.user_id)) : null;
       const activity = (visibleSessions || [])
         .flatMap((row) => (Array.isArray(row.payload?.interactions) ? row.payload.interactions : [])
           .slice(0, 25)
@@ -201,6 +201,7 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
             created_at: entry.timestamp || row.updated_at,
           })))
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      if(activity.length>200)warnings.push("Recent activity shows the latest 200 entries; retained activity metrics use all loaded profiles.");
       return send(res, 200, {
         stats: {
           total_users: users.length,
@@ -218,12 +219,13 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
         },
         operations: buildAdminMetrics(visibleSessions),
         product_usage: productUsage,
-        activity_filter: {hide_mine:hideMine},
+        activity_filter: {hide_mine:hideMine,hide_admins:hideAdmins},
+        generated_at:new Date().toISOString(),
         users,
         activity: activity.slice(0, 200),
         feedback: feedbackResult.data || [],
         warnings,
-        limits: { activity: 200, profiles: 250, feedback: 100 },
+        limits: { activity: 200, profiles: 20000, feedback: 100 },
       });
     } catch (error) {
       console.error("Admin overview failed:", error?.message);

@@ -1,5 +1,5 @@
 import { trackProductEvent } from './analytics';
-import { setAnalyticsAuthenticated, telemetrySurface } from './productTelemetry';
+import { setAnalyticsIdentity, telemetrySurface } from './productTelemetry';
 import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import Home from "./Home";
@@ -235,11 +235,11 @@ function AppShell() {
   const analyticsSignedIn = Boolean(user);
   useEffect(() => {
     if (!authReady) return undefined;
-    setAnalyticsAuthenticated(analyticsSignedIn);
+    setAnalyticsIdentity(user?.id || "");
     const recordPage = () => { if (!location.pathname.startsWith("/admin")) trackProductEvent("page_viewed", { page: telemetrySurface(location.pathname), authenticated: analyticsSignedIn }); };
     recordPage();
     return subscribeCookieChoice(recordPage);
-  }, [authReady, analyticsSignedIn, location.pathname]);
+  }, [authReady, analyticsSignedIn, user?.id, location.pathname]);
   const navigationType = useNavigationType();
   useEffect(() => {
     if (navigationType !== "POP" && !location.hash) window.scrollTo({ top: 0, behavior: "instant" });

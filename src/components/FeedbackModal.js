@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import useDialogFocus from "../hooks/useDialogFocus";
 import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
 
+import { trackProductEvent } from "../analytics";
+
 const TYPES = [["feature","Feature request"],["recommendation","Recommendation issue"],["bug","Bug report"],["other","Something else"]];
 
 export default function FeedbackModal({ open, onClose }) {
@@ -34,6 +36,7 @@ export default function FeedbackModal({ open, onClose }) {
         type,message:cleanMessage,email:email.trim()||null,page_url:window.location.href,user_agent:navigator.userAgent
       });
       if(error) throw error;
+      trackProductEvent("feedback_submitted");
       setStatus("success"); setMessage(""); setEmail("");
     } catch(error) {
       console.error("Feedback submission failed",error);

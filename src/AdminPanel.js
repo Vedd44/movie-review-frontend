@@ -30,6 +30,7 @@ export default function AdminPanel() {
   });
   const [hideMine,setHideMine]=useState(()=>{try{return localStorage.getItem('reelbot:admin-hide-mine')!=='false';}catch{return true;}});
   useEffect(()=>{try{localStorage.setItem('reelbot:admin-hide-mine',String(hideMine));}catch{}},[hideMine]);
+  const [hideAdmins,setHideAdmins]=useState(false);
   const requestRef = useRef(null);
   useEffect(() => () => requestRef.current?.abort(), []);
   const getFreshToken = useCallback(async () => {
@@ -58,7 +59,7 @@ export default function AdminPanel() {
     setRefreshFailed(false);
     try {
       const token = await getFreshToken();
-      const r = await fetch(`/api/admin-overview?hide_mine=${hideMine ? 1 : 0}`, {
+      const r = await fetch(`/api/admin-overview?hide_mine=${hideMine ? 1 : 0}&hide_admins=${hideAdmins ? 1 : 0}`, {
         signal: controller.signal,
         cache: "no-store",
         headers: { Authorization: "Bearer " + token },
@@ -77,7 +78,7 @@ export default function AdminPanel() {
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [getFreshToken,hideMine]);
+  }, [getFreshToken,hideMine,hideAdmins]);
   useEffect(() => {
     setData(null);
     setFetchedAt(null);
@@ -137,6 +138,7 @@ export default function AdminPanel() {
             <p>Users, product activity and account health in one place.</p>
           </div>
           <label className="admin-hide-mine"><input type="checkbox" checked={hideMine} onChange={event=>setHideMine(event.target.checked)} /> Hide my activity</label>
+          <label className="admin-hide-mine"><input type="checkbox" checked={hideAdmins} onChange={event=>setHideAdmins(event.target.checked)} /> Hide all admin activity</label>
           <button className="admin-refresh" onClick={load} disabled={loading}>
             {loading ? "Refreshing…" : "Refresh data"}
           </button>
@@ -202,8 +204,8 @@ export default function AdminPanel() {
             </section>
             <section className="admin-card admin-card--full rb-product-usage" aria-labelledby="product-usage-title">
               <div className="admin-card-head"><div><span className="admin-kicker">Guests & accounts</span><h2 id="product-usage-title">Are people finding a movie?</h2></div><span className="rb-ops-scope">{usage?.scope || "Activity unavailable"}</span></div>
-              {usage ? <><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Observed activity</th><th>Guests</th><th>Signed in</th><th>All sessions</th></tr></thead><tbody>{[
-                ["Sessions", "sessions"], ["Page views", "page_views"], ["Completed recommendation requests", "completed"], ["Picks returned", "picks"], ["No match", "no_match"], ["Request failures", "failed"], ["Movie identifications (separate)", "identifications"], ["Movies presented", "presented"], ["Chosen to watch", "chosen"], ["Details opened after a pick", "details"], ["Saved after a pick", "saved"], ["Marked watched after a pick", "watched"], ["Save sign-in attempts", "save_attempts"], ["Another pick clicks", "swaps"], ["Refinements", "refinements"], ["Shares", "shares"], ["Where to Watch views", "watch_views"], ["Streaming service clicks", "provider_clicks"], ["TMDB viewing options clicks", "tmdb_clicks"]
+              {usage ? <>{usage.capped ? <p role="status" className="admin-alert">Activity totals are incomplete: the storage safety limit was reached.</p> : null}<div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Observed activity</th><th>Guests</th><th>Signed in</th><th>All sessions</th></tr></thead><tbody>{[
+                ["Sessions", "sessions"], ["Page views", "page_views"], ["Recorded sign-ins", "logins"], ["Recorded signup confirmations", "signups"], ["Signup prompts opened", "signup_attempts"], ["Confirmation emails requested", "confirmation_requests"], ["Browse interactions", "browse_interactions"], ["Feedback submitted", "feedback_submissions"], ["Completed recommendation requests", "completed"], ["Picks returned", "picks"], ["No match", "no_match"], ["Request failures", "failed"], ["Movie identifications (separate)", "identifications"], ["Movies presented", "presented"], ["Chosen to watch", "chosen"], ["Details opened after a pick", "details"], ["Saved after a pick", "saved"], ["Marked watched after a pick", "watched"], ["Save sign-in attempts", "save_attempts"], ["Another pick clicks", "swaps"], ["Refinements", "refinements"], ["Shares", "shares"], ["Where to Watch views", "watch_views"], ["Streaming service clicks", "provider_clicks"], ["TMDB viewing options clicks", "tmdb_clicks"]
               ].map(([label,key])=><tr key={key}><td>{label}</td><td>{usage.guests[key]}</td><td>{usage.signed_in[key]}</td><td>{usage.total[key]}</td></tr>)}<tr><td>Median response</td><td>{seconds(usage.guests.median_ms)}</td><td>{seconds(usage.signed_in.median_ms)}</td><td>{seconds(usage.total.median_ms)}</td></tr><tr><td>95th percentile response</td><td>{seconds(usage.guests.p95_ms)}</td><td>{seconds(usage.signed_in.p95_ms)}</td><td>{seconds(usage.total.p95_ms)}</td></tr></tbody></table></div>{usage.provider_clicks?.length ? <details className="rb-ops-coverage"><summary>Streaming service clicks</summary><ul>{usage.provider_clicks.map(row=><li key={`${row.source}:${row.provider_id}:${row.availability_type}`}>{row.name} · {row.availability_type} · {row.source}: {row.clicks} clicks</li>)}</ul></details> : null}{usage.surfaces?.length ? <details className="rb-ops-coverage"><summary>Where visitors spend time</summary><ul>{usage.surfaces.map(row=><li key={row.page}>{row.page.replaceAll("_", " ")}: {row.views} page views · {row.guest_sessions} guest sessions</li>)}</ul></details> : null}<p className="rb-ops-note">Chosen means an explicit intention to watch. Saves and Watched are separate actions. Later actions count only when the same session first saw that movie as a pick; they are not proof the movie was played.</p><details className="rb-ops-coverage"><summary>Coverage and limitations</summary><p>{usage.coverage}</p></details></> : <p className="rb-ops-note">Guest usage starts with this release. Missing activity will appear as unavailable, rather than a zero.</p>}
             </section>
             <section className="rb-operations" aria-labelledby="operations-title">
@@ -290,6 +292,7 @@ export default function AdminPanel() {
                     <th>Created</th>
                     <th>Last sign in</th>
                     <th>Movies</th>
+                    <th>Recorded activity · 7d</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -310,6 +313,7 @@ export default function AdminPanel() {
                       <td>{fmt(x.created_at)}</td>
                       <td>{fmt(x.last_sign_in_at)}</td>
                       <td>{x.movie_count ?? "—"}</td>
+                      <td>{x.observed_activity_7d ? `${x.observed_activity_7d.requests} requests · ${x.observed_activity_7d.page_views} page views · ${x.observed_activity_7d.linked_guest_requests} linked guest requests` : "Unavailable"}</td>
                       <td>
                         <span
                           className={

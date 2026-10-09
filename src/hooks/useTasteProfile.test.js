@@ -14,7 +14,7 @@ function First() { first = useTasteProfile(); return <span data-testid="first">{
 function Second() { second = useTasteProfile(); return <span data-testid="second">{second.profile.watchlist.map(movie => movie.id).join(",")}</span>; }
 const app = () => <TasteProfileProvider><First /><Second /></TasteProfileProvider>;
 beforeEach(() => {
-  window.localStorage.clear(); jest.clearAllMocks(); mockUser = { id: "account-a" };
+  window.localStorage.clear(); require("../cookieConsent").setCookieChoice("accepted"); jest.clearAllMocks(); mockUser = { id: "account-a" };
   reelbotCloudService.bootstrapUserState.mockResolvedValue(empty());
   reelbotCloudService.saveUserState.mockImplementation(async (id, profile) => ({ ...empty(), profile }));
 });
@@ -128,4 +128,12 @@ test.each([
   expect(tasteProfileService.loadInteractions().filter(item => item.type === "request_result")).toEqual([
     expect.objectContaining({ metadata: expect.objectContaining({ outcome: properties.outcome, latency_ms: 4200 }) }),
   ]);
+});
+
+test('declined analytics does not persist optional request measurements but saves still work',async()=>{
+ require('../cookieConsent').setCookieChoice('rejected');render(app());await ready();
+ await act(async()=>window.dispatchEvent(new CustomEvent('reelbot:analytics',{detail:{name:'recommendation_returned',properties:{outcome:'pick',latency_ms:1000}}})));
+ expect(reelbotCloudService.saveUserState).not.toHaveBeenCalled();
+ await act(async()=>first.actions.toggleWatchlist({id:12,title:'Saved with no analytics'}));
+ expect(first.profile.watchlist.map(m=>m.id)).toEqual([12]);
 });

@@ -242,7 +242,7 @@ function AskReelbotLayer() {
       setResult(null);
       setAnswerResult(null);
       setError("");
-      trackProductEvent("ask_reelbot_opened", { page: window.location.pathname });
+      trackProductEvent("ask_reelbot_opened", { page: "ask" });
       if (event.detail?.autoPick && contextRef.current?.page === "collection") {
         const collection = contextRef.current.collection;
         window.setTimeout(() => requestPickRef.current?.(collection?.prompt || `pick one movie from ${collection?.title || "this collection"}`), 0);
@@ -342,7 +342,7 @@ function AskReelbotLayer() {
     const startedAt = Date.now();
     const activityRequestId = createActivityRequestId();
     const finishTelemetryRequest = deferProductTelemetry(controller.signal);
-    trackProductEvent("ask_reelbot_submitted", { page: context.page || "general", prompt_category: getPromptCategory(normalizedPrompt), kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer" });
+    trackProductEvent("ask_reelbot_submitted", { page: "ask", prompt_category: getPromptCategory(normalizedPrompt), kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer" });
     try {
       const response = await axios.post(`${API_BASE_URL}/reelbot/ask`, {
         prompt: normalizedPrompt,
@@ -365,27 +365,27 @@ function AskReelbotLayer() {
         const subject = askSubjectKey(context, response.data.conversation_state || requestConversation);
         setAnsweredQuestions(current => [...current, { subject, question: normalizedPrompt }]);
         setTurns(current => [...current, { question: normalizedPrompt, answer: response.data.answer }].slice(-12));
-        recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"answer",result_text:response.data.answer,outcome:"pick",latency_ms:Date.now()-startedAt});
+        recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:"ask",kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"answer",result_text:response.data.answer,outcome:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"answer",latency_ms:Date.now()-startedAt});
         setAnswerResult(response.data);
         setResult(null);
         setLastTurn({ prompt: normalizedPrompt, intent: response.data.intent, answer: response.data.answer });
-        trackProductEvent("ask_reelbot_intent", { intent: response.data.intent, page: context.page || "general" });
-        trackProductEvent("ask_reelbot_result", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "answer", latency_ms: response.data.latency_ms || Date.now() - startedAt });
+        trackProductEvent("ask_reelbot_intent", { intent: response.data.intent, page: "ask" });
+        trackProductEvent("ask_reelbot_result", { page: "ask", kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "answer", latency_ms: response.data.latency_ms || Date.now() - startedAt });
         return;
       }
       const payload = normalizePickPayload(response.data?.recommendation, requestExcludedIds);
       if (response.data?.recommendation?.user_message && !payload?.primary) {
         if (!continuesRequest) setResult(null);
         setAnswerResult(null);
-        trackProductEvent("ask_reelbot_result", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: "no_match", latency_ms: Date.now() - startedAt });
-        recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",result_text:response.data.recommendation.user_message,outcome:"no_match",latency_ms:Date.now()-startedAt});
+        trackProductEvent("ask_reelbot_result", { page: "ask", kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: "no_match", latency_ms: Date.now() - startedAt });
+        recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:"ask",kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",result_text:response.data.recommendation.user_message,outcome:"no_match",latency_ms:Date.now()-startedAt});
         setError(response.data.recommendation.user_message);
         return;
       }
       if (!payload?.primary) throw new Error("no_pick");
       setAnswerResult(null);
       setTurns(current => [...current, { question: normalizedPrompt, answer: payload.rationale?.primary_reason || payload.primary.reason || payload.summary, movie: payload.primary }].slice(-12));
-      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",movie_id:Number(payload.primary?.id),movie_title:payload.primary?.title,alternate_ids:(payload.alternates||[]).map(movie=>Number(movie.id)),alternate_titles:(payload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:payload.rationale?.primary_reason || payload.primary?.reason || payload.summary,outcome:response.data?.recommendation?.performance?.outcome||"pick",latency_ms:Date.now()-startedAt});
+      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:"ask",kind:response.data?.intent === "MOVIE_IDENTIFICATION"?"identification":"recommendation",movie_id:Number(payload.primary?.id),movie_title:payload.primary?.title,alternate_ids:(payload.alternates||[]).map(movie=>Number(movie.id)),alternate_titles:(payload.alternates||[]).map(movie=>movie.title).join(" · "),result_text:payload.rationale?.primary_reason || payload.primary?.reason || payload.summary,outcome:response.data?.recommendation?.performance?.outcome||"pick",latency_ms:Date.now()-startedAt});
       setResult(payload);
       setLastTurn({ prompt: normalizedPrompt, intent: response.data?.intent, movie_id: payload.primary.id, movie_title: payload.primary.title });
       void tasteActions.recordPickResult({
@@ -396,13 +396,13 @@ function AskReelbotLayer() {
         runtime: context.activeFilters?.runtime || "any",
         genre: context.activeFilters?.genre || "all",
       }, payload).catch(() => {});
-      trackProductEvent("ask_reelbot_intent", { intent: response.data?.intent || "UNKNOWN", page: context.page || "general" });
-      trackProductEvent("ask_reelbot_result", { kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: response.data?.recommendation?.performance?.outcome || "pick", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
+      trackProductEvent("ask_reelbot_intent", { intent: response.data?.intent || "UNKNOWN", page: "ask" });
+      trackProductEvent("ask_reelbot_result", { page: "ask", kind: response.data?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: response.data?.recommendation?.performance?.outcome || "pick", latency_ms: response.data?.latency_ms || Date.now() - startedAt });
       setExcludedIds((current) => dedupeIds([...(continuesRequest ? current : []), payload.primary.id]));
     } catch (requestError) {
       if (controller.signal.aborted || version !== requestVersion.current) return;
-      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:context.page,kind:predictedIntent === "MOVIE_IDENTIFICATION"?"identification":/RECOMMENDATION/.test(predictedIntent)?"recommendation":"answer",outcome:requestError?.message === "no_pick"?"no_match":"failed",latency_ms:Date.now()-startedAt});
-      trackProductEvent("ask_reelbot_failed", { kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer", outcome: requestError?.message === "no_pick" ? "no_match" : "failed", page: context.page || "general", latency_ms: Date.now() - startedAt });
+      recordRequestActivity({request_id:activityRequestId,started_at:startedAt,prompt:normalizedPrompt,page:"ask",kind:predictedIntent === "MOVIE_IDENTIFICATION"?"identification":/RECOMMENDATION/.test(predictedIntent)?"recommendation":"answer",outcome:requestError?.message === "no_pick"?"no_match":"failed",latency_ms:Date.now()-startedAt});
+      trackProductEvent("ask_reelbot_failed", { kind: predictedIntent === "MOVIE_IDENTIFICATION" ? "identification" : /RECOMMENDATION/.test(predictedIntent) ? "recommendation" : "answer", outcome: requestError?.message === "no_pick" ? "no_match" : "failed", page: "ask", latency_ms: Date.now() - startedAt });
       setError(requestError?.message === "no_pick" ? "Nothing great matched that exactly. Try loosening one detail." : "ReelBot hit a snag. Try that again.");
     } finally {
       finishTelemetryRequest();
@@ -456,7 +456,7 @@ function AskReelbotLayer() {
     setResult(null);
     setAnswerResult(null);
     setError("");
-    trackProductEvent("ask_reelbot_opened", { page: context.page || "general" });
+    trackProductEvent("ask_reelbot_opened", { page: "ask" });
     if (isCollection) {
       window.setTimeout(() => requestPick(context.collection?.prompt || `pick one movie from ${context.collection?.title || "this collection"}`), 0);
     }

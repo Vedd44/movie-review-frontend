@@ -3,6 +3,8 @@ import { PENDING_SAVE_KEY, useAuth } from "../context/AuthContext";
 import { reelbotCloudService } from "../services/reelbotCloudService";
 import { TASTE_PROFILE_UPDATED_EVENT, tasteProfileService } from "../services/tasteProfileService";
 
+import { hasAnalyticsConsent } from "../cookieConsent";
+
 const TasteProfileContext = createContext(null);
 
 function useSharedTasteProfile() {
@@ -122,6 +124,7 @@ function useSharedTasteProfile() {
   useEffect(() => {
     if (!userId) return undefined;
     const record = ({ detail }) => {
+      if (!hasAnalyticsConsent()) return;
       const { name, properties = {} } = detail || {};
       // Identification answers share Home's result event but are not
       // recommendation outcomes (and must never be coerced into failures).
@@ -130,7 +133,7 @@ function useSharedTasteProfile() {
       const isFailure = name === "recommendation_failed" || name === "ask_reelbot_failed";
       if (!isPick && !isFailure) return;
       if (name === "ask_reelbot_failed" && properties.kind !== "recommendation") return;
-      void commit(profile => tasteProfileService.recordRequestOutcome(profile, {
+      void commit(profile => !hasAnalyticsConsent() ? profile : tasteProfileService.recordRequestOutcome(profile, {
         outcome: properties.outcome || (isPick ? "pick" : "failed"),
         latency_ms: properties.latency_ms,
         surface: properties.page || (name.startsWith("ask_") ? "ask" : "home"),

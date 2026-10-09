@@ -140,3 +140,15 @@ describe('production telemetry delivery lifecycle',()=>{
  });
 
 });
+
+test('anonymous-to-account continuity is preserved, while logout and account changes rotate the visit',async()=>{
+ jest.resetModules();jest.useFakeTimers();const previous=process.env.NODE_ENV;process.env.NODE_ENV='production';
+ const old=window.crypto;let n=300;Object.defineProperty(window,'crypto',{configurable:true,value:{randomUUID:()=>`00000000-0000-4000-8000-${String(++n).padStart(12,'0')}`}});
+ global.fetch=jest.fn().mockResolvedValue({ok:true});const consent=require('./cookieConsent'),telemetry=require('./productTelemetry');consent.setCookieChoice('accepted');
+ telemetry.recordProductTelemetry('page_viewed');const guest=window.sessionStorage.getItem('reelbot:metrics-session');
+ telemetry.setAnalyticsIdentity('account-a');telemetry.recordProductTelemetry('login');expect(window.sessionStorage.getItem('reelbot:metrics-session')).toBe(guest);
+ telemetry.setAnalyticsIdentity('');telemetry.recordProductTelemetry('page_viewed');const nextGuest=window.sessionStorage.getItem('reelbot:metrics-session');expect(nextGuest).not.toBe(guest);
+ telemetry.setAnalyticsIdentity('account-b');telemetry.recordProductTelemetry('login');expect(window.sessionStorage.getItem('reelbot:metrics-session')).toBe(nextGuest);
+ telemetry.setAnalyticsIdentity('account-c');telemetry.recordProductTelemetry('login');expect(window.sessionStorage.getItem('reelbot:metrics-session')).not.toBe(nextGuest);
+ consent.setCookieChoice('rejected');window.localStorage.clear();window.sessionStorage.clear();jest.clearAllTimers();jest.useRealTimers();process.env.NODE_ENV=previous;Object.defineProperty(window,'crypto',{configurable:true,value:old});
+});

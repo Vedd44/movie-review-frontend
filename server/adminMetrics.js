@@ -1,5 +1,5 @@
 const timestamp = value => {
-  const text = String(value || '');
+  const text = String(value || '').replace(' ', 'T');
   return Date.parse(/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(text) && !/(?:Z|[+-]\d\d:\d\d)$/i.test(text) ? `${text}Z` : text);
 };
 function buildAdminMetrics(sessions, now = Date.now()) {
@@ -25,7 +25,7 @@ function buildAdminMetrics(sessions, now = Date.now()) {
   });
   return {
     scope: 'Retained signed-in activity · last 7 days',
-    coverage: 'Up to 80 retained events per profile, from the latest 250 profiles. Guest requests and expired history are excluded. Browser-reported outcomes are operational signals, not an audited global total.',
+    coverage: 'Up to 80 retained events per profile, from loaded profiles (up to 20,000; any truncation is warned). Guest requests and expired history are excluded. Browser-reported outcomes are operational signals, not an audited global total.',
     requests: { total: requests.length, ...outcomes, median_ms: percentile(.5), p95_ms: percentile(.95), failure_rate: requests.length ? outcomes.failed / requests.length : null },
     funnel: { picked: cohort.size, saved: [...cohort.values()].filter(pair=>pair.saved).length, watched: [...cohort.values()].filter(pair=>pair.watched).length },
     recent_failures: requests.filter(entry => ['failed','fallback'].includes(entry.metadata.outcome)).slice(-5).reverse().map(entry => ({created_at:entry.timestamp,surface:entry.metadata.surface,outcome:entry.metadata.outcome,latency_ms:entry.metadata.latency_ms})),

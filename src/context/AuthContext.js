@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useNavigate } from "react-router-dom";
 import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabaseClient";
 import { API_BASE_URL } from "../discovery";
+import { setAnalyticsIdentity } from "../productTelemetry";
 import { trackProductEvent } from "../analytics";
 import { getAuthReturn } from "../authFlow";
 
@@ -128,6 +129,7 @@ export function AuthProvider({ children }) {
           setPendingRecoverySession(null);
           setSession(data?.session || null);
         }
+        setAnalyticsIdentity(enteringRecovery ? "" : data?.session?.user?.id || "");
         setLoading(false);
         if (authReturnRef.current?.kind === "error") {
           if (window.location.pathname !== "/reset-password") setAuthPromptOpen(true);
@@ -140,6 +142,7 @@ export function AuthProvider({ children }) {
         }
 
         const { data: listener } = client.auth.onAuthStateChange((event, nextSession) => {
+          setAnalyticsIdentity(event === "SIGNED_OUT" || event === "PASSWORD_RECOVERY" || recoveryRedirectedRef.current ? "" : nextSession?.user?.id || "");
           if (event === "PASSWORD_RECOVERY") {
             setPasswordRecoveryActive(true);
             setPendingRecoverySession(nextSession || null);
@@ -148,6 +151,7 @@ export function AuthProvider({ children }) {
               navigateRef.current("/reset-password", { replace: true });
             }
           } else if (event === "SIGNED_OUT") {
+            trackedSignedInUsersRef.current.clear();
             setPasswordRecoveryActive(false);
             setPendingRecoverySession(null);
             recoveryRedirectedRef.current = false;

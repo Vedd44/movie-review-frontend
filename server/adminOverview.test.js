@@ -38,6 +38,7 @@ function fixture({
         or: () => q,
         gte: () => q,
         limit: () => q,
+        range: () => q,
         order: () => q,
         then: (resolve) =>
           resolve(
