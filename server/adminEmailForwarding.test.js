@@ -598,3 +598,56 @@ test('real SDK mocked HTTP failure cannot leak provider content or received emai
   assert.doesNotMatch(JSON.stringify(fixture.calls.logs), /PRIVATE|author@example\.org|signature=private/);
   assert.equal(JSON.stringify(fixture.calls.logs).includes(EMAIL_ID), false);
 });
+
+test('default store normalizes Supabase base URLs before its first claim', async t => {
+  const root = 'https://unit-test.invalid';
+  const scenarios = [
+    ['root', { SUPABASE_URL: root }],
+    ['root slash', { SUPABASE_URL: `${root}/` }],
+    ['REST suffix', { SUPABASE_URL: `${root}/rest/v1` }],
+    ['REST suffix slash', { SUPABASE_URL: `${root}/rest/v1/` }],
+    ['surrounding whitespace', { SUPABASE_URL: `  ${root}/rest/v1/\n` }],
+    ['frontend URL fallback', { REACT_APP_SUPABASE_URL: root }],
+    ['empty primary URL fallback', { SUPABASE_URL: '', REACT_APP_SUPABASE_URL: `${root}/rest/v1/` }],
+  ];
+  for (const [name, settings] of scenarios) await t.test(name, async subtest => {
+    const paths = [], stages = [], logs = [];
+    let outgoing = 0;
+    subtest.mock.method(globalThis, 'fetch', async input => {
+      const path = new URL(input).pathname;
+      paths.push(path);
+      if (path === '/rest/v1/rpc/admin_email_claim') {
+        stages.push('claim');
+        return new Response(JSON.stringify({ status: 'claimed' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (path === '/rest/v1/rpc/admin_email_finish') {
+        return new Response(JSON.stringify({ status: 'released' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ message: 'Mock endpoint not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    });
+    const handler = createAdminEmailHandler({
+      env: { ...env, SUPABASE_SERVICE_ROLE_KEY: 'fake-service-key-no-network', ...settings },
+      // Deliberately use the real default store and Supabase SDK; no createStore
+      // injection. All HTTP calls are intercepted by this test's transport mock.
+      createResend: () => ({
+        webhooks: { verify: verifier.webhooks.verify.bind(verifier.webhooks) },
+        emails: {
+          receiving: { get: async () => {
+            stages.push('receive');
+            return { error: { name: 'application_error' } };
+          } },
+          send: async () => { outgoing++; throw new Error('Unexpected outgoing email'); },
+        },
+      }),
+      logger: { error: (_name, detail) => logs.push(detail.code) },
+    });
+    const res = response();
+    await handler(signedRequest(event()), res);
+    assert.equal(paths[0], '/rest/v1/rpc/admin_email_claim');
+    assert.deepEqual(stages, ['claim', 'receive']);
+    assert.deepEqual(paths, ['/rest/v1/rpc/admin_email_claim', '/rest/v1/rpc/admin_email_finish']);
+    assert.equal(outgoing, 0);
+    assert.equal(res.statusCode, 503, 'the intentional receive failure stops this test before sending');
+    assert.deepEqual(logs, ['receive_unavailable']);
+  });
+});
