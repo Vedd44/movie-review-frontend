@@ -313,7 +313,7 @@ export default function AdminPanel() {
                       <td>{fmt(x.created_at)}</td>
                       <td>{fmt(x.last_sign_in_at)}</td>
                       <td>{x.movie_count ?? "—"}</td>
-                      <td>{x.observed_activity_7d ? `${x.observed_activity_7d.requests} requests · ${x.observed_activity_7d.page_views} page views · ${x.observed_activity_7d.linked_guest_requests} linked guest requests` : "Unavailable"}</td>
+                      <td>{x.activity_excluded ? "Excluded by activity filters" : x.observed_activity_7d ? `${x.observed_activity_7d.requests} requests · ${x.observed_activity_7d.page_views} page views · ${x.observed_activity_7d.linked_guest_requests} linked guest requests` : "Unavailable"}</td>
                       <td>
                         <span
                           className={
@@ -359,7 +359,7 @@ export default function AdminPanel() {
               </div>
             </div>
             <p className="detail-secondary-text">
-              Up to 200 recent events from 250 synced profiles. Sign-ins and
+              Latest 200 retained events from up to 20,000 synced profiles. Sign-ins and
               guest browsing are not a complete usage measure.
             </p>
             <div className="admin-activity-feed">

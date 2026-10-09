@@ -251,7 +251,7 @@ test.each([
   fireEvent.click(screen.getByRole("button", { name: "Ask", exact: true }));
   await screen.findByText("That sounds like Memento.");
   expect(trackProductEvent).toHaveBeenCalledWith("ask_reelbot_result", expect.objectContaining({ kind }));
-  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ kind, outcome: "pick", result_text: "That sounds like Memento." }));
+  expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ kind, outcome: kind, result_text: "That sounds like Memento." }));
 });
 
 test("failed identification requests preserve their kind in metrics and request details", async () => {

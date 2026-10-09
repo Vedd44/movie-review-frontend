@@ -29,7 +29,7 @@ afterEach(() => {
 test("shows when the uncached snapshot was fetched and does not poll", async () => {
   render(app());
   await screen.findByText("101");
-  expect(global.fetch).toHaveBeenCalledWith("/api/admin-overview?hide_mine=1", expect.objectContaining({ cache: "no-store", signal: expect.anything() }));
+  expect(global.fetch).toHaveBeenCalledWith("/api/admin-overview?hide_mine=1&hide_admins=0", expect.objectContaining({ cache: "no-store", signal: expect.anything() }));
   const fetchedAt = snapshotTime();
   expect(fetchedAt).toBe(new Date().toISOString());
   expect(screen.getByText(/This page does not update automatically/)).toBeInTheDocument();
@@ -80,7 +80,7 @@ test("changing the owner filter clears the old snapshot until the new filter is 
   expect(screen.getByRole("button", { name: "Refreshing…" })).toBeDisabled();
   jest.setSystemTime(new Date("2026-10-09T16:07:00.000Z"));
   await act(async () => { finish(response(303)); });
-  expect(global.fetch).toHaveBeenLastCalledWith("/api/admin-overview?hide_mine=0", expect.objectContaining({ cache: "no-store" }));
+  expect(global.fetch).toHaveBeenLastCalledWith("/api/admin-overview?hide_mine=0&hide_admins=0", expect.objectContaining({ cache: "no-store" }));
   expect(screen.getByText("303")).toBeInTheDocument();
   expect(snapshotTime()).toBe("2026-10-09T16:07:00.000Z");
 });

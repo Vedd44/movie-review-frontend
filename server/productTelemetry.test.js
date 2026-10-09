@@ -40,9 +40,9 @@ test('coverage describes optional consent, separate profile records and omitted 
  const metrics=buildProductMetrics([],now);
  assert.match(metrics.coverage,/only analytics-consenting guest and signed-in sessions/);
  assert.match(metrics.coverage,/separate from functional account profile records/);
- assert.match(metrics.coverage,/Catalog searches are not recorded as requests/);
+ assert.match(metrics.coverage,/Catalog searches are not recorded as recommendation requests/);
  assert.match(metrics.coverage,/reported for 7 days; stored batches are pruned after 8 days/);
- assert.match(metrics.coverage,/Up to 40 recent event batches per day/);
+ assert.match(metrics.coverage,/All pages are read up to a safety limit of 2,000 batches per UTC day/);
 });
 
 test('identification answers and failures use kind without affecting recommendation health',()=>{

@@ -180,6 +180,7 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
           email_verified: Boolean(user.email_confirmed_at),
           banned_until: user.banned_until || null,
           is_suspended: suspended(user),
+          activity_excluded: excludedUserIds.has(user.id),
           observed_activity_7d: productUsage ? (productUsage.accounts?.[ownerDigest(user.id)] || {page_views:0,requests:0,linked_guest_requests:0,sessions:0}) : null,
           movie_count: countsComplete ? counts[user.id] || 0 : null,
           is_admin: user.app_metadata?.role === "super_admin",
@@ -189,7 +190,6 @@ function createAdminHandler({ getClient, getTelemetry = readProductTelemetry } =
       const visibleSessions = Array.isArray(sessionsResult.data) ? sessionsResult.data.filter(row=>!excludedUserIds.has(row.user_id)) : null;
       const activity = (visibleSessions || [])
         .flatMap((row) => (Array.isArray(row.payload?.interactions) ? row.payload.interactions : [])
-          .slice(0, 25)
           .map((entry, i) => ({
             id: `${row.user_id}-${i}`,
             user_id: row.user_id,
