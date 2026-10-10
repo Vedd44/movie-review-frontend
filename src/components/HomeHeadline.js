@@ -8,20 +8,17 @@ export const HEADLINE_PHRASES = Object.freeze([
   "something I've never heard of.",
   "a movie I won't stop thinking about.",
 ]);
-export const HEADLINE_HOLD_MS = 4000;
-export const HEADLINE_SEQUENCE_LENGTH = 3;
+export const HEADLINE_START_MS = 180;
+export const HEADLINE_CHARACTER_MS = 36;
 export const headlineRequest = phrase => phrase.charAt(0).toUpperCase() + phrase.slice(1).replace(/\.$/, '');
 
 export default function HomeHeadline({ onSelect, paused = false }) {
-  // Choose one starting point per visit, then show two more complete examples and settle.
+  // Reveal one complete example per mounted visit. Ordinary rerenders never restart it.
   const [start] = useState(() => Math.floor(Math.random() * HEADLINE_PHRASES.length));
-  const [step, setStep] = useState(0);
   const [settled, setSettled] = useState(false);
   const [hidden, setHidden] = useState(() => document.hidden);
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const phrase = HEADLINE_PHRASES[(start + step) % HEADLINE_PHRASES.length];
-  const previousPhrase = HEADLINE_PHRASES[(start + step - 1 + HEADLINE_PHRASES.length) % HEADLINE_PHRASES.length];
-  const finished = step === HEADLINE_SEQUENCE_LENGTH - 1;
+  const phrase = HEADLINE_PHRASES[start];
   const staticText = settled || paused || reducedMotion;
 
   useEffect(() => {
@@ -45,12 +42,6 @@ export default function HomeHeadline({ onSelect, paused = false }) {
     if (paused || reducedMotion) setSettled(true);
   }, [paused, reducedMotion]);
 
-  useEffect(() => {
-    if (staticText || hidden || finished) return undefined;
-    const timer = window.setTimeout(() => setStep(current => current + 1), HEADLINE_HOLD_MS);
-    return () => window.clearTimeout(timer);
-  }, [finished, hidden, step, staticText]);
-
   return <><h1 id="home-hero-title" className="rb-conversation-headline" aria-live="off">
     <span className="headline-intro">I want to watch...</span>
     <button type="button" className={`headline-phrase${staticText ? ' is-settled' : ''}${hidden ? ' is-hidden' : ''}`} aria-label={`Use this example: ${phrase}`}
@@ -58,8 +49,11 @@ export default function HomeHeadline({ onSelect, paused = false }) {
       onPointerEnter={() => setSettled(true)} onFocus={() => setSettled(true)}
       onClick={() => { setSettled(true); onSelect(headlineRequest(phrase)); }}>
       {HEADLINE_PHRASES.map(example => <span key={example} className="headline-phrase-measure" aria-hidden="true">{example}</span>)}
-      {step > 0 && !staticText && <span key={`previous-${step}`} className="headline-phrase-outgoing" aria-hidden="true">{previousPhrase}</span>}
-      <span key={step} className={`headline-phrase-visible${step > 0 ? ' is-entering' : ''}`} aria-hidden="true">{phrase}</span>
+      <span className="headline-phrase-visible" aria-hidden="true">
+        {/* Keep every character in layout from the first paint: wrapping never shifts as it types. */}
+        {Array.from(phrase).map((character, index) => <span key={index} className="headline-character"
+          style={{ animationDelay: `${HEADLINE_START_MS + index * HEADLINE_CHARACTER_MS}ms` }}>{character}</span>)}
+      </span>
     </button>
   </h1>
     <span id="headline-example-help" className="sr-only">Adds this example to an empty request. Your existing text stays unchanged. You can edit it before finding a movie.</span>

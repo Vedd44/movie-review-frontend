@@ -14,6 +14,7 @@ function useSharedTasteProfile() {
   activeUser.current = userId;
   const [profile, setProfile] = useState(() => reelbotCloudService.getLocalProfileOwner()
     ? tasteProfileService.createEmptyProfile() : tasteProfileService.load());
+  const [profileOwner, setProfileOwner] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState("");
   const profileRef = useRef(profile);
@@ -23,6 +24,7 @@ function useSharedTasteProfile() {
 
   const applyProfile = useCallback(next => {
     profileRef.current = next;
+    setProfileOwner(activeUser.current);
     setProfile(next);
   }, []);
 
@@ -72,6 +74,7 @@ function useSharedTasteProfile() {
     const syncProfile = event => {
       // Own commits already update this shared provider. Storage events from
       // other tabs are safe only when the cache belongs to this same account.
+      if (activeUser.current !== userId) return;
       if (event.type !== "storage" && userId) return;
       if (reelbotCloudService.getLocalProfileOwner() !== userId) return;
       applyProfile(tasteProfileService.load());
@@ -190,6 +193,9 @@ function useSharedTasteProfile() {
     profile,
     behavioralMemory,
     actions,
+    // Account changes render before the restoration effect runs. Consumers
+    // must not attribute the previous profile to the new auth identity.
+    isProfileReady: authReady && profileOwner === userId && ready.current,
     isCloudSyncing: syncLoading,
     cloudSyncError: syncError,
     isUsingCloudProfile: Boolean(user),

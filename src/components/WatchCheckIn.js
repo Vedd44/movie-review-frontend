@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import useTasteProfile from '../hooks/useTasteProfile';
 import { useAuth } from '../context/AuthContext';
 import { trackProductEvent } from '../analytics';
 
+const DAY = 86400000;
+const CHECK_IN_INTERVAL = 7 * DAY;
+
 export function findWatchCheckIn(profile, dismissed = [], now = Date.now(), snoozed = {}) {
-  return (profile.recentRecommendations || []).find(movie => {
-    const age = now - Date.parse(movie.recommended_at);
-    return age >= 86400000 && age <= 30 * 86400000 && movie.title &&
-      !dismissed.includes(Number(movie.id)) &&
-      !(Number(snoozed[movie.id]) > now) &&
-      !(profile.seen || []).some(item => Number(item.id) === Number(movie.id)) &&
-      !(profile.skipped || []).some(item => Number(item.id) === Number(movie.id));
-  });
+  // recentRecommendations contains queued alternatives too, in reverse order.
+  // Pick history explicitly records the displayed primary first. Only ask about
+  // the newest event, never work backwards through an unseen backlog.
+  const history = Array.isArray(profile.pickHistory) ? profile.pickHistory : [];
+  if (history.some(entry => !entry || !Number.isFinite(Date.parse(entry.saved_at)))) return undefined;
+  const latest = history.reduce((result, entry) =>
+    !result || Date.parse(entry.saved_at) > Date.parse(result.saved_at) ? entry : result, null);
+  if (!Array.isArray(latest?.movie_ids)) return undefined;
+  const id = Number(latest.movie_ids[0]);
+  const age = now - Date.parse(latest?.saved_at);
+  if (!Number.isSafeInteger(id) || id <= 0 || !(age >= DAY && age <= 30 * DAY)) return undefined;
+  const movie = (profile.recentRecommendations || []).find(item => Number(item?.id) === id);
+  if (!movie || typeof movie.title !== 'string' || !movie.title.trim() || movie.title === 'Unknown title' ||
+      dismissed.includes(id) || Number(snoozed[id]) > now ||
+      (profile.seen || []).some(item => Number(item.id) === id) ||
+      (profile.skipped || []).some(item => Number(item.id) === id)) return undefined;
+  return movie;
 }
+
+const readCheckInState = key => {
+  try {
+    const dismissed = JSON.parse(localStorage.getItem(key) || '[]');
+    const snoozed = JSON.parse(localStorage.getItem(`${key}:snoozed`) || '{}');
+    const shownAt = Number(localStorage.getItem(`${key}:shown-at`) || 0);
+    return {
+      dismissed: Array.isArray(dismissed) ? dismissed.map(Number) : [],
+      snoozed: snoozed && typeof snoozed === 'object' && !Array.isArray(snoozed) ? snoozed : {},
+      shownAt: Number.isFinite(shownAt) ? shownAt : Date.now(),
+    };
+  } catch {
+    // This is optional: if its frequency controls cannot be read, stay quiet.
+    return null;
+  }
+};
 
 function WatchCheckInPrompt({ movie, actions, getMovieState, user, onBegin, onPause, onHide }) {
   const [status, setStatus] = useState('idle');
@@ -56,33 +84,41 @@ function WatchCheckInPrompt({ movie, actions, getMovieState, user, onBegin, onPa
   );
 }
 
-export default function WatchCheckIn() {
-  const { profile, actions, getMovieState } = useTasteProfile();
-  const { user } = useAuth();
-  const key = `reelbot:watch-check-in:${user?.id || 'guest'}`;
-  const snoozeKey = `${key}:snoozed`;
-  const [dismissedByOwner, setDismissedByOwner] = useState({});
-  const [quietOwners, setQuietOwners] = useState({});
-  const [selection, setSelection] = useState(null);
-  let stored = [], snoozed = {};
-  try { const value = JSON.parse(localStorage.getItem(key) || '[]'); if (Array.isArray(value)) stored = value.map(Number); } catch {}
-  try { const value = JSON.parse(localStorage.getItem(snoozeKey) || '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) snoozed = value; } catch {}
-  const dismissed = dismissedByOwner[key] || stored;
-  const movie = selection?.owner === key ? selection.movie : findWatchCheckIn(profile, dismissed, Date.now(), snoozed);
-  if (!movie || quietOwners[key]) return null;
-  const quiet = () => setQuietOwners(previous => ({ ...previous, [key]: true }));
+function OwnerWatchCheckIn({ ownerKey, profile, actions, getMovieState, user }) {
+  const [state] = useState(() => readCheckInState(ownerKey));
+  const [quiet, setQuiet] = useState(false);
+  const [answerStarted, setAnswerStarted] = useState(false);
+  const [movie] = useState(() => {
+    const now = Date.now();
+    if (!state || (state.shownAt && now - state.shownAt < CHECK_IN_INTERVAL)) return null;
+    return findWatchCheckIn(profile, state.dismissed, now, state.snoozed) || null;
+  });
+  useEffect(() => {
+    if (!movie) return;
+    try { localStorage.setItem(`${ownerKey}:shown-at`, String(Date.now())); }
+    catch { setQuiet(true); }
+  }, [movie, ownerKey]);
+  const currentMovie = state && findWatchCheckIn(profile, state.dismissed, Date.now(), state.snoozed);
+  if (!movie || quiet || (!answerStarted && Number(currentMovie?.id) !== Number(movie.id))) return null;
   const hide = () => {
-    const next = [...dismissed, Number(movie.id)].slice(-30);
-    setDismissedByOwner(previous => ({ ...previous, [key]: next }));
-    try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
-    quiet();
+    const next = [...state.dismissed, Number(movie.id)].slice(-30);
+    try { localStorage.setItem(ownerKey, JSON.stringify(next)); } catch {}
+    setQuiet(true);
   };
   const pause = () => {
     const now = Date.now();
-    const next = Object.fromEntries(Object.entries(snoozed).filter(([, until]) => Number(until) > now));
-    next[movie.id] = now + 7 * 86400000;
-    try { localStorage.setItem(snoozeKey, JSON.stringify(next)); } catch {}
-    quiet();
+    const next = Object.fromEntries(Object.entries(state.snoozed).filter(([, until]) => Number(until) > now));
+    next[movie.id] = now + CHECK_IN_INTERVAL;
+    try { localStorage.setItem(`${ownerKey}:snoozed`, JSON.stringify(next)); } catch {}
+    setQuiet(true);
   };
-  return <WatchCheckInPrompt key={`${key}:${movie.id}`} movie={movie} actions={actions} getMovieState={getMovieState} user={user} onBegin={() => setSelection({ owner: key, movie })} onPause={pause} onHide={hide} />;
+  return <WatchCheckInPrompt movie={movie} actions={actions} getMovieState={getMovieState} user={user} onBegin={() => setAnswerStarted(true)} onPause={pause} onHide={hide} />;
+}
+
+export default function WatchCheckIn() {
+  const { profile, actions, getMovieState, isProfileReady } = useTasteProfile();
+  const { user, authReady } = useAuth();
+  if (!authReady || !isProfileReady) return null;
+  const ownerKey = `reelbot:watch-check-in:${user?.id || 'guest'}`;
+  return <OwnerWatchCheckIn key={ownerKey} ownerKey={ownerKey} profile={profile} actions={actions} getMovieState={getMovieState} user={user} />;
 }

@@ -137,3 +137,25 @@ test('declined analytics does not persist optional request measurements but save
  await act(async()=>first.actions.toggleWatchlist({id:12,title:'Saved with no analytics'}));
  expect(first.profile.watchlist.map(m=>m.id)).toEqual([12]);
 });
+
+test('profile readiness blocks every stale-profile render during account changes, including before effects', async () => {
+  const renders = [];
+  function CheckInConsumer() {
+    const value = useTasteProfile();
+    renders.push({owner:mockUser?.id || '', ready:value.isProfileReady, visible:value.isProfileReady ? value.profile.recentRecommendations.map(movie => movie.title) : []});
+    return null;
+  }
+  reelbotCloudService.bootstrapUserState.mockImplementation(async id => ({...empty(),profile:{...empty().profile,recentRecommendations:[{id:id==='account-a'?1:2,title:`${id} private pick`}]}}));
+  const ui = () => <TasteProfileProvider><First /><CheckInConsumer /></TasteProfileProvider>;
+  const view = render(ui()); await ready();
+  expect(renders.at(-1).visible).toEqual(['account-a private pick']);
+  mockUser = {id:'account-b'};
+  view.rerender(ui()); await ready();
+  const bRenders = renders.filter(item=>item.owner==='account-b');
+  expect(bRenders[0].ready).toBe(false);
+  expect(bRenders.every(item=>!item.visible.includes('account-a private pick'))).toBe(true);
+  expect(bRenders.at(-1).visible).toEqual(['account-b private pick']);
+  mockUser = null;
+  view.rerender(ui()); await ready();
+  expect(renders.filter(item=>item.owner==='').every(item=>!item.visible.includes('account-b private pick'))).toBe(true);
+});
