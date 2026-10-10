@@ -25,16 +25,18 @@ export default function HomeHeadline({ onSelect, paused = false }) {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const updateMotion = () => { setReducedMotion(motion.matches); if (motion.matches) setSettled(true); };
     const updateVisibility = () => setHidden(document.hidden);
-    // Once the visitor starts using the site, let their request take the focus.
-    const settle = () => setSettled(true);
-    const interactions = ['pointerdown', 'keydown', 'touchstart', 'wheel'];
+    // Restored text, autofocus, hover and scrolling are not request editing.
+    // Let this short reveal run until the visitor actually changes the request.
+    const settleOnInput = event => {
+      if (event.target?.id === 'pick-prompt-input') setSettled(true);
+    };
     motion.addEventListener('change', updateMotion);
     document.addEventListener('visibilitychange', updateVisibility);
-    interactions.forEach(event => document.addEventListener(event, settle, { passive: true, once: true }));
+    document.addEventListener('input', settleOnInput);
     return () => {
       motion.removeEventListener('change', updateMotion);
       document.removeEventListener('visibilitychange', updateVisibility);
-      interactions.forEach(event => document.removeEventListener(event, settle));
+      document.removeEventListener('input', settleOnInput);
     };
   }, []);
 
@@ -46,7 +48,7 @@ export default function HomeHeadline({ onSelect, paused = false }) {
     <span className="headline-intro">I want to watch...</span>
     <button type="button" className={`headline-phrase${staticText ? ' is-settled' : ''}${hidden ? ' is-hidden' : ''}`} aria-label={`Use this example: ${phrase}`}
       aria-controls="pick-prompt-input" aria-describedby="headline-example-help"
-      onPointerEnter={() => setSettled(true)} onFocus={() => setSettled(true)}
+      onFocus={() => setSettled(true)}
       onClick={() => { setSettled(true); onSelect(headlineRequest(phrase)); }}>
       {HEADLINE_PHRASES.map(example => <span key={example} className="headline-phrase-measure" aria-hidden="true">{example}</span>)}
       <span className="headline-phrase-visible" aria-hidden="true">

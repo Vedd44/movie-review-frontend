@@ -5,6 +5,7 @@ import Home from "./Home";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { trackProductEvent } from "./analytics";
 import { recordRequestActivity } from "./productTelemetry";
+import { tasteProfileService } from "./services/tasteProfileService";
 
 jest.mock("axios");
 jest.mock("./hooks/useTasteProfile");
@@ -202,4 +203,42 @@ test.each([
   fireEvent.click(screen.getByRole("button", { name: "Find my movie" }));
   await waitFor(() => expect(trackProductEvent).toHaveBeenCalledWith("recommendation_failed", expect.objectContaining({ kind, outcome: "no_match" })));
   expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ page: "home", kind, outcome: "no_match" }));
+});
+
+
+test('Edit restores its saved request and autofocus without suppressing the new headline reveal', async () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  fireEvent.input(input, { target: { value: 'A clever mystery under 100 minutes' } });
+  expect(screen.getByRole('button', { name: /^Use this example:/ })).toHaveClass('is-settled');
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  const calls = axios.post.mock.calls.length;
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  await waitFor(() => expect(input).toHaveFocus());
+  expect(input).toHaveValue('A clever mystery under 100 minutes');
+  const example = screen.getByRole('button', { name: /^Use this example:/ });
+  expect(example).not.toHaveClass('is-settled');
+  fireEvent.wheel(document);
+  fireEvent.pointerEnter(example);
+  expect(example).not.toHaveClass('is-settled');
+  fireEvent.click(example);
+  expect(input).toHaveValue('A clever mystery under 100 minutes');
+  expect(example).toHaveClass('is-settled');
+  expect(axios.post.mock.calls.length).toBe(calls);
+});
+
+
+test('a saved Home request starts its reveal without overwriting or submitting the draft', async () => {
+  tasteProfileService.saveHomePickSession({ originalPrompt: 'My saved mystery request' });
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  expect(input).toHaveValue('My saved mystery request');
+  const example = screen.getByRole('button', { name: /^Use this example:/ });
+  expect(example).not.toHaveClass('is-settled');
+  fireEvent.focus(input);
+  expect(example).not.toHaveClass('is-settled');
+  fireEvent.input(input, { target: { value: 'My edited mystery request' } });
+  expect(example).toHaveClass('is-settled');
+  expect(axios.post).not.toHaveBeenCalled();
 });

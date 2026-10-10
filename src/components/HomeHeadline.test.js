@@ -61,20 +61,30 @@ test('hidden pages pause CSS animation and clean up event listeners on unmount',
   expect(screen.getByRole('button')).not.toHaveClass('is-hidden');
   unmount();
   expect(motion.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
-  ['visibilitychange', 'pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(event => expect(remove).toHaveBeenCalledWith(event, expect.any(Function)));
+  ['visibilitychange', 'input'].forEach(event => expect(remove).toHaveBeenCalledWith(event, expect.any(Function)));
 });
 
-test.each(['pointerdown', 'keydown', 'touchstart', 'wheel'])('%s permanently settles the full phrase', event => {
-  const { container, rerender } = render(<HomeHeadline onSelect={jest.fn()} />);
+test.each(['pointerdown', 'keydown', 'touchstart', 'wheel'])('%s outside request editing does not cancel the reveal', event => {
+  render(<HomeHeadline onSelect={jest.fn()} />);
   fireEvent(document, new Event(event));
-  expect(screen.getByRole('button')).toHaveClass('is-settled');
-  rerender(<HomeHeadline onSelect={jest.fn()} />);
-  advance(60000);
-  expect(visibleText(container)).toBe(HEADLINE_PHRASES[0]);
-  expect(screen.getByRole('button')).toHaveClass('is-settled');
+  expect(screen.getByRole('button')).not.toHaveClass('is-settled');
 });
 
-test.each(['focus', 'pointerEnter'])('%s settles with a complete accessible phrase and no letter announcements', event => {
+test('request input settles permanently, while restored text, autofocus and unrelated input do not', () => {
+  const view = render(<><HomeHeadline onSelect={jest.fn()} /><textarea id="pick-prompt-input" aria-label="Request" defaultValue="Saved request" autoFocus /><input aria-label="Other" /></>);
+  expect(screen.getByRole('textbox', { name: 'Request' })).toHaveFocus();
+  const button = screen.getByRole('button');
+  expect(button).not.toHaveClass('is-settled');
+  fireEvent.input(screen.getByRole('textbox', { name: 'Other' }), { target: { value: 'Other text' } });
+  fireEvent.pointerEnter(button);
+  expect(button).not.toHaveClass('is-settled');
+  fireEvent.input(screen.getByRole('textbox', { name: 'Request' }), { target: { value: 'Edited request' } });
+  expect(button).toHaveClass('is-settled');
+  view.rerender(<HomeHeadline onSelect={jest.fn()} />);
+  expect(button).toHaveClass('is-settled');
+});
+
+test.each(['focus'])('%s settles with a complete accessible phrase and no letter announcements', event => {
   const select = jest.fn();
   const { container } = render(<HomeHeadline onSelect={select} />);
   const button = screen.getByRole('button', { name: `Use this example: ${HEADLINE_PHRASES[0]}` });
@@ -105,7 +115,7 @@ test('changing motion preference settles permanently even if preference is chang
   expect(screen.getByRole('button')).toHaveClass('is-settled');
 });
 
-test('an existing or focused request stops animation immediately and never restarts', () => {
+test('a busy request settles animation immediately and never restarts', () => {
   const { rerender } = render(<HomeHeadline onSelect={jest.fn()} />);
   rerender(<HomeHeadline onSelect={jest.fn()} paused />);
   expect(screen.getByRole('button')).toHaveClass('is-settled');

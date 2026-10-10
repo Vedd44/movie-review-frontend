@@ -1961,7 +1961,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}${shouldRenderPickResultSection && !isRequestEditing ? " rb-intro--request-sent" : ""}`} aria-labelledby="home-hero-title">
         <div className="rb-intro-copy">
           {shouldRenderPickResultSection && !isRequestEditing ? <h1 id="home-hero-title">What should I watch?</h1> : <HomeHeadline
-            paused={isHeroInputFocused || Boolean(pickPrompt) || isPickBusy}
+            paused={isPickBusy}
             onSelect={(request) => {
               if (!pickPrompt) {
                 setPickPrompt(request);
