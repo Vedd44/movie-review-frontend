@@ -63,6 +63,8 @@ const getSavedMetaLabel = (tabId, movie) => {
 };
 
 const normalizeSavedMovie = (movie = {}) => ({
+  // Manage actions reuse this snapshot; retain metadata and feedback semantics.
+  ...movie,
   id: Number(movie?.id || 0) || null,
   title: String(movie?.title || "").trim() || "Saved movie",
   poster_path: movie?.poster_path || null,

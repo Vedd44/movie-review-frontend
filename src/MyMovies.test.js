@@ -114,3 +114,26 @@ test("My Movies switches a rejected title to Watched and can restore recommendat
   expect(restored.skipped).toEqual([]);
   expect(tasteProfileService.getPickExcludedIds(restored, { prompt: 'a crime movie' })).not.toContain(movie.id);
 });
+
+test("Manage preserves a saved movie's full metadata when marking it Watched", async () => {
+  const detailedMovie = {
+    ...movie,
+    runtime: 125,
+    genre_ids: [80, 18],
+    genre_names: ["Crime", "Drama"],
+    popularity: 42,
+    source_type: "reelbot_pick",
+    taste_feedback: false,
+  };
+  const profile = tasteProfileService.toggleWatchlist(tasteProfileService.createEmptyProfile(), detailedMovie);
+  reelbotCloudService.bootstrapUserState.mockResolvedValue(snapshot(profile));
+  renderLibrary();
+  await screen.findByRole("heading", { name: movie.title });
+  fireEvent.click(statuses().getByRole("button", { name: "Watched" }));
+  await waitFor(() => expect(reelbotCloudService.saveUserState).toHaveBeenCalledTimes(1));
+  const savedProfile = reelbotCloudService.saveUserState.mock.calls[0][1];
+  expect(savedProfile.watchlist[0]).toMatchObject(detailedMovie);
+  expect(savedProfile.seen[0]).toMatchObject(detailedMovie);
+  expect(savedProfile.recentMovies).toEqual([]);
+  expect(screen.getByText("125 min")).toBeInTheDocument();
+});
