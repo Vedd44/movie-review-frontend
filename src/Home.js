@@ -35,6 +35,7 @@ import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { getPromptCategory, trackProductEvent } from "./analytics";
 import { COLLECTIONS } from "./collections";
 import CollectionPreviewCard from "./components/CollectionPreviewCard";
+import useFeaturedCollections from "./hooks/useFeaturedCollections";
 
 const PICK_LOADING_MESSAGES = ["Finding your pick…"];
 
@@ -661,6 +662,7 @@ const getInitialFeedState = (view = "latest", page = 1) => {
 };
 
 function Home({ routeView = "popular", isFeedRoute = false }) {
+  const featured = useFeaturedCollections(COLLECTIONS);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, openAuthPrompt } = useAuth();
@@ -1956,6 +1958,21 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   }), [activePick, displayedMovies, includeTheatrical, isFeedRoute, movieType, originalPickPrompt, persistentExcludedIds, pickPrompt, selectedMood, swapHistoryExcludedIds, visibleBackupPicks]);
   useAskReelbotPageContext(askReelbotPageContext);
 
+  const featuredCollectionSection = !isFeedRoute ? (
+    <section className={`home-collections-section${featured.isOctober ? " home-collections-section--october" : ""}`} aria-labelledby="home-collections-title">
+      <div className="section-header home-collections-head">
+        <div>
+          <h2 id="home-collections-title" className="section-title">{featured.heading}</h2>
+          <p className="section-subtitle">{featured.description}</p>
+        </div>
+        <Link to="/collections" className="home-collections-view-all">View all collections <span aria-hidden="true">→</span></Link>
+      </div>
+      <div className="home-collections-grid">
+        {featured.collections.map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} compact note={featured.notes[collection.slug]} />)}
+      </div>
+    </section>
+  ) : null;
+
   return (
     <div className={`browse-page home-page${isFeedRoute ? " feed-page" : ""}`}>
       {!isFeedRoute ? <section id="pick-for-me" className={`rb-intro${shouldRenderPickResultSection ? " rb-intro--has-pick" : ""}${shouldRenderPickResultSection && !isRequestEditing ? " rb-intro--request-sent" : ""}`} aria-labelledby="home-hero-title">
@@ -2115,6 +2132,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         </section>
         ) : null}
 
+        {featured.isOctober ? featuredCollectionSection : null}
+
         <section id="movie-grid" className="home-browse-section">
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
@@ -2244,20 +2263,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         ) : null}
         </section>
 
-        {!isFeedRoute ? (
-          <section className="home-collections-section" aria-labelledby="home-collections-title">
-            <div className="section-header home-collections-head">
-              <div>
-                <h2 id="home-collections-title" className="section-title">Explore our latest collections</h2>
-                <p className="section-subtitle">A few useful places to start when you know the kind of movie you want.</p>
-              </div>
-              <Link to="/collections" className="home-collections-view-all">View all collections <span aria-hidden="true">→</span></Link>
-            </div>
-            <div className="home-collections-grid">
-              {COLLECTIONS.slice(0, 3).map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} compact />)}
-            </div>
-          </section>
-        ) : null}
+        {!featured.isOctober ? featuredCollectionSection : null}
 
         {!isFeedRoute ? <section className="home-magic-section" aria-labelledby="home-magic-title">
           <div className="home-magic-intro">

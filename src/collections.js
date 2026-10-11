@@ -31,7 +31,7 @@ export const COLLECTIONS = [
     eyebrow: "Shorter watches",
     description: "Tense, sharp and done before the two-hour mark. A lineup of thrillers that make every minute count.",
     prompt: "A great thriller under two hours",
-    movies: ["run-lola-run-1998","phone-booth-2003","red-eye-2005","source-code-2011","a-simple-plan-1998","calibre-2018","the-guilty-2018","blue-ruin-2014","cop-car-2015","panic-room-2002","green-room-2016","breakdown-1997","identity-2003","the-gift-2015","unsane-2018"],
+    movies: ["run-lola-run-1998","phone-booth-2003","red-eye-2005","source-code-2011","calibre-2018","the-guilty-2018","blue-ruin-2014","cop-car-2015","panic-room-2002","green-room-2016","breakdown-1997","identity-2003","the-gift-2015","unsane-2018"],
   },
   {
     slug: "smart-sci-fi-movies",
@@ -151,7 +151,7 @@ export const COLLECTIONS = [
 
   {
     slug: "best-halloween-movies", title: "Best Halloween Movies", eyebrow: "Halloween season",
-    description: "Pumpkin-lit streets, ghosts, witches and just enough menace. A lineup of movies that actually feel like Halloween.",
+    description: "Ghosts, witches, autumn nights and Halloween mayhem. These picks range from playful favourites to full-on horror.",
     prompt: "Give me a great Halloween movie", categories: ["Seasonal", "Occasion"],
     movies: ["halloween-1978","trick-r-treat-2007","hocus-pocus-1993","beetlejuice-1988","the-nightmare-before-christmas-1993","scream-1996","the-addams-family-1991","sleepy-hollow-1999","casper-1995","monster-house-2006","coraline-2009","the-craft-1996","practical-magic-1998","paranorman-2012","the-lost-boys-1987","the-witches-1990","edward-scissorhands-1990","ghostbusters-1984","the-crow-1994","donnie-darko-2001"],
   },

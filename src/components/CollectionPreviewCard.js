@@ -4,7 +4,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../discovery";
 import collectionMovieManifest from "../generatedCollectionPreviews.json";
 
-export default function CollectionPreviewCard({ collection, compact = false }) {
+export default function CollectionPreviewCard({ collection, compact = false, note = "" }) {
   const [previewMovies, setPreviewMovies] = useState([]);
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +31,7 @@ export default function CollectionPreviewCard({ collection, compact = false }) {
       </div>
       <div className="collection-preview-copy">
         <h2>{collection.title}</h2>
-        {!compact ? <p>{collection.description}</p> : null}
+        {note ? <p className="collection-preview-note">{note}</p> : !compact ? <p>{collection.description}</p> : null}
         <span className="collection-preview-cta">Explore collection <span aria-hidden="true">→</span></span>
       </div>
     </Link>

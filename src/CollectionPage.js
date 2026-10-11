@@ -1,7 +1,7 @@
 import { collectionTitle } from "./seoTitles";
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
 import CollectionPreviewCard from "./components/CollectionPreviewCard";
@@ -34,7 +34,19 @@ function CollectionCard({ movie }) {
 }
 
 export function CollectionsIndex() {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeCategory = COLLECTION_CATEGORIES.find(
+    (category) => category.toLowerCase() === searchParams.get("category")
+  ) || "All";
+
+  const setActiveCategory = (category) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (category === "All") nextParams.delete("category");
+    else nextParams.set("category", category.toLowerCase());
+    // Keep category choices in history so Back restores the collection list.
+    // Re-selecting the active chip must not add an identical history entry.
+    if (nextParams.toString() !== searchParams.toString()) setSearchParams(nextParams);
+  };
 
   const filteredCollections = useMemo(() => COLLECTIONS.filter((collection) =>
     activeCategory === "All" || collection.categories?.includes(activeCategory)

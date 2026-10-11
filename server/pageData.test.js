@@ -120,3 +120,19 @@ test('persistent or long metadata throttling remains bounded and preserves retry
   assert.equal(calls,expectedCalls);
  }
 });
+
+test('homepage editorial links and cache expiration match the client campaign', async () => {
+  const collections = require('./collections').readCollections();
+  const { getFeaturedCollections, OCTOBER_START, OCTOBER_END } = require('../src/featuredCollections');
+  const fetcher = async () => ({ ok: true, json: async () => ({results:[]}) });
+  for (const now of [OCTOBER_START - 1, OCTOBER_START, OCTOBER_END - 500, OCTOBER_END]) {
+    const data = await getPageData('/', new URLSearchParams(), { collections, fetcher, now });
+    const featured = getFeaturedCollections(collections, now);
+    assert.ok(data.content.includes(featured.heading));
+    for (const c of featured.collections) assert.ok(data.content.includes(`/collections/${c.slug}`));
+    assert.equal((data.content.match(/<li>/g) || []).length, 3);
+    if (now === OCTOBER_END - 500 || now === OCTOBER_START - 1) assert.equal(data.cacheMaxAgeSeconds, 0);
+    if (now < OCTOBER_END && now >= OCTOBER_START) assert.ok(data.cacheMaxAgeSeconds + data.cacheStaleSeconds <= Math.floor((OCTOBER_END - now) / 1000));
+    if (now === OCTOBER_END) assert.ok(!data.content.includes('/collections/best-halloween-movies'));
+  }
+});

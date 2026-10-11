@@ -15,7 +15,9 @@ const paths = new Set(['/privacy','/terms','/collections',...collections.map(c=>
 for (const movie of Object.values(movies)) for (const person of [movie.director_credit,...(movie.top_cast_credits || [])]) if(person?.canonical_slug) paths.add('/people/'+person.canonical_slug);
 // Vercel serves the root index before fallback rewrites. Publish the homepage
 // document at build time, while detail routes use the cached page function.
-Promise.all([getPageData('/', new URLSearchParams(), {collections, movies}), fetchDiscoveryPaths()])
+// Static HTML deliberately stays evergreen: it cannot expire at a calendar boundary.
+// The client selects the current editorial shelf from the same collection selector.
+Promise.all([getPageData('/', new URLSearchParams(), {collections, movies, featuredMode: "evergreen"}), fetchDiscoveryPaths()])
   .then(([data, freshDiscoveryPaths]) => {
     const discovery = [...discoverySnapshot, ...freshDiscoveryPaths];
     fs.writeFileSync('build/sitemap-curated.xml', buildSitemap(paths));

@@ -1,6 +1,7 @@
 const {movieTitle, personTitle, collectionTitle} = require('../src/seoTitles');
 const personDescription = require('../src/personDescription');
 const copy = require('../src/productCopy');
+const { getFeaturedCollections, getNextFeaturedBoundary } = require('../src/featuredCollections');
 const legalCopy = require('../src/legalCopy.json');
 const { parseSharedPick } = require('../src/sharedPick');
 const ORIGIN = 'https://reelbot.movie';
@@ -51,7 +52,7 @@ const STATIC = {
   '/reset-password': ['Reset Password | ReelBot','Reset your password','Reset your ReelBot password.'],
   '/search': ['Search | ReelBot','Search movies','Search movies by title, actor, franchise or director.'],
 };
-async function getPageData(rawPath, params = new URLSearchParams(), {collections=[], movies={}, fetcher=fetch} = {}) {
+async function getPageData(rawPath, params = new URLSearchParams(), {collections=[], movies={}, fetcher=fetch, now=Date.now(), featuredMode="seasonal"} = {}) {
   let path;
   try { path = decodeURIComponent(rawPath); } catch { return missing('/404'); }
   if (!path.startsWith('/') || path.startsWith('//') || /[<>\x00-\x1f?#]/.test(path)) return missing('/404');
@@ -85,7 +86,15 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
       const feed = (payload?.results || []).map(m=>({...m,canonical_slug:m.canonical_slug || `${String(m.title).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}${m.release_date ? '-'+m.release_date.slice(0,4) : ''}`}));
       data.content = movieLinks(feed.slice(0,20));
       if (isFeed && page < (payload?.total_pages || 1)) data.content += link(`${path}?page=${page+1}`,'Next page');
-      if (path === '/') data.content += '<h2>Movie collections</h2><ul>'+collections.slice(0,6).map(c=>`<li>${link('/collections/'+c.slug,c.title)}</li>`).join('')+'</ul>';
+      if (path === '/') {
+        const featured = getFeaturedCollections(collections, now, featuredMode);
+        data.content += `<h2>${escapeHtml(featured.heading)}</h2><p>${escapeHtml(featured.description)}</p><ul>` + featured.collections.map(c=>`<li>${link('/collections/'+c.slug,c.title)}${featured.notes[c.slug] ? `<p>${escapeHtml(featured.notes[c.slug])}</p>` : ''}</li>`).join('')+'</ul>' + link('/collections', 'View all collections');
+        // Never let a cached homepage carry this campaign past its boundary.
+        const boundary = getNextFeaturedBoundary(now);
+        const untilBoundary = boundary === null ? Infinity : Math.max(0, Math.floor((boundary - Number(now)) / 1000));
+        data.cacheMaxAgeSeconds = Math.min(3600, untilBoundary);
+        data.cacheStaleSeconds = Math.min(86400, untilBoundary - data.cacheMaxAgeSeconds);
+      }
     }
     if (path === '/') {
       data.content = `<p>${escapeHtml(copy.intro)}</p><p>Try a mood, a movie you love, or how much time you have.</p>` + data.content;
