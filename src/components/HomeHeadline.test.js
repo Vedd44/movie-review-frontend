@@ -40,12 +40,14 @@ test.each(HEADLINE_PHRASES.map((phrase, index) => [index, phrase]))('reveals ran
   expect(button).toHaveClass('is-settled');
 });
 
-test('StrictMode and ordinary rerenders preserve the mounted character nodes without JS animation timers', () => {
+test('StrictMode and ordinary rerenders preserve nodes and one bounded completion timer', () => {
   const { container, rerender } = render(<StrictMode><HomeHeadline onSelect={jest.fn()} /></StrictMode>);
   const first = container.querySelector('.headline-character');
   rerender(<StrictMode><HomeHeadline onSelect={jest.fn()} /></StrictMode>);
   expect(container.querySelector('.headline-character')).toBe(first);
   expect(screen.getByText('I want to watch...')).toBeVisible();
+  expect(jest.getTimerCount()).toBe(1);
+  advance(2000);
   expect(jest.getTimerCount()).toBe(0);
   expect(container.querySelector('.headline-cursor')).toBeNull();
 });
@@ -90,7 +92,7 @@ test.each(['focus'])('%s settles with a complete accessible phrase and no letter
   const button = screen.getByRole('button', { name: `Use this example: ${HEADLINE_PHRASES[0]}` });
   expect(screen.getByRole('heading', { level: 1 })).toHaveAttribute('aria-live', 'off');
   expect(container.querySelector('.headline-phrase-visible')).toHaveAttribute('aria-hidden', 'true');
-  expect(button).toHaveAccessibleDescription(/Your existing text stays unchanged/);
+  expect(button).toHaveAccessibleDescription(/replacing any existing text/);
   fireEvent[event](button);
   expect(button).toHaveClass('is-settled');
   fireEvent.click(button);
@@ -130,4 +132,90 @@ test('a visit initially hidden pauses and reserves all complete phrases', () => 
   const measurements = [...container.querySelectorAll('.headline-phrase-measure')];
   expect(measurements.map(node => node.textContent)).toEqual(HEADLINE_PHRASES);
   measurements.forEach(node => expect(node).toHaveAttribute('aria-hidden', 'true'));
+});
+
+test('the reveal always settles completely even when CSS animation completion is lost', () => {
+  const { container } = render(<HomeHeadline onSelect={jest.fn()} />);
+  const nodes = [...container.querySelectorAll('.headline-character')];
+  advance(2000);
+  expect(screen.getByRole('button')).toHaveClass('is-settled');
+  expect([...container.querySelectorAll('.headline-character')]).toEqual(nodes);
+});
+
+test('an explicit request interaction settles without a native input event', () => {
+  const { rerender } = render(<HomeHeadline onSelect={jest.fn()} interactionVersion={0} />);
+  expect(screen.getByRole('button')).not.toHaveClass('is-settled');
+  rerender(<HomeHeadline onSelect={jest.fn()} interactionVersion={1} />);
+  expect(screen.getByRole('button')).toHaveClass('is-settled');
+});
+
+
+test('CSS completion settles immediately and cancels the fallback timer', () => {
+  const { container } = render(<HomeHeadline onSelect={jest.fn()} />);
+  const characters = container.querySelectorAll('.headline-character');
+  fireEvent.animationEnd(characters[characters.length - 1]);
+  expect(screen.getByRole('button')).toHaveClass('is-settled');
+  expect(jest.getTimerCount()).toBe(0);
+});
+
+test('hidden then visible, focus and blur, and repeated clicks cannot restart a completed phrase', () => {
+  const select = jest.fn();
+  const { unmount } = render(<HomeHeadline onSelect={select} />);
+  const button = screen.getByRole('button');
+  visibility.mockReturnValue(true);
+  fireEvent(document, new Event('visibilitychange'));
+  advance(2000);
+  visibility.mockReturnValue(false);
+  fireEvent(document, new Event('visibilitychange'));
+  fireEvent.focus(button);
+  fireEvent.blur(button);
+  fireEvent.click(button);
+  fireEvent.click(button);
+  expect(button).toHaveClass('is-settled');
+  expect(select).toHaveBeenCalledTimes(2);
+  expect(jest.getTimerCount()).toBe(0);
+  unmount();
+  expect(jest.getTimerCount()).toBe(0);
+});
+
+test('busy state blocks example replacement and becomes usable after loading ends', () => {
+  const select = jest.fn();
+  const { rerender } = render(<HomeHeadline onSelect={select} paused />);
+  const button = screen.getByRole('button');
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(select).not.toHaveBeenCalled();
+  rerender(<HomeHeadline onSelect={select} />);
+  expect(button).not.toBeDisabled();
+  expect(button).toHaveClass('is-settled');
+  fireEvent.click(button);
+  expect(select).toHaveBeenCalledTimes(1);
+});
+
+test('navigation remount gets a fresh reveal and clears the previous completion timer', () => {
+  const first = render(<HomeHeadline onSelect={jest.fn()} interactionVersion={5} />);
+  advance(400);
+  first.unmount();
+  expect(jest.getTimerCount()).toBe(0);
+  const second = render(<HomeHeadline onSelect={jest.fn()} interactionVersion={5} />);
+  expect(screen.getByRole('button')).not.toHaveClass('is-settled');
+  advance(2000);
+  expect(screen.getByRole('button')).toHaveClass('is-settled');
+  second.unmount();
+  expect(jest.getTimerCount()).toBe(0);
+});
+
+
+test('clicking during the reveal selects the entire phrase and cancels pending animation work', () => {
+  const select = jest.fn();
+  render(<HomeHeadline onSelect={select} />);
+  advance(200);
+  const button = screen.getByRole('button');
+  expect(button).not.toHaveClass('is-settled');
+  fireEvent.click(button);
+  expect(select).toHaveBeenCalledWith(headlineRequest(HEADLINE_PHRASES[0]));
+  expect(button).toHaveClass('is-settled');
+  expect(jest.getTimerCount()).toBe(0);
+  advance(2000);
+  expect(select).toHaveBeenCalledTimes(1);
 });

@@ -701,6 +701,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     initialPickSession.includeTheatrical ?? initialPickSession.currentPick?.resolved_preferences?.include_theatrical
   ));
   const [isRequestEditing, setIsRequestEditing] = useState(false);
+  const [headlineInteractionVersion, setHeadlineInteractionVersion] = useState(0);
   const [originalPickPrompt, setOriginalPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
   const [isHeroInputFocused, setIsHeroInputFocused] = useState(false);
@@ -1979,12 +1980,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         <div className="rb-intro-copy">
           {shouldRenderPickResultSection && !isRequestEditing ? <h1 id="home-hero-title">What should I watch?</h1> : <HomeHeadline
             paused={isPickBusy}
+            interactionVersion={headlineInteractionVersion}
             onSelect={(request) => {
-              if (!pickPrompt) {
-                setPickPrompt(request);
-                setActivePromptSuggestion("");
-                if (pickValidation) setPickValidation("");
-              }
+              if (isPickBusy) return;
+              cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
+              setPickPrompt(request);
+              setActivePromptSuggestion("");
+              if (pickValidation) setPickValidation("");
               document.getElementById("pick-prompt-input")?.focus({ preventScroll: true });
             }}
           />}
@@ -1999,6 +2001,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 activeSuggestion={activePromptSuggestion}
                 value={pickPrompt}
                 onSuggestionSelect={(value) => {
+                  setHeadlineInteractionVersion(version => version + 1);
                   cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
                   setPickPrompt(value);
                   setActivePromptSuggestion(value);
@@ -2007,6 +2010,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                   }
                 }}
                 onInputChange={(value) => {
+                  setHeadlineInteractionVersion(version => version + 1);
                   cancelRestoreState(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
                   setPickPrompt(value);
                   if (activePromptSuggestion && value.trim() !== activePromptSuggestion) {

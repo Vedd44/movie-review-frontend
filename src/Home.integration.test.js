@@ -93,9 +93,20 @@ test('keeps submitted request beside the pick and Edit restores it without anoth
   fireEvent.click(screen.getByRole('button',{name:'Edit',exact:true}));
   expect(input).toHaveValue('A clever mystery under 100 minutes');
   expect(axios.post.mock.calls.length).toBe(calls);
+  const firstExample = screen.getByRole('button', { name: /^Use this example:/ });
+  fireEvent.click(firstExample);
+  expect(firstExample).toHaveClass('is-settled');
   fireEvent.click(screen.getByRole('button',{name:'Cancel edit'}));
+  expect(screen.queryByRole('button', { name: /^Use this example:/ })).not.toBeInTheDocument();
   expect(input).not.toBeVisible();
   expect(screen.getByText('A clever mystery under 100 minutes')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  expect(input).toHaveValue('A clever mystery under 100 minutes');
+  const freshExample = screen.getByRole('button', { name: /^Use this example:/ });
+  expect(freshExample).not.toHaveClass('is-settled');
+  fireEvent.click(screen.getByRole('button', { name: 'Clear prompt' }));
+  expect(freshExample).toHaveClass('is-settled');
+  expect(input).toHaveValue('');
   expect(axios.post.mock.calls.length).toBe(calls);
 });
 
@@ -172,13 +183,15 @@ test.each(headlineExamples.map(([phrase, request], index) => [phrase, request, i
   } finally { random.mockRestore(); }
 });
 
-test.each(['My own request', '   '])('headline preserves existing input %p without submitting', async existing => {
+test.each(['My own request', '   '])('headline replaces existing input %p only after explicit selection without submitting', async existing => {
   render(<MemoryRouter><Home /></MemoryRouter>);
   const input = await screen.findByRole('textbox', {name: 'Describe the movie you want'});
   fireEvent.change(input, {target: {value: existing}});
   const calls = axios.post.mock.calls.length;
-  fireEvent.click(screen.getByRole('button', {name: /^Use this example:/}));
-  expect(input).toHaveValue(existing);
+  const example = screen.getByRole('button', {name: /^Use this example:/});
+  const request = example.getAttribute('aria-label').replace('Use this example: ', '').replace(/\.$/, '').replace(/^./, c => c.toUpperCase());
+  fireEvent.click(example);
+  expect(input).toHaveValue(request);
   expect(input).toHaveFocus();
   expect(axios.post.mock.calls.length).toBe(calls);
 });
@@ -222,8 +235,9 @@ test('Edit restores its saved request and autofocus without suppressing the new 
   fireEvent.wheel(document);
   fireEvent.pointerEnter(example);
   expect(example).not.toHaveClass('is-settled');
+  const request = example.getAttribute('aria-label').replace('Use this example: ', '').replace(/\.$/, '').replace(/^./, c => c.toUpperCase());
   fireEvent.click(example);
-  expect(input).toHaveValue('A clever mystery under 100 minutes');
+  expect(input).toHaveValue(request);
   expect(example).toHaveClass('is-settled');
   expect(axios.post.mock.calls.length).toBe(calls);
 });
@@ -273,4 +287,57 @@ test('outside October the evergreen shelf returns below Browse', async () => {
   const browse = document.getElementById('movie-grid');
   expect(browse.compareDocumentPosition(shelf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   now.mockRestore();
+});
+
+test('clearing a restored request settles the complete headline, then repeated example clicks replace the draft', async () => {
+  tasteProfileService.saveHomePickSession({ originalPrompt: 'My saved mystery request' });
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  const example = screen.getByRole('button', { name: /^Use this example:/ });
+  const request = example.getAttribute('aria-label').replace('Use this example: ', '').replace(/\.$/, '').replace(/^./, c => c.toUpperCase());
+  fireEvent.click(screen.getByRole('button', { name: 'Clear prompt' }));
+  expect(input).toHaveValue('');
+  expect(example).toHaveClass('is-settled');
+  for (let i = 0; i < 3; i++) {
+    fireEvent.change(input, { target: { value: `Different request ${i}` } });
+    fireEvent.click(example);
+    expect(input).toHaveValue(request);
+    expect(input).toHaveFocus();
+    expect(example).toHaveClass('is-settled');
+  }
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+
+test('a prompt chip then clear settles the headline without submitting or changing its phrase', async () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  const example = screen.getByRole('button', { name: /^Use this example:/ });
+  const label = example.getAttribute('aria-label');
+  const chip = document.querySelector('.pick-prompt-chip');
+  fireEvent.click(chip);
+  expect(input.value).toBeTruthy();
+  expect(example).toHaveClass('is-settled');
+  fireEvent.click(screen.getByRole('button', { name: 'Clear prompt' }));
+  expect(input).toHaveValue('');
+  expect(example).toHaveClass('is-settled');
+  expect(example).toHaveAttribute('aria-label', label);
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+test('request failure then retry editing and clearing keeps the example usable', async () => {
+  axios.post.mockRejectedValueOnce(new Error('Test request failure'));
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  fireEvent.input(input, { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Finding your movie…' })).not.toBeInTheDocument());
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit', exact: true }));
+  const example = await screen.findByRole('button', { name: /^Use this example:/ });
+  fireEvent.click(example);
+  expect(input.value).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear prompt' }));
+  expect(input).toHaveValue('');
+  expect(example).toHaveClass('is-settled');
+  expect(axios.post).toHaveBeenCalledTimes(1);
 });

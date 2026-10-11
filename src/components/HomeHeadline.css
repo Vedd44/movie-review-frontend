@@ -9,9 +9,9 @@
 .headline-phrase:hover .headline-phrase-visible { text-decoration: underline; text-decoration-color: var(--rb-gold); text-decoration-thickness: 1px; text-underline-offset: .12em; }
 .headline-phrase:focus-visible { outline: 2px solid var(--rb-gold); outline-offset: 6px; }
 /* A brief, one-shot reveal, with no blinking cursor or repeating phrase cycle. */
-.headline-character { animation: headline-type-character 1ms step-end both; }
+.headline-character { opacity: 1; animation: headline-type-character 1ms step-end both; }
 .headline-phrase.is-hidden .headline-character { animation-play-state: paused; }
-.headline-phrase.is-settled .headline-character { animation: none; }
+.headline-phrase.is-settled .headline-character { animation: none; opacity: 1; }
 @keyframes headline-type-character { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 1140px) { .rb-intro h1.rb-conversation-headline { font-size: 3.16rem; } }
 @media (max-width: 900px) { .rb-intro h1.rb-conversation-headline { font-size: 2.78rem; } }
