@@ -68,3 +68,68 @@ test('retains the single TMDB destination even with no availability data',async(
  expect(screen.getByRole('link',{name:/See all current viewing options/})).toHaveAttribute('href','https://www.themoviedb.org/movie/278/watch?locale=US');
  expect(screen.getByText('Use TMDB to see current streaming, rental, and purchase options.')).toBeInTheDocument();
 });
+
+
+test('shows a pending status for a slow lookup, keeping the TMDB action usable',async()=>{
+ let resolve;fetchWatchmodeAvailability.mockImplementationOnce(()=>new Promise(done=>{resolve=done;}));
+ render(<WatchAvailability movie={{id:278}} availability={fallback}/>);
+ expect(screen.queryByRole('status')).toBeNull();
+ act(()=>visibility([{isIntersecting:true}]));
+ expect(screen.getByRole('status')).toHaveTextContent('Checking streaming, rental, and purchase options…');
+ expect(screen.getByRole('link',{name:/See all current viewing options/})).toHaveAttribute('href',fallback.link);
+ await act(async()=>resolve(enhanced));
+ expect(screen.queryByRole('status')).toBeNull();
+ expect(screen.getByRole('link',{name:'Watch on Netflix'})).toBeInTheDocument();
+ expect(screen.getByRole('link',{name:'Watchmode'})).toBeInTheDocument();
+});
+
+test('does not show the empty fallback as final while the lookup is pending',async()=>{
+ let resolve;fetchWatchmodeAvailability.mockImplementationOnce(()=>new Promise(done=>{resolve=done;}));
+ render(<WatchAvailability movie={{id:278}} availability={null}/>);
+ act(()=>visibility([{isIntersecting:true}]));
+ expect(screen.getByRole('status')).toBeInTheDocument();
+ expect(screen.queryByText('Use TMDB to see current streaming, rental, and purchase options.')).toBeNull();
+ expect(screen.getByRole('link',{name:/See all current viewing options/})).toBeInTheDocument();
+ await act(async()=>resolve(null));
+ expect(screen.queryByRole('status')).toBeNull();
+ expect(screen.getByText('Use TMDB to see current streaming, rental, and purchase options.')).toBeInTheDocument();
+ expect(screen.getByText('Provider data from JustWatch via TMDB.')).toBeInTheDocument();
+});
+
+test('does not carry a previous movie pending state into a new movie',async()=>{
+ let resolve;fetchWatchmodeAvailability.mockImplementationOnce(()=>new Promise(done=>{resolve=done;}));
+ const view=render(<WatchAvailability movie={{id:278}} availability={fallback}/>);
+ act(()=>visibility([{isIntersecting:true}]));
+ expect(screen.getByRole('status')).toBeInTheDocument();
+ view.rerender(<WatchAvailability movie={{id:679}} availability={null}/>);
+ expect(screen.queryByRole('status')).toBeNull();
+ await act(async()=>resolve(enhanced));
+ expect(screen.queryByRole('status')).toBeNull();
+ expect(screen.queryByRole('link',{name:'Watch on Netflix'})).toBeNull();
+ await act(async()=>visibility([{isIntersecting:true}]));
+ expect(screen.queryByRole('status')).toBeNull();
+ expect(screen.getByRole('link',{name:'Watch on Netflix'})).toBeInTheDocument();
+});
+
+test('ignores completion after unmount and starts only one lookup for repeated visibility callbacks',async()=>{
+ let resolve;fetchWatchmodeAvailability.mockImplementationOnce(()=>new Promise(done=>{resolve=done;}));
+ const view=render(<WatchAvailability movie={{id:278}} availability={fallback}/>);
+ act(()=>{visibility([{isIntersecting:true}]);visibility([{isIntersecting:true}]);});
+ expect(fetchWatchmodeAvailability).toHaveBeenCalledTimes(1);
+ expect(screen.getByRole('status')).toBeInTheDocument();
+ view.unmount();
+ await act(async()=>resolve(enhanced));
+ expect(trackProductEvent).not.toHaveBeenCalled();
+});
+
+test('shows and clears pending feedback through the visibility fallback without IntersectionObserver',async()=>{
+ delete window.IntersectionObserver;
+ let resolve;fetchWatchmodeAvailability.mockImplementationOnce(()=>new Promise(done=>{resolve=done;}));
+ render(<WatchAvailability movie={{id:278}} availability={null}/>);
+ expect(screen.getByRole('status')).toBeInTheDocument();
+ fireEvent.scroll(window);fireEvent.resize(window);
+ expect(fetchWatchmodeAvailability).toHaveBeenCalledTimes(1);
+ await act(async()=>resolve(null));
+ expect(screen.queryByRole('status')).toBeNull();
+ expect(screen.getByText('Use TMDB to see current streaming, rental, and purchase options.')).toBeInTheDocument();
+});

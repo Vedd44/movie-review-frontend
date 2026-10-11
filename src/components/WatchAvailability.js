@@ -32,6 +32,7 @@ function WatchAvailability({ availability, sectionId, movie }) {
     const load = async () => {
       if (started) return;
       started = true;
+      setEnhanced({id:movieId,loading:true});
       const result = await fetchWatchmodeAvailability(movieId);
       if (!active) return;
       setEnhanced({id:movieId,availability:result});
@@ -53,6 +54,7 @@ function WatchAvailability({ availability, sectionId, movie }) {
     window.addEventListener("resize", check);
     return () => { active = false; window.removeEventListener("scroll",check); window.removeEventListener("resize",check); };
   }, [movieId]);
+  const isLoading = enhanced?.id === movieId && enhanced.loading === true;
   const watchedAvailability = enhanced?.id === movieId ? enhanced.availability : null;
   const displayed = mergeWatchAvailability(availability, watchedAvailability);
   const providerGroups = getProviderGroups(displayed);
@@ -69,6 +71,8 @@ function WatchAvailability({ availability, sectionId, movie }) {
           <p className="detail-secondary-text">Availability reported for {regionLabel} and subject to change.</p>
         </div>
       </div>
+
+      {isLoading ? <p className="detail-secondary-text" role="status">Checking streaming, rental, and purchase options…</p> : null}
 
       {providerGroups.length ? (
         <div className="watch-availability-list">
@@ -97,9 +101,9 @@ function WatchAvailability({ availability, sectionId, movie }) {
             </div>
           ))}
         </div>
-      ) : (
+      ) : !isLoading ? (
         <p className="detail-secondary-text watch-availability-empty">Use TMDB to see current streaming, rental, and purchase options.</p>
-      )}
+      ) : null}
 
       <div className="watch-availability-footer">
         {availabilityAction ? (
