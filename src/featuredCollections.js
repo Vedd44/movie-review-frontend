@@ -16,7 +16,7 @@ function getFeaturedCollections(collections, now = Date.now(), mode = "seasonal"
   const slugs = isOctober ? OCTOBER_SLUGS : EVERGREEN_SLUGS;
   return {
     isOctober,
-    heading: isOctober ? "For October" : "Explore our latest collections",
+    heading: isOctober ? "Oh, the Horror!" : "Explore our latest collections",
     description: isOctober
       ? "Halloween favourites, autumn atmosphere, or full-on scares. Find your kind of night."
       : "A few useful places to start when you know the kind of movie you want.",

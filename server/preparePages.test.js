@@ -34,6 +34,6 @@ test('the actual postbuild script keeps static homepage evergreen across campaig
     const html = writes.get('build/index.html');
     assert.ok(html.includes('/collections/best-90s-action-movies'));
     assert.ok(!html.includes('/collections/best-halloween-movies'));
-    assert.ok(!html.includes('For October'));
+    assert.ok(!html.includes('Oh, the Horror!'));
   }
 });

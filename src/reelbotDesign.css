@@ -1306,6 +1306,9 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .collection-preview-copy > h2:first-child,
 .pick-share-close + h2 { margin-top: 0; }
 
-/* October is one editorial shelf, not a site-wide theme. */
-.home-collections-section--october .home-collections-head { border-top: 1px solid var(--rb-line); padding-top: 24px; }
+/* The homepage continues on the page canvas, without the legacy inset slab. */
+.home-page:not(.feed-page) > .home-shell { background: transparent; }
+/* The first seasonal shelf follows the hero; shell padding already provides its gap. */
+.home-collections-section--october:first-child { margin-top: 0; padding-top: 0; }
+.home-collections-section--october .home-collections-head { border-top: 0; padding-top: 0; }
 .home-collections-section--october .collection-preview-note { color: #f4f0e9; font-size: .875rem; line-height: 1.5; margin: 10px 0 14px; max-width: 34ch; }

@@ -260,7 +260,7 @@ test('a saved Home request starts its reveal without overwriting or submitting t
 test('October editorial cards preserve the broad picker and stay off feed routes', async () => {
   const now = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-15T12:00:00Z'));
   const { unmount } = render(<MemoryRouter><Home /></MemoryRouter>);
-  expect(await screen.findByRole('heading', { name: 'For October' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Oh, the Horror!' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Find my movie' })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /Best Halloween Movies/ })).toHaveAttribute('href', '/collections/best-halloween-movies');
   expect(screen.getByText('From playful favourites to full-on horror.')).toBeInTheDocument();
@@ -272,7 +272,7 @@ test('October editorial cards preserve the broad picker and stay off feed routes
   expect(screen.getByRole('link', { name: /Scariest Movies Ever/ })).toBeInTheDocument();
   unmount();
   render(<MemoryRouter><Home isFeedRoute routeView="popular" /></MemoryRouter>);
-  expect(screen.queryByRole('heading', { name: 'For October' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Oh, the Horror!' })).not.toBeInTheDocument();
   now.mockRestore();
 });
 
@@ -281,7 +281,7 @@ test('outside October the evergreen shelf returns below Browse', async () => {
   const now = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-01T04:00:00Z'));
   render(<MemoryRouter><Home /></MemoryRouter>);
   expect(await screen.findByRole('heading', { name: 'Explore our latest collections' })).toBeInTheDocument();
-  expect(screen.queryByRole('heading', { name: 'For October' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Oh, the Horror!' })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: /Best 90s Action Movies/ })).toBeInTheDocument();
   const shelf = document.querySelector('.home-collections-section');
   const browse = document.getElementById('movie-grid');
