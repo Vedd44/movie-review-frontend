@@ -1308,6 +1308,10 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 
 /* The homepage continues on the page canvas, without the legacy inset slab. */
 .home-page:not(.feed-page) > .home-shell { background: transparent; }
+/* The shell already owns the page gutters; Browse must not inset them a second time. */
+.home-page:not(.feed-page) .home-browse-section { width: 100%; margin-inline: 0; background: transparent; border-top: 0; }
+.home-page:not(.feed-page) .home-browse-section::before,
+.home-page:not(.feed-page) .home-browse-section::after { content: none; }
 /* The first seasonal shelf follows the hero; shell padding already provides its gap. */
 .home-collections-section--october:first-child { margin-top: 0; padding-top: 0; }
 .home-collections-section--october .home-collections-head { border-top: 0; padding-top: 0; }
