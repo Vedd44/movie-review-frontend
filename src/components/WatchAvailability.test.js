@@ -133,3 +133,51 @@ test('shows and clears pending feedback through the visibility fallback without 
  expect(screen.queryByRole('status')).toBeNull();
  expect(screen.getByText('Use TMDB to see current streaming, rental, and purchase options.')).toBeInTheDocument();
 });
+
+test('uses the movie TMDB listings fallback when a cached Shudder link is known broken', async () => {
+ fetchWatchmodeAvailability.mockResolvedValue({...enhanced, subscription:[{id:1,name:'Shudder',direct_url:'https://www.shudder.com/movies/watch/halloween/ab2df38d42653606'}]});
+ const link = 'https://www.themoviedb.org/movie/948-halloween/watch?locale=US';
+ render(<WatchAvailability movie={{id:948}} availability={{...fallback,link}}/>);
+ await act(async()=>visibility([{isIntersecting:true}]));
+ expect(screen.queryByRole('link',{name:'Watch on Shudder'})).toBeNull();
+ expect(screen.getByText('Some provider links are unavailable. Use TMDB below for current viewing options.')).toBeInTheDocument();
+ expect(screen.getByRole('link',{name:'Rent on Apple TV'})).toHaveAttribute('href','https://tv.apple.com/movie/123');
+ const tmdb = screen.getByRole('link',{name:/See all current viewing options/});
+ expect(tmdb).toHaveAttribute('href',link);
+ expect(tmdb).toHaveAttribute('target','_blank');
+ expect(tmdb).toHaveAttribute('rel','noopener noreferrer');
+ fireEvent.click(tmdb);fireEvent.click(tmdb);
+ expect(fetchWatchmodeAvailability).toHaveBeenCalledTimes(1);
+ expect(trackProductEvent).toHaveBeenCalledWith('viewing_options_clicked',{movie_id:948,source:'watchmode'});
+});
+
+test.each([undefined,'javascript:alert(1)','https://tubitv.com/'])(
+ 'keeps a safe movie-specific TMDB fallback for an unusable provider URL: %s', async direct_url => {
+ fetchWatchmodeAvailability.mockResolvedValue({source:'watchmode',region:'US',subscription:[{id:1,name:'Provider',direct_url}]});
+ render(<WatchAvailability movie={{id:948}} availability={null}/>);
+ await act(async()=>visibility([{isIntersecting:true}]));
+ expect(screen.queryByRole('link',{name:'Watch on Provider'})).toBeNull();
+ expect(screen.getByRole('link',{name:/See all current viewing options/})).toHaveAttribute('href','https://www.themoviedb.org/movie/948/watch?locale=US');
+ expect(screen.getByText(/Some provider links are unavailable/)).toBeInTheDocument();
+});
+
+test('clears fallback feedback and updates the TMDB destination when navigating to another movie', async () => {
+ fetchWatchmodeAvailability.mockResolvedValueOnce({...enhanced,subscription:[{id:1,name:'Missing'}]});
+ const view = render(<WatchAvailability movie={{id:948}} availability={null}/>);
+ await act(async()=>visibility([{isIntersecting:true}]));
+ expect(screen.getByText(/Some provider links are unavailable/)).toBeInTheDocument();
+ view.rerender(<WatchAvailability movie={{id:679}} availability={null}/>);
+ expect(screen.queryByText(/Some provider links are unavailable/)).toBeNull();
+ expect(screen.getByRole('link',{name:/See all current viewing options/})).toHaveAttribute('href','https://www.themoviedb.org/movie/679/watch?locale=US');
+ await act(async()=>visibility([{isIntersecting:true}]));
+ expect(screen.getByRole('link',{name:'Watch on Netflix'})).toBeInTheDocument();
+ expect(screen.queryByText(/Some provider links are unavailable/)).toBeNull();
+});
+
+test('does not send the fallback to a different country than the reported direct offers', async () => {
+ fetchWatchmodeAvailability.mockResolvedValue({source:'watchmode',region:'US',subscription:[{id:1,name:'Missing'}]});
+ render(<WatchAvailability movie={{id:948}} availability={{region:'GB',link:'https://www.themoviedb.org/movie/948-halloween/watch?locale=GB'}}/>);
+ await act(async()=>visibility([{isIntersecting:true}]));
+ expect(screen.getByRole('link',{name:/See all current viewing options on TMDB/})).toHaveAttribute('href','https://www.themoviedb.org/movie/948/watch?locale=US');
+ expect(screen.getByText('Availability reported for the U.S. and subject to change.')).toBeInTheDocument();
+});

@@ -21,3 +21,26 @@ test('filters failed direct destinations even from a cached response',()=>{
  provider(296,'Tubi TV',{direct_url:'https://tubitv.com/movies/100053674'})],rent:[provider(30,'AppleTV',{direct_url:'javascript:alert(1)'})]});
  expect(result.free.map(p=>p.name)).toEqual(['Tubi TV']);expect(result.rent).toEqual([]);
 });
+
+test('records a fallback for missing, unsafe, generic and known-broken links without inventing provider offers', () => {
+ const result = mergeWatchAvailability(fallback, {...direct, subscription: [
+   provider(1, 'Missing'),
+   provider(2, 'Unsafe', {direct_url:'javascript:alert(1)'}),
+   provider(3, 'Generic', {direct_url:'https://tubitv.com/'}),
+   provider(4, 'Shudder', {direct_url:'https://www.shudder.com/movies/watch/halloween/ab2df38d42653606'}),
+   ...direct.subscription,
+ ]});
+ expect(result.hasUnavailableProviderLinks).toBe(true);
+ expect(result.subscription.map(p => p.name)).toEqual(['Prime Video', 'Paramount+ (Via Amazon Prime)']);
+ expect(mergeWatchAvailability(fallback, direct).hasUnavailableProviderLinks).toBe(false);
+ expect(mergeWatchAvailability(fallback, null).hasUnavailableProviderLinks).toBe(false);
+});
+
+test('an unusable duplicate does not hide a later usable direct link', () => {
+ const result = mergeWatchAvailability(null, {...direct, subscription: [
+   provider(1, 'Shudder', {direct_url:'https://www.shudder.com/movies/watch/halloween/ab2df38d42653606'}),
+   provider(1, 'Shudder', {direct_url:'https://www.shudder.com/movies/watch/halloween/new-id'}),
+ ]});
+ expect(result.subscription).toHaveLength(1);
+ expect(result.subscription[0].direct_url).toBe('https://www.shudder.com/movies/watch/halloween/new-id');
+});

@@ -106,9 +106,12 @@ function WatchAvailability({ availability, sectionId, movie }) {
       ) : null}
 
       <div className="watch-availability-footer">
+        {availabilityAction && displayed.hasUnavailableProviderLinks ? (
+          <p className="detail-secondary-text">Some provider links are unavailable. Use TMDB below for current viewing options.</p>
+        ) : null}
         {availabilityAction ? (
           <a onClick={() => trackProductEvent("viewing_options_clicked", { movie_id: Number(movie?.id) || 0, source })} href={availabilityAction.href} target="_blank" rel="noopener noreferrer" className="detail-text-action watch-now-primary-cta">
-            See all current viewing options <span aria-hidden="true">↗</span>
+            See all current viewing options on TMDB <span aria-hidden="true">↗</span>
           </a>
         ) : null}
         <p className="detail-secondary-text watch-now-footnote">{watchedAvailability ? <>Streaming data powered by <a href="https://www.watchmode.com/" target="_blank" rel="noopener noreferrer">Watchmode</a>.</> : "Provider data from JustWatch via TMDB."}</p>

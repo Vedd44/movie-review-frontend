@@ -38,3 +38,15 @@ test('rejects confirmed broken and generic destinations without dropping movie-s
  for (const href of ['https://tubitv.com/movies/100053674','https://watch.amazon.com/detail?gti=movie','https://www.philo.com/player/show/123','https://www.youtube.com/watch?v=otherPublicVideo']) expect(usableWatchProviderUrl(href)).toBe(href);
  expect(usableWatchProviderUrl('https://play.google.com/store/movies/details?id=movie&PAffiliateID=partner')).toBe('https://play.google.com/store/movies/details?id=movie');
 });
+
+test('rejects only the confirmed broken Halloween Shudder destination, including cached URL variants', () => {
+  for (const host of ['www.shudder.com', 'shudder.com', 'watch.shudder.com']) {
+    for (const suffix of ['', '/', '?tracking=cached', '#watch']) {
+      expect(usableWatchProviderUrl(`https://${host}/movies/watch/halloween/ab2df38d42653606${suffix}`)).toBe('');
+    }
+  }
+  const otherTitle = 'https://www.shudder.com/movies/watch/another-title/another-id';
+  const newHalloweenLink = 'https://www.shudder.com/movies/watch/halloween/new-id';
+  expect(usableWatchProviderUrl(otherTitle)).toBe(otherTitle);
+  expect(usableWatchProviderUrl(newHalloweenLink)).toBe(newHalloweenLink);
+});

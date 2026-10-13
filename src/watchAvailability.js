@@ -23,7 +23,7 @@ export function mergeWatchAvailability(tmdb, watchmode) {
   const sameRegion = !direct || direct.region === tmdb?.region;
   const fallback = sameRegion ? tmdb : null;
   const logos = fallback ? WATCH_GROUPS.flatMap(group => fallback[group] || []) : [];
-  const result = {...(direct || fallback),source:direct?'watchmode':'tmdb'};
+  const result = {...(direct || fallback),source:direct?'watchmode':'tmdb',hasUnavailableProviderLinks:false};
   for (const group of WATCH_GROUPS) {
     const providers = [], seen = new Set();
     for (const provider of direct?.[group] || []) {
@@ -31,7 +31,10 @@ export function mergeWatchAvailability(tmdb, watchmode) {
       if (seen.has(identity)) continue;
       const directUrl = usableWatchProviderUrl(provider.direct_url);
       // An unusable direct URL must not swallow an independently listed option.
-      if (!directUrl) continue;
+      if (!directUrl) {
+        result.hasUnavailableProviderLinks = true;
+        continue;
+      }
       seen.add(identity);
       providers.push({...provider,direct_url:directUrl,logo_path:providerLogo(provider,logos),source:'watchmode',destination:'provider'});
     }

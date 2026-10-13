@@ -95,6 +95,10 @@ export const usableWatchProviderUrl = value => {
   if (/^\/(?:[a-z]{2}\/)?(?:home|search|browse|live-tv|watch\/live-tv)?$/i.test(path)) return "";
   if (/(^|\.)pluto\.tv$/.test(host) && /\/(?:search|live-tv)(?:\/|$)/i.test(path)) return "";
   if (/(^|\.)philo\.com$/.test(host) && /\/player\/player(?:\/|$)/i.test(path)) return "";
+  // Verified 2026-10-12: this cached Halloween destination redirects to a
+  // Shudder 404. Match only this title path, not other Shudder offers.
+  if (["www.shudder.com", "shudder.com", "watch.shudder.com"].includes(host)
+    && path === "/movies/watch/halloween/ab2df38d42653606") return "";
   if (/(^|\.)youtube\.com$/.test(host) || host === "youtu.be") {
     const id = host === "youtu.be" ? path.slice(1) : url.searchParams.get("v");
     if (!id || UNAVAILABLE_YOUTUBE_VIDEOS.has(id)) return "";
