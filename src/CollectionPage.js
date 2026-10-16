@@ -14,7 +14,10 @@ import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { trackProductEvent } from "./analytics";
 import collectionMovieManifest from "./generatedCollectionMovies.json";
 
-function CollectionCard({ movie }) {
+import { collectionMovieNote, collectionItemList } from "./collectionEditorial";
+import { getSiteOrigin } from "./siteConfig";
+
+function CollectionCard({ movie, note }) {
   return (
     <article className="movie-card movie-card--browse collection-movie-card">
       <div className="movie-poster-shell">
@@ -27,6 +30,7 @@ function CollectionCard({ movie }) {
       <div className="movie-card-content">
         <MovieCardMeta movie={movie} />
         <h2 className="movie-card-title"><Link to={getMoviePath(movie)} className="movie-title-link">{movie.title}</Link></h2>
+        {note ? <p className="collection-movie-note">{note}</p> : null}
         {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
       </div>
     </article>
@@ -121,7 +125,7 @@ export default function CollectionPage() {
       { name: "Collections", path: "/collections" },
       { name: collection.title, path: `/collections/${collection.slug}` },
     ]),
-    movies.length ? buildItemListJsonLd(movies.map((movie) => ({ name: movie.title, path: getMoviePath(movie) }))) : null,
+    movies.length ? collectionItemList(collection, movies, getSiteOrigin()) : null,
   ].filter(Boolean) : [], [collection, movies]);
 
   usePageMetadata({
@@ -182,6 +186,7 @@ export default function CollectionPage() {
         <section className="collection-hero">
           <h1 className="browse-title">{collection.title}</h1>
           <p className="collection-dek">{collection.description}</p>
+          {collection.contentNote ? <p className="collection-content-note"><strong>Content guidance:</strong> {collection.contentNote}</p> : null}
           <button type="button" className="collection-share-button" onClick={shareCollection} aria-label={`Share ${collection.title}`}>
             Share collection <span aria-hidden="true">↗</span>
           </button>
@@ -191,7 +196,7 @@ export default function CollectionPage() {
           <div className="loading-message" role="status"><span className="status-glyph" aria-hidden="true"></span><span>Loading collection...</span></div>
         ) : !movies.length ? <div className="collection-empty" role="alert"><p>This collection is temporarily unavailable.</p><button className="reelbot-inline-button" onClick={() => window.location.reload()}>Try again</button></div> : (
           <div className="movie-list collection-movie-list">
-            {movies.map((movie) => <CollectionCard key={movie.id} movie={movie} />)}
+            {movies.map((movie) => <CollectionCard key={movie.id} movie={movie} note={collectionMovieNote(collection, movie)} />)}
           </div>
         )}
         {relatedCollections.length ? (

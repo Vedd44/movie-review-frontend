@@ -183,6 +183,7 @@ export const COLLECTIONS = [
     slug: "cozy-fall-movies", title: "Cozy Fall Movies", eyebrow: "Autumn watchlist",
     description: "Crisp air, warm kitchens, changing leaves and movies made for staying in. A lineup of films with peak fall atmosphere.",
     prompt: "Give me a cozy fall movie", categories: ["Seasonal", "Mood"],
+    movieNotes: {"when-harry-met-sally-1989": "Autumn walks, sharp conversation and a friendship that keeps changing shape. A warm choice when you want romance with wit.", "you-ve-got-mail-1998": "Bookstores, New York streets and gentle romantic escapism. Settle in for the cozy atmosphere and an easygoing evening.", "good-will-hunting-1997": "Boston warmth and quick wit, with real emotional weight beneath the comfort. Choose it when you want something heartfelt rather than light.", "dead-poets-society-1989": "An autumnal school setting and a reflective drama about finding your voice. Thoughtful and emotionally weighty rather than a carefree comfort watch."},
     movies: ["when-harry-met-sally-1989","you-ve-got-mail-1998","good-will-hunting-1997","dead-poets-society-1989","fantastic-mr-fox-2009","knives-out-2019","practical-magic-1998","little-women-2019","october-sky-1999","rushmore-1998","mona-lisa-smile-2003","the-royal-tenenbaums-2001","mystic-pizza-1988","remember-the-titans-2000","rudy-1993","the-village-2004","planes-trains-and-automobiles-1987","dan-in-real-life-2007","silver-linings-playbook-2012","harry-potter-and-the-prisoner-of-azkaban-2004"],
   },
   {
@@ -216,6 +217,38 @@ export const COLLECTIONS = [
     movies: ["the-thing-1982","fargo-1996","the-shining-1980","the-revenant-2015","misery-1990","the-hateful-eight-2015","wind-river-2017","the-holdovers-2023","snowpiercer-2013","the-grey-2012","doctor-zhivago-1965","groundhog-day-1993","let-the-right-one-in-2008","inside-llewyn-davis-2013","the-grand-budapest-hotel-2014","the-girl-with-the-dragon-tattoo-2011","a-simple-plan-1998","frozen-2013","the-ice-storm-1997","little-women-2019"],
   },
 
+  {
+      "slug": "animated-movies-for-adults",
+      "title": "Animated Movies for Adults",
+      "eyebrow": "Drawn from life",
+      "description": "Identity, memory and the need to connect, explored through animation that can make inner lives visible. Eight films for grown-up movie nights, from intimate memoir to unsettling science fiction.",
+      "prompt": "An animated movie for adults about identity, memory or connection",
+      "categories": [
+          "Genre",
+          "Mood"
+      ],
+      "contentNote": "For mature audiences. These films include war and displacement, mental-health themes, violence, nudity and sexual content. Perfect Blue includes sexual violence and disturbing imagery. Check individual content guidance when choosing.",
+      "movies": [
+          "persepolis-2007",
+          "mary-and-max-2009",
+          "anomalisa-2015",
+          "flee-2021",
+          "perfect-blue-1998",
+          "ghost-in-the-shell-1995",
+          "fantastic-planet-1973",
+          "waking-life-2001"
+      ],
+      "movieNotes": {
+          "persepolis-2007": "A sharp, personal coming-of-age memoir about keeping hold of yourself through political upheaval and life between cultures.",
+          "mary-and-max-2009": "An unlikely pen-pal friendship finds tenderness in loneliness and the small rituals that make connection possible. Warmth with substantial emotional weight; includes depression and suicide themes.",
+          "anomalisa-2015": "Stop-motion turns an ordinary business trip into an intimate, uncomfortable study of loneliness and the desire to feel seen. Includes explicit sexual content.",
+          "flee-2021": "An animated documentary where memory, displacement and the search for a safe place to belong become inseparable. Emotionally intense; includes sexual threat and brief real war footage.",
+          "perfect-blue-1998": "A disorienting psychological thriller about performance, public identity and the pressure of being watched. Includes sexual violence and disturbing imagery.",
+          "ghost-in-the-shell-1995": "A cyberpunk investigation that keeps returning to a deeply human question: what makes a self when bodies and memories can be altered? Includes violence and nudity.",
+          "fantastic-planet-1973": "Surreal worlds and strange scales turn science fiction into a provocative meditation on power, otherness and coexistence. Includes violence and nudity.",
+          "waking-life-2001": "A drifting, conversational dream of a film, using restless animation to explore consciousness, meaning and how we connect. Best for a reflective night."
+      }
+  },
 ];
 
 export const COLLECTION_CATEGORIES = ["All", "Seasonal", "Mood", "Genre", "Era", "Occasion"];

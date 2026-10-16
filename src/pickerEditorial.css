@@ -126,3 +126,29 @@
 @media (prefers-reduced-motion: reduce) {
   .picker-editorial .pick-primary-card { animation: none; transition: none; }
 }
+
+/* Home pick recovery stays beside the action that failed, with one clear retry. */
+.home-result-section .pick-session-recovery {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--rb-gold);
+  border-radius: 7px;
+  background: #211e15;
+  color: var(--rb-text);
+  text-align: left;
+}
+.home-result-section .pick-session-recovery-title { color: var(--rb-text); font-size: .9rem; }
+.home-result-section .pick-session-recovery-copy { color: var(--rb-text); font-size: .85rem; line-height: 1.55; }
+.home-result-section .pick-recovery-retry { margin-top: 12px; min-height: 44px; color: var(--rb-gold); }
+@media (max-width: 599px) {
+  /* The result already has a heading; leave the original composer available to Edit. */
+  .home-page .rb-intro--request-sent { display: none; }
+  .home-page .home-result-section { --pick-inset: 12px; }
+  .home-page .home-result-section > .section-header { padding-top: 16px; }
+  .home-page .home-result-section .pick-result-stage { padding-top: 16px; }
+  .home-result-section .picker-request { margin-top: 8px; padding-bottom: 8px; }
+  .home-result-section .picker-request .picker-request-actions { gap: 18px; }
+  .home-page .home-result-section .picker-editorial .pick-primary-fit-row { margin: 14px 0; }
+  .home-result-section .picker-editorial .pick-primary-hook { line-height: 1.55; }
+  .home-result-section .picker-editorial .picker-adjustments { margin-top: 12px; }
+}

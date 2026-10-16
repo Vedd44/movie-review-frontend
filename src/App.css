@@ -21416,3 +21416,7 @@ body,
 .admin-request-table td:nth-child(3), .admin-request-table td:nth-child(4) { min-width:240px; }
 .admin-request-table p { margin:8px 0; }
 .admin-request-table small { color:var(--text-secondary); }
+
+/* Collection-specific editorial context. */
+.collection-movie-note { margin: .65rem 0 0; font-size: .9rem; line-height: 1.55; color: var(--text-secondary, #b8b8c1); }
+.collection-content-note { max-width: 70ch; margin: 1rem 0; font-size: .9rem; line-height: 1.6; color: var(--text-secondary, #b8b8c1); }

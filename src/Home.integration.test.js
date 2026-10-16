@@ -134,7 +134,7 @@ test('refining a pick uses the committed request rather than the empty composer'
   const input=await screen.findByPlaceholderText(/A mood, a movie you love/i);
   fireEvent.change(input,{target:{value:prompt}});fireEvent.click(screen.getByRole('button',{name:'Find my movie'}));
   await screen.findByRole('heading',{name:'Aliens'});
-  fireEvent.click(screen.getByRole('button',{name:'Different angle'}));
+  fireEvent.click(screen.getByRole('button',{name:'Alternate take'}));
   await screen.findByRole('heading',{name:'Arrival'});
   expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({prompt,original_prompt:prompt,refinement:expect.objectContaining({id:'different_angle'})}));
 });
@@ -340,4 +340,108 @@ test('request failure then retry editing and clearing keeps the example usable',
   expect(input).toHaveValue('');
   expect(example).toHaveClass('is-settled');
   expect(axios.post).toHaveBeenCalledTimes(1);
+});
+
+
+test('failed alternate take keeps the movie, focuses one recovery, and retries the same request', async () => {
+  const prompt = 'movie about rockways funny';
+  const radioDays = { ...pickPayload, primary: { id: 16620, title: 'Radio Days', runtime: 89 }, resolved_preferences: { prompt }, resolved_intent: { prompt } };
+  let resolveRetry;
+  axios.post.mockResolvedValueOnce({ data: radioDays })
+    .mockRejectedValueOnce(new Error('Temporary network failure'))
+    .mockImplementationOnce(() => new Promise(resolve => { resolveRetry = resolve; }));
+  const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Describe the movie you want' }), { target: { value: prompt } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Radio Days' });
+  fireEvent.click(screen.getByRole('button', { name: 'Alternate take' }));
+  const retry = await screen.findByRole('button', { name: 'Retry adjustment' });
+  const alert = screen.getByRole('alert');
+  expect(alert).toHaveFocus();
+  expect(alert).toHaveTextContent('Your last pick is still here');
+  expect(screen.getAllByText(/ReelBot hit a snag/)).toHaveLength(1);
+  expect(screen.getByRole('heading', { name: 'Radio Days' })).toBeInTheDocument();
+  expect(retry.closest('.pick-result-actions-block')).not.toBeNull();
+  const failedPayload = axios.post.mock.calls[1][1];
+  expect(failedPayload).toEqual(expect.objectContaining({ prompt, original_prompt: prompt, refinement: expect.objectContaining({ id: 'different_angle' }) }));
+  fireEvent.click(retry);
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(3));
+  expect(axios.post.mock.calls[2][1]).toEqual(failedPayload);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Alternate take' })).toBeDisabled();
+  resolveRetry({ data: { ...radioDays, primary: { id: 1, title: 'The Flamingo Kid' } } });
+  await screen.findByRole('heading', { name: 'The Flamingo Kid' });
+  expect(screen.queryByRole('button', { name: 'Retry adjustment' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Alternate take' })).not.toBeDisabled();
+  errorLog.mockRestore();
+});
+
+test('renders actual alternatives and omits an empty section without inventing movies', async () => {
+  axios.post.mockResolvedValueOnce({ data: { ...pickPayload, alternates: [{ id: 2, title: 'Actual alternative' }] } })
+    .mockResolvedValueOnce({ data: { ...pickPayload, primary: { id: 3, title: 'Next pick' } } });
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Describe the movie you want' }), { target: { value: 'A movie tonight' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  expect(await screen.findByRole('heading', { name: 'Actual alternative' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Also worth considering' })).toBeInTheDocument();
+  expect(screen.queryByText(/No alternatives with this pick/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  await screen.findByRole('heading', { name: 'Next pick' });
+  expect(screen.queryByRole('heading', { name: 'Also worth considering' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Actual alternative' })).not.toBeInTheDocument();
+});
+
+test.each(['Edit', 'Start fresh'])('failed another-pick recovery clears on %s', async action => {
+  axios.post.mockResolvedValueOnce({ data: pickPayload }).mockRejectedValueOnce(new Error('Offline'));
+  const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Describe the movie you want' }), { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  expect(await screen.findByRole('button', { name: 'Retry another pick' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: action, exact: true }));
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Retry another pick' })).not.toBeInTheDocument();
+  expect(axios.post).toHaveBeenCalledTimes(2);
+  errorLog.mockRestore();
+});
+
+test('initial failure retries the submitted prompt and clears the fallback on success', async () => {
+  axios.post.mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce({ data: pickPayload });
+  const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Describe the movie you want' }), { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  expect(axios.post.mock.calls[1][1].prompt).toBe('A funny movie');
+  expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  errorLog.mockRestore();
+});
+
+test('failed another pick retries unchanged options and a new edited request clears recovery', async () => {
+  axios.post.mockResolvedValueOnce({ data: pickPayload })
+    .mockRejectedValueOnce(new Error('Offline'))
+    .mockRejectedValueOnce(new Error('Still offline'))
+    .mockResolvedValueOnce({ data: { ...pickPayload, primary: { id: 4, title: 'Fresh request result' } } });
+  const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  fireEvent.change(input, { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Retry another pick' }));
+  await screen.findByRole('button', { name: 'Retry another pick' });
+  expect(axios.post.mock.calls[2][1]).toEqual(axios.post.mock.calls[1][1]);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  fireEvent.change(input, { target: { value: 'A scary movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Fresh request result' });
+  expect(axios.post.mock.calls[3][1].prompt).toBe('A scary movie');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Retry another pick' })).not.toBeInTheDocument();
+  errorLog.mockRestore();
 });

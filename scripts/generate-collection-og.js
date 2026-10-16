@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
+const { requireCompletePosters } = require("../server/collectionOgSafety");
 
 const API = "https://movie-review-backend-zevb.onrender.com";
 const OUT = path.join(process.cwd(), "public", "social", "collections");
@@ -54,7 +55,7 @@ function wrapTitle(title, max = 24) {
 }
 
 async function render(collection) {
-    const posterBuffers = (await Promise.all(collection.movies.slice(0, 3).map(posterFor))).filter(Boolean);
+  const posterBuffers = requireCompletePosters(collection, await Promise.all(collection.movies.slice(0, 3).map(posterFor)));
   const composites = [];
   const canvasWidth = 2400;
   const canvasHeight = 1254;
