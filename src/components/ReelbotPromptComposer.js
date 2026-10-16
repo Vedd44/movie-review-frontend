@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useId, useRef, useState } from "react";
 
 function ReelbotPromptComposer({
   label,
@@ -7,6 +7,7 @@ function ReelbotPromptComposer({
   introText = "",
   suggestions = [],
   activeSuggestion = "",
+  collapseSuggestionsOnMobile = false,
   inputId,
   value,
   onSuggestionSelect,
@@ -22,6 +23,8 @@ function ReelbotPromptComposer({
   maxLength = 500,
 }) {
   const inputRef = useRef(null);
+  const suggestionsId = useId();
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const inputShellRef = useRef(null);
 
   const handleSuggestionClick = (prompt) => {
@@ -105,7 +108,19 @@ function ReelbotPromptComposer({
         ) : null}
       </div>
       {suggestions.length ? (
-        <div className="pick-prompt-suggestions">
+        <>
+        {collapseSuggestionsOnMobile ? (
+          <button
+            type="button"
+            className="pick-prompt-suggestions-toggle"
+            aria-expanded={suggestionsOpen}
+            aria-controls={suggestionsId}
+            onClick={() => setSuggestionsOpen(open => !open)}
+          >
+            {activeSuggestion ? `Suggestion: ${activeSuggestion}` : "Try a suggestion"} <span aria-hidden="true">{suggestionsOpen ? "−" : "+"}</span>
+          </button>
+        ) : null}
+        <div id={suggestionsId} className={`pick-prompt-suggestions${collapseSuggestionsOnMobile ? " pick-prompt-suggestions--collapsible" : ""}${suggestionsOpen ? " is-open" : ""}`}>
           {suggestions.map((prompt) => (
             <button
               key={prompt}
@@ -117,6 +132,7 @@ function ReelbotPromptComposer({
             </button>
           ))}
         </div>
+        </>
       ) : null}
       {errorText ? (
         <p id="pick-prompt-validation" className="pick-prompt-validation" role="alert">
