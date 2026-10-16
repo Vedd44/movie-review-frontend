@@ -121,5 +121,10 @@
     "api/product-events.js": {
       "maxDuration": 15
     }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "release/collections-editorial-20261015": false
+    }
   }
 }

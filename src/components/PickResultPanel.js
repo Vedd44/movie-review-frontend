@@ -2,7 +2,7 @@ import ArtworkFallback from "./ArtworkFallback";
 import PickCompanion from "./PickCompanion";
 import SharePick from "./SharePick";
 import MovieCopy from "./MovieCopy";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { trackProductEvent } from "../analytics";
 import { Link } from "react-router-dom";
 import TasteActionBar from "./TasteActionBar";
@@ -52,6 +52,8 @@ function PickResultPanel({
   refreshExhaustionMessage = "",
   recoveryTitle = "",
   recoveryMessage = "",
+  recoveryActionLabel = "Try again",
+  onRecoveryAction,
   refineActions = [],
   onRefineAction,
   hasActiveSession = false,
@@ -85,7 +87,14 @@ function PickResultPanel({
   const isActivePickLoading = hasPrimaryMovie && (loading || panelStatus === "loading_swap");
   const shouldShowStandaloneLoading = loading && !hasPrimaryMovie;
   const shouldShowFallbackState = !hasPrimaryMovie && (panelStatus === "exhausted" || panelStatus === "error");
-  const shouldShowInlineRecovery = hasPrimaryMovie && Boolean(recoveryTitle || recoveryMessage);
+  const shouldShowInlineRecovery = hasPrimaryMovie && !isActivePickLoading && Boolean(recoveryTitle || recoveryMessage);
+  const recoveryRef = useRef(null);
+  useEffect(() => {
+    if (shouldShowInlineRecovery && (panelStatus === "error" || panelStatus === "exhausted")) {
+      recoveryRef.current?.focus({ preventScroll: true });
+      recoveryRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
+    }
+  }, [panelStatus, shouldShowInlineRecovery]);
   const availableRefineActions = Array.isArray(refineActions) ? refineActions.filter((action) => action?.id && action?.label) : [];
   const primaryAvailabilityStatus = getAvailabilityStatus(primaryMovie, providerMap[primaryMovie?.id]);
   const bestFitLabel = rationale?.fitLabel || "Best fit";
@@ -93,7 +102,7 @@ function PickResultPanel({
 
   return (
     <div id={id} aria-busy={loading || undefined} className={`pick-result-stage${showCompanion ? " pick-result-stage--shareable picker-editorial" : ""}${primaryMovie ? " is-live" : ""}${isActivePickLoading ? " is-updating" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
-      {error && !shouldShowFallbackState ? <p className="error-message" role="status">{error}</p> : null}
+      {error && !shouldShowFallbackState && !shouldShowInlineRecovery ? <p className="error-message" role="status">{error}</p> : null}
 
       {!error && shouldShowStandaloneLoading ? (
         <div className="reelbot-loading-state" role="status">
@@ -189,6 +198,13 @@ function PickResultPanel({
                       </button>
                     ) : null}
                   </div>
+                  {shouldShowInlineRecovery ? (
+                    <div className="pick-session-recovery" ref={recoveryRef} tabIndex={-1} role={panelStatus === "error" ? "alert" : "status"}>
+                      {recoveryTitle ? <p className="pick-session-recovery-title">{recoveryTitle}</p> : null}
+                      {recoveryMessage ? <p className="pick-session-recovery-copy">{recoveryMessage}</p> : null}
+                      {onRecoveryAction ? <button type="button" className="reelbot-inline-button pick-recovery-retry" onClick={onRecoveryAction} disabled={isActivePickLoading}>{recoveryActionLabel}</button> : null}
+                    </div>
+                  ) : null}
                   {refreshExhaustionMessage ? (
                     <p className="pick-refresh-hint">{refreshExhaustionMessage}</p>
                   ) : null}
@@ -226,12 +242,6 @@ function PickResultPanel({
 
           {showCompanion ? <PickCompanion movie={primaryMovie} alternatives={visibleBackupMovies} refineActions={availableRefineActions} onRefine={onRefineAction} disabled={refreshDisabled} /> : null}
 
-          {shouldShowInlineRecovery ? (
-            <div className="pick-session-recovery">
-              {recoveryTitle ? <p className="pick-session-recovery-title">{recoveryTitle}</p> : null}
-              {recoveryMessage ? <p className="pick-session-recovery-copy">{recoveryMessage}</p> : null}
-            </div>
-          ) : null}
 
           {visibleBackupMovies.length ? (
             <section className="pick-backups-block">

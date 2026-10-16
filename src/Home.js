@@ -107,7 +107,7 @@ const PICK_REFINE_ACTIONS = [
   { id: "darker", label: "Darker", loadingMessage: "Taking this in a darker direction…" },
   { id: "shorter", label: "Shorter", loadingMessage: "Tightening the runtime a bit…" },
   { id: "more_like_this", label: "More like this", loadingMessage: "Staying close to this pick…" },
-  { id: "different_angle", label: "Different angle", loadingMessage: "Trying a nearby angle…" },
+  { id: "different_angle", label: "Alternate take", loadingMessage: "Finding an alternate take…" },
 ];
 
 const getContextualRefineActions = (movie = {}, prompt = "", resolvedIntent = {}) => {
@@ -736,6 +736,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const restoreStatusTimeoutRef = useRef(null);
   const pickRequestVersionRef = useRef(0);
   const pickControllerRef = useRef(null);
+  const [failedPickRequest, setFailedPickRequest] = useState(null);
   useEffect(() => () => { pickControllerRef.current?.abort(); pickRequestVersionRef.current += 1; }, []);
   const restoreVersionRef = useRef(0);
   const [isCompactHeroPreview, setIsCompactHeroPreview] = useState(() => {
@@ -1538,6 +1539,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     try {
       setPickStatus(options.isSwap ? PICK_STATUS.LOADING_SWAP : PICK_STATUS.LOADING);
       setPickLoadingMessageOverride(options.loadingMessage || "");
+      setFailedPickRequest(null);
       setPickError(null);
       setPickValidation("");
       trackProductEvent("recommendation_requested", {
@@ -1593,6 +1595,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       console.error("Error fetching ReelBot pick:", requestError);
       trackProductEvent("recommendation_failed", { kind: requestError?.intent === "MOVIE_IDENTIFICATION" ? "identification" : "recommendation", outcome: requestError?.code === PICK_STATUS.EXHAUSTED ? "no_match" : "failed", latency_ms: Date.now() - startedAt, theaters_toggle: Boolean(nextPreferences.include_theatrical) });
       const nextStatus = requestError?.code === PICK_STATUS.EXHAUSTED ? PICK_STATUS.EXHAUSTED : PICK_STATUS.ERROR;
+      if (nextStatus === PICK_STATUS.ERROR && previousPick?.primary) {
+        setFailedPickRequest({ preferences: nextPreferences, options });
+      }
 
       if (options.isSwap && previousPick?.primary) {
         setPickResult(previousPick);
@@ -1705,6 +1710,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setPickPrompt("");
     setIncludeTheatrical(false);
     setOriginalPickPrompt("");
+    setFailedPickRequest(null);
     setIsRequestEditing(false);
     setActivePromptSuggestion("");
     setPickError(null);
@@ -1865,6 +1871,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     setOnboardingResultActive(false);
     setLastPickMode("surprise");
     setOriginalPickPrompt("");
+    setFailedPickRequest(null);
     setIsRequestEditing(false);
     setSwapCount(0);
     setHasExpandedSwapPool(false);
@@ -1891,6 +1898,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       setPickValidation("");
       setLastPickMode("surprise");
       setOriginalPickPrompt("");
+    setFailedPickRequest(null);
     setIsRequestEditing(false);
       setSwapCount(0);
       setHasExpandedSwapPool(false);
@@ -2056,6 +2064,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 <h2 className="section-title">ReelBot’s pick</h2>
                 <PickRequestContext prompt={originalPickPrompt} disabled={isPickBusy} onReset={activePick ? handleStartFresh : undefined} onEdit={() => {
                   setPickPrompt(originalPickPrompt); setIsRequestEditing(true);
+                  setFailedPickRequest(null); setPickError(null);
+                  setPickStatus(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
                   document.getElementById("pick-for-me")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   window.requestAnimationFrame(() => document.getElementById("pick-prompt-input")?.focus({ preventScroll: true }));
                 }} />
@@ -2095,7 +2105,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             refreshLabel={isSwapLoading ? "Swapping…" : "Get another pick"}
             resetLabel="Start fresh"
             backupTitle="Also worth considering"
-            backupCopy="If you want another angle."
+            backupCopy="More options for your request."
             onRefreshChoices={pickResult?.primary ? () => {
               markFirstPickSummarySeen();
               return handleRefreshPick();
@@ -2105,6 +2115,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             resetDisabled={false}
             recoveryTitle={pickRecoveryTitle}
             recoveryMessage={pickRecoveryMessage}
+            recoveryActionLabel={failedPickRequest?.options?.isRefinement ? "Retry adjustment" : "Retry another pick"}
+            onRecoveryAction={failedPickRequest ? () => requestPick(failedPickRequest.preferences, failedPickRequest.options) : undefined}
             refineActions={contextualRefineActions}
             onRefineAction={activePick ? handleInlineRefinement : undefined}
             refineStatusLabel={inlineRefineStatus}
