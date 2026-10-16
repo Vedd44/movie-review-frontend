@@ -1316,3 +1316,20 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
 .home-collections-section--october:first-child { margin-top: 0; padding-top: 0; }
 .home-collections-section--october .home-collections-head { border-top: 0; padding-top: 0; }
 .home-collections-section--october .collection-preview-note { color: #f4f0e9; font-size: .875rem; line-height: 1.5; margin: 10px 0 14px; max-width: 34ch; }
+
+/* Phone picker: keep the decision prominent and optional inspiration quiet.
+   Desktop and result/edit compositions retain their existing presentation. */
+.pick-prompt-suggestions-toggle { display: none; }
+@media (max-width: 599px) {
+  .rb-intro:not(.rb-intro--has-pick) { padding-top: 22px; }
+  .rb-intro:not(.rb-intro--has-pick) .rb-intro-dek { font-size: .875rem; margin-bottom: 16px; }
+  .rb-intro:not(.rb-intro--has-pick) .pick-prompt-shell { min-height: 88px; }
+  .rb-intro:not(.rb-intro--has-pick) .pick-prompt-input { height: 88px; min-height: 88px; padding-top: 12px; padding-bottom: 12px; }
+  .rb-night-composer .pick-prompt-suggestions-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 8px 0; margin: 4px 0 8px; border: 0; border-radius: 4px; background: none; color: var(--rb-muted); font-size: .8rem; text-align: left; }
+  .rb-night-composer .pick-prompt-suggestions-toggle:hover { color: var(--rb-gold); }
+  .rb-night-composer .pick-prompt-suggestions--collapsible { display: none; }
+  .rb-night-composer .pick-prompt-suggestions--collapsible.is-open { display: grid; margin: 0 0 12px; }
+  .rb-night-composer .pick-prompt-suggestions--collapsible .pick-prompt-chip { min-height: 44px; }
+  .rb-intro:not(.rb-intro--has-pick) .rb-intro-films { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; padding-top: 16px; }
+  .rb-intro:not(.rb-intro--has-pick) .rb-intro-film-caption { order: -1; margin-top: 0; align-items: baseline; }
+}

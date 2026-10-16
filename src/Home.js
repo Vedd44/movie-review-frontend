@@ -2003,6 +2003,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div hidden={shouldRenderPickResultSection && !isRequestEditing} className={`rb-night-composer${isHeroInputFocused ? " is-focused" : ""}`}>
               <ReelbotPromptComposer
                 multiline
+                collapseSuggestionsOnMobile={!shouldRenderPickResultSection}
                 inputId="pick-prompt-input"
                 introText=""
                 suggestions={visiblePromptSuggestions.slice(0, 4)}
