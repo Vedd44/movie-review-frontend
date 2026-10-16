@@ -53,6 +53,7 @@ function PickResultPanel({
   recoveryTitle = "",
   recoveryMessage = "",
   recoveryActionLabel = "Try again",
+  recoveryPlacement = "primary",
   onRecoveryAction,
   refineActions = [],
   onRefineAction,
@@ -91,14 +92,25 @@ function PickResultPanel({
   const recoveryRef = useRef(null);
   useEffect(() => {
     if (shouldShowInlineRecovery && (panelStatus === "error" || panelStatus === "exhausted")) {
-      recoveryRef.current?.focus({ preventScroll: true });
-      recoveryRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
+      const frame = window.requestAnimationFrame(() => {
+        recoveryRef.current?.focus({ preventScroll: true });
+        recoveryRef.current?.scrollIntoView({ behavior: "auto", block: "center" });
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
   }, [panelStatus, shouldShowInlineRecovery]);
   const availableRefineActions = Array.isArray(refineActions) ? refineActions.filter((action) => action?.id && action?.label) : [];
   const primaryAvailabilityStatus = getAvailabilityStatus(primaryMovie, providerMap[primaryMovie?.id]);
   const bestFitLabel = rationale?.fitLabel || "Best fit";
   useEffect(() => { if (primaryMovie?.id && !loading) trackProductEvent("pick_presented", { movie_id: Number(primaryMovie.id) }); }, [primaryMovie?.id, loading]);
+
+  const recoveryContent = shouldShowInlineRecovery ? (
+                    <div className="pick-session-recovery" ref={recoveryRef} tabIndex={-1} role={panelStatus === "error" ? "alert" : "status"}>
+                      {recoveryTitle ? <p className="pick-session-recovery-title">{recoveryTitle}</p> : null}
+                      {recoveryMessage ? <p className="pick-session-recovery-copy">{recoveryMessage}</p> : null}
+                      {onRecoveryAction ? <button type="button" className="reelbot-inline-button pick-recovery-retry" onClick={onRecoveryAction} disabled={isActivePickLoading}>{recoveryActionLabel}</button> : null}
+                    </div>
+                  ) : null;
 
   return (
     <div id={id} aria-busy={loading || undefined} className={`pick-result-stage${showCompanion ? " pick-result-stage--shareable picker-editorial" : ""}${primaryMovie ? " is-live" : ""}${isActivePickLoading ? " is-updating" : ""}${!primaryMovie && !loading ? " pick-result-stage--empty" : ""}`}>
@@ -137,15 +149,12 @@ function PickResultPanel({
               )}
             </Link>
             <div className="pick-primary-content">
+              <div className="pick-primary-heading">
               <h3 className="pick-primary-title">
                 <Link to={getMoviePath(primaryMovie)} state={reelbotPickLinkState(primaryMovie)} className="movie-title-link">
                   {primaryMovie.title}
                 </Link>
               </h3>
-              <div className="pick-primary-fit-row">
-                <span className="pick-primary-fit-label">{bestFitLabel}</span>
-                {rationale?.summaryLine ? <p className="pick-primary-hook"><MovieCopy titles={[primaryMovie.title]}>{rationale.summaryLine}</MovieCopy></p> : null}
-              </div>
               <div className="movie-card-meta">
                 <span className="movie-card-chip">{getReleaseYear(primaryMovie.release_date)}</span>
                 {primaryMovie.runtime ? <span className="movie-card-chip">{primaryMovie.runtime} min</span> : null}
@@ -157,12 +166,12 @@ function PickResultPanel({
                   <span className="movie-card-chip movie-card-chip--seen">Seen before</span>
                 ) : null}
               </div>
-              {showCompanion ? <div className="pick-movie-utilities">
-                <TasteActionBar movie={primaryMovie} compact showSaveIcon disabled={refreshDisabled} showSeenAction={false} showSkipAction={false} showVibeAction={false} />
-                {primaryActionLabel === "Watch trailer" && onPrimaryAction ? <button className="pick-share-trigger" type="button" onClick={onPrimaryAction}>Watch trailer</button> : null}
-                <SharePick movie={primaryMovie} why={rationale?.summaryLine || rationale?.decisionSentence || primaryMovie.reason || ''} prompt={sharePrompt} disabled={refreshDisabled} />
-              </div> : null}
-              <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
+              </div>
+              <div className="pick-primary-fit-row">
+                <span className="pick-primary-fit-label">{bestFitLabel}</span>
+                {rationale?.summaryLine ? <p className="pick-primary-hook"><MovieCopy titles={[primaryMovie.title]}>{rationale.summaryLine}</MovieCopy></p> : null}
+              </div>
+
 
               <div className="pick-result-actions-block">
                 <div className="pick-primary-actions">
@@ -174,7 +183,7 @@ function PickResultPanel({
                       </button>
                     ) : null}
                     {onRefreshChoices && !hideRefreshCta ? (
-                      <button type="button" className="reelbot-inline-button pick-primary-secondary-action pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled}>
+                      <button type="button" className="reelbot-inline-button pick-primary-secondary-action pick-result-refresh" onClick={onRefreshChoices} disabled={refreshDisabled} title="Another movie for the same request">
                         {refreshLabel}
                       </button>
                     ) : null}
@@ -198,13 +207,7 @@ function PickResultPanel({
                       </button>
                     ) : null}
                   </div>
-                  {shouldShowInlineRecovery ? (
-                    <div className="pick-session-recovery" ref={recoveryRef} tabIndex={-1} role={panelStatus === "error" ? "alert" : "status"}>
-                      {recoveryTitle ? <p className="pick-session-recovery-title">{recoveryTitle}</p> : null}
-                      {recoveryMessage ? <p className="pick-session-recovery-copy">{recoveryMessage}</p> : null}
-                      {onRecoveryAction ? <button type="button" className="reelbot-inline-button pick-recovery-retry" onClick={onRecoveryAction} disabled={isActivePickLoading}>{recoveryActionLabel}</button> : null}
-                    </div>
-                  ) : null}
+                  {recoveryPlacement !== "refinement" || !showCompanion ? recoveryContent : null}
                   {refreshExhaustionMessage ? (
                     <p className="pick-refresh-hint">{refreshExhaustionMessage}</p>
                   ) : null}
@@ -237,10 +240,17 @@ function PickResultPanel({
                   ) : null}
                 </div>
               </div>
+              <ProviderBadgeRow badges={providerMap[primaryMovie.id]?.provider_badges} compact />
+              {showCompanion ? <div className="pick-movie-utilities">
+                <TasteActionBar movie={primaryMovie} compact showSaveIcon disabled={refreshDisabled} showSeenAction={false} showSkipAction={false} showVibeAction={false} />
+                {primaryActionLabel === "Watch trailer" && onPrimaryAction ? <button className="pick-share-trigger" type="button" onClick={onPrimaryAction}>Watch trailer</button> : null}
+                <SharePick movie={primaryMovie} why={rationale?.summaryLine || rationale?.decisionSentence || primaryMovie.reason || ''} prompt={sharePrompt} disabled={refreshDisabled} />
+              </div> : null}
+
             </div>
           </article>
 
-          {showCompanion ? <PickCompanion movie={primaryMovie} alternatives={visibleBackupMovies} refineActions={availableRefineActions} onRefine={onRefineAction} disabled={refreshDisabled} /> : null}
+          {showCompanion ? <PickCompanion recovery={recoveryPlacement === "refinement" ? recoveryContent : null} movie={primaryMovie} alternatives={visibleBackupMovies} refineActions={availableRefineActions} onRefine={onRefineAction} disabled={refreshDisabled} /> : null}
 
 
           {visibleBackupMovies.length ? (

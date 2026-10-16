@@ -20,3 +20,7 @@
 @media (prefers-reduced-motion: reduce) {
   .headline-character { animation: none !important; }
 }
+
+/* The editorial example is also a usable starting point. */
+.headline-phrase-visible { text-decoration: underline; text-decoration-color: #eac66d55; text-decoration-thickness: 1px; text-underline-offset: .16em; }
+.headline-example-arrow { display: inline-block; margin-left: .35em; color: var(--rb-gold); vertical-align: baseline; }

@@ -144,11 +144,64 @@
   /* The result already has a heading; leave the original composer available to Edit. */
   .home-page .rb-intro--request-sent { display: none; }
   .home-page .home-result-section { --pick-inset: 12px; }
-  .home-page .home-result-section > .section-header { padding-top: 16px; }
-  .home-page .home-result-section .pick-result-stage { padding-top: 16px; }
+  .home-page .home-result-section > .section-header { padding-top: 16px; margin-bottom: 8px; }
+  .home-page .home-result-section .pick-result-stage { padding-top: 12px; }
   .home-result-section .picker-request { margin-top: 8px; padding-bottom: 8px; }
   .home-result-section .picker-request .picker-request-actions { gap: 18px; }
   .home-page .home-result-section .picker-editorial .pick-primary-fit-row { margin: 14px 0; }
   .home-result-section .picker-editorial .pick-primary-hook { line-height: 1.55; }
   .home-result-section .picker-editorial .picker-adjustments { margin-top: 12px; }
+}
+
+/* Cohesive chooser: request, decision, then optional refinement. */
+.rb-night-composer .rb-check { margin: 0 0 12px; min-height: 44px; }
+.rb-night-composer .rb-composer-actions { padding-bottom: 4px; }
+.rb-composer-actions .rb-button svg { flex: 0 0 auto; }
+.picker-request { align-items: center; margin-top: 8px; padding-bottom: 12px; }
+.picker-request .picker-request-copy p { margin: 0; }
+.picker-request .picker-request-scope { display: block; margin-top: 5px; color: var(--rb-muted); text-transform: none; letter-spacing: 0; font-size: .75rem; }
+.picker-editorial .pick-primary-fit-row { order: 2; margin-top: 16px; }
+.picker-editorial .pick-result-actions-block { order: 3; }
+.picker-editorial .pick-primary-content > .provider-badge-row { order: 4; }
+.picker-editorial .pick-movie-utilities { order: 5; margin: 8px 0 0; }
+.picker-editorial .pick-result-refresh { background: transparent; border-color: var(--rb-line); color: var(--rb-muted); }
+.picker-editorial .picker-adjustments { border-top: 1px solid var(--rb-line); padding-top: 6px; margin-top: 12px; }
+.picker-refinements > summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--rb-text); font-size: .85rem; cursor: pointer; list-style: none; }
+.picker-refinements > summary::-webkit-details-marker { display: none; }
+.picker-refinements[open] > summary svg { transform: rotate(180deg); }
+.picker-refinements-intro { color: var(--rb-muted); font-size: .8rem; margin: 0 0 10px; line-height: 1.5; }
+.picker-editorial .picker-refinements .pick-companion-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 10px; }
+.picker-editorial .picker-refinements .pick-adjust-chip { display: flex; flex-direction: column; align-items: start; justify-content: center; gap: 4px; text-align: left; padding: 10px 12px; border: 1px solid var(--rb-line); min-height: 44px; }
+.picker-refinements .pick-adjust-chip small { font-size: .73rem; font-weight: 400; color: var(--rb-muted); line-height: 1.4; }
+@media (max-width: 599px) {
+  .home-result-section .picker-request { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: start; }
+  .home-result-section .picker-request .picker-request-copy { flex: 1 1 220px; }
+  .home-result-section .picker-request .picker-request-actions { flex-direction: row; align-items: center; gap: 14px; }
+  .home-result-section .picker-request .picker-request-copy { padding-top: 8px; }
+  .home-result-section .picker-request .picker-request-actions button { min-height: 44px; }
+  .home-page .picker-editorial .pick-primary-poster-link,
+  .browse-library-page .picker-editorial .pick-primary-poster-link { grid-row: 1 / 3; }
+  .home-page .picker-editorial .pick-primary-fit-row,
+  .browse-library-page .picker-editorial .pick-primary-fit-row { grid-row: 3; margin-top: 16px; }
+  .home-page .picker-editorial .pick-result-actions-block,
+  .browse-library-page .picker-editorial .pick-result-actions-block { grid-row: 4; }
+  .home-page .picker-editorial .pick-primary-content > .provider-badge-row,
+  .browse-library-page .picker-editorial .pick-primary-content > .provider-badge-row { grid-row: 5; }
+  .home-page .picker-editorial .pick-movie-utilities,
+  .browse-library-page .picker-editorial .pick-movie-utilities { grid-column: 1 / -1; grid-row: 6; margin-top: 6px; gap: 4px 16px; }
+  .picker-editorial .picker-adjustments { margin-top: 8px; padding-top: 6px; }
+}
+
+/* The result owns the page heading after submission on every screen. */
+.home-page .rb-intro--request-sent { display: none; }
+
+/* Keep title and facts together rather than stretching them to poster height. */
+.picker-editorial .pick-primary-heading { display: contents; }
+.picker-refinements .pick-session-recovery { margin: 2px 0 14px; }
+.home-result-section .pick-session-recovery { scroll-margin-top: 96px; scroll-margin-bottom: calc(96px + env(safe-area-inset-bottom)); }
+@media (max-width: 599px) {
+  .picker-editorial .pick-primary-heading { display: block; grid-column: 2; grid-row: 1 / 3; align-self: start; min-width: 0; }
+  .home-page .picker-editorial .pick-primary-heading .movie-card-meta,
+  .browse-library-page .picker-editorial .pick-primary-heading .movie-card-meta { margin-top: 10px; }
+  .home-result-section .picker-request .picker-request-copy { padding-top: 10px; }
 }

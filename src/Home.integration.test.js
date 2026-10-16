@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import Home from "./Home";
@@ -134,6 +134,7 @@ test('refining a pick uses the committed request rather than the empty composer'
   const input=await screen.findByPlaceholderText(/A mood, a movie you love/i);
   fireEvent.change(input,{target:{value:prompt}});fireEvent.click(screen.getByRole('button',{name:'Find my movie'}));
   await screen.findByRole('heading',{name:'Aliens'});
+  fireEvent.click(screen.getByText('Adjust this pick'));
   fireEvent.click(screen.getByRole('button',{name:'Alternate take'}));
   await screen.findByRole('heading',{name:'Arrival'});
   expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({prompt,original_prompt:prompt,refinement:expect.objectContaining({id:'different_angle'})}));
@@ -355,14 +356,15 @@ test('failed alternate take keeps the movie, focuses one recovery, and retries t
   fireEvent.change(await screen.findByRole('textbox', { name: 'Describe the movie you want' }), { target: { value: prompt } });
   fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
   await screen.findByRole('heading', { name: 'Radio Days' });
+  fireEvent.click(screen.getByText('Adjust this pick'));
   fireEvent.click(screen.getByRole('button', { name: 'Alternate take' }));
   const retry = await screen.findByRole('button', { name: 'Retry adjustment' });
   const alert = screen.getByRole('alert');
-  expect(alert).toHaveFocus();
+  await waitFor(() => expect(alert).toHaveFocus());
   expect(alert).toHaveTextContent('Your last pick is still here');
   expect(screen.getAllByText(/ReelBot hit a snag/)).toHaveLength(1);
   expect(screen.getByRole('heading', { name: 'Radio Days' })).toBeInTheDocument();
-  expect(retry.closest('.pick-result-actions-block')).not.toBeNull();
+  expect(retry.closest('.picker-refinements')).toHaveAttribute('open');
   const failedPayload = axios.post.mock.calls[1][1];
   expect(failedPayload).toEqual(expect.objectContaining({ prompt, original_prompt: prompt, refinement: expect.objectContaining({ id: 'different_angle' }) }));
   fireEvent.click(retry);
@@ -444,4 +446,76 @@ test('failed another pick retries unchanged options and a new edited request cle
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Retry another pick' })).not.toBeInTheDocument();
   errorLog.mockRestore();
+});
+
+
+test('canceling an edit discards theater scope changes and keeps the original request', async () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  fireEvent.change(input, { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  fireEvent.click(screen.getByRole('checkbox', { name: /Include .*theater/i }));
+  fireEvent.change(input, { target: { value: 'Different draft' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel edit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  expect(input).toHaveValue('A funny movie');
+  expect(screen.getByRole('checkbox', { name: /Include .*theater/i })).not.toBeChecked();
+  expect(axios.post).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel edit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
+  expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({ prompt: 'A funny movie', include_theatrical: false }));
+});
+
+test('submitting an edit commits its theater scope together with its prompt', async () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  fireEvent.change(input, { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  fireEvent.click(screen.getByRole('checkbox', { name: /Include .*theater/i }));
+  fireEvent.change(input, { target: { value: 'A new comedy' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
+  expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({ prompt: 'A new comedy', include_theatrical: true }));
+  expect(await screen.findByText('Search includes theater-only movies')).toBeVisible();
+  expect(trackProductEvent).toHaveBeenCalledWith('prompt_submitted', expect.objectContaining({ theaters_toggle: true }));
+});
+
+test('Surprise me from an edit commits draft theater scope without retaining the old prompt', async () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  fireEvent.change(input, { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  fireEvent.click(screen.getByRole('checkbox', { name: /Include .*theater/i }));
+  fireEvent.click(screen.getByRole('button', { name: 'Surprise me', exact: true }));
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
+  expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({ prompt: '', include_theatrical: true }));
+  expect(trackProductEvent).toHaveBeenCalledWith('surprise_me_clicked', expect.objectContaining({ theaters_toggle: true }));
+});
+
+
+test('Edit waits until the composer is visible before scrolling and focusing it', async () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  const input = await screen.findByRole('textbox', { name: 'Describe the movie you want' });
+  fireEvent.change(input, { target: { value: 'A funny movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Aliens' });
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Edit', exact: true })).not.toBeDisabled());
+  const frames = [];
+  const frameSpy = jest.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frames.push(callback); return frames.length; });
+  HTMLElement.prototype.scrollIntoView = jest.fn();
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  expect(input).toBeVisible();
+  expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+  expect(frames).toHaveLength(1);
+  act(() => { frames.forEach(callback => callback()); });
+  expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  expect(input).toHaveFocus();
+  frameSpy.mockRestore();
 });
