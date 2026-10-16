@@ -701,6 +701,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     initialPickSession.includeTheatrical ?? initialPickSession.currentPick?.resolved_preferences?.include_theatrical
   ));
   const [isRequestEditing, setIsRequestEditing] = useState(false);
+  const [draftIncludeTheatrical, setDraftIncludeTheatrical] = useState(includeTheatrical);
   const [headlineInteractionVersion, setHeadlineInteractionVersion] = useState(0);
   const [originalPickPrompt, setOriginalPickPrompt] = useState(() => String(initialPickSession.originalPrompt || ""));
   const [activePromptSuggestion, setActivePromptSuggestion] = useState("");
@@ -1851,21 +1852,25 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     // visible composer ready for the next request as soon as submission starts.
     setPickPrompt("");
     clearRestoreTimer();
-    trackProductEvent("prompt_submitted", { prompt_category: getPromptCategory(pickPrompt), theaters_toggle: includeTheatrical });
+    const nextIncludeTheatrical = isRequestEditing ? draftIncludeTheatrical : includeTheatrical;
+    trackProductEvent("prompt_submitted", { prompt_category: getPromptCategory(pickPrompt), theaters_toggle: nextIncludeTheatrical });
     setOnboardingResultActive(false);
     setLastPickMode("prompt");
     setOriginalPickPrompt(pickPrompt.trim());
     setSwapCount(0);
     setHasExpandedSwapPool(false);
-    await submitPick({}, { scrollToResults: true });
+    setIncludeTheatrical(nextIncludeTheatrical);
+    await submitPick({ include_theatrical: nextIncludeTheatrical }, { scrollToResults: true });
   };
 
   const handleSurprisePick = async () => {
+    const nextIncludeTheatrical = isRequestEditing ? draftIncludeTheatrical : includeTheatrical;
+    setIncludeTheatrical(nextIncludeTheatrical);
     cancelRestoreState(PICK_STATUS.LOADING);
     setPickResult(null);
     setSwapQueue([]);
     setCandidatePoolIds([]);
-    trackProductEvent("surprise_me_clicked", { page: "home", theaters_toggle: includeTheatrical });
+    trackProductEvent("surprise_me_clicked", { page: "home", theaters_toggle: nextIncludeTheatrical });
     clearRestoreTimer();
     setPickValidation("");
     setOnboardingResultActive(false);
@@ -1879,6 +1884,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       {
         prompt: "",
         source: "library",
+        include_theatrical: nextIncludeTheatrical,
       },
       {
         scrollToResults: true,
@@ -2035,14 +2041,14 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
                 placeholder={productCopy.placeholder}
                 errorText={pickValidation}
               />
+            <label className="rb-check"><input type="checkbox" checked={isRequestEditing ? draftIncludeTheatrical : includeTheatrical} onChange={(event) => (isRequestEditing ? setDraftIncludeTheatrical : setIncludeTheatrical)(event.target.checked)} disabled={isPickBusy} /><span>Include theater-only movies</span></label>
             <div className="rb-composer-actions">
               <button type="button" className="rb-button rb-button--primary" onClick={handlePickSubmit} disabled={isPickBusy}>
-                {isPickLoading && lastPickMode === "prompt" ? "Finding your movie…" : "Find my movie"}<span aria-hidden="true">↗</span>
+                {isPickLoading && lastPickMode === "prompt" ? "Finding your movie…" : "Find my movie"}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
               </button>
               <button type="button" className="rb-text-button" onClick={handleSurprisePick} disabled={isPickBusy}>{isPickLoading && lastPickMode === "surprise" ? "Finding a surprise…" : "Surprise me"}</button>
               {isRequestEditing ? <button type="button" className="rb-text-button" disabled={isPickBusy} onClick={() => { setIsRequestEditing(false); setPickPrompt(""); }}>Cancel edit</button> : null}
             </div>
-            <label className="rb-check"><input type="checkbox" checked={includeTheatrical} onChange={(event) => setIncludeTheatrical(event.target.checked)} disabled={isPickBusy} /><span>Include movies in theaters</span></label>
           </div>
         </div>
         <aside className="rb-intro-films" aria-label="Popular movies">
@@ -2062,13 +2068,15 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
           <div id="pick-result" aria-hidden="true"></div>
           <div className="section-header section-header--compact section-header--stacked-mobile">
             <div>
-                <h2 className="section-title">ReelBot’s pick</h2>
-                <PickRequestContext prompt={originalPickPrompt} disabled={isPickBusy} onReset={activePick ? handleStartFresh : undefined} onEdit={() => {
-                  setPickPrompt(originalPickPrompt); setIsRequestEditing(true);
+                <h1 className="section-title">ReelBot’s pick</h1>
+                <PickRequestContext includeTheatrical={includeTheatrical} prompt={originalPickPrompt} disabled={isPickBusy} onReset={activePick ? handleStartFresh : undefined} onEdit={() => {
+                  setPickPrompt(originalPickPrompt); setDraftIncludeTheatrical(includeTheatrical); setIsRequestEditing(true);
                   setFailedPickRequest(null); setPickError(null);
                   setPickStatus(activePick ? PICK_STATUS.READY : PICK_STATUS.IDLE);
-                  document.getElementById("pick-for-me")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  window.requestAnimationFrame(() => document.getElementById("pick-prompt-input")?.focus({ preventScroll: true }));
+                  window.requestAnimationFrame(() => {
+                    document.getElementById("pick-for-me")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    document.getElementById("pick-prompt-input")?.focus({ preventScroll: true });
+                  });
                 }} />
             </div>
           </div>
@@ -2116,6 +2124,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             resetDisabled={false}
             recoveryTitle={pickRecoveryTitle}
             recoveryMessage={pickRecoveryMessage}
+            recoveryPlacement={failedPickRequest?.options?.isRefinement ? "refinement" : "primary"}
             recoveryActionLabel={failedPickRequest?.options?.isRefinement ? "Retry adjustment" : "Retry another pick"}
             onRecoveryAction={failedPickRequest ? () => requestPick(failedPickRequest.preferences, failedPickRequest.options) : undefined}
             refineActions={contextualRefineActions}

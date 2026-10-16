@@ -66,6 +66,7 @@ export default function HomeHeadline({ onSelect, paused = false, interactionVers
         {Array.from(phrase).map((character, index) => <span key={index} className="headline-character"
           style={{ animationDelay: `${HEADLINE_START_MS + index * HEADLINE_CHARACTER_MS}ms` }}
           onAnimationEnd={index === phrase.length - 1 ? () => setSettled(true) : undefined}>{character}</span>)}
+        <svg className="headline-example-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
       </span>
     </button>
   </h1>

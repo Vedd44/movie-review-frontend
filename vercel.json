@@ -125,7 +125,8 @@
   "git": {
     "deploymentEnabled": {
       "release/collections-editorial-20261015": false,
-      "release/mobile-picker-hierarchy-20261016": false
+      "release/mobile-picker-hierarchy-20261016": false,
+      "release/cohesive-picker-journey-20261016": false
     }
   }
 }

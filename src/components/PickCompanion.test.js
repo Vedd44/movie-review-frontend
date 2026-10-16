@@ -92,6 +92,9 @@ test('keeps bounded request adjustments separate, disables pending actions, and 
   const props = { onRefine, refineActions };
   const view = render(app(props));
   expect(screen.getByRole('button', { name: 'Darker' })).not.toBeVisible();
+  expect(screen.getByRole('button', { name: 'Shorter' })).not.toBeVisible();
+  fireEvent.click(screen.getByText('Adjust this pick'));
+  expect(screen.getByRole('button', { name: 'Shorter' })).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Shorter' }));
   expect(onRefine).toHaveBeenCalledTimes(1);
   expect(onRefine).toHaveBeenCalledWith(refineActions[1]);
