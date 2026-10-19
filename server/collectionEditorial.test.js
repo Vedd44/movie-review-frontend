@@ -7,7 +7,7 @@ const { buildSitemap } = require('./sitemap');
 const collections = readCollections();
 const animation = collections.find(c => c.slug === 'animated-movies-for-adults');
 test('adult animation adds eight ordered picks, seven new to the existing 39 collections', () => {
-  assert.equal(collections.length, 40);
+  assert.equal(collections.filter(c => c.slug !== "haunted-house-ghost-stories").length, 40);
   assert.equal(animation.movies.length, 8);
   assert.equal(new Set(animation.movies).size, 8);
   assert.deepEqual(Array.from(animation.movies.filter(slug => collections.filter(c => c !== animation).some(c => c.movies.includes(slug)))), ['perfect-blue-1998']);

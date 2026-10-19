@@ -1,6 +1,7 @@
 import { createActivityRequestId, recordRequestActivity, deferProductTelemetry } from "./productTelemetry";
+import { browseHistoryKey, readBrowseHistory, writeBrowseHistory } from "./browseHistory";
 import ArtworkFallback from "./components/ArtworkFallback";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
@@ -66,13 +67,20 @@ function BrowseLibrary() {
   const normalizedPage = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
   const normalizedGenre = searchParams.get("genre") || "all";
 
-  const [movies, setMovies] = useState([]);
+  const { user, openAuthPrompt } = useAuth();
+  const historyKey = browseHistoryKey(user?.id || "guest", location.key,
+    JSON.stringify([normalizedView, normalizedMood, normalizedRuntime, normalizedGenre, normalizedPage]));
+  const initialHistory = useRef(readBrowseHistory(historyKey));
+  const restoreHistory = useRef(initialHistory.current);
+  const [filtersOpen, setFiltersOpen] = useState(initialHistory.current?.filtersOpen || false);
+  const [movies, setMovies] = useState(initialHistory.current?.movies || []);
+  const [loadedHistoryKey, setLoadedHistoryKey] = useState(initialHistory.current ? historyKey : null);
   const [genres, setGenres] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loading, setLoading] = useState(!initialHistory.current);
+  const [loadingMore, setLoadingMore] = useState(Boolean(initialHistory.current?.pendingPage));
   const [genreLoading, setGenreLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(initialHistory.current?.totalPages || 1);
   const [showReelbotPicker, setShowReelbotPicker] = useState(false);
   const [pickPrompt, setPickPrompt] = useState("");
   const [isLibraryRequestEditing, setIsLibraryRequestEditing] = useState(false);
@@ -85,7 +93,6 @@ function BrowseLibrary() {
   const [candidatePoolIds, setCandidatePoolIds] = useState([]);
   const [, setRefinementState] = useState(null);
   const { profile, behavioralMemory, actions: tasteActions, getPickExcludedIds } = useTasteProfile();
-  const { user, openAuthPrompt } = useAuth();
 
   useEffect(() => {
     setGenreLoading(true);
@@ -122,6 +129,18 @@ function BrowseLibrary() {
 
   useEffect(() => {
     let isCurrentRequest = true;
+    const saved = readBrowseHistory(historyKey);
+    if (saved) {
+      setMovies(saved.movies);
+      setLoadedHistoryKey(historyKey);
+      setTotalPages(saved.totalPages);
+      setFiltersOpen(saved.filtersOpen || false);
+      setLoading(false);
+      setLoadingMore(false);
+      setError(null);
+      restoreHistory.current = saved;
+      if (!saved.pendingPage) return undefined;
+    }
 
     if (normalizedPage === 1) {
       setLoading(true);
@@ -139,8 +158,10 @@ function BrowseLibrary() {
       .then((response) => {
         if (!isCurrentRequest) return;
         const incomingMovies = Array.isArray(response.data.results) ? response.data.results : [];
+        const nextTotalPages = response.data.total_pages || 1;
         setMovies((currentMovies) => mergeBrowseMoviePages(currentMovies, incomingMovies, normalizedPage === 1));
-        setTotalPages(response.data.total_pages || 1);
+        setTotalPages(nextTotalPages);
+        setLoadedHistoryKey(historyKey);
       })
       .catch((requestError) => {
         if (!isCurrentRequest) return;
@@ -159,7 +180,21 @@ function BrowseLibrary() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
+  }, [historyKey, normalizedGenre, normalizedPage, normalizedRuntime, normalizedView]);
+
+  useLayoutEffect(() => {
+    const saved = restoreHistory.current;
+    if (!saved || loading || movies !== saved.movies) return;
+    restoreHistory.current = null;
+    if (Number.isFinite(saved.scrollY)) window.scrollTo({ top: saved.scrollY, behavior: "instant" });
+  }, [loading, movies]);
+
+  useEffect(() => {
+    if (loading || loadingMore || error || loadedHistoryKey !== historyKey) return;
+    writeBrowseHistory(historyKey, {
+      ...readBrowseHistory(historyKey), movies, totalPages, filtersOpen, pendingPage: false,
+    });
+  }, [error, filtersOpen, historyKey, loadedHistoryKey, loading, loadingMore, movies, totalPages]);
 
   useEffect(() => {
     // Editing the next request should not erase the recommendation already on screen.
@@ -207,7 +242,7 @@ function BrowseLibrary() {
     [behavioralMemory, movies, normalizedView, selectedMoodConfig, suppressedMovieIds]
   );
 
-  const displayMovies = useMemo(() => {
+  const rankedDisplayMovies = useMemo(() => {
     if (filteredMovies.length >= 10) return filteredMovies;
     const includedIds = new Set(filteredMovies.map((movie) => movie.id));
     // The browse signal floor is a ranking/quality preference, not a reason to
@@ -223,18 +258,36 @@ function BrowseLibrary() {
     return [...filteredMovies, ...fillMovies].slice(0, 10);
   }, [filteredMovies, movies, suppressedMovieIds]);
 
+  const savedDisplayOrder = readBrowseHistory(historyKey)?.displayOrder;
+  const displayMovies = useMemo(() => {
+    if (!savedDisplayOrder?.length) return rankedDisplayMovies;
+    // A detail visit updates recency. Restore this history entry's visible order
+    // without changing fresh-query scoring or bringing back explicit exclusions.
+    const positions = new Map(savedDisplayOrder.map((id, index) => [id, index]));
+    return [...rankedDisplayMovies].sort((left, right) =>
+      (positions.get(left.id) ?? Infinity) - (positions.get(right.id) ?? Infinity));
+  }, [rankedDisplayMovies, savedDisplayOrder]);
+
+  const rememberBrowsePosition = () => {
+    if (loading || error) return;
+    writeBrowseHistory(historyKey, {
+      movies, totalPages, filtersOpen, scrollY: window.scrollY, pendingPage: loadingMore,
+      displayOrder: displayMovies.map(movie => movie.id),
+    });
+  };
+
   useEffect(() => {
     // Fill the initial browse surface with enough real titles to occupy the desktop grid.
     // Run after filteredMovies and updateFilters are defined so CI lint does not see
     // use-before-define / unstable dependency ordering.
-    if (loading || loadingMore || error || normalizedPage >= totalPages || filteredMovies.length >= 12) return;
+    if (loading || loadingMore || error || loadedHistoryKey !== historyKey || readBrowseHistory(historyKey)?.pendingPage || normalizedPage >= totalPages || filteredMovies.length >= 12) return;
     setLoadingMore(true);
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(normalizedPage + 1));
     if (!nextParams.get("view")) nextParams.set("view", normalizedView);
     setSearchParams(nextParams);
-  }, [error, filteredMovies.length, loading, loadingMore, normalizedPage, normalizedView, searchParams, setSearchParams, totalPages]);
+  }, [error, filteredMovies.length, historyKey, loadedHistoryKey, loading, loadingMore, normalizedPage, normalizedView, searchParams, setSearchParams, totalPages]);
 
   const libraryRationale = useMemo(
     () => buildRecommendationRationale({ pickResult, activePick: pickResult?.primary, profile }),
@@ -561,7 +614,7 @@ function BrowseLibrary() {
             </div>
           </div>
 
-          <details className="browse-filter-disclosure"><summary>Filters <span>{activeFilterChips.length ? `${activeFilterChips.length} active` : "Mood, genre & length"}</span></summary><div className="rb-browse-filters">
+          <details className="browse-filter-disclosure" open={filtersOpen} onToggle={(event) => setFiltersOpen(event.currentTarget.open)}><summary>Filters <span>{activeFilterChips.length ? `${activeFilterChips.length} active` : "Mood, genre & length"}</span></summary><div className="rb-browse-filters">
             <label>Mood<select aria-label="Mood" value={normalizedMood} onChange={(event) => updateFilters({ mood: event.target.value })}>{MOOD_FILTERS.map((filter) => <option key={filter.id} value={filter.id}>{filter.label}</option>)}</select></label>
             <label>Genre<select aria-label="Genre" value={normalizedGenre} onChange={(event) => updateFilters({ genre: event.target.value })} disabled={genreLoading}><option value="all">All genres</option>{genres.map((genre) => <option key={genre.id} value={String(genre.id)}>{genre.name}</option>)}</select></label>
             <label>Length<select aria-label="Runtime" value={normalizedRuntime} onChange={(event) => updateFilters({ runtime: event.target.value })}>{PICK_RUNTIME_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
@@ -683,7 +736,7 @@ function BrowseLibrary() {
                   className="movie-card movie-card--browse"
                 >
                   <div className="movie-poster-shell">
-                    <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
+                    <Link to={getMoviePath(movie)} onClick={rememberBrowsePosition} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
                       {movie.poster_path ? (
                         <img
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
@@ -711,14 +764,14 @@ function BrowseLibrary() {
                     </MovieCardMeta>
 
                     <h3 className="movie-card-title">
-                      <Link to={getMoviePath(movie)} className="movie-title-link">
+                      <Link to={getMoviePath(movie)} onClick={rememberBrowsePosition} className="movie-title-link">
                         {movie.title}
                       </Link>
                     </h3>
                     {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
 
                     <div className="movie-card-actions-row">
-                      <Link to={getMoviePath(movie)} className="card-link">
+                      <Link to={getMoviePath(movie)} onClick={rememberBrowsePosition} className="card-link">
                         View Details
                       </Link>
                     </div>

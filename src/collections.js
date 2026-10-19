@@ -69,7 +69,7 @@ export const COLLECTIONS = [
     slug: "best-movies-under-90-minutes", title: "Best Movies Under 90 Minutes", eyebrow: "Short watches",
     description: "Great movies, minimal commitment. A lineup of sharp, satisfying picks that get in and get out in under 90 minutes.",
     prompt: "Give me a great movie under 90 minutes", categories: ["Mood", "Occasion"],
-    movies: ["run-lola-run-1998","toy-story-1995","before-sunset-2004","the-iron-giant-1999","what-we-do-in-the-shadows-2014","frances-ha-2013","stand-by-me-1986","phone-booth-2003","cloverfield-2008","palm-springs-2020","perfect-blue-1998","attack-the-block-2011","the-lion-king-1994","rec-2007","host-2020"],
+    movies: ["run-lola-run-1998","toy-story-1995","before-sunset-2004","the-iron-giant-1999","what-we-do-in-the-shadows-2014","frances-ha-2013","stand-by-me-1986","phone-booth-2003","cloverfield-2008","perfect-blue-1998","attack-the-block-2011","the-lion-king-1994","rec-2007","host-2020"],
   },
   {
     slug: "movies-when-you-dont-know-what-to-watch", title: "Movies to Watch When You Don’t Know What to Watch", eyebrow: "Decision solved",
@@ -248,6 +248,32 @@ export const COLLECTIONS = [
           "fantastic-planet-1973": "Surreal worlds and strange scales turn science fiction into a provocative meditation on power, otherness and coexistence. Includes violence and nudity.",
           "waking-life-2001": "A drifting, conversational dream of a film, using restless animation to explore consciousness, meaning and how we connect. Best for a reflective night."
       }
+  },
+  {
+    "slug": "haunted-house-ghost-stories",
+    "title": "Haunted Houses, Unfinished Lives",
+    "eyebrow": "Behind closed doors",
+    "description": "A locked room. A sound upstairs. A house that seems to know its new occupant. These five ghost stories make buildings feel inhabited by more than the people walking through them. The pleasure is in watching a room change meaning: a refuge becomes a trap, a familiar corridor starts to feel wrong, an old secret presses into the present. Choose The Others for candlelit mystery, The Haunting for unnerving sound and space, or The Devil’s Backbone for a ghost story shaped by history. Best watched when you can give the quiet moments your attention.",
+    "prompt": "An atmospheric haunted-house ghost story about grief, isolation or secrets from the past.",
+    "categories": [
+      "Seasonal",
+      "Genre"
+    ],
+    "contentNote": "These films can be intensely frightening. Themes include bereavement, death and danger involving children, psychological distress and violence. The Devil’s Backbone includes bloody violence. This is not a family-viewing or low-scare guarantee; check individual content guidance before choosing.",
+    "movies": [
+      "the-others-2001",
+      "the-haunting-1963",
+      "the-innocents-1961",
+      "the-changeling-1980",
+      "the-devil-s-backbone-2001"
+    ],
+    "movieNotes": {
+      "the-others-2001": "Start here for candlelit mystery. Closed curtains and carefully observed household rules turn an isolated home into a puzzle; Nicole Kidman gives its unease a human center. Go in knowing as little as possible.",
+      "the-haunting-1963": "Choose this when you want to listen as closely as you look. The rooms and corridors of Hill House make a group investigation feel increasingly private, especially for a woman desperate to belong somewhere. Black-and-white, patient and deeply unsettling.",
+      "the-innocents-1961": "A governess watches two children in a country house, and every glance begins to carry a second meaning. Widescreen compositions invite you to search the edges of the image. Pick it for ambiguity and a creeping distrust of what you think you saw.",
+      "the-changeling-1980": "A grieving composer moves into a house with a history he cannot ignore. George C. Scott grounds the supernatural mystery in adult sorrow, while ordinary sounds and objects become unnerving clues. The most detective-like choice here.",
+      "the-devil-s-backbone-2001": "An orphanage at the end of the Spanish Civil War gives this haunting a wider history to reckon with. Del Toro brings tenderness to the children’s point of view without softening the danger around them. Choose it for an emotionally weighty ghost story; Spanish-language with subtitles depending on the edition."
+    }
   },
 ];
 

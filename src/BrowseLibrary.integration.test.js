@@ -1,3 +1,4 @@
+import { clearBrowseHistory } from "./browseHistory";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
@@ -28,6 +29,7 @@ jest.mock("./hooks/useTasteProfile");
 jest.mock("./context/AuthContext", () => ({ useAuth: jest.fn() }));
 
 beforeEach(() => {
+  clearBrowseHistory();
   trackProductEvent.mockImplementation(jest.requireActual("./analytics").trackProductEvent);
   recordRequestActivity.mockImplementation(jest.requireActual("./productTelemetry").recordRequestActivity);
   useAuth.mockReturnValue({ user: null, openAuthPrompt: jest.fn(), maybePromptToSavePicks: jest.fn() });

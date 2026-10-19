@@ -87,3 +87,15 @@ test('character job titles do not count as crew roles, while genuine mixed credi
   expect(screen.getByRole('link',{name:'Open Written Film'})).toBeInTheDocument();
   expect(screen.queryByRole('link',{name:'Open Acting Cameo'})).not.toBeInTheDocument();
 });
+
+
+test('public person Share uses canonical production link and actor name', async () => {
+  axios.get.mockResolvedValue({ data: { ...person, name: 'Sigourney Weaver', canonical_slug: 'sigourney-weaver', known_for_department: 'Acting' } });
+  Object.defineProperty(navigator, 'share', { configurable: true, value: jest.fn().mockResolvedValue() });
+  render(<MemoryRouter initialEntries={['/people/sigourney-weaver?source=private']}><Routes><Route path="/people/:personSlug" element={<PersonDetails />} /></Routes></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Share Sigourney Weaver' }));
+  expect(navigator.share).toHaveBeenCalledWith({ title: 'Sigourney Weaver | ReelBot', url: 'https://reelbot.movie/people/sigourney-weaver' });
+  expect(screen.queryByRole('link', { name: /Radarr/ })).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Share Sigourney Weaver' })).toBeEnabled());
+  delete navigator.share;
+});

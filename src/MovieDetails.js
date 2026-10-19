@@ -1,5 +1,7 @@
+import DetailShare from "./components/DetailShare";
 import { movieTitle } from "./seoTitles";
 import MovieCopy from "./components/MovieCopy";
+import ReviewExcerpts from "./components/ReviewExcerpts";
 import { parseSharedPick } from "./sharedPick";
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -79,11 +81,6 @@ const formatCurrency = (value) => {
 const isUpcomingMovie = (movie) => {
   const releaseDate = movie?.release_date ? new Date(movie.release_date) : null;
   return Boolean((movie?.status && movie.status !== "Released") || (releaseDate && !Number.isNaN(releaseDate.getTime()) && releaseDate > new Date()));
-};
-
-const formatReviewMeta = (review, source = "TMDB user reviews") => {
-  if (!review) return source;
-  return [review.author || source, typeof review.rating === "number" ? `${review.rating}/10` : null].filter(Boolean).join(" • ");
 };
 
 function PersonCard({ person, role, featured = false }) {
@@ -384,6 +381,7 @@ function MovieDetails() {
                   </a>
                 ) : null}
               </div>
+              <DetailShare key={getMoviePath(movie)} path={getMoviePath(movie)} title={`${movie.title}${movie.release_year ? ` (${movie.release_year})` : ""} | ReelBot`} name={movie.title} />
               <div className="detail-meta-strip">{metaItems.map((item) => <span key={item} className="detail-meta-pill">{item}</span>)}</div>
               {movie.genre_names?.length ? <p className="detail-genres">{movie.genre_names.join(" · ")}</p> : null}
               {movie.director_credit?.id ? <p className="detail-director-line">Directed by <Link to={getPersonPath(movie.director_credit)}>{movie.director_credit.name}</Link></p> : movie.director ? <p className="detail-director-line">Directed by {movie.director}</p> : null}
@@ -437,15 +435,7 @@ function MovieDetails() {
         ) : null}
         <CastAndDetails movie={movie} />
 
-        {showReviewSplit ? (
-          <section className="detail-info-card detail-info-card--split">
-            <div className="detail-section-head detail-section-head--facts"><div><h2 className="detail-section-title">Viewer Split</h2><p className="detail-secondary-text">What viewers respond to most — and what pushes others away.</p></div>{reviewHighlights.count ? <div className="results-count">{reviewHighlights.count} reviews</div> : null}</div>
-            <div className="review-split-grid">
-              {reviewHighlights.positive ? <article className="review-split-card review-split-card--positive"><div className="review-split-kicker">What lands</div><p className="review-split-quote">“{reviewHighlights.positive.content}”</p><div className="review-split-meta">{formatReviewMeta(reviewHighlights.positive, reviewHighlights.source)}</div></article> : null}
-              {reviewHighlights.negative ? <article className="review-split-card review-split-card--negative"><div className="review-split-kicker">What misses</div><p className="review-split-quote">“{reviewHighlights.negative.content}”</p><div className="review-split-meta">{formatReviewMeta(reviewHighlights.negative, reviewHighlights.source)}</div></article> : null}
-            </div>
-          </section>
-        ) : null}
+        {showReviewSplit ? <ReviewExcerpts highlights={reviewHighlights} /> : null}
 
         {displayedSimilarMovies.length ? (
           <section id="more-like-this" className="detail-info-card detail-anchor-target">
