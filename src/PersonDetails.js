@@ -1,3 +1,4 @@
+import DetailShare from "./components/DetailShare";
 import { personTitle } from "./seoTitles";
 import personDescription from './personDescription';
 import ArtworkFallback from "./components/ArtworkFallback";
@@ -196,6 +197,7 @@ function PersonDetails() {
 
           <div className="browse-copy">
             <h1 className="browse-title">{person.name}</h1>
+            <DetailShare key={getPersonPath(person)} path={getPersonPath(person)} title={`${person.name} | ReelBot`} name={person.name} />
             <p className="person-summary">{[person.known_for_department, `${person.movie_credits?.length || 0} movie credits`].filter(Boolean).join(" · ")}</p>
           </div>
         </section>

@@ -2,10 +2,12 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import axios from "axios";
 import MovieDetails from "./MovieDetails";
+import { useAuth } from "./context/AuthContext";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { fetchWatchmodeAvailability } from "./services/watchmodeService";
 
 jest.mock("axios");
+jest.mock("./context/AuthContext", () => ({ useAuth: jest.fn(() => ({ user: null })) }));
 jest.mock("./services/watchmodeService");
 jest.mock("./hooks/useTasteProfile");
 
@@ -48,6 +50,7 @@ const generatedTake = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  useAuth.mockReturnValue({ user: null });
   window.localStorage.clear();
   fetchWatchmodeAvailability.mockResolvedValue(null);
   axios.get.mockImplementation((url) => Promise.resolve(
@@ -265,4 +268,33 @@ test.each([true, false])('failed Take uses stored rationale only for an active m
   expect(screen.queryByText('Netflix')).not.toBeInTheDocument();
   expect(screen.getByRole('link', {name:/See all current viewing options/})).toHaveAttribute('href', movie.watch_providers.link);
   expect(screen.getByText('Provider data from JustWatch via TMDB.')).toBeInTheDocument();
+});
+
+test("presents rating-selected reviews neutrally and links their original source", async () => {
+  const reviews = {
+    count: 2,
+    positive: { author: 'Reviewer One', rating: 8, content: 'A very good film.' },
+    negative: { author: 'Reviewer Two', rating: 7, content: '<em>Aliens</em> is superb.', url: 'https://www.themoviedb.org/review/5e0000000000000000000001' },
+  };
+  axios.get.mockImplementation((url) => Promise.resolve(
+    String(url).includes('/reelbot-take') ? { data: { take: generatedTake } } : { data: {...movie, review_highlights: reviews} }
+  ));
+  render(<MemoryRouter initialEntries={['/movies/aliens-1986']}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails />} /></Routes></MemoryRouter>);
+  expect(await screen.findByRole('heading', {name: 'Viewer reviews'})).toBeInTheDocument();
+  expect(screen.queryByText('What misses')).not.toBeInTheDocument();
+  expect(screen.getByText('“Aliens is superb.”')).toBeInTheDocument();
+  expect(screen.getByRole('link', {name: /Read full review on TMDB by Reviewer Two/})).toHaveAttribute('href', reviews.negative.url);
+});
+
+
+test.each([null, { app_metadata: { role: 'user' } }, { app_metadata: { role: 'admin' } }, { app_metadata: { role: 'super_admin' } }])('Share is public but Radarr stays super-admin only (%j)', async user => {
+  useAuth.mockReturnValue({ user });
+  Object.defineProperty(navigator, 'share', { configurable: true, value: jest.fn().mockResolvedValue() });
+  render(<MemoryRouter initialEntries={['/movies/aliens-1986?brief=private']}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails />} /></Routes></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Share Aliens' }));
+  expect(navigator.share).toHaveBeenCalledWith({ title: 'Aliens (1986) | ReelBot', url: 'https://reelbot.movie/movies/aliens-1986' });
+  if (user?.app_metadata?.role === 'super_admin') expect(screen.getByRole('link', { name: 'Open Radarr for Aliens' })).toHaveAttribute('href', 'http://192.168.0.69:7878/add/new?term=tmdb%3A679');
+  else expect(screen.queryByRole('link', { name: /Radarr/ })).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Share Aliens' })).toBeEnabled());
+  delete navigator.share;
 });

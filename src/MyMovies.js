@@ -76,27 +76,27 @@ const normalizeSavedMovie = (movie = {}) => ({
 
 function MyMovies() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, openAuthPrompt } = useAuth();
-  const { profile, actions, getMovieState, getSavedMoviesForBucket, isCloudSyncing, cloudSyncError } = useTasteProfile();
+  const { user, authReady, openAuthPrompt } = useAuth();
+  const { profile, actions, getMovieState, getSavedMoviesForBucket, isProfileReady, isCloudSyncing, cloudSyncError } = useTasteProfile();
   const [libraryQuery, setLibraryQuery] = useState("");
   const activeTab = TAB_CONFIG.some((tab) => tab.id === searchParams.get("tab")) ? searchParams.get("tab") : "watchlist";
   const activeTabConfig = TAB_CONFIG.find((tab) => tab.id === activeTab) || TAB_CONFIG[0];
 
   const savedMovies = useMemo(
-    () => getSavedMoviesForBucket(activeTab).map((movie) => normalizeSavedMovie(movie)).filter((movie) => movie.id),
-    [activeTab, getSavedMoviesForBucket]
+    () => (isProfileReady ? getSavedMoviesForBucket(activeTab) : []).map((movie) => normalizeSavedMovie(movie)).filter((movie) => movie.id),
+    [activeTab, getSavedMoviesForBucket, isProfileReady]
   );
   const askCandidateIds = useMemo(
-    () => getSavedMoviesForBucket("watchlist").map((movie) => Number(movie?.id)).filter(Boolean),
-    [getSavedMoviesForBucket]
+    () => (isProfileReady ? getSavedMoviesForBucket("watchlist") : []).map((movie) => Number(movie?.id)).filter(Boolean),
+    [getSavedMoviesForBucket, isProfileReady]
   );
   useAskReelbotPageContext(useMemo(() => ({
     page: "my_movies",
     candidateMovieIds: askCandidateIds,
     savedMovieIds: askCandidateIds,
-    watchedMovieIds: (profile.seen || []).map((movie) => Number(movie?.id)).filter(Boolean),
-    rejectedMovieIds: (profile.skipped || []).map((movie) => Number(movie?.id)).filter(Boolean),
-  }), [askCandidateIds, profile.seen, profile.skipped]));
+    watchedMovieIds: (isProfileReady ? profile.seen || [] : []).map((movie) => Number(movie?.id)).filter(Boolean),
+    rejectedMovieIds: (isProfileReady ? profile.skipped || [] : []).map((movie) => Number(movie?.id)).filter(Boolean),
+  }), [askCandidateIds, profile.seen, profile.skipped, isProfileReady]));
   const tasteSummary = useMemo(() => {
     const allMovies = [
       ...(profile.watchlist || []),
@@ -150,13 +150,13 @@ function MyMovies() {
           <div className="browse-copy">
             <h1 className="browse-title">My movies</h1>
             {user ? <p className="browse-subtitle browse-subtitle--hero">Good movies deserve a place to come back to.</p> : null}
-            {user && (activeTab === "seen" ? profile.seen.length : askCandidateIds.length || profile.seen.length) ? (
+            {user && isProfileReady && (activeTab === "seen" ? profile.seen.length : askCandidateIds.length || profile.seen.length) ? (
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid my-movies-pick-action" onClick={() => openAskReelbot({ prompt: activeTab === "seen" || !askCandidateIds.length ? "Choose a movie from Watched to rewatch" : "choose a movie from my saved list that I have not watched" })}>
                 {activeTab === "seen" || !askCandidateIds.length ? "Pick a rewatch" : "Pick from my movies"}
               </button>
             ) : null}
           </div>
-          {user && tasteSummary.length ? (
+          {user && isProfileReady && tasteSummary.length ? (
             <aside className="my-movies-taste-summary" aria-label="Your taste">
               <span className="my-movies-taste-label">Your taste</span>
               <div className="my-movies-taste-values">
@@ -166,7 +166,7 @@ function MyMovies() {
           ) : null}
         </section>
 
-        {!user ? (
+        {authReady && !user ? (
           <section className="my-movies-empty-gate">
             <div className="my-movies-gate-copy">
               <h2 className="section-title">Sign in to see your movies</h2>
@@ -180,7 +180,19 @@ function MyMovies() {
         ) : null}
 
 
-        {user ? (
+        {!authReady || (user && !isProfileReady) ? (
+          <section className="saved-movies-shell detail-info-card" aria-busy={!cloudSyncError}>
+            {authReady && cloudSyncError ? (
+              <div role="alert">
+                <h2 className="section-title">Your movies couldn’t be loaded.</h2>
+                <p className="error-message my-movies-sync-error">{cloudSyncError}</p>
+                <p>Refresh this page to try again.</p>
+              </div>
+            ) : <p className="saved-movies-sync-status" role="status">Loading your movies…</p>}
+          </section>
+        ) : null}
+
+        {user && isProfileReady ? (
         <section className="saved-movies-shell detail-info-card">
           {isCloudSyncing ? <p className="saved-movies-sync-status" role="status">Saving your changes…</p> : null}
           {cloudSyncError ? <p className="error-message my-movies-sync-error">{cloudSyncError}</p> : null}

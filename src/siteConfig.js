@@ -18,3 +18,6 @@ export const buildAbsoluteUrl = (path = "/") => {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${getSiteOrigin()}${normalizedPath}`;
 };
+
+// Public detail shares must never leak a preview or local-development origin.
+export const buildPublicShareUrl = (path) => `https://reelbot.movie${path.split(/[?#]/)[0]}`;
