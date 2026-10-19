@@ -103,3 +103,23 @@ test("changing category preserves unrelated parameters without treating search t
   fireEvent.click(screen.getByRole("button", { name: "All" }));
   expect(window.location.search).toBe("?source=test&q=private+search");
 });
+
+test('seasonal ordering refreshes at midnight and focus without disturbing category/history', () => {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date('2026-11-01T03:59:59Z'));
+  const view = renderCollections('/collections?category=seasonal&source=test');
+  const names = () => screen.getAllByRole('heading', { level: 2 }).map(el => el.textContent);
+  expect(names()[0]).toBe('Haunted Houses, Unfinished Lives');
+  const historyLength = window.history.length;
+  act(() => jest.advanceTimersByTime(1100));
+  expect(names()[0]).toBe('Cozy Fall Movies');
+  jest.setSystemTime(new Date('2026-12-01T05:01:00Z'));
+  fireEvent.focus(window);
+  expect(names()[0]).toBe('Best Christmas Movies');
+  expect(window.location.search).toBe('?category=seasonal&source=test');
+  expect(window.history.length).toBe(historyLength);
+  expectCategory('Seasonal');
+  view.unmount();
+  expect(jest.getTimerCount()).toBe(0);
+  jest.useRealTimers();
+});
