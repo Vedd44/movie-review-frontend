@@ -3,11 +3,11 @@
 const OCTOBER_START = Date.parse("2026-10-01T00:00:00-04:00");
 const OCTOBER_END = Date.parse("2026-11-01T00:00:00-04:00");
 const EVERGREEN_SLUGS = ["best-90s-action-movies", "movies-like-heat", "movies-like-interstellar"];
-const OCTOBER_SLUGS = ["best-halloween-movies", "cozy-fall-movies", "scariest-movies"];
+const OCTOBER_SLUGS = ["haunted-house-ghost-stories", "best-halloween-movies", "cozy-fall-movies"];
 const OCTOBER_NOTES = {
+  "haunted-house-ghost-stories": "Eight haunted-house favourites, from quiet chills to full-on scares.",
   "best-halloween-movies": "From playful favourites to full-on horror.",
   "cozy-fall-movies": "Autumn atmosphere, from warm comedies to moodier stories.",
-  "scariest-movies": "Full-on scares for a lights-on kind of night.",
 };
 
 function getFeaturedCollections(collections, now = Date.now(), mode = "seasonal") {
@@ -18,7 +18,7 @@ function getFeaturedCollections(collections, now = Date.now(), mode = "seasonal"
     isOctober,
     heading: isOctober ? "Oh, the Horror!" : "Explore our latest collections",
     description: isOctober
-      ? "Halloween favourites, autumn atmosphere, or full-on scares. Find your kind of night."
+      ? "Haunted houses, Halloween favourites and autumn atmosphere. Find your kind of night."
       : "A few useful places to start when you know the kind of movie you want.",
     collections: slugs.map((slug) => collections.find((collection) => collection.slug === slug)).filter(Boolean),
     notes: isOctober ? OCTOBER_NOTES : {},

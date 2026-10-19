@@ -14,7 +14,7 @@ import { useAskReelbotPageContext } from "./context/AskReelbotContext";
 import { trackProductEvent } from "./analytics";
 import collectionMovieManifest from "./generatedCollectionMovies.json";
 
-import { collectionMovieNote, collectionItemList } from "./collectionEditorial";
+import { collectionMovieNote, collectionItemList, collectionSocialImagePath } from "./collectionEditorial";
 import { getSiteOrigin } from "./siteConfig";
 import { collectionCalendarDay, getNextCollectionBoundary, sortCollections } from "./collectionOrder";
 
@@ -153,7 +153,7 @@ export default function CollectionPage() {
   usePageMetadata({
     title: collection ? collectionTitle(collection.title) : "Movie Collections | ReelBot",
     description: collection?.description,
-    image: collection ? `/social/collections/${collection.slug}-v5.jpg` : undefined,
+    image: collection ? collectionSocialImagePath(collection) : undefined,
     path: collection ? `/collections/${collection.slug}` : "/collections",
     robots: collection ? "index,follow" : "noindex,follow",
     structuredData,

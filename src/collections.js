@@ -251,21 +251,24 @@ export const COLLECTIONS = [
   },
   {
     "slug": "haunted-house-ghost-stories",
-    "title": "Haunted Houses, Unfinished Lives",
-    "eyebrow": "Behind closed doors",
-    "description": "Atmospheric ghost stories about grief, isolation and secrets that refuse to stay buried. Five unsettling films for a quiet, lights-low night.",
-    "prompt": "An atmospheric haunted-house ghost story about grief, isolation or secrets from the past.",
+    "title": "Best Haunted House Movies",
+    "socialImageVersion": 6,
+    "eyebrow": "Haunted houses",
+    "description": "Old houses, unwelcome guests and things that go bump in the night. Eight haunted-house movies worth turning the lights down for.",
+    "prompt": "Give me a great haunted-house movie",
     "categories": [
       "Seasonal",
       "Genre"
     ],
-    "contentNote": "These films can be intensely frightening. Themes include bereavement, death and danger involving children, psychological distress and violence. The Devil’s Backbone includes bloody violence. This is not a family-viewing or low-scare guarantee; check individual content guidance before choosing.",
     "movies": [
       "the-others-2001",
       "the-haunting-1963",
       "the-innocents-1961",
       "the-changeling-1980",
-      "the-devil-s-backbone-2001"
+      "the-devil-s-backbone-2001",
+      "poltergeist-1982",
+      "the-conjuring-2013",
+      "the-amityville-horror-1979"
     ]
   },
 ];

@@ -4,7 +4,7 @@ import manifest from './generatedCollectionMovies.json';
 import previews from './generatedCollectionPreviews.json';
 
 const evergreen = ['best-90s-action-movies', 'movies-like-heat', 'movies-like-interstellar'];
-const october = ['best-halloween-movies', 'cozy-fall-movies', 'scariest-movies'];
+const october = ['haunted-house-ghost-stories', 'best-halloween-movies', 'cozy-fall-movies'];
 const slugs = now => getFeaturedCollections(COLLECTIONS, now).collections.map(c => c.slug);
 
 test('runs only in October 2026 using New York midnight boundaries', () => {

@@ -130,6 +130,8 @@ test('homepage editorial links and cache expiration match the client campaign', 
     const featured = getFeaturedCollections(collections, now);
     assert.ok(data.content.includes(featured.heading));
     for (const c of featured.collections) assert.ok(data.content.includes(`/collections/${c.slug}`));
+    const orderedLinks = [...data.content.matchAll(/href="\/collections\/([^"/]+)"/g)].map(match=>match[1]);
+    assert.deepEqual(orderedLinks,featured.collections.map(c=>c.slug));
     assert.equal((data.content.match(/<li>/g) || []).length, 3);
     if (now === OCTOBER_END - 500 || now === OCTOBER_START - 1) assert.equal(data.cacheMaxAgeSeconds, 0);
     if (now < OCTOBER_END && now >= OCTOBER_START) assert.ok(data.cacheMaxAgeSeconds + data.cacheStaleSeconds <= Math.floor((OCTOBER_END - now) / 1000));

@@ -12,4 +12,9 @@ function collectionItemList(collection, movies, origin) {
     })),
   };
 }
-module.exports = { collectionMovieNote, collectionItemList };
+function collectionSocialImagePath(collection) {
+  const version = Number.isInteger(collection.socialImageVersion) && collection.socialImageVersion > 0
+    ? collection.socialImageVersion : 5;
+  return `/social/collections/${collection.slug}-v${version}.jpg`;
+}
+module.exports = { collectionMovieNote, collectionItemList, collectionSocialImagePath };

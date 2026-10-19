@@ -37,7 +37,11 @@ test('Haunted uses concise complete copy and standard movie cards without per-fi
   expect(collection.description).toMatch(/\.$/);
   expect(collection.movieNotes).toBeUndefined();
   expect(screen.getByText(collection.description)).toBeInTheDocument();
-  expect(screen.getByText(collection.contentNote)).toBeInTheDocument();
-  expect(document.querySelectorAll('.collection-movie-card')).toHaveLength(5);
+  expect(collection.contentNote).toBeUndefined();
+  expect(document.querySelector('.collection-content-note')).toBeNull();
+  expect(screen.getByRole('heading', { level: 1, name: 'Best Haunted House Movies' })).toBeInTheDocument();
+  expect(document.title).toBe('Best Haunted House Movies | ReelBot Collections');
+  expect(document.querySelector('meta[property="og:image"]')).toHaveAttribute('content',window.location.origin+'/social/collections/haunted-house-ghost-stories-v6.jpg');
+  expect(document.querySelectorAll('.collection-movie-card')).toHaveLength(8);
   expect(document.querySelectorAll('.collection-movie-note')).toHaveLength(0);
 });
