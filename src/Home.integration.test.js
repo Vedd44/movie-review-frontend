@@ -270,7 +270,12 @@ test('October editorial cards preserve the broad picker and stay off feed routes
   expect(shelf.compareDocumentPosition(browse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(document.querySelectorAll('.home-collections-section')).toHaveLength(1);
   expect(screen.getByRole('link', { name: /Cozy Fall Movies/ })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /Scariest Movies Ever/ })).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /Scariest Movies Ever/ })).not.toBeInTheDocument();
+  const cards = shelf.querySelectorAll('.collection-preview-card');
+  expect(cards).toHaveLength(3);
+  expect(cards[0]).toHaveAttribute('href', '/collections/haunted-house-ghost-stories');
+  expect(cards[0]).toHaveTextContent('Best Haunted House Movies');
+  expect(cards[0]).toHaveTextContent('Eight haunted-house favourites');
   unmount();
   render(<MemoryRouter><Home isFeedRoute routeView="popular" /></MemoryRouter>);
   expect(screen.queryByRole('heading', { name: 'Oh, the Horror!' })).not.toBeInTheDocument();

@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
+const { collectionSocialImagePath } = require("../src/collectionEditorial");
 const { requireCompletePosters } = require("../server/collectionOgSafety");
 
 const API = "https://movie-review-backend-zevb.onrender.com";
@@ -92,11 +93,14 @@ async function render(collection) {
   </svg>`);
   composites.push({ input: overlay, left: 0, top: 0 });
 
-  const out = path.join(OUT, `${collection.slug}-v5.jpg`);
+  const out = path.join(process.cwd(), "public", collectionSocialImagePath(collection).slice(1));
   await sharp({ create: { width: canvasWidth, height: canvasHeight, channels: 4, background: "#08101a" } })
     .composite(composites)
     .jpeg({ quality: 94, chromaSubsampling: "4:4:4", mozjpeg: true })
     .toFile(out);
+  // Keep previously shared v5 URLs valid when this collection gets new artwork.
+  const legacy = path.join(OUT, `${collection.slug}-v5.jpg`);
+  if (out !== legacy) fs.copyFileSync(out, legacy);
   console.log(`OG: ${collection.slug} (${posterBuffers.length} posters)`);
 }
 

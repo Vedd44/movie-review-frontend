@@ -109,7 +109,7 @@ test('seasonal ordering refreshes at midnight and focus without disturbing categ
   jest.setSystemTime(new Date('2026-11-01T03:59:59Z'));
   const view = renderCollections('/collections?category=seasonal&source=test');
   const names = () => screen.getAllByRole('heading', { level: 2 }).map(el => el.textContent);
-  expect(names()[0]).toBe('Haunted Houses, Unfinished Lives');
+  expect(names()[0]).toBe('Best Haunted House Movies');
   const historyLength = window.history.length;
   act(() => jest.advanceTimersByTime(1100));
   expect(names()[0]).toBe('Cozy Fall Movies');

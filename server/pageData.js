@@ -1,5 +1,5 @@
 const { sortCollections, getNextCollectionBoundary } = require('../src/collectionOrder');
-const { collectionMovieNote, collectionItemList } = require("../src/collectionEditorial");
+const { collectionMovieNote, collectionItemList, collectionSocialImagePath } = require("../src/collectionEditorial");
 const {movieTitle, personTitle, collectionTitle} = require('../src/seoTitles');
 const personDescription = require('../src/personDescription');
 const copy = require('../src/productCopy');
@@ -119,7 +119,7 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     const c = collections.find(c=>c.slug===collectionMatch[1]);
     if (!c) return missing(path);
     const entries = c.movies.filter(slug=>slug!==c.anchorMovie).map(slug=>movies[slug]).filter(Boolean);
-    return {path,title:collectionTitle(c.title),heading:c.title,description:c.description,image:`${ORIGIN}/social/collections/${c.slug}-v5.jpg`,content:(c.contentNote ? `<p><strong>Content guidance:</strong> ${escapeHtml(c.contentNote)}</p>` : '') + `<ul>${entries.map(m=>`<li>${link(moviePath(m), m.title)}${m.release_date ? ` (${escapeHtml(m.release_date.slice(0,4))})` : ''}${collectionMovieNote(c,m) ? `<p>${escapeHtml(collectionMovieNote(c,m))}</p>` : ''}</li>`).join('')}</ul>`,schema:[breadcrumbs([['Home','/'],['Collections','/collections'],[c.title,path]]),collectionItemList(c,entries,ORIGIN)]};
+    return {path,title:collectionTitle(c.title),heading:c.title,description:c.description,image:`${ORIGIN}${collectionSocialImagePath(c)}`,content:(c.contentNote ? `<p><strong>Content guidance:</strong> ${escapeHtml(c.contentNote)}</p>` : '') + `<ul>${entries.map(m=>`<li>${link(moviePath(m), m.title)}${m.release_date ? ` (${escapeHtml(m.release_date.slice(0,4))})` : ''}${collectionMovieNote(c,m) ? `<p>${escapeHtml(collectionMovieNote(c,m))}</p>` : ''}</li>`).join('')}</ul>`,schema:[breadcrumbs([['Home','/'],['Collections','/collections'],[c.title,path]]),collectionItemList(c,entries,ORIGIN)]};
   }
   const numericMovie = path.match(/^\/(?:movie|movies)\/(\d+)(?:\/[^/]+)?$/);
   const movieMatch = path.match(/^\/movies\/([^/]+)$/);
