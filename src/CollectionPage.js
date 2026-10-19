@@ -16,6 +16,7 @@ import collectionMovieManifest from "./generatedCollectionMovies.json";
 
 import { collectionMovieNote, collectionItemList } from "./collectionEditorial";
 import { getSiteOrigin } from "./siteConfig";
+import { collectionCalendarDay, getNextCollectionBoundary, sortCollections } from "./collectionOrder";
 
 function CollectionCard({ movie, note }) {
   return (
@@ -39,6 +40,26 @@ function CollectionCard({ movie, note }) {
 
 export function CollectionsIndex() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [calendarDay, setCalendarDay] = useState(() => collectionCalendarDay());
+  useEffect(() => {
+    let timer;
+    const refresh = () => {
+      clearTimeout(timer);
+      const now = Date.now();
+      setCalendarDay(collectionCalendarDay(now));
+      timer = setTimeout(refresh, getNextCollectionBoundary(now) - now + 20);
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+  // Late morning New York is always inside this calendar day, including DST changes.
+  const orderedCollections = useMemo(() => sortCollections(COLLECTIONS, `${calendarDay}T16:00:00Z`), [calendarDay]);
   const activeCategory = COLLECTION_CATEGORIES.find(
     (category) => category.toLowerCase() === searchParams.get("category")
   ) || "All";
@@ -52,15 +73,15 @@ export function CollectionsIndex() {
     if (nextParams.toString() !== searchParams.toString()) setSearchParams(nextParams);
   };
 
-  const filteredCollections = useMemo(() => COLLECTIONS.filter((collection) =>
+  const filteredCollections = useMemo(() => orderedCollections.filter((collection) =>
     activeCategory === "All" || collection.categories?.includes(activeCategory)
-  ), [activeCategory]);
+  ), [activeCategory, orderedCollections]);
 
 
   const structuredData = useMemo(() => [
     buildBreadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Collections", path: "/collections" }]),
-    buildItemListJsonLd(COLLECTIONS.map((item) => ({ name: item.title, path: `/collections/${item.slug}` }))),
-  ], []);
+    buildItemListJsonLd(orderedCollections.map((item) => ({ name: item.title, path: `/collections/${item.slug}` }))),
+  ], [orderedCollections]);
 
   usePageMetadata({
     title: "Movie Collections by Mood, Genre & More | ReelBot",
@@ -87,6 +108,7 @@ export function CollectionsIndex() {
             </div>
           </div>
           <p className="collections-result-count">{filteredCollections.length} {filteredCollections.length === 1 ? "collection" : "collections"}</p>
+          <p className="collections-result-count">Seasonal picks first, then recent additions and A–Z.</p>
         </section>
         <div className="collections-index-grid">
           {filteredCollections.map((collection) => <CollectionPreviewCard key={collection.slug} collection={collection} />)}

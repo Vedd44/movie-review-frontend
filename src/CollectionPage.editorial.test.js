@@ -28,3 +28,16 @@ test('Cozy Fall notes appear only on that collection', async () => {
   expect(document.querySelectorAll('.collection-movie-note')).toHaveLength(0);
   expect(document.querySelector('.collection-content-note')).toBeNull();
 });
+
+test('Haunted uses concise complete copy and standard movie cards without per-film notes', async () => {
+  const collection = getCollection('haunted-house-ghost-stories');
+  show(collection.slug);
+  await waitFor(() => expect(screen.queryByText('Loading collection...')).not.toBeInTheDocument());
+  expect(collection.description.length).toBeLessThan(180);
+  expect(collection.description).toMatch(/\.$/);
+  expect(collection.movieNotes).toBeUndefined();
+  expect(screen.getByText(collection.description)).toBeInTheDocument();
+  expect(screen.getByText(collection.contentNote)).toBeInTheDocument();
+  expect(document.querySelectorAll('.collection-movie-card')).toHaveLength(5);
+  expect(document.querySelectorAll('.collection-movie-note')).toHaveLength(0);
+});

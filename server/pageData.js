@@ -1,3 +1,4 @@
+const { sortCollections, getNextCollectionBoundary } = require('../src/collectionOrder');
 const { collectionMovieNote, collectionItemList } = require("../src/collectionEditorial");
 const {movieTitle, personTitle, collectionTitle} = require('../src/seoTitles');
 const personDescription = require('../src/personDescription');
@@ -108,7 +109,11 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
     if (path === '/how-reelbot-works') data.content = '<h2>Get a recommendation</h2><ol>'+copy.steps.map(([title,text])=>`<li><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></li>`).join('')+'</ol><h2>Make it yours</h2><p>Save movies for later. Mark movies Watched or Not for me to keep them out of future picks. Ask follow-up questions about a movie or recommendation.</p>'+`<h2>${escapeHtml(copy.faqQuestion)}</h2><p>${escapeHtml(copy.faqAnswer)}</p><h2>Where the movie data comes from</h2><p>${escapeHtml(copy.ai)}</p>`;
     return data;
   }
-  if (path === '/collections') return {path,title:'Movie Collections by Mood, Genre & More | ReelBot',heading:'Find your next movie.',description:'Handpicked movie collections for every mood, genre, era, and kind of movie night.',content:'<ul>'+collections.map(c=>`<li>${link('/collections/'+c.slug,c.title)}<p>${escapeHtml(c.description)}</p></li>`).join('')+'</ul>'};
+  if (path === '/collections') {
+    const untilBoundary = Math.max(0, Math.floor((getNextCollectionBoundary(now) - Number(now)) / 1000));
+    const cacheMaxAgeSeconds = Math.min(3600, untilBoundary);
+    return {path,title:'Movie Collections by Mood, Genre & More | ReelBot',heading:'Find your next movie.',description:'Handpicked movie collections for every mood, genre, era, and kind of movie night.',content:'<p>Seasonal picks first, then recent additions and A–Z.</p><ul>'+sortCollections(collections, now).map(c=>`<li>${link('/collections/'+c.slug,c.title)}<p>${escapeHtml(c.description)}</p></li>`).join('')+'</ul>',cacheMaxAgeSeconds,cacheStaleSeconds:Math.min(86400, untilBoundary - cacheMaxAgeSeconds)};
+  }
   const collectionMatch = path.match(/^\/collections\/([^/]+)$/);
   if (collectionMatch) {
     const c = collections.find(c=>c.slug===collectionMatch[1]);

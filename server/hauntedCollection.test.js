@@ -27,21 +27,23 @@ test('five verified films add a distinct collection without duplicate membership
   assert.deepEqual(Array.from(c.categories),['Seasonal','Genre']);
   assert.deepEqual(c.movies.map(s=>movies[s].id).join(','),'1933,11772,16372,13550,1433');
   assert.deepEqual(Array.from(c.movies.filter(s=>collections.some(other=>other!==c && other.movies.includes(s)))),['the-others-2001']);
-  for(const s of expected){assert.ok(c.movieNotes[s]?.length>90);assert.equal(movies[s].canonical_slug,s);assert.equal(previews[s].id,movies[s].id);assert.equal(previews[s].poster_path,movies[s].poster_path);}
+  for(const s of expected){assert.equal(movies[s].canonical_slug,s);assert.equal(previews[s].id,movies[s].id);assert.equal(previews[s].poster_path,movies[s].poster_path);}
+  assert.equal(c.movieNotes,undefined);
+  assert.ok(c.description.length < 180);
+  assert.match(c.description,/\.$/);
   assert.match(c.contentNote,/children/);
   assert.match(c.contentNote,/not a family-viewing/);
 });
-test('crawlable description, guidance, notes, ordered schema, canonical and sitemap agree',async()=>{
+test('crawlable description, guidance, standard cards, ordered schema, canonical and sitemap agree',async()=>{
   const data=await getPageData('/collections/'+slug,new URLSearchParams(),{collections,movies,fetcher:()=>{throw Error('No network expected');}});
   assert.equal(data.heading,c.title);
   assert.equal(data.description,c.description);
   assert.equal(data.title,c.title+' | ReelBot Collections');
   assert.equal(data.schema[1].itemListElement.length,5);
-  const esc=s=>s.replaceAll('&','&amp;').replaceAll("'",'&#39;');
   for(const [i,s] of expected.entries()){
     assert.equal(data.schema[1].itemListElement[i].position,i+1);
     assert.equal(data.schema[1].itemListElement[i].url,'https://reelbot.movie/movies/'+s);
-    assert.ok(data.content.includes(esc(c.movieNotes[s])));
+    assert.equal(data.schema[1].itemListElement[i].description,undefined);
   }
   const html=renderPage('<html><head></head><body><div id="root"></div></body></html>',data);
   assert.ok(html.includes('rel="canonical" href="https://reelbot.movie/collections/'+slug+'"'));

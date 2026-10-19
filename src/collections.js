@@ -253,7 +253,7 @@ export const COLLECTIONS = [
     "slug": "haunted-house-ghost-stories",
     "title": "Haunted Houses, Unfinished Lives",
     "eyebrow": "Behind closed doors",
-    "description": "A locked room. A sound upstairs. A house that seems to know its new occupant. These five ghost stories make buildings feel inhabited by more than the people walking through them. The pleasure is in watching a room change meaning: a refuge becomes a trap, a familiar corridor starts to feel wrong, an old secret presses into the present. Choose The Others for candlelit mystery, The Haunting for unnerving sound and space, or The Devil’s Backbone for a ghost story shaped by history. Best watched when you can give the quiet moments your attention.",
+    "description": "Atmospheric ghost stories about grief, isolation and secrets that refuse to stay buried. Five unsettling films for a quiet, lights-low night.",
     "prompt": "An atmospheric haunted-house ghost story about grief, isolation or secrets from the past.",
     "categories": [
       "Seasonal",
@@ -266,14 +266,7 @@ export const COLLECTIONS = [
       "the-innocents-1961",
       "the-changeling-1980",
       "the-devil-s-backbone-2001"
-    ],
-    "movieNotes": {
-      "the-others-2001": "Start here for candlelit mystery. Closed curtains and carefully observed household rules turn an isolated home into a puzzle; Nicole Kidman gives its unease a human center. Go in knowing as little as possible.",
-      "the-haunting-1963": "Choose this when you want to listen as closely as you look. The rooms and corridors of Hill House make a group investigation feel increasingly private, especially for a woman desperate to belong somewhere. Black-and-white, patient and deeply unsettling.",
-      "the-innocents-1961": "A governess watches two children in a country house, and every glance begins to carry a second meaning. Widescreen compositions invite you to search the edges of the image. Pick it for ambiguity and a creeping distrust of what you think you saw.",
-      "the-changeling-1980": "A grieving composer moves into a house with a history he cannot ignore. George C. Scott grounds the supernatural mystery in adult sorrow, while ordinary sounds and objects become unnerving clues. The most detective-like choice here.",
-      "the-devil-s-backbone-2001": "An orphanage at the end of the Spanish Civil War gives this haunting a wider history to reckon with. Del Toro brings tenderness to the children’s point of view without softening the danger around them. Choose it for an emotionally weighty ghost story; Spanish-language with subtitles depending on the edition."
-    }
+    ]
   },
 ];
 
