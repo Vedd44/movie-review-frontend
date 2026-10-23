@@ -22,6 +22,7 @@ import { openAskReelbot, useAskReelbotPageContext } from "./context/AskReelbotCo
 import { trackProductEvent } from "./analytics";
 import { COLLECTIONS } from "./collections";
 import { useAuth } from "./context/AuthContext";
+import { requestMovieDetails } from "./services/movieDetailRequest";
 
 const DETAIL_ANCHOR_OFFSET = 110;
 const TITLE_TOKEN_STOPWORDS = new Set(["about", "after", "before", "black", "dark", "first", "house", "movie", "night", "return", "story", "world"]);
@@ -167,13 +168,13 @@ function MovieDetails() {
     setError(null);
     setMovie(null); setStoredSharedPick(null);
     const loadMovie = async () => {
-      if (!shareId) return axios.get(endpoint, { signal: controller.signal });
+      if (!shareId) return requestMovieDetails(endpoint, { signal: controller.signal });
       if (!/^[A-Za-z0-9_-]{12}$/.test(shareId)) throw Object.assign(new Error('Shared pick not found'), {response:{status:404}});
       const response = await axios.get(`${API_BASE_URL}/reelbot/shares/${shareId}`, {signal: controller.signal});
       const snapshot = parseSharedPick(new URLSearchParams({pick:JSON.stringify(response.data)}).toString());
       if (!snapshot) throw Object.assign(new Error('Shared pick not found'), {response:{status:404}});
       if (!cancelled) setStoredSharedPick(snapshot);
-      return axios.get(`${API_BASE_URL}/movies/${snapshot.id}`, {signal:controller.signal});
+      return requestMovieDetails(`${API_BASE_URL}/movies/${snapshot.id}`, {signal:controller.signal});
     };
     loadMovie()
       .then((response) => {

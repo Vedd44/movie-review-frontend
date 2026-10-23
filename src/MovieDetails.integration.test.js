@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import MovieDetails from "./MovieDetails";
 import { useAuth } from "./context/AuthContext";
@@ -297,4 +297,34 @@ test.each([null, { app_metadata: { role: 'user' } }, { app_metadata: { role: 'ad
   else expect(screen.queryByRole('link', { name: /Radarr/ })).not.toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('button', { name: 'Share Aliens' })).toBeEnabled());
   delete navigator.share;
+});
+
+
+test("keeps the loading state through a short catalog delay then shows the film", async () => {
+  let attempts = 0;
+  axios.get.mockImplementation(url => {
+    if(String(url).includes('/reelbot-take')) return Promise.resolve({data:{take:generatedTake}});
+    if(attempts++ === 0) return Promise.reject({response:{status:429,data:{retry_after_seconds:1}}});
+    return Promise.resolve({data:movie});
+  });
+  render(<MemoryRouter initialEntries={["/movies/aliens-1986"]}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/></Routes></MemoryRouter>);
+  await waitFor(() => expect(attempts).toBe(1));
+  expect(screen.getByText('Loading movie details...')).toBeInTheDocument();
+  expect(screen.queryByText('Unable to load this movie')).not.toBeInTheDocument();
+  expect(await screen.findByRole('heading',{name:'Aliens'},{timeout:3000})).toBeInTheDocument();
+  expect(attempts).toBe(2);
+});
+
+test("navigation during a retry does not fetch or display the abandoned movie", async () => {
+  axios.get.mockImplementation(url => {
+    if(String(url).includes('/resolve/old-film')) return Promise.reject({response:{status:429,data:{retry_after_seconds:1}}});
+    return Promise.resolve(String(url).includes('/reelbot-take') ? {data:{take:generatedTake}} : {data:movie});
+  });
+  render(<MemoryRouter initialEntries={["/movies/old-film"]}><Link to="/movies/aliens-1986">Next film</Link><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/></Routes></MemoryRouter>);
+  await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByText('Next film'));
+  expect(await screen.findByRole('heading',{name:'Aliens'})).toBeInTheDocument();
+  await new Promise(resolve => setTimeout(resolve,1100));
+  expect(axios.get.mock.calls.filter(([url])=>String(url).includes('/resolve/old-film'))).toHaveLength(1);
+  expect(screen.queryByText('Unable to load this movie')).not.toBeInTheDocument();
 });
