@@ -1001,7 +1001,9 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     }, 90);
 
     return () => window.clearTimeout(timeoutId);
-  }, [location.hash, loading, movieType, scrollToPickResults, scrollToSection]);
+  // An anchor is a navigation request, not a standing scroll target. Feed
+  // updates must not pull someone back to the hero after they start browsing.
+  }, [location.key, location.pathname, location.hash, scrollToPickResults, scrollToSection]);
 
   useEffect(() => {
     if (!location.state?.restorePickSession && !location.state?.scrollToPickResult && !location.state?.focusPickPrompt) {

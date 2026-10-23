@@ -1,11 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Home from "./Home";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { trackProductEvent } from "./analytics";
 import { recordRequestActivity } from "./productTelemetry";
 import { tasteProfileService } from "./services/tasteProfileService";
+import { homeFeedService } from "./services/homeFeedService";
 
 jest.mock("axios");
 jest.mock("./hooks/useTasteProfile");
@@ -523,4 +524,78 @@ test('Edit waits until the composer is visible before scrolling and focusing it'
   expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
   expect(input).toHaveFocus();
   frameSpy.mockRestore();
+});
+
+
+function AnchorNavigationControls() {
+  const navigate = useNavigate();
+  return <>
+    <button onClick={() => navigate("/#pick-for-me")}>Navigate to picker</button>
+    <button onClick={() => navigate("/#movie-grid")}>Navigate to grid</button>
+    <button onClick={() => navigate(-1)}>Go back</button>
+    <button onClick={() => navigate(1)}>Go forward</button>
+  </>;
+}
+
+const settleAnchorScroll = () => act(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 180));
+});
+
+test("homepage categories do not replay an old picker anchor, including subsequent feed updates", async () => {
+  const scroll = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+  try {
+    render(<MemoryRouter initialEntries={["/#pick-for-me"]}><Home /></MemoryRouter>);
+    await screen.findByRole("button", { name: "Now Playing", exact: true });
+    await settleAnchorScroll();
+    expect(scroll).toHaveBeenCalled();
+    scroll.mockClear();
+    for (const category of ["Now Playing", "Coming Soon", "Trending", "Trending"]) {
+      fireEvent.click(screen.getByRole("button", { name: category, exact: true }));
+      await settleAnchorScroll();
+      expect(screen.getByRole("button", { name: category, exact: true })).toHaveAttribute("aria-pressed", "true");
+      expect(scroll).not.toHaveBeenCalled();
+    }
+  } finally {
+    scroll.mockRestore();
+  }
+});
+
+test("explicit anchors and Back/Forward still scroll, including repeated navigation to the same anchor", async () => {
+  const scroll = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+  try {
+    render(<MemoryRouter initialEntries={["/"]}><AnchorNavigationControls /><Home /></MemoryRouter>);
+    await screen.findByRole("button", { name: "Now Playing", exact: true });
+    await settleAnchorScroll();
+    expect(scroll).not.toHaveBeenCalled();
+    for (const action of ["Navigate to picker", "Navigate to picker", "Navigate to grid", "Go back", "Go forward"]) {
+      scroll.mockClear();
+      fireEvent.click(screen.getByRole("button", { name: action, exact: true }));
+      await settleAnchorScroll();
+      expect(scroll).toHaveBeenCalledTimes(1);
+    }
+  } finally {
+    scroll.mockRestore();
+  }
+});
+
+test("a delayed feed response does not replay the initial picker anchor", async () => {
+  const scroll = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+  const cache = jest.spyOn(homeFeedService, "getCachedFeedSnapshot").mockReturnValue(null);
+  const pendingFeeds = [];
+  axios.get.mockImplementation(() => new Promise((resolve) => pendingFeeds.push(resolve)));
+  try {
+    render(<MemoryRouter initialEntries={["/#pick-for-me"]}><Home /></MemoryRouter>);
+    await settleAnchorScroll();
+    expect(scroll).toHaveBeenCalled();
+    scroll.mockClear();
+    expect(pendingFeeds.length).toBeGreaterThan(0);
+    await act(async () => {
+      pendingFeeds.forEach((resolve) => resolve({ data: { results: [], total_pages: 1 } }));
+    });
+    await settleAnchorScroll();
+    expect(scroll).not.toHaveBeenCalled();
+  } finally {
+    cache.mockRestore();
+    scroll.mockRestore();
+  }
 });
