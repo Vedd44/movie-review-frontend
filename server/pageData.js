@@ -61,6 +61,8 @@ async function getPageData(rawPath, params = new URLSearchParams(), {collections
   if (path.length > 1 && path.endsWith('/')) return {redirect:path.replace(/\/+$/, '')};
   const legal = Object.values(legalCopy).find(page => page.path === path);
   if (legal) return {path, title: `${legal.title} | ReelBot`, heading: legal.title, description: legal.description, content: `<p>Updated ${escapeHtml(legal.updated)}</p>` + legal.sections.map(([heading,...paragraphs]) => `<section><h2>${escapeHtml(heading)}</h2>${paragraphs.map(text => `<p>${escapeHtml(text)}</p>`).join('')}</section>`).join('') + `<p>${link('/privacy','Privacy Policy')} · ${link('/terms','Terms of Service')}</p>`};
+  if (path === '/movie-news') return {redirect:'/news'};
+  if (path === '/news') return {path, title:'Movie news | ReelBot', heading:'Movie news', description:'Movie headlines from the film press, with ReelBot’s Take.', robots:'noindex,follow', content:'<p>Movie headlines from the film press, with ReelBot’s Take.</p>'};
   if (path === '/ask') return {redirect:'/#pick-for-me'};
   if (path === '/' && params.has('view')) return {redirect: ({popular:'/trending',upcoming:'/coming-soon'})[params.get('view')] || '/now-playing'};
   const shortShare = path.match(/^\/p\/([A-Za-z0-9_-]{12})$/);

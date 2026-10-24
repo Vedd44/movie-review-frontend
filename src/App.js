@@ -23,6 +23,7 @@ import "./pickerEditorial.css";
 
 const CLOSE_TRANSIENT_UI_EVENT = "reelbot:close-transient-ui";
 
+const MovieNews = lazy(() => import("./news/MovieNews"));
 const MovieNight = lazy(() => import("./MovieNight"));
 const BrowseLibrary = lazy(() => import("./BrowseLibrary"));
 const MyMovies = lazy(() => import("./MyMovies"));
@@ -220,6 +221,7 @@ function SiteFooter() {
         <NavLink to="/browse" className="site-footer-link">Browse</NavLink>
         <NavLink to="/collections" className="site-footer-link">Collections</NavLink>
         <NavLink to="/my-movies" className="site-footer-link">My Movies</NavLink>
+        <NavLink to="/news" className="site-footer-link">Movie news</NavLink>
         <NavLink to="/how-reelbot-works" className="site-footer-link site-footer-link--secondary">How it works</NavLink>
         <button type="button" className="site-footer-link site-footer-link--secondary site-footer-feedback" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback"><span className="site-footer-feedback-icon" aria-hidden="true">◌</span>Feedback</button>
       </div></nav>
@@ -257,6 +259,8 @@ function AppShell() {
               <Route path="/trending" element={<Home routeView="popular" isFeedRoute />} />
               <Route path="/coming-soon" element={<Home routeView="upcoming" isFeedRoute />} />
               <Route path="/browse" element={<BrowseLibrary />} />
+              <Route path="/news" element={<MovieNews />} />
+              <Route path="/movie-news" element={<Navigate to="/news" replace />} />
               <Route path="/collections" element={<CollectionsIndex />} />
               <Route path="/collections/:collectionSlug" element={<CollectionPage />} />
               <Route path="/my-movies" element={<MyMovies />} />

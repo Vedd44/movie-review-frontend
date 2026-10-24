@@ -1,3 +1,4 @@
+import { MovieNewsHome } from "./news/MovieNews";
 import { createActivityRequestId, recordRequestActivity, deferProductTelemetry } from "./productTelemetry";
 import productCopy from "./productCopy";
 import WatchCheckIn from "./components/WatchCheckIn";
@@ -2160,7 +2161,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         </section>
         ) : null}
 
-        {featured.isOctober ? featuredCollectionSection : null}
+        {featured.isOctober ? <>{featuredCollectionSection}{!isFeedRoute && <MovieNewsHome />}</> : null}
 
         <section id="movie-grid" className="home-browse-section">
           <div className="section-header section-header--compact section-header--stacked-mobile">
@@ -2291,7 +2292,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         ) : null}
         </section>
 
-        {!featured.isOctober ? featuredCollectionSection : null}
+        {!featured.isOctober ? <>{featuredCollectionSection}{!isFeedRoute && <MovieNewsHome />}</> : null}
 
         {!isFeedRoute ? <section className="home-magic-section" aria-labelledby="home-magic-title">
           <div className="home-magic-intro">

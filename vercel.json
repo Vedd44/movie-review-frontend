@@ -120,6 +120,9 @@
     },
     "api/product-events.js": {
       "maxDuration": 15
+    },
+    "api/movie-news-wake.js": {
+      "maxDuration": 60
     }
   },
   "git": {
@@ -128,5 +131,11 @@
       "release/mobile-picker-hierarchy-20261016": false,
       "release/cohesive-picker-journey-20261016": false
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/movie-news-wake",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }
