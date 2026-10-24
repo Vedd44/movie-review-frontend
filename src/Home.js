@@ -2161,7 +2161,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         </section>
         ) : null}
 
-        {featured.isOctober ? <>{featuredCollectionSection}{!isFeedRoute && <MovieNewsHome />}</> : null}
+        {featured.isOctober ? featuredCollectionSection : null}
 
         <section id="movie-grid" className="home-browse-section">
           <div className="section-header section-header--compact section-header--stacked-mobile">
@@ -2292,7 +2292,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         ) : null}
         </section>
 
-        {!featured.isOctober ? <>{featuredCollectionSection}{!isFeedRoute && <MovieNewsHome />}</> : null}
+        {!featured.isOctober ? featuredCollectionSection : null}
 
         {!isFeedRoute ? <section className="home-magic-section" aria-labelledby="home-magic-title">
           <div className="home-magic-intro">
@@ -2326,6 +2326,8 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             Try it with your own request <span aria-hidden="true">→</span>
           </button>
         </section> : null}
+
+        {!isFeedRoute && <MovieNewsHome />}
 
       </div>
 
