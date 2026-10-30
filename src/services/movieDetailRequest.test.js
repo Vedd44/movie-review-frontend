@@ -15,7 +15,7 @@ test.each([1,2,3])('first uncached read waits %s seconds then succeeds without r
  await advance(seconds*1000-1); expect(axios.get).toHaveBeenCalledTimes(1);
  await advance(1); expect(await request).toBe(response);
  expect(axios.get).toHaveBeenCalledTimes(2);
- expect(axios.get).toHaveBeenLastCalledWith('/movies/new',{signal:controller.signal});
+ expect(axios.get).toHaveBeenLastCalledWith('/movies/new',{signal:expect.anything(),timeout:15000});
 });
 test('warm read returns immediately with one request',async()=>{
  axios.get.mockResolvedValue({data:{id:1}}); await requestMovieDetails('/movies/warm');
@@ -46,4 +46,38 @@ test('a failure after admission remains a failure, not another retry',async()=>{
  const error={response:{status:503}};axios.get.mockRejectedValueOnce(limited(1)).mockRejectedValueOnce(error);
  const result=requestMovieDetails('/movies/new').catch(e=>e);await advance(1000);
  expect(await result).toBe(error);expect(axios.get).toHaveBeenCalledTimes(2);
+});
+
+test('a transport timeout is bounded and never automatically retried',async()=>{
+ const error=Object.assign(new Error('timeout of 15000ms exceeded'),{code:'ECONNABORTED'});
+ axios.get.mockRejectedValue(error);
+ await expect(requestMovieDetails('/movies/stalled')).rejects.toBe(error);
+ expect(axios.get).toHaveBeenCalledWith('/movies/stalled',{signal:expect.anything(),timeout:15000});
+ expect(axios.get).toHaveBeenCalledTimes(1);
+ expect(jest.getTimerCount()).toBe(0);
+});
+
+test('whole operation deadline rejects even a nonresponsive adapter and aborts its signal',async()=>{
+ let lateResolve;axios.get.mockImplementation(()=>new Promise(resolve=>{lateResolve=resolve;}));
+ const result=requestMovieDetails('/movies/stalled').catch(e=>e);await advance(14999);
+ expect(axios.get.mock.calls[0][1].signal.aborted).toBe(false);
+ await advance(1);expect(await result).toHaveProperty('code','ECONNABORTED');
+ expect(axios.get.mock.calls[0][1].signal.aborted).toBe(true);
+ expect(axios.get).toHaveBeenCalledTimes(1);expect(jest.getTimerCount()).toBe(0);
+ lateResolve({data:{id:1}});await flush();expect(await result).toHaveProperty('code','ECONNABORTED');
+});
+test('delayed short429 retries share one deadline, not three transport deadlines',async()=>{
+ axios.get.mockImplementation(()=>new Promise((resolve,reject)=>setTimeout(()=>reject(limited(3)),10000)));
+ const result=requestMovieDetails('/movies/slow-admission').catch(e=>e);
+ await advance(10000);expect(axios.get).toHaveBeenCalledTimes(1);
+ await advance(3000);expect(axios.get).toHaveBeenCalledTimes(2);
+ await advance(2000);expect(await result).toHaveProperty('code','ECONNABORTED');
+ expect(axios.get.mock.calls[1][1].signal.aborted).toBe(true);
+ await advance(10000);expect(axios.get).toHaveBeenCalledTimes(2);
+});
+test('caller cancellation settles even a nonresponsive adapter and removes deadline work',async()=>{
+ axios.get.mockImplementation(()=>new Promise(()=>{}));const controller=new AbortController();
+ const result=requestMovieDetails('/movies/stalled',{signal:controller.signal}).catch(e=>e);
+ await advance(0);controller.abort();expect(await result).toHaveProperty('name','AbortError');
+ expect(axios.get.mock.calls[0][1].signal.aborted).toBe(true);expect(jest.getTimerCount()).toBe(0);
 });

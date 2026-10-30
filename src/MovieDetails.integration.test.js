@@ -364,3 +364,14 @@ test('Back and Forward retain the collection only for that film history entry', 
  fireEvent.click(screen.getByRole('button',{name:'History forward'}));
  expect(await screen.findByRole('link',{name:'Back to Best Movies of the 1980s'})).toBeInTheDocument();
 });
+
+test('a stalled transport timeout leaves loading and offers existing explicit retry without changing collection state',async()=>{
+ const error=Object.assign(new Error('timeout of 15000ms exceeded'),{code:'ECONNABORTED'});
+ axios.get.mockRejectedValue(error);
+ const state={source:'collection',collectionVisit:{slug:'best-movies-of-the-1980s',movieId:679,moviePath:'/movies/aliens-1986'}};
+ render(<MemoryRouter initialEntries={[{pathname:'/movies/aliens-1986',state}]}><Routes><Route path='/movies/:movieSlug' element={<MovieDetails/>}/></Routes></MemoryRouter>);
+ expect(await screen.findByRole('heading',{name:'Unable to load this movie'})).toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'Try again'})).toBeEnabled();
+ expect(screen.queryByText('Loading movie details...')).not.toBeInTheDocument();
+ expect(axios.get).toHaveBeenCalledTimes(1);
+});
