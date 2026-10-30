@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import BrowseLibrary from "./BrowseLibrary";
+import { CollectionsIndex } from "./CollectionPage";
 import useTasteProfile from "./hooks/useTasteProfile";
 import { useAuth } from "./context/AuthContext";
 import { clearBrowseHistory } from "./browseHistory";
@@ -23,6 +24,7 @@ function Navigation() {
 function Journey({entry = "/browse?genre=878"}) {
   return <MemoryRouter initialEntries={[entry]}><Navigation/><Routes>
     <Route path="/browse" element={<BrowseLibrary/>}/>
+    <Route path="/collections" element={<CollectionsIndex/>}/>
     <Route path="/movies/:slug" element={<h1>Movie detail</h1>}/>
   </Routes></MemoryRouter>;
 }
@@ -202,4 +204,28 @@ test('return keeps the displayed order after detail recency changes and still ho
   await screen.findByRole('heading', { name: '878 page 1 1' });
   expect(screen.queryByRole('heading', { name: '878 page 1 0' })).not.toBeInTheDocument();
   expect(screen.getAllByRole('heading', { level: 3 }).map(heading => heading.textContent)).toEqual(before.slice(1));
+});
+
+
+test('era discovery opens the existing category and Back restores the progressive Browse list', async () => {
+  render(<Journey/>);
+  await screen.findByRole('heading', {name:'878 page 1 0'});
+  fireEvent.click(screen.getByRole('link', {name:'Load more'}));
+  await screen.findByRole('heading', {name:'878 page 2 0'});
+  const before = screen.getAllByRole('heading', {level:3}).map(node => node.textContent);
+  const disclosure = document.querySelector('.browse-filter-disclosure');
+  disclosure.open = true;
+  fireEvent(disclosure, new Event('toggle'));
+  Object.defineProperty(window, 'scrollY', {configurable:true, value:120});
+  fireEvent.click(screen.getByRole('link', {name:'Explore movies across the decades'}));
+  expect(screen.getByTestId('url')).toHaveTextContent('/collections?category=era');
+  expect(await screen.findByRole('button', {name:'Era', exact:true})).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(screen.getByRole('button', {name:'Browser back'}));
+  await screen.findByRole('heading', {name:'878 page 2 0'});
+  expect(screen.getAllByRole('heading', {level:3}).map(node => node.textContent)).toEqual(before);
+  await waitFor(() => expect(screen.getByLabelText('Genre')).toHaveValue('878'));
+  expect(document.querySelector('.browse-filter-disclosure')).toHaveAttribute('open');
+  expect(screen.getByTestId('url')).toHaveTextContent('/browse?genre=878&page=2');
+  expect(window.scrollTo).toHaveBeenCalledWith({top:120, behavior:'instant'});
+  expect(axios.get.mock.calls.filter(([url]) => url.includes('/movies?'))).toHaveLength(2);
 });

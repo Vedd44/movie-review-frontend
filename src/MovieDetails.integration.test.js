@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, Link, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import MovieDetails from "./MovieDetails";
 import { useAuth } from "./context/AuthContext";
@@ -327,4 +327,40 @@ test("navigation during a retry does not fetch or display the abandoned movie", 
   await new Promise(resolve => setTimeout(resolve,1100));
   expect(axios.get.mock.calls.filter(([url])=>String(url).includes('/resolve/old-film'))).toHaveLength(1);
   expect(screen.queryByText('Unable to load this movie')).not.toBeInTheDocument();
+});
+
+test('collection return preserves canonical breadcrumbs and is film-bound', async () => {
+ const state = {source:'collection',collectionVisit:{slug:'best-movies-of-the-1980s',movieId:679,moviePath:'/movies/aliens-1986'}};
+ render(<MemoryRouter initialEntries={[{pathname:'/movies/aliens-1986',state}]}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/><Route path="/collections/:slug" element={<h1>Returned to collection</h1>}/></Routes></MemoryRouter>);
+ const back = await screen.findByRole('link',{name:'Back to Best Movies of the 1980s'});
+ expect(back).toHaveAttribute('href','/collections/best-movies-of-the-1980s');
+ expect(within(screen.getByRole('navigation',{name:'Breadcrumb'})).getByRole('link',{name:'Browse'})).toHaveAttribute('href','/browse');
+ fireEvent.click(back);
+ expect(await screen.findByRole('heading',{name:'Returned to collection'})).toBeInTheDocument();
+});
+
+test.each([undefined,{source:'collection',collectionVisit:{slug:'best-movies-of-the-1980s',movieId:1,moviePath:'/movies/aliens-1986'}}])('direct or stale film visit has no collection return', async state => {
+ render(<MemoryRouter initialEntries={[{pathname:'/movies/aliens-1986',state}]}><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/></Routes></MemoryRouter>);
+ await screen.findByRole('heading',{name:'ReelBot’s Take'});
+ expect(screen.queryByRole('link',{name:/Back to Best Movies/})).not.toBeInTheDocument();
+});
+
+test('shared pick never inherits a collection return even when router state is supplied', async () => {
+ axios.get.mockImplementation(url => Promise.resolve(String(url).includes('/reelbot/shares/') ? {data:{v:1,id:679,brief:'Tense science fiction',why:'Tactical tension.'}} : String(url).includes('/reelbot-take') ? {data:{take:generatedTake}} : {data:movie}));
+ const state={source:'collection',collectionVisit:{slug:'best-movies-of-the-1980s',movieId:679,moviePath:'/movies/aliens-1986'}};
+ render(<MemoryRouter initialEntries={[{pathname:'/p/Abcdef123456',state}]}><Routes><Route path="/p/:shareId" element={<MovieDetails/>}/></Routes></MemoryRouter>);
+ await screen.findByRole('heading',{name:'Aliens'});
+ expect(screen.queryByRole('link',{name:/Back to Best Movies/})).not.toBeInTheDocument();
+});
+
+
+test('Back and Forward retain the collection only for that film history entry', async () => {
+ const state={source:'collection',collectionVisit:{slug:'best-movies-of-the-1980s',movieId:679,moviePath:'/movies/aliens-1986'}};
+ function HistoryControls(){ const navigate=useNavigate(); return <><button onClick={()=>navigate(-1)}>History back</button><button onClick={()=>navigate(1)}>History forward</button></>; }
+ render(<MemoryRouter initialEntries={['/collections/best-movies-of-the-1980s',{pathname:'/movies/aliens-1986',state}]} initialIndex={1}><HistoryControls/><Routes><Route path="/movies/:movieSlug" element={<MovieDetails/>}/><Route path="/collections/:slug" element={<h1>Collection</h1>}/></Routes></MemoryRouter>);
+ await screen.findByRole('link',{name:'Back to Best Movies of the 1980s'});
+ fireEvent.click(screen.getByRole('button',{name:'History back'}));
+ expect(await screen.findByRole('heading',{name:'Collection'})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'History forward'}));
+ expect(await screen.findByRole('link',{name:'Back to Best Movies of the 1980s'})).toBeInTheDocument();
 });

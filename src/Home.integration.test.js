@@ -287,9 +287,11 @@ test('October editorial cards preserve the broad picker and stay off feed routes
 test('outside October the evergreen shelf returns below Browse', async () => {
   const now = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-01T04:00:00Z'));
   render(<MemoryRouter><Home /></MemoryRouter>);
-  expect(await screen.findByRole('heading', { name: 'Explore our latest collections' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Explore our collections' })).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Oh, the Horror!' })).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /Best 90s Action Movies/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Best Feel-Good Movies/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Great Thrillers Under 2 Hours/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Animated Movies for Adults/ })).toBeInTheDocument();
   const shelf = document.querySelector('.home-collections-section');
   const browse = document.getElementById('movie-grid');
   expect(browse.compareDocumentPosition(shelf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

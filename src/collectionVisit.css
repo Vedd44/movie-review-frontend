@@ -1,0 +1,9 @@
+/* Collection titles can be much longer than the existing pick-return label. */
+.detail-topbar .detail-collection-return {
+  box-sizing: border-box;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}

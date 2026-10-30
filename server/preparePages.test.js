@@ -32,7 +32,11 @@ test('the actual postbuild script keeps static homepage evergreen across campaig
     await Promise.all(pending);
     await new Promise(resolve => setImmediate(resolve));
     const html = writes.get('build/index.html');
-    assert.ok(html.includes('/collections/best-90s-action-movies'));
+    for (const slug of ['best-feel-good-movies', 'great-thrillers-under-2-hours', 'animated-movies-for-adults']) {
+      assert.ok(html.includes(`/collections/${slug}`));
+    }
+    assert.ok(html.includes('Explore our collections'));
+    assert.ok(!html.includes('/collections/movies-like-heat'));
     assert.ok(!html.includes('/collections/best-halloween-movies'));
     assert.ok(!html.includes('Oh, the Horror!'));
   }

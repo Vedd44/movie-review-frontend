@@ -1,3 +1,4 @@
+import { createCollectionVisit } from "./collectionVisit";
 import { collectionTitle } from "./seoTitles";
 import ArtworkFallback from "./components/ArtworkFallback";
 import React, { useEffect, useMemo, useState } from "react";
@@ -18,11 +19,12 @@ import { collectionMovieNote, collectionItemList, collectionSocialImagePath } fr
 import { getSiteOrigin } from "./siteConfig";
 import { collectionCalendarDay, getNextCollectionBoundary, sortCollections } from "./collectionOrder";
 
-function CollectionCard({ movie, note }) {
+function CollectionCard({ movie, note, collection }) {
+  const state = createCollectionVisit(collection, movie);
   return (
     <article className="movie-card movie-card--browse collection-movie-card">
       <div className="movie-poster-shell">
-        <Link to={getMoviePath(movie)} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
+        <Link to={getMoviePath(movie)} state={state} className="movie-poster-link" aria-label={`Open ${movie.title}`}>
           {movie.poster_path ? (
             <img src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt={movie.title} className="movie-poster" width="300" height="450" loading="lazy" decoding="async" />
           ) : <ArtworkFallback className="no-poster" />}
@@ -30,7 +32,7 @@ function CollectionCard({ movie, note }) {
       </div>
       <div className="movie-card-content">
         <MovieCardMeta movie={movie} />
-        <h2 className="movie-card-title"><Link to={getMoviePath(movie)} className="movie-title-link">{movie.title}</Link></h2>
+        <h2 className="movie-card-title"><Link to={getMoviePath(movie)} state={state} className="movie-title-link">{movie.title}</Link></h2>
         {note ? <p className="collection-movie-note">{note}</p> : null}
         {movie.release_date > new Date().toISOString().slice(0, 10) ? <p className="movie-card-date">{formatMovieDate(movie.release_date)}</p> : null}
       </div>
@@ -218,7 +220,7 @@ export default function CollectionPage() {
           <div className="loading-message" role="status"><span className="status-glyph" aria-hidden="true"></span><span>Loading collection...</span></div>
         ) : !movies.length ? <div className="collection-empty" role="alert"><p>This collection is temporarily unavailable.</p><button className="reelbot-inline-button" onClick={() => window.location.reload()}>Try again</button></div> : (
           <div className="movie-list collection-movie-list">
-            {movies.map((movie) => <CollectionCard key={movie.id} movie={movie} note={collectionMovieNote(collection, movie)} />)}
+            {movies.map((movie) => <CollectionCard key={movie.id} movie={movie} collection={collection} note={collectionMovieNote(collection, movie)} />)}
           </div>
         )}
         {relatedCollections.length ? (

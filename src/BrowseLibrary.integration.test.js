@@ -264,3 +264,44 @@ test('leaving Browse aborts its pending pick, releases telemetry, and ignores it
   expect(useTasteProfile().actions.recordPickResult).not.toHaveBeenCalled();
  }finally{view.unmount();consent.setCookieChoice('rejected');jest.clearAllTimers();jest.useRealTimers();process.env.NODE_ENV=previous;global.fetch=originalFetch;Object.defineProperty(window,'crypto',{configurable:true,value:oldCrypto});}
 },10000);
+
+
+test("Browse offers a quiet route to era collections without replacing discovery controls", async () => {
+  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+  const eraLink = screen.getByRole("link", { name: "Explore movies across the decades" });
+  expect(eraLink).toHaveAttribute("href", "/collections?category=era");
+  expect(eraLink.closest(".browse-copy")).not.toBeNull();
+  expect(screen.getByRole("button", { name: "Trending" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "Ask ReelBot to pick one" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Aliens" })).toBeInTheDocument();
+});
+
+
+test("runtime verification 503 stops automatic fill and does not cascade through pages", async () => {
+  const logged = jest.spyOn(console, "error").mockImplementation(() => {});
+  axios.get.mockClear();
+  axios.get.mockImplementation(url => url.includes("/genres")
+    ? Promise.resolve({data:{genres:[]}})
+    : Promise.reject(Object.assign(new Error("runtime unavailable"), {response:{status:503, headers:{"retry-after":"30"}}})));
+  render(<MemoryRouter initialEntries={["/browse?runtime=under_two_hours&page=1&view=popular"]}><BrowseLibrary /></MemoryRouter>);
+  expect(await screen.findByText("Failed to fetch browse library movies.")).toBeInTheDocument();
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
+  expect(axios.get.mock.calls.filter(([url]) => url.includes("/movies?"))).toHaveLength(1);
+  expect(screen.queryByText("Nothing great matched that exactly. Try loosening one filter.")).not.toBeInTheDocument();
+  logged.mockRestore();
+});
+
+
+test("sparse runtime matches stop automatic lookahead at three pages but allow manual Load more", async () => {
+  axios.get.mockClear();
+  axios.get.mockImplementation(url => Promise.resolve({data:url.includes("/genres")
+    ? {genres:[]} : {results:[],total_pages:500,total_results:10000}}));
+  render(<MemoryRouter initialEntries={["/browse?runtime=under_two_hours&page=1&view=popular"]}><BrowseLibrary /></MemoryRouter>);
+  await waitFor(() => expect(axios.get.mock.calls.filter(([url]) => url.includes("/movies?"))).toHaveLength(3));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
+  expect(axios.get.mock.calls.filter(([url]) => url.includes("/movies?"))).toHaveLength(3);
+  fireEvent.click(screen.getByRole("link", {name:"Load more"}));
+  await waitFor(() => expect(axios.get.mock.calls.filter(([url]) => url.includes("/movies?"))).toHaveLength(4));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
+  expect(axios.get.mock.calls.filter(([url]) => url.includes("/movies?"))).toHaveLength(4);
+});

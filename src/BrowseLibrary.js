@@ -281,13 +281,16 @@ function BrowseLibrary() {
     // Run after filteredMovies and updateFilters are defined so CI lint does not see
     // use-before-define / unstable dependency ordering.
     if (loading || loadingMore || error || loadedHistoryKey !== historyKey || readBrowseHistory(historyKey)?.pendingPage || normalizedPage >= totalPages || filteredMovies.length >= 12) return;
+    // Runtime filters verify details per page. Bound automatic sparse-result
+    // lookahead; after three pages the user can explicitly choose Load more.
+    if (normalizedRuntime !== "any" && normalizedPage >= 3) return;
     setLoadingMore(true);
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(normalizedPage + 1));
     if (!nextParams.get("view")) nextParams.set("view", normalizedView);
     setSearchParams(nextParams);
-  }, [error, filteredMovies.length, historyKey, loadedHistoryKey, loading, loadingMore, normalizedPage, normalizedView, searchParams, setSearchParams, totalPages]);
+  }, [error, filteredMovies.length, historyKey, loadedHistoryKey, loading, loadingMore, normalizedPage, normalizedRuntime, normalizedView, searchParams, setSearchParams, totalPages]);
 
   const libraryRationale = useMemo(
     () => buildRecommendationRationale({ pickResult, activePick: pickResult?.primary, profile }),
@@ -599,6 +602,7 @@ function BrowseLibrary() {
           <div className="browse-copy">
             <h1 className="browse-title">Browse movies</h1>
             <p className="rb-page-dek">Follow your mood, revisit a favorite genre, or let ReelBot make the call.</p>
+            <Link className="browse-era-link" to="/collections?category=era" onClick={rememberBrowsePosition}>Explore movies across the decades <span aria-hidden="true">→</span></Link>
           </div>
         </section>
 

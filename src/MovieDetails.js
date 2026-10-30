@@ -1,3 +1,5 @@
+import "./collectionVisit.css";
+import { getCollectionReturn } from "./collectionVisit";
 import DetailShare from "./components/DetailShare";
 import { movieTitle } from "./seoTitles";
 import MovieCopy from "./components/MovieCopy";
@@ -337,6 +339,8 @@ function MovieDetails() {
     window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }, []);
 
+  const collectionReturn = !shareId && !sharedPick ? getCollectionReturn(location.state, movie) : null;
+
   const backToPick = () => navigate("/#pick-result", { state: { restorePickSession: true, scrollToPickResult: true } });
 
   if (loading) return <div className="loading-message" role="status"><span className="status-glyph" aria-hidden="true"></span><span>Loading movie details...</span></div>;
@@ -356,7 +360,7 @@ function MovieDetails() {
             <Link to="/browse" className="detail-breadcrumb-link">Browse</Link><span className="detail-breadcrumb-separator" aria-hidden="true">/</span>
             <span className="detail-breadcrumb-current" aria-current="page">{movie.title}</span>
           </div>
-          {canTryAnother ? <button type="button" className="detail-text-action detail-topbar-return" onClick={backToPick}>Back to your pick</button> : null}
+          {canTryAnother ? <button type="button" className="detail-text-action detail-topbar-return" onClick={backToPick}>Back to your pick</button> : collectionReturn ? <Link className="detail-text-action detail-topbar-return detail-collection-return" to={collectionReturn.path}>Back to {collectionReturn.title}</Link> : null}
         </nav>
 
 

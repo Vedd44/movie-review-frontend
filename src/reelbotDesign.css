@@ -1333,3 +1333,35 @@ h1, h2, h3, h4 { color: var(--rb-text); letter-spacing: -.035em; line-height: 1.
   .rb-intro:not(.rb-intro--has-pick) .rb-intro-films { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; padding-top: 16px; }
   .rb-intro:not(.rb-intro--has-pick) .rb-intro-film-caption { order: -1; margin-top: 0; align-items: baseline; }
 }
+
+/* Browse-only hierarchy: keep discovery controls close to the catalog. */
+.browse-library-page .browse-shell { padding-top: 28px; }
+.browse-library-page .browse-hero { padding: 0; margin-bottom: 12px; }
+.browse-library-page .browse-title { margin-bottom: 12px; }
+.browse-library-page .browse-era-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  margin-top: 4px;
+  color: var(--rb-muted);
+  font-size: .9rem;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.browse-library-page .browse-era-link:hover { color: var(--rb-gold); }
+.browse-library-page .browse-era-link:focus-visible {
+  outline: 2px solid var(--rb-gold);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.browse-library-page .library-discovery-controls {
+  margin-bottom: 0;
+}
+.browse-library-page .browse-filter-disclosure { margin-top: 4px; }
+.browse-library-page .library-results-head { padding-top: 8px; }
+@media (max-width: 599px) {
+  .browse-library-page .browse-shell { padding-top: 20px; }
+}

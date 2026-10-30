@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import CollectionPage from './CollectionPage';
 import { getCollection } from './collections';
 import { collectionItemList } from './collectionEditorial';
@@ -44,4 +44,13 @@ test('Haunted uses concise complete copy and standard movie cards without per-fi
   expect(document.querySelector('meta[property="og:image"]')).toHaveAttribute('content',window.location.origin+'/social/collections/haunted-house-ghost-stories-v6.jpg');
   expect(document.querySelectorAll('.collection-movie-card')).toHaveLength(8);
   expect(document.querySelectorAll('.collection-movie-note')).toHaveLength(0);
+});
+
+test.each(['Open When Harry Met Sally...', 'When Harry Met Sally...'])('%s carries film-bound return state without changing canonical URLs', async name => {
+ const Probe = () => <output data-testid="visit">{JSON.stringify(useLocation().state)}</output>;
+ render(<MemoryRouter initialEntries={['/collections/cozy-fall-movies']}><Routes><Route path="/collections/:collectionSlug" element={<CollectionPage/>}/><Route path="/movies/:slug" element={<Probe/>}/></Routes></MemoryRouter>);
+ const link = await screen.findByRole('link',{name});
+ expect(link).toHaveAttribute('href','/movies/when-harry-met-sally-1989');
+ fireEvent.click(link);
+ expect(JSON.parse(screen.getByTestId('visit').textContent)).toMatchObject({source:'collection',collectionVisit:{slug:'cozy-fall-movies',moviePath:'/movies/when-harry-met-sally-1989'}});
 });

@@ -3,7 +3,7 @@ import { getFeaturedCollections, getNextFeaturedBoundary, OCTOBER_START, OCTOBER
 import manifest from './generatedCollectionMovies.json';
 import previews from './generatedCollectionPreviews.json';
 
-const evergreen = ['best-90s-action-movies', 'movies-like-heat', 'movies-like-interstellar'];
+const evergreen = ['best-feel-good-movies', 'great-thrillers-under-2-hours', 'animated-movies-for-adults'];
 const october = ['haunted-house-ghost-stories', 'best-halloween-movies', 'cozy-fall-movies'];
 const slugs = now => getFeaturedCollections(COLLECTIONS, now).collections.map(c => c.slug);
 
@@ -39,4 +39,28 @@ test('the corrected under-two-hours promise is true for every movie', () => {
     expect(manifest[slug].runtime).toBeGreaterThan(0);
     expect(manifest[slug].runtime).toBeLessThan(120);
   });
+});
+
+
+test('the November handoff remains stable through the New York daylight-saving change', () => {
+  for (const timestamp of ['2026-11-01T04:00:00Z', '2026-11-01T05:59:59Z', '2026-11-01T06:00:00Z', '2026-11-02T05:00:00Z']) {
+    expect(slugs(Date.parse(timestamp))).toEqual(evergreen);
+  }
+  expect(getFeaturedCollections(COLLECTIONS, OCTOBER_END).heading).toBe('Explore our collections');
+  expect(getFeaturedCollections(COLLECTIONS, OCTOBER_START, 'evergreen').collections.map(c => c.slug)).toEqual(evergreen);
+});
+
+test('the November mix keeps all 37 reviewed films, distinct lineups and cached artwork', () => {
+  const before = JSON.stringify(COLLECTIONS);
+  const featured = getFeaturedCollections(COLLECTIONS, OCTOBER_END).collections;
+  expect(featured.map(c => c.movies.length)).toEqual([15, 14, 8]);
+  const films = featured.flatMap(c => c.movies);
+  expect(new Set(films).size).toBe(37);
+  films.forEach(slug => {
+    expect(manifest[slug]?.id).toBeTruthy();
+    expect(manifest[slug]?.runtime).toBeGreaterThan(0);
+    expect(manifest[slug]?.poster_path).toBeTruthy();
+  });
+  featured.forEach(c => c.movies.slice(0, 3).forEach(slug => expect(previews[slug]?.poster_path).toBeTruthy()));
+  expect(JSON.stringify(COLLECTIONS)).toBe(before);
 });
