@@ -208,7 +208,7 @@ function PickResultPanel({
                     ) : null}
                   </div>
                   {recoveryPlacement !== "refinement" || !showCompanion ? recoveryContent : null}
-                  {refreshExhaustionMessage ? (
+                  {refreshExhaustionMessage && !shouldShowInlineRecovery ? (
                     <p className="pick-refresh-hint">{refreshExhaustionMessage}</p>
                   ) : null}
                   {!showCompanion && showDetailLink ? (

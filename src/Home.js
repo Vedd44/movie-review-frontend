@@ -97,7 +97,7 @@ const HOMEPAGE_MOBILE_DISPLAY_COUNT = 6;
 const HOMEPAGE_BASE_DISPLAY_COUNT = HOMEPAGE_DESKTOP_DISPLAY_COUNT;
 const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 18;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
-const SOFT_SWAP_MESSAGE = "Want more options? Refine this pick or start fresh.";
+const SOFT_SWAP_MESSAGE = "I couldn’t find another close fit for this request. Your last pick is still here. Adjust this pick below, or start fresh.";
 const RESTORE_STATUS_TIMEOUT_MS = 1000;
 const SWAP_LOADING_MESSAGE = "Finding your pick…";
 const PICK_REQUEST_FALLBACK_MESSAGE = "Try loosening one detail.";
@@ -1360,7 +1360,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       : pickStatus === PICK_STATUS.ERROR
         ? "Your last pick is still here"
         : pickStatus === PICK_STATUS.EXHAUSTED && activePick
-          ? "Want more options?"
+          ? "Try a different direction"
           : "";
   const pickRecoveryMessage = activePick
     ? (pickStatus === PICK_STATUS.LOADING_SWAP

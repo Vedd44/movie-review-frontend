@@ -106,3 +106,25 @@ test('keeps bounded request adjustments separate, disables pending actions, and 
   view.rerender(app({ ...props, movie: { id: 2, title: 'Another movie' } }));
   expect(screen.queryByRole('status')).not.toBeInTheDocument();
 });
+
+
+test('gives the refinement card visible context and every direction an accessible description', () => {
+  const refineActions = [
+    { id: 'different_angle', label: 'Alternate take' },
+    { id: 'lighter', label: 'Lighter' },
+    { id: 'more_like_this', label: 'More like this' },
+  ];
+  const onRefine = jest.fn();
+  render(app({ refineActions, onRefine }));
+  expect(screen.getByText('Keep your request, change the direction.')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Lighter' })).not.toBeVisible();
+  fireEvent.click(screen.getByText('Adjust this pick'));
+  expect(screen.getByRole('button', { name: 'Alternate take' })).toHaveAccessibleDescription('A different approach to your request');
+  expect(screen.getByRole('button', { name: 'Lighter' })).toHaveAccessibleDescription('A lighter mood');
+  expect(screen.getByRole('button', { name: 'More like this' })).toHaveAccessibleDescription('Closer to A movie');
+  fireEvent.click(screen.getByRole('button', { name: 'Lighter' }));
+  expect(onRefine).toHaveBeenCalledWith(refineActions[1]);
+  fireEvent.click(screen.getByText('Adjust this pick'));
+  expect(screen.getByRole('button', { name: 'Lighter' })).not.toBeVisible();
+  expect(screen.getByText('Keep your request, change the direction.')).toBeVisible();
+});

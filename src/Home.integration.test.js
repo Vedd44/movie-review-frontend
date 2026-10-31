@@ -151,6 +151,9 @@ test('a single exhausted swap does not claim five tries',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Get another pick'}));
  expect(await screen.findByText(/couldn’t find another close fit/)).toBeVisible();
  expect(screen.queryByText(/five fresh tries/)).not.toBeInTheDocument();
+ expect(screen.getAllByText(/couldn’t find another close fit/)).toHaveLength(1);
+ expect(screen.getByText('Try a different direction')).toBeVisible();
+ expect(screen.queryByText(/Want more options/)).not.toBeInTheDocument();
  expect(screen.getByRole('heading',{name:'Aliens'})).toBeInTheDocument();
 });
 
