@@ -97,7 +97,7 @@ const HOMEPAGE_MOBILE_DISPLAY_COUNT = 6;
 const HOMEPAGE_BASE_DISPLAY_COUNT = HOMEPAGE_DESKTOP_DISPLAY_COUNT;
 const HOMEPAGE_EXPANDED_DISPLAY_COUNT = 18;
 const HOMEPAGE_MAX_RELEASE_WINDOW_DAYS = 210;
-const SOFT_SWAP_MESSAGE = "Want more options? Refine this pick or start fresh.";
+const SOFT_SWAP_MESSAGE = "I couldn’t find another close fit for this request. Your last pick is still here. Adjust this pick below, or start fresh.";
 const RESTORE_STATUS_TIMEOUT_MS = 1000;
 const SWAP_LOADING_MESSAGE = "Finding your pick…";
 const PICK_REQUEST_FALLBACK_MESSAGE = "Try loosening one detail.";
@@ -1350,7 +1350,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const candidatePoolExhausted = pickStatus === PICK_STATUS.EXHAUSTED;
   const refreshExhausted = swapCount >= MAX_FRESH_PICK_ATTEMPTS;
   const refreshExhaustionMessage = refreshExhausted
-    ? "That’s five fresh tries. Start fresh with a new request, or refine this pick."
+    ? "That’s five fresh tries. Start fresh with a new request."
     : candidatePoolExhausted
       ? "I couldn’t find another close fit for this request. Your last pick is still here."
       : "";
@@ -1360,7 +1360,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
       : pickStatus === PICK_STATUS.ERROR
         ? "Your last pick is still here"
         : pickStatus === PICK_STATUS.EXHAUSTED && activePick
-          ? "Want more options?"
+          ? (refreshExhausted ? "Try a new request" : "Try a different direction")
           : "";
   const pickRecoveryMessage = activePick
     ? (pickStatus === PICK_STATUS.LOADING_SWAP
@@ -1370,7 +1370,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         : pickStatus === PICK_STATUS.ERROR
           ? (pickError || SWAP_REQUEST_ERROR_MESSAGE)
           : pickStatus === PICK_STATUS.EXHAUSTED
-            ? SOFT_SWAP_MESSAGE
+            ? (refreshExhausted ? `${refreshExhaustionMessage} Your last pick is still here.` : SOFT_SWAP_MESSAGE)
             : "")
     : "";
   const inlineRefineStatus = activePick && isPickBusy ? (pickLoadingMessageOverride || (isSwapLoading ? SWAP_LOADING_MESSAGE : PICK_LOADING_MESSAGES[0])) : "";
@@ -2147,7 +2147,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               onInteraction: markFirstPickSummarySeen,
             }}
             hideRefreshCta={refreshExhausted}
-            refreshExhaustionMessage={refreshExhaustionMessage}
+            refreshExhaustionMessage={candidatePoolExhausted ? "" : refreshExhaustionMessage}
           />
           {isSessionHomepageUser && activePick ? (
             <div className="session-save-nudge">
