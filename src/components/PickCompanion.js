@@ -18,7 +18,7 @@ export default function PickCompanion({ movie, onRefine, refineActions = [], dis
     {onRefine && refineActions.length ? <details ref={refinementsRef} className="picker-refinements" key={`refine-${movie.id}`}>
       <summary><span className="picker-refinements-heading"><span>Adjust this pick</span><span className="picker-refinements-intro">Keep your request, change the direction.</span></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
       {recovery}
-      <div className="pick-companion-actions" style={{ "--refine-action-count": refineActions.length }}>{refineActions.map(action => <button className="pick-adjust-chip" type="button" key={action.id} aria-label={action.label} aria-describedby={descriptions[action.id] ? `${descriptionId}-${action.id}` : undefined} disabled={disabled} onClick={() => onRefine(action)}>
+      <div className={`pick-companion-actions${refineActions.length > 3 ? " pick-companion-actions--many" : ""}`} style={{ "--refine-action-count": refineActions.length }}>{refineActions.map(action => <button className="pick-adjust-chip" type="button" key={action.id} aria-label={action.label} aria-describedby={descriptions[action.id] ? `${descriptionId}-${action.id}` : undefined} disabled={disabled} onClick={() => onRefine(action)}>
         <span>{action.label}</span>
         {descriptions[action.id] ? <small id={`${descriptionId}-${action.id}`}>{descriptions[action.id]}</small> : null}
       </button>)}</div>

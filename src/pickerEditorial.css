@@ -277,6 +277,10 @@
 .picker-editorial .pick-feedback-row { margin-top: 12px; }
 .home-result-section .pick-session-recovery-title { margin: 0 0 7px; line-height: 1.4; }
 .home-result-section .pick-session-recovery-copy { margin: 0; }
+@media (max-width: 900px) {
+  .picker-editorial .picker-refinements .pick-companion-actions--many { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .picker-editorial .pick-companion-actions--many .pick-adjust-chip:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
 @media (max-width: 740px) {
   .picker-editorial .picker-refinements .pick-companion-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .picker-editorial .picker-refinements .pick-adjust-chip:last-child:nth-child(odd) { grid-column: 1 / -1; }

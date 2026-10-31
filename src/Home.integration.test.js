@@ -604,3 +604,32 @@ test("a delayed feed response does not replay the initial picker anchor", async 
     scroll.mockRestore();
   }
 });
+
+
+test.each(['empty', 'error'])('the fifth %s swap preserves the limit explanation and an actionable start-fresh path', async outcome => {
+  for (let i = 0; i < 5; i += 1) {
+    axios.post.mockResolvedValueOnce({ data: { ...pickPayload, primary: { ...pickPayload.primary, id: 100 + i, title: `Pick ${i}` } } });
+  }
+  if (outcome === 'empty') axios.post.mockResolvedValueOnce({ data: { primary: null, alternates: [], no_pick_reason: 'no_suitable_candidate' } });
+  else axios.post.mockRejectedValueOnce(new Error('Temporary network failure'));
+  const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    render(<MemoryRouter><Home /></MemoryRouter>);
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Describe the movie you want' }), { target: { value: 'A movie for tonight' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+    for (let i = 0; i < 5; i += 1) {
+      await screen.findByRole('heading', { name: `Pick ${i}` });
+      fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+    }
+    await waitFor(() => expect(screen.queryByText(/Finding a fresh pick/)).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'Pick 4' })).toBeInTheDocument();
+    expect(screen.getAllByText(/That’s five fresh tries/)).toHaveLength(1);
+    expect(screen.getByText(/That’s five fresh tries/)).toHaveTextContent('Start fresh with a new request.');
+    expect(screen.queryByText(/Adjust this pick below/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Get another pick' })).not.toBeInTheDocument();
+    const startFresh = screen.getByRole('button', { name: 'Start fresh', exact: true });
+    expect(startFresh).not.toBeDisabled();
+    fireEvent.click(startFresh);
+    expect(screen.getByRole('textbox', { name: 'Describe the movie you want' })).toBeVisible();
+  } finally { errorLog.mockRestore(); }
+});

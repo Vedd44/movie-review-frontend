@@ -128,3 +128,11 @@ test('gives the refinement card visible context and every direction an accessibl
   expect(screen.getByRole('button', { name: 'Lighter' })).not.toBeVisible();
   expect(screen.getByText('Keep your request, change the direction.')).toBeVisible();
 });
+
+
+test('marks longer refinement menus for the roomier responsive grid', () => {
+  const actions = ['lighter', 'darker', 'shorter', 'different_angle', 'more_like_this'].map(id => ({ id, label: id }));
+  const { container } = render(app({ refineActions: actions, onRefine: jest.fn() }));
+  expect(container.querySelector('.pick-companion-actions')).toHaveClass('pick-companion-actions--many');
+  expect(container.querySelectorAll('.pick-adjust-chip')).toHaveLength(5);
+});
