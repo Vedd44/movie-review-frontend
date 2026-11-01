@@ -18,6 +18,8 @@ function ReelbotPromptComposer({
   onBlur,
   onSubmit,
   submitDisabled = false,
+  showSubmitButton = true,
+  allowEmptySubmit = false,
   placeholder,
   errorText = "",
   maxLength = 500,
@@ -50,7 +52,7 @@ function ReelbotPromptComposer({
 
   const handleKeyDown = (event) => {
     onKeyDown?.(event);
-    if (!event.defaultPrevented && onSubmit && !multiline && event.key === "Enter" && value?.trim() && !submitDisabled) {
+    if (!event.defaultPrevented && !event.nativeEvent.isComposing && onSubmit && !multiline && event.key === "Enter" && (allowEmptySubmit || value?.trim()) && !submitDisabled) {
       event.preventDefault();
       inputRef.current?.blur();
       onSubmit();
@@ -81,12 +83,12 @@ function ReelbotPromptComposer({
           aria-invalid={errorText ? "true" : "false"}
           aria-describedby={errorText ? "pick-prompt-validation" : undefined}
         />
-        {onSubmit ? (
+        {onSubmit && showSubmitButton ? (
           <button
             type="button"
             className="pick-prompt-submit"
             aria-label="Submit prompt"
-            disabled={submitDisabled || !value?.trim()}
+            disabled={submitDisabled || (!allowEmptySubmit && !value?.trim())}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               inputRef.current?.blur();

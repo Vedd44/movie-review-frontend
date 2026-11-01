@@ -492,6 +492,17 @@ function BrowseLibrary() {
     await requestLibraryPick({ refreshKey: `browse-pick-${Date.now()}`, isSwap: false });
   };
 
+  const handleLibrarySuggestion = (prompt) => {
+    // Match the shared composer's phone behavior without opening the keyboard.
+    document.getElementById("library-pick-prompt")?.blur();
+    setPickPrompt(prompt);
+    window.requestAnimationFrame(() => {
+      if (window.matchMedia("(max-width: 720px)").matches) {
+        document.getElementById("library-pick-prompt")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+  };
+
   const handleRefreshLibraryPick = async () => {
     trackProductEvent("another_pick_clicked", {page:"browse",movie_id:Number(pickResult?.primary?.id || 0)});
     const swapPreferences = {
@@ -648,26 +659,24 @@ function BrowseLibrary() {
         {showReelbotPicker || pickResult?.primary || pickError || pickLoading ? (
           <section id="library-reelbot-picker" className="pick-for-me-card library-reelbot-card library-reelbot-card--inline">
             <div className="library-reelbot-body">
-            {!pickResult?.primary && !pickLoading ? <div className="section-header section-header--stacked-mobile section-header--compact">
-              <div>
-                <h2 className="section-title">Let ReelBot choose</h2>
-                <p className="section-subtitle">Keep the filters you already set, add a vibe if you want, and let ReelBot make the call.</p>
-
-              </div>
-            </div> : null}
             <div className="picker-browse-composer" hidden={(pickLoading || Boolean(pickResult?.primary)) && !isLibraryRequestEditing}>
+            <div className="picker-browse-heading">
+              <h2 className="section-title">{isLibraryRequestEditing ? "Update your request" : "Let ReelBot choose"}</h2>
+              <p className="picker-browse-scope">Using {[getViewLabel(normalizedView), ...activeFilterChips.filter(chip => chip.id !== "view").map(chip => chip.label)].join(" · ")}</p>
+            </div>
             <ReelbotPromptComposer
               inputId="library-pick-prompt"
-              label="Add a vibe"
-              helperText="Optional: add a vibe if you want a more specific pick."
-              suggestions={LIBRARY_PROMPTS.slice(0, 4)}
+              label="Add a vibe (optional)"
               value={pickPrompt}
               onChange={setPickPrompt}
               onSubmit={handleLibraryPick}
               submitDisabled={pickLoading}
-              placeholder="Try: smart sci-fi under 2 hours, dark but rewarding, or an easy watch"
+              showSubmitButton={false}
+              allowEmptySubmit
+              placeholder="e.g. smart sci-fi under 2 hours"
             />
 
+            <div className="picker-browse-options">
             <label className="reelbot-toggle-option theatrical-toggle">
               <input
                 type="checkbox"
@@ -678,16 +687,22 @@ function BrowseLibrary() {
               <span className="reelbot-toggle-option-control" aria-hidden="true"></span>
               <span className="reelbot-toggle-option-copy">
                 <span className="reelbot-toggle-option-title">Include movies still in theaters</span>
-                <span className="reelbot-toggle-option-subtitle">Off by default so everything here is easy to watch at home.</span>
               </span>
             </label>
 
             <div className="pick-for-me-actions">
               <button type="button" className="reelbot-inline-button reelbot-inline-button--solid" onClick={handleLibraryPick} disabled={pickLoading}>
-                {pickLoading ? "Finding your pick…" : isLibraryRequestEditing ? "Update my pick" : "Ask ReelBot"}
+                {pickLoading ? "Finding your pick…" : isLibraryRequestEditing ? "Update my pick" : "Pick for me"}
               </button>
               {isLibraryRequestEditing ? <button type="button" className="rb-text-button" disabled={pickLoading} onClick={() => { setPickPrompt(pickResult?.sharePrompt || submittedLibraryPrompt); setIsLibraryRequestEditing(false); }}>Cancel edit</button> : null}
             </div>
+            </div>
+            <details className="picker-browse-inspiration">
+              <summary>Need inspiration? <span aria-hidden="true">⌄</span></summary>
+              <div className="picker-browse-examples">
+                {LIBRARY_PROMPTS.slice(0, 4).map(prompt => <button key={prompt} type="button" className={`pick-prompt-chip${pickPrompt === prompt ? " is-active" : ""}`} onClick={() => handleLibrarySuggestion(prompt)} disabled={pickLoading}>{prompt}</button>)}
+              </div>
+            </details>
             </div>
             <div id="library-reelbot-result">
               {pickResult?.primary || pickLoading ? <div className="picker-browse-request"><h2 className="section-title">ReelBot’s pick</h2><PickRequestContext prompt={(pickLoading ? submittedLibraryPrompt : pickResult?.sharePrompt) || activeFilterChips.map(chip => chip.label).join(" · ") || "Choose something worth watching from Browse"} disabled={pickLoading} onReset={pickResult?.primary ? handleStartFreshLibraryPick : undefined} onEdit={() => { setPickPrompt(pickResult?.sharePrompt || submittedLibraryPrompt); setIsLibraryRequestEditing(true); window.requestAnimationFrame(() => { document.getElementById("library-pick-prompt")?.focus({ preventScroll: true }); document.getElementById("library-pick-prompt")?.scrollIntoView({ behavior: "smooth", block: "center" }); }); }} /></div> : null}
@@ -700,7 +715,7 @@ function BrowseLibrary() {
                 sharePrompt={pickResult?.sharePrompt || ""}
                 backupMovies={pickResult?.alternates || []}
                 vibeLabel={libraryVibeLabel}
-                emptyCopy="Let ReelBot choose from these filters, or add one detail."
+                showEmptyState={false}
                 refreshLabel={pickLoading ? "Finding…" : "Get another pick"}
                 resetLabel="Start fresh"
                 backupTitle="Also worth considering"
