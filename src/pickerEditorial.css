@@ -16,8 +16,9 @@
 .picker-browse-composer .pick-control-group--prompt { margin: 0; gap: 8px; }
 .picker-browse-composer .detail-description-label { color: var(--rb-muted); font-size: .75rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .picker-browse-composer .pick-prompt-shell { min-height: 52px; margin: 0; border-radius: 7px; }
-.picker-browse-composer .pick-prompt-input { min-height: 52px; font-size: 1rem; }
-.picker-browse-composer .pick-prompt-clear { width: 44px; height: 44px; right: 4px; }
+.picker-browse-composer .pick-prompt-input { min-height: 52px; border-radius: 6px; font-size: 1rem; }
+.picker-browse-composer .pick-prompt-clear { width: 44px; height: 44px; right: 4px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--rb-muted); font-size: 1.2rem; cursor: pointer; }
+.picker-browse-composer .pick-prompt-clear:hover { background: var(--rb-surface-raised); color: var(--rb-text); }
 .picker-browse-options { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; margin-top: 14px; }
 .picker-browse-options .theatrical-toggle { flex: 1 1 240px; min-height: 44px; margin: 0; padding: 0; border: 0; background: none; }
 .picker-browse-options .reelbot-toggle-option-title { color: var(--rb-muted); font-size: .8rem; font-weight: 400; line-height: 1.4; }
