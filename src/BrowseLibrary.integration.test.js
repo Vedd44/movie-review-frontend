@@ -7,6 +7,7 @@ import useTasteProfile from "./hooks/useTasteProfile";
 import { useAuth } from "./context/AuthContext";
 import { trackProductEvent } from "./analytics";
 import { recordRequestActivity } from "./productTelemetry";
+import { DISCOVERY_PROMPTS } from "./discovery";
 
 // Keep pagination fixtures above the automatic first-grid fill threshold.
 const browsePadding = Array.from({ length: 11 }, (_, i) => ({ id: 8000 + i, title: `Catalog fixture ${i}`, genre_ids: [28], poster_path: "/fixture.jpg", release_date: "2000-01-01", popularity: 20, vote_count: 100 }));
@@ -18,7 +19,7 @@ test('failed continuation keeps the successful pick and visibly explains the lim
  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
  await screen.findByRole('heading', {name:'Movies'});
  fireEvent.click(screen.getByRole('button', {name:'Ask ReelBot to pick one'}));
- fireEvent.click(screen.getByRole('button', {name:'Ask ReelBot',exact:true}));
+ fireEvent.click(screen.getByRole('button', {name:'Pick for me',exact:true}));
  await screen.findByRole('link', {name:'View details'});
  axios.post.mockResolvedValueOnce({data:{primary:null,alternates:[],no_pick_reason:'no_suitable_candidate',user_message:'No other film fits the active runtime limit. Would you like to relax it?'}});
  fireEvent.click(screen.getByRole('button', {name:'Get another pick'}));
@@ -74,9 +75,9 @@ test("labelled selects and a typed prompt reach the existing constrained picker"
   fireEvent.click(screen.getByRole("button", { name: /Ask ReelBot to pick one/i }));
 
   const picker = document.getElementById("library-reelbot-picker");
-  fireEvent.change(within(picker).getByRole("textbox", {name:"Add a vibe"}), {target:{value:"A gritty thriller"}});
+  fireEvent.change(within(picker).getByRole("textbox", {name:"Add a vibe (optional)"}), {target:{value:"A gritty thriller"}});
   fireEvent.click(within(picker).getByRole("checkbox", { name: /Include movies still in theaters/i }));
-  fireEvent.click(within(picker).getByRole("button", { name: "Ask ReelBot" }));
+  fireEvent.click(within(picker).getByRole("button", { name: "Pick for me" }));
 
   await waitFor(() => expect(axios.post).toHaveBeenCalled());
   const requestBody = axios.post.mock.calls[0][1];
@@ -88,6 +89,65 @@ test("labelled selects and a typed prompt reach the existing constrained picker"
     genre: "28",
     include_theatrical: true,
   });
+});
+
+test.each(['button', 'Enter'])("filter-only picking has one clear action and preserves constraints via %s", async (method) => {
+  render(<MemoryRouter initialEntries={["/browse?view=latest&mood=dark&genre=28&runtime=under_two_hours"]}><BrowseLibrary /></MemoryRouter>);
+  await screen.findByRole('option', { name: 'Action' });
+  fireEvent.click(screen.getByRole('button', { name: 'Ask ReelBot to pick one' }));
+  expect(screen.getByText('Using Now Playing · Action · Under 2 hours · Dark')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Submit prompt' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Let ReelBot choose from these filters, or add one detail.')).not.toBeInTheDocument();
+  const input = screen.getByRole('textbox', { name: 'Add a vibe (optional)' });
+  expect(input).toHaveValue('');
+  expect(screen.getByRole('button', { name: 'Pick for me' })).toBeEnabled();
+  if (method === 'Enter') fireEvent.keyDown(input, { key: 'Enter' });
+  else fireEvent.click(screen.getByRole('button', { name: 'Pick for me' }));
+  await screen.findByRole('link', { name: 'View details' });
+  expect(axios.post).toHaveBeenCalledTimes(1);
+  expect(axios.post.mock.calls[0][1]).toMatchObject({ prompt: '', view: 'latest', mood: 'dark', genre: '28', runtime: 'under_two_hours', include_theatrical: false });
+});
+
+test('inspiration is optional, keeps every existing example, and never submits on selection', async () => {
+  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Ask ReelBot to pick one' }));
+  const inspiration = screen.getByText('Need inspiration?');
+  expect(inspiration.closest('details')).not.toHaveAttribute('open');
+  fireEvent.click(inspiration);
+  expect(inspiration.closest('details')).toHaveAttribute('open');
+  for (const prompt of DISCOVERY_PROMPTS.slice(0, 4)) {
+    fireEvent.click(screen.getByRole('button', { name: prompt }));
+    expect(screen.getByRole('textbox', { name: 'Add a vibe (optional)' })).toHaveValue(prompt);
+  }
+  expect(axios.post).not.toHaveBeenCalled();
+  fireEvent.click(inspiration);
+  expect(inspiration.closest('details')).not.toHaveAttribute('open');
+  fireEvent.click(screen.getByRole('button', { name: 'Clear prompt' }));
+  expect(screen.getByRole('textbox', { name: 'Add a vibe (optional)' })).toHaveValue('');
+  expect(screen.getByRole('button', { name: 'Pick for me' })).toBeEnabled();
+});
+
+test('pending picks prevent another submission and failed picks restore the same request for retry', async () => {
+  let rejectPick;
+  axios.post.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectPick = reject; }));
+  const logged = jest.spyOn(console, 'error').mockImplementation(() => {});
+  render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Ask ReelBot to pick one' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'Add a vibe (optional)' }), { target: { value: 'A quiet mystery' } });
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Include movies still in theaters' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Pick for me' }));
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Finding your pick…', hidden: true })).toBeDisabled();
+  expect(screen.getByRole('checkbox', { hidden: true })).toBeDisabled();
+  await act(async () => rejectPick(new Error('Temporary failure')));
+  expect(screen.getByText('ReelBot could not narrow the library right now.')).toBeVisible();
+  expect(screen.getByRole('textbox', { name: 'Add a vibe (optional)' })).toHaveValue('A quiet mystery');
+  expect(screen.getByRole('checkbox', { name: 'Include movies still in theaters' })).toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: 'Pick for me' }));
+  await screen.findByRole('link', { name: 'View details' });
+  expect(axios.post).toHaveBeenCalledTimes(2);
+  expect(axios.post.mock.calls[1][1]).toMatchObject({ prompt: 'A quiet mystery', include_theatrical: true });
+  logged.mockRestore();
 });
 
 test("load more appends a unique page and keeps the existing results", async () => {
@@ -172,8 +232,8 @@ test("editing and cancelling a Browse request preserves the displayed pick witho
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: /Ask ReelBot to pick one/i }));
   const picker = document.getElementById("library-reelbot-picker");
-  fireEvent.change(within(picker).getByRole("textbox", { name: "Add a vibe" }), {target:{value:"A smart sci-fi movie"}});
-  fireEvent.click(within(picker).getByRole("button", { name: "Ask ReelBot" }));
+  fireEvent.change(within(picker).getByRole("textbox", { name: "Add a vibe (optional)" }), {target:{value:"A smart sci-fi movie"}});
+  fireEvent.click(within(picker).getByRole("button", { name: "Pick for me" }));
   await waitFor(() => expect(within(picker).getByRole("heading", {name:"Aliens"})).toBeInTheDocument());
   expect(useAuth().maybePromptToSavePicks).not.toHaveBeenCalled();
   expect(useAuth().openAuthPrompt).not.toHaveBeenCalled();
@@ -183,14 +243,14 @@ test("editing and cancelling a Browse request preserves the displayed pick witho
   expect(within(picker).getByText("A smart sci-fi movie")).toBeVisible();
   expect(within(picker).queryByRole("textbox")).not.toBeInTheDocument();
   fireEvent.click(within(picker).getByRole("button", {name:"Edit"}));
-  fireEvent.change(within(picker).getByRole("textbox", {name:"Add a vibe"}), {target:{value:"Different draft"}});
+  fireEvent.change(within(picker).getByRole("textbox", {name:"Add a vibe (optional)"}), {target:{value:"Different draft"}});
   expect(within(picker).getByRole("button", {name:"Get another pick"})).toBeDisabled();
   fireEvent.click(within(picker).getByRole("button", {name:"Cancel edit"}));
   expect(within(picker).getByRole("heading", {name:"Aliens"})).toBeInTheDocument();
   expect(within(picker).getByText("A smart sci-fi movie")).toBeVisible();
   expect(axios.post).toHaveBeenCalledTimes(count);
   fireEvent.click(within(picker).getByRole("button", {name:"Edit"}));
-  expect(within(picker).getByRole("textbox", {name:"Add a vibe"})).toHaveValue("A smart sci-fi movie");
+  expect(within(picker).getByRole("textbox", {name:"Add a vibe (optional)"})).toHaveValue("A smart sci-fi movie");
 });
 
 
@@ -201,11 +261,11 @@ test('Browse another pick preserves the submitted prompt after a cancelled edit'
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
   fireEvent.click(await screen.findByRole('button',{name:/Ask ReelBot to pick one/i}));
   const picker=document.getElementById('library-reelbot-picker');
-  fireEvent.change(within(picker).getByRole('textbox',{name:'Add a vibe'}),{target:{value:prompt}});
-  fireEvent.click(within(picker).getByRole('button',{name:'Ask ReelBot'}));
+  fireEvent.change(within(picker).getByRole('textbox',{name:'Add a vibe (optional)'}),{target:{value:prompt}});
+  fireEvent.click(within(picker).getByRole('button',{name:'Pick for me'}));
   await within(picker).findByRole('heading',{name:'The Last Shift'});
   fireEvent.click(within(picker).getByRole('button',{name:'Edit'}));
-  fireEvent.change(within(picker).getByRole('textbox',{name:'Add a vibe'}),{target:{value:'Different draft'}});
+  fireEvent.change(within(picker).getByRole('textbox',{name:'Add a vibe (optional)'}),{target:{value:'Different draft'}});
   fireEvent.click(within(picker).getByRole('button',{name:'Cancel edit'}));
   fireEvent.click(within(picker).getByRole('button',{name:'Get another pick'}));
   await within(picker).findByRole('heading',{name:'Waiting…'});
@@ -216,8 +276,8 @@ test("Browse identifies successful identification outcomes in both activity stre
   axios.post.mockResolvedValueOnce({ data: { intent: "MOVIE_IDENTIFICATION", primary: { id: 77, title: "Memento" }, alternates: [] } });
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "Ask ReelBot to pick one" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "Add a vibe" }), { target: { value: "What was that movie where a man uses tattoos?" } });
-  fireEvent.click(screen.getByRole("button", { name: "Ask ReelBot", exact: true }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Add a vibe (optional)" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Pick for me", exact: true }));
   await screen.findByRole("heading", { name: "Memento" });
   expect(trackProductEvent).toHaveBeenCalledWith("recommendation_returned", expect.objectContaining({ page: "browse", kind: "identification", outcome: "identification" }));
   expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ page: "browse", kind: "identification", outcome: "pick" }));
@@ -230,8 +290,8 @@ test.each([
   axios.post.mockResolvedValueOnce({ data: { primary: null, alternates: [], no_pick_reason: "no_suitable_candidate", intent, user_message: "Another clue would help." } });
   render(<MemoryRouter><BrowseLibrary /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "Ask ReelBot to pick one" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "Add a vibe" }), { target: { value: "What was that movie where a man uses tattoos?" } });
-  fireEvent.click(screen.getByRole("button", { name: "Ask ReelBot", exact: true }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Add a vibe (optional)" }), { target: { value: "What was that movie where a man uses tattoos?" } });
+  fireEvent.click(screen.getByRole("button", { name: "Pick for me", exact: true }));
   await screen.findByText("Another clue would help.");
   expect(trackProductEvent).toHaveBeenCalledWith("recommendation_failed", expect.objectContaining({ page: "browse", kind, outcome: "no_match" }));
   expect(recordRequestActivity).toHaveBeenCalledWith(expect.objectContaining({ page: "browse", kind, outcome: "no_match" }));
@@ -250,7 +310,7 @@ test('leaving Browse aborts its pending pick, releases telemetry, and ignores it
  global.fetch=jest.fn().mockResolvedValue({ok:true,status:202});consent.setCookieChoice('accepted');jest.useFakeTimers();
  try{
   fireEvent.click(screen.getByRole('button',{name:'Ask ReelBot to pick one'}));
-  fireEvent.click(screen.getByRole('button',{name:'Ask ReelBot',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'Pick for me',exact:true}));
   expect(resolvePick).toBeDefined();
   const options=axios.post.mock.calls[0][2];expect(options.timeout).toBe(90000);expect(options.signal.aborted).toBe(false);
   view.unmount();expect(options.signal.aborted).toBe(true);
