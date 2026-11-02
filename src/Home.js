@@ -737,6 +737,12 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
   const [visiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
+  const closePickComparison = () => {
+    setHeldContender(null);
+    // The comparison controls disappear after a decision. Move keyboard focus
+    // to the chosen movie instead of leaving it on a detached control.
+    window.requestAnimationFrame(() => pickResultSectionRef.current?.querySelector(".pick-primary-title a")?.focus());
+  };
   const restoreStatusTimeoutRef = useRef(null);
   const pickRequestVersionRef = useRef(0);
   const pickControllerRef = useRef(null);
@@ -2099,8 +2105,11 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             current={pickResult}
             held={heldContender?.prompt === originalPickPrompt && heldContender?.includeTheatrical === includeTheatrical ? heldContender.pick : null}
             disabled={isPickBusy || isRequestEditing}
+            onStay={() => {
+              if (!isPickBusy && !isRequestEditing) closePickComparison();
+            }}
             onReturn={() => {
-              if (isPickBusy || !heldContender?.pick?.primary) return;
+              if (isPickBusy || isRequestEditing || !heldContender?.pick?.primary) return;
               const previous = pickResult;
               const next = heldContender.pick;
               setPickResult(next);
@@ -2111,7 +2120,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
               setPickStatus(PICK_STATUS.READY);
               setPickError(null);
               setFailedPickRequest(null);
-              setHeldContender({ pick: previous, prompt: originalPickPrompt, includeTheatrical });
+              closePickComparison();
             }}
           /> : null}
           <PickResultPanel

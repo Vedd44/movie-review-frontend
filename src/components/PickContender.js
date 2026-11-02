@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import ArtworkFallback from "./ArtworkFallback";
 import MovieCopy from "./MovieCopy";
 import "./PickContender.css";
@@ -33,34 +33,24 @@ export function comparisonReason(pick) {
   return reason ? reason.replace(/\s+/g, " ").trim() : "";
 }
 
-export default function PickContender({ current, held, disabled, onReturn }) {
-  const rootRef = useRef(null);
+export default function PickContender({ current, held, disabled, onReturn, onStay }) {
   const [expandedPair, setExpandedPair] = useState(null);
-  const [notice, setNotice] = useState(null);
   const currentMovie = current?.primary;
   const previousMovie = held?.primary;
   const pairKey = `${currentMovie?.id || ""}:${previousMovie?.id || ""}`;
   const expanded = expandedPair === pairKey;
   useEffect(() => { setExpandedPair(null); }, [pairKey]);
-  const restoreFocus = () => window.requestAnimationFrame(() => rootRef.current?.querySelector(".pick-contender-toggle:not(:disabled)")?.focus({ preventScroll: true }));
-  const returnToPrevious = () => {
-    onReturn();
-    setExpandedPair(null);
-    setNotice({ key: `${previousMovie.id}:${currentMovie.id}`, text: `Returned to ${previousMovie.title}.` });
-    restoreFocus();
-  };
   if (!currentMovie || !previousMovie || String(currentMovie.id) === String(previousMovie.id)) return null;
 
   return (
-    <section ref={rootRef} className="pick-contender" aria-label="Previous pick">
+    <section className="pick-contender" aria-label="Previous pick">
       <div className="pick-contender-bar">
         <div className="pick-contender-previous">
           <span>Previous pick:</span>
-          {expanded ? <span className="pick-contender-previous-title">{previousMovie.title}</span> : <button type="button" disabled={disabled} className="pick-contender-return" aria-label={`Return to ${previousMovie.title}`} title={`Return to ${previousMovie.title}`} onClick={returnToPrevious}>{previousMovie.title}<span aria-hidden="true"> ↶</span></button>}
+          {expanded ? <span className="pick-contender-previous-title">{previousMovie.title}</span> : <button type="button" disabled={disabled} className="pick-contender-return" aria-label={`Return to ${previousMovie.title}`} title={`Return to ${previousMovie.title}`} onClick={onReturn}>{previousMovie.title}<span aria-hidden="true"> ↶</span></button>}
         </div>
         <button type="button" disabled={disabled} className="pick-contender-toggle" aria-expanded={expanded} aria-controls="pick-contender-comparison" onClick={() => setExpandedPair(expanded ? null : pairKey)}>{expanded ? "Close comparison" : "Compare picks"}</button>
       </div>
-      <span className="sr-only" role="status">{notice?.key === pairKey ? notice.text : ""}</span>
       {expanded ? <div id="pick-contender-comparison" className="pick-contender-comparison">
         <h3>Which feels right tonight?</h3>
         <div className="pick-contender-grid">
@@ -74,7 +64,7 @@ export default function PickContender({ current, held, disabled, onReturn }) {
                 <div><span className="pick-contender-label">{isPrevious ? "Previous pick" : "Current pick"}</span><h4>{movie.title}</h4><p className="pick-contender-meta">{facts.year || "Year unavailable"}<span aria-hidden="true"> · </span>{facts.runtime ? `${facts.runtime} min` : "Runtime unavailable"}</p></div>
               </div>
               <p className="pick-contender-reason">{reason ? <MovieCopy titles={[movie.title]}>{reason}</MovieCopy> : "A recommendation reason isn’t available for this pick."}</p>
-              <button type="button" className="pick-contender-choice" disabled={disabled} onClick={isPrevious ? returnToPrevious : () => { setExpandedPair(null); setNotice({ key: pairKey, text: `Staying with ${movie.title}.` }); restoreFocus(); }}>{isPrevious ? `Return to ${movie.title}` : `Stay with ${movie.title}`}</button>
+              <button type="button" className="pick-contender-choice" disabled={disabled} onClick={isPrevious ? onReturn : onStay}>{isPrevious ? `Return to ${movie.title}` : `Stay with ${movie.title}`}</button>
             </article>;
           })}
         </div>

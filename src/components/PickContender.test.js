@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import PickContender, { comparisonFacts, comparisonReason, HomeContenderProvider, useHomeContender } from './PickContender';
 
 const current = { primary: { id: 2, title: 'Current', runtime: 110, release_date: '2025-01-01', poster_path: '/current.jpg', reason: 'A playful mystery with a warm comic voice.' } };
@@ -68,18 +68,18 @@ test('a new pair starts collapsed, including after clearing previous context', (
   rerender(<PickContender current={current} held={previous} />);
   expect(screen.getByRole('button', { name: 'Compare picks' })).toHaveAttribute('aria-expanded', 'false');
 });
-test('return and stay restore focus to the comparison action', async () => {
-  function Harness() {
-    const [pick, setPick] = React.useState(current);
-    const [prior, setPrior] = React.useState(previous);
-    return <PickContender current={pick} held={prior} onReturn={() => { setPick(prior); setPrior(pick); }} />;
-  }
-  render(<Harness />);
+test.each(['Return to Previous', 'Stay with Current'])('decision delegates %s to the parent without extra local state', (action) => {
+  const onReturn = jest.fn();
+  const onStay = jest.fn();
+  render(<PickContender current={current} held={previous} onReturn={onReturn} onStay={onStay} />);
   fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  fireEvent.click(screen.getByRole('button', { name: action }));
+  expect(onReturn).toHaveBeenCalledTimes(action.startsWith('Return') ? 1 : 0);
+  expect(onStay).toHaveBeenCalledTimes(action.startsWith('Stay') ? 1 : 0);
+});
+test('compact return delegates the same decision as expanded return', () => {
+  const onReturn = jest.fn();
+  render(<PickContender current={current} held={previous} onReturn={onReturn} />);
   fireEvent.click(screen.getByRole('button', { name: 'Return to Previous' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Compare picks' })).toHaveFocus());
-  expect(screen.getByRole('status')).toHaveTextContent('Returned to Previous.');
-  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Stay with Previous' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Compare picks' })).toHaveFocus());
+  expect(onReturn).toHaveBeenCalledTimes(1);
 });
