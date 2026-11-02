@@ -1,0 +1,28 @@
+.pick-contender { margin: 0 0 20px; padding: 20px; border: 1px solid rgba(255,255,255,.19); border-radius: 16px; background: #171c25; color: #f4f5f7; }
+.pick-contender-bar { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.pick-contender-bar > div:first-child { display:grid; gap:5px; min-width:0; }
+.pick-contender strong, .pick-contender h4 { overflow-wrap:anywhere; }
+.pick-contender-bar span, .pick-contender-caption { color:#b9c1cf; font-size: .9rem; }
+.pick-contender-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; flex-shrink:0; }
+.pick-contender button { border:1px solid #8392a9; border-radius:9px; padding:11px 15px; min-height:44px; color:#f4f5f7; background:#263244; font:inherit; font-weight:600; cursor:pointer; }
+.pick-contender button:hover:not(:disabled) { background:#33445e; }
+.pick-contender button:focus-visible { outline:3px solid #a6ceff; outline-offset:3px; }
+.pick-contender button:disabled { opacity:.5; cursor:wait; }
+.pick-contender .pick-contender-remove { background:transparent; border-color:transparent; font-weight:400; }
+.pick-contender-label { display:block; font-size:.8rem; color:#bdc8d9; }
+.pick-contender-notice { font-size:.85rem; color:#c3d2e6; margin:8px 0 0; }
+.pick-contender-notice:empty { margin:0; }
+.pick-contender-comparison { border-top:1px solid #424c5d; margin-top:18px; padding-top:18px; }
+.pick-contender h3 { margin:0 0 8px; font-size:1.15rem; }
+.pick-contender h4 { margin:8px 0 12px; font-size:1.2rem; }
+.pick-contender-difference { margin:0 0 16px; color:#d6e6ff; }
+.pick-contender-grid { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:16px; }
+.pick-contender-film { display:flex; flex-direction:column; background:#202733; border:1px solid #3d485a; border-radius:12px; padding:18px; min-width:0; }
+.pick-contender-film dl { display:flex; gap:24px; margin:0 0 8px; }
+.pick-contender-film dt { color:#b9c1cf; font-size:.8rem; }
+.pick-contender-film dd { margin:4px 0 0; }
+.pick-contender-film p { line-height:1.55; font-size:.95rem; margin:8px 0 18px; }
+.pick-contender-film button { margin-top:auto; overflow-wrap:anywhere; }
+.pick-contender-caption { margin:14px 0 0; }
+@media(max-width:700px) { .pick-contender-bar { align-items:stretch; flex-direction:column; gap:12px; } .pick-contender-controls { flex-shrink:1; } .pick-contender { padding:16px; } }
+@media(max-width:480px) { .pick-contender-grid { grid-template-columns:1fr; } .pick-contender-controls > button:first-child { flex:1; } .pick-contender-film { padding:15px; } }
