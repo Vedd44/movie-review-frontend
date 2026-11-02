@@ -3,6 +3,7 @@ import { setAnalyticsIdentity, telemetrySurface } from './productTelemetry';
 import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, NavLink, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import Home from "./Home";
+import { HomeContenderProvider } from "./components/PickContender";
 import CookieConsent from "./components/CookieConsent";
 import { openCookieSettings, subscribeCookieChoice } from "./cookieConsent";
 import NotFound from "./NotFound";
@@ -247,7 +248,7 @@ function AppShell() {
     if (navigationType !== "POP" && !location.hash) window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname, location.hash, navigationType]);
   return (
-    <AskReelbotProvider>
+    <HomeContenderProvider identity={user?.id || "guest"}><AskReelbotProvider>
       <div className="app-shell">
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteHeader />
@@ -289,7 +290,7 @@ function AppShell() {
         <AuthModal />
         <AskReelbotLayer />
       </div>
-    </AskReelbotProvider>
+    </AskReelbotProvider></HomeContenderProvider>
   );
 }
 

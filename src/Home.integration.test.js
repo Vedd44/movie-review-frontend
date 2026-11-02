@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Home from "./Home";
@@ -632,4 +632,181 @@ test.each(['empty', 'error'])('the fifth %s swap preserves the limit explanation
     fireEvent.click(startFresh);
     expect(screen.getByRole('textbox', { name: 'Describe the movie you want' })).toBeVisible();
   } finally { errorLog.mockRestore(); }
+});
+
+
+const previousPickFixture = (id, title, overrides = {}) => ({ data: {
+  ...pickPayload,
+  primary: { ...pickPayload.primary, id, title, runtime: 137, reason: `${title} fits your request.`, ...overrides },
+} });
+const startPreviousPickJourney = async () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByPlaceholderText(/A mood, a movie you love/i), { target: { value: 'A science fiction movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'First' });
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  await screen.findByRole('heading', { name: 'Second' });
+  return screen.getByRole('region', { name: 'Previous pick' });
+};
+
+test('automatically retains the previous pick, compares existing reasons, and Stay closes the comparison without side effects', async () => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First', { runtime: 125, overview: 'First plot synopsis.' }))
+    .mockResolvedValueOnce(previousPickFixture(2, 'Second', { runtime: 77, overview: 'Second plot synopsis.' }));
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  fireEvent.change(await screen.findByPlaceholderText(/A mood, a movie you love/i), { target: { value: 'A science fiction movie' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'First' });
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Keep this option' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Like this one, but still looking?')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  await screen.findByRole('heading', { name: 'Second' });
+  const region = within(screen.getByRole('region', { name: 'Previous pick' }));
+  expect(region.getByText('Previous pick:')).toBeVisible();
+  expect(region.getByRole('button', { name: 'Return to First' })).toBeVisible();
+  fireEvent.click(region.getByRole('button', { name: 'Compare picks' }));
+  const comparisonCards = region.getAllByRole('article');
+  expect(comparisonCards[0]).toBeVisible();
+  expect(comparisonCards[0]).toHaveTextContent('First fits your request.');
+  expect(comparisonCards[1]).toBeVisible();
+  expect(comparisonCards[1]).toHaveTextContent('Second fits your request.');
+  expect(region.queryByText('First plot synopsis.')).not.toBeInTheDocument();
+  expect(region.queryByText('Second plot synopsis.')).not.toBeInTheDocument();
+  expect(region.queryByText(/minutes shorter/)).not.toBeInTheDocument();
+  const calls = axios.post.mock.calls.length;
+  const actions = useTasteProfile().actions;
+  const actionCounts = Object.fromEntries(Object.entries(actions).map(([key, mock]) => [key, mock.mock.calls.length]));
+  fireEvent.click(region.getByRole('button', { name: 'Stay with Second' }));
+  expect(screen.getByRole('heading', { name: 'Second' })).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Which feels right tonight?' })).not.toBeInTheDocument();
+  expect(axios.post.mock.calls.length).toBe(calls);
+  for (const [key, count] of Object.entries(actionCounts)) expect(actions[key]).toHaveBeenCalledTimes(count);
+});
+
+const choosePreviousPickDecision = (decision) => {
+  const region = within(screen.getByRole('region', { name: 'Previous pick' }));
+  if (decision !== 'direct Return') fireEvent.click(region.getByRole('button', { name: 'Compare picks' }));
+  fireEvent.click(region.getByRole('button', { name: decision === 'Stay' ? 'Stay with Second' : 'Return to First' }));
+};
+
+test.each(['Stay', 'expanded Return', 'direct Return'])('%s closes both surfaces, preserves side-effect counts, and the next pick remembers the chosen film', async (decision) => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'))
+    .mockResolvedValueOnce(previousPickFixture(3, 'Third'));
+  await startPreviousPickJourney();
+  const calls = axios.post.mock.calls.length;
+  const actions = useTasteProfile().actions;
+  const actionCounts = Object.fromEntries(Object.entries(actions).map(([key, mock]) => [key, mock.mock.calls.length]));
+  choosePreviousPickDecision(decision);
+  const chosen = decision === 'Stay' ? 'Second' : 'First';
+  expect(screen.getByRole('heading', { name: chosen })).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Which feels right tonight?' })).not.toBeInTheDocument();
+  expect(axios.post.mock.calls.length).toBe(calls);
+  for (const [key, count] of Object.entries(actionCounts)) expect(actions[key]).toHaveBeenCalledTimes(count);
+  await waitFor(() => expect(screen.getByRole('heading', { name: chosen }).querySelector('a')).toHaveFocus());
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  await screen.findByRole('heading', { name: 'Third' });
+  const nextRegion = within(screen.getByRole('region', { name: 'Previous pick' }));
+  expect(nextRegion.getByRole('button', { name: `Return to ${chosen}` })).toBeVisible();
+  expect(nextRegion.getByRole('button', { name: 'Compare picks' })).toHaveAttribute('aria-expanded', 'false');
+  expect(axios.post.mock.calls.filter(call => call[0].includes('/reelbot/pick'))).toHaveLength(3);
+});
+
+test.each(['Stay', 'expanded Return', 'direct Return'])('failed next pick after %s preserves the chosen film without reviving the closed comparison', async (decision) => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'))
+    .mockRejectedValueOnce(new Error('Temporary outage'));
+  const logged = jest.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await startPreviousPickJourney();
+    choosePreviousPickDecision(decision);
+    fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+    await screen.findByRole('button', { name: 'Retry another pick' });
+    expect(screen.getByRole('heading', { name: decision === 'Stay' ? 'Second' : 'First' })).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Which feels right tonight?' })).not.toBeInTheDocument();
+    expect(axios.post.mock.calls.filter(call => call[0].includes('/reelbot/pick'))).toHaveLength(3);
+  } finally { logged.mockRestore(); }
+});
+
+test('a third successful pick replaces the previous option instead of anchoring the first', async () => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'))
+    .mockResolvedValueOnce(previousPickFixture(3, 'Third'));
+  await startPreviousPickJourney();
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  await screen.findByRole('heading', { name: 'Third' });
+  const region = within(screen.getByRole('region', { name: 'Previous pick' }));
+  expect(region.getByRole('button', { name: 'Return to Second' })).toBeVisible();
+  expect(region.queryByRole('button', { name: 'Return to First' })).not.toBeInTheDocument();
+});
+
+test.each(['generation', 'refinement'])('failed %s preserves current and previous picks', async (kind) => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'))
+    .mockRejectedValueOnce(new Error('Temporary outage'));
+  const logged = jest.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await startPreviousPickJourney();
+    if (kind === 'refinement') {
+      fireEvent.click(screen.getByText('Adjust this pick'));
+      fireEvent.click(screen.getByRole('button', { name: 'Shorter' }));
+    } else fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+    await screen.findByRole('button', { name: kind === 'refinement' ? 'Retry adjustment' : 'Retry another pick' });
+    expect(screen.getByRole('heading', { name: 'Second' })).toBeVisible();
+    const region = within(screen.getByRole('region', { name: 'Previous pick' }));
+    expect(region.getByRole('button', { name: 'Return to First' })).toBeEnabled();
+    fireEvent.click(region.getByRole('button', { name: 'Return to First' }));
+    expect(screen.getByRole('heading', { name: 'First' })).toBeVisible();
+    expect(axios.post.mock.calls.filter(call => call[0].includes('/reelbot/pick'))).toHaveLength(3);
+  } finally { logged.mockRestore(); }
+});
+
+test('a new request clears the previous pick even when its text is unchanged', async () => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'))
+    .mockResolvedValueOnce(previousPickFixture(3, 'Third'));
+  await startPreviousPickJourney();
+  fireEvent.click(screen.getByRole('button', { name: 'Edit', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Find my movie' }));
+  await screen.findByRole('heading', { name: 'Third' });
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+});
+
+test('Start fresh clears the previous pick before another request', async () => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'));
+  await startPreviousPickJourney();
+  fireEvent.click(screen.getByRole('button', { name: 'Start fresh', exact: true }));
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Describe the movie you want' })).toBeVisible();
+  expect(axios.post.mock.calls.filter(call => call[0].includes('/reelbot/pick'))).toHaveLength(2);
+});
+
+test('successful adjustment clears the previous pick rather than implying it matches new criteria', async () => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'))
+    .mockResolvedValueOnce(previousPickFixture(3, 'Third', { runtime: 100 }));
+  await startPreviousPickJourney();
+  fireEvent.click(screen.getByText('Adjust this pick'));
+  fireEvent.click(screen.getByRole('button', { name: 'Shorter' }));
+  await screen.findByRole('heading', { name: 'Third' });
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+});
+
+test('return then next preserves exclusions without consuming a fresh-pick attempt', async () => {
+  axios.post.mockResolvedValueOnce(previousPickFixture(1, 'First')).mockResolvedValueOnce(previousPickFixture(2, 'Second'))
+    .mockResolvedValueOnce(previousPickFixture(3, 'Third')).mockResolvedValueOnce(previousPickFixture(4, 'Fourth'))
+    .mockResolvedValueOnce(previousPickFixture(5, 'Fifth')).mockResolvedValueOnce(previousPickFixture(6, 'Sixth'));
+  await startPreviousPickJourney();
+  fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+  await screen.findByRole('heading', { name: 'Third' });
+  fireEvent.click(within(screen.getByRole('region', { name: 'Previous pick' })).getByRole('button', { name: 'Return to Second' }));
+  expect(screen.getByRole('heading', { name: 'Second' })).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+  expect(axios.post.mock.calls.filter(call => call[0].includes('/reelbot/pick'))).toHaveLength(3);
+  for (const title of ['Fourth', 'Fifth', 'Sixth']) {
+    fireEvent.click(screen.getByRole('button', { name: 'Get another pick' }));
+    await screen.findByRole('heading', { name: title });
+  }
+  const calls = axios.post.mock.calls.filter(call => call[0].includes('/reelbot/pick'));
+  expect(calls).toHaveLength(6);
+  expect(calls[3][1].excluded_ids).toEqual(expect.arrayContaining([1, 2, 3]));
+  expect(calls[5][1].excluded_ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
+  expect(screen.queryByRole('button', { name: 'Get another pick' })).not.toBeInTheDocument();
 });

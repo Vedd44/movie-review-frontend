@@ -20,6 +20,7 @@ import {
   getRecommendationMovieState,
 } from "./discovery";
 import PickResultPanel from "./components/PickResultPanel";
+import PickContender, { useHomeContender } from "./components/PickContender";
 import PickRequestContext from "./components/PickRequestContext";
 import ReelbotPromptComposer from "./components/ReelbotPromptComposer";
 import TrailerModal from "./components/TrailerModal";
@@ -710,6 +711,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [pickError, setPickError] = useState(null);
   const [pickValidation, setPickValidation] = useState("");
   const [pickResult, setPickResult] = useState(() => initialPickSession.currentPick || null);
+  const [heldContender, setHeldContender] = useHomeContender();
   const [, setHasCompletedOnboarding] = useState(() => hasCompletedOnboardingRef.current);
   const [, setOnboardingDismissed] = useState(() => hasDismissedOnboardingRef.current);
   const [hasSeenFirstPickSummary, setHasSeenFirstPickSummary] = useState(() => readLocalFlag(FIRST_PICK_SUMMARY_SEEN_STORAGE_KEY));
@@ -735,6 +737,12 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
   const [pickLoadingMessageOverride, setPickLoadingMessageOverride] = useState("");
   const [visiblePromptSuggestions] = useState(() => pickPromptSuggestions(HOMEPAGE_PROMPT_POOL, HOMEPAGE_PROMPT_COUNT));
   const pickResultSectionRef = useRef(null);
+  const closePickComparison = () => {
+    setHeldContender(null);
+    // The comparison controls disappear after a decision. Move keyboard focus
+    // to the chosen movie instead of leaving it on a detached control.
+    window.requestAnimationFrame(() => pickResultSectionRef.current?.querySelector(".pick-primary-title a")?.focus());
+  };
   const restoreStatusTimeoutRef = useRef(null);
   const pickRequestVersionRef = useRef(0);
   const pickControllerRef = useRef(null);
@@ -1564,6 +1572,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         return null;
       }
 
+      // Remember only the immediately prior successful pick for this request.
+      // A failed request leaves this pair untouched; refinements change the criteria.
+      if (options.isRefinement) {
+        setHeldContender(null);
+      } else if (options.isSwap && previousPick?.primary && String(previousPick.primary.id) !== String(nextPayload.primary?.id)) {
+        setHeldContender({ pick: previousPick, prompt: originalPickPrompt, includeTheatrical });
+      }
       setPickResult(nextPayload);
       setSwapQueue(buildSwapQueueFromPayload(nextPayload));
       setCandidatePoolIds(Array.isArray(nextPayload.candidate_pool_ids) ? nextPayload.candidate_pool_ids : []);
@@ -1661,6 +1676,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     }
 
     if (!options.isSwap) {
+      setHeldContender(null);
       setPickResult(null);
       const nextPrompt = String(nextPreferences.prompt || "").trim();
 
@@ -1708,6 +1724,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
 
   const handleStartFresh = useCallback(() => {
     trackProductEvent("start_fresh_clicked", { page: "home" });
+    setHeldContender(null);
     pickControllerRef.current?.abort();
     pickRequestVersionRef.current += 1;
     clearRestoreTimer();
@@ -1751,7 +1768,7 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
     if (!isNewHomepageUser) {
       focusPickPromptComposer();
     }
-  }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, navigate, pickResult, replaceHomePickSession, resetOnboardingSignals, scrollToSection, tasteActions]);
+  }, [clearOnboardingCompletion, clearOnboardingDismissal, clearRestoreTimer, focusPickPromptComposer, isNewHomepageUser, navigate, pickResult, replaceHomePickSession, resetOnboardingSignals, scrollToSection, tasteActions, setHeldContender]);
 
   const handleRefreshPick = async () => {
     if (isPickBusy || !pickResult?.primary || swapCount >= MAX_FRESH_PICK_ATTEMPTS) {
@@ -2084,6 +2101,28 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             </div>
           </div>
 
+          {activePick ? <PickContender
+            current={pickResult}
+            held={heldContender?.prompt === originalPickPrompt && heldContender?.includeTheatrical === includeTheatrical ? heldContender.pick : null}
+            disabled={isPickBusy || isRequestEditing}
+            onStay={() => {
+              if (!isPickBusy && !isRequestEditing) closePickComparison();
+            }}
+            onReturn={() => {
+              if (isPickBusy || isRequestEditing || !heldContender?.pick?.primary) return;
+              const previous = pickResult;
+              const next = heldContender.pick;
+              setPickResult(next);
+              setSwapQueue(buildSwapQueueFromPayload(next));
+              setCandidatePoolIds(next.candidate_pool_ids || []);
+              setRefinementState(next.resolved_refinement || null);
+              setSwapHistory(history => [...history.filter(item => String(item?.primary?.id) !== String(previous?.primary?.id)), previous].slice(-10));
+              setPickStatus(PICK_STATUS.READY);
+              setPickError(null);
+              setFailedPickRequest(null);
+              closePickComparison();
+            }}
+          /> : null}
           <PickResultPanel
             panelStatus={pickStatus}
             loading={isPickLoading}
