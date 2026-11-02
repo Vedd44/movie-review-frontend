@@ -1566,8 +1566,13 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
         return null;
       }
 
-      // A successful adjustment changes the criteria; old options no longer imply a fit.
-      if (options.isRefinement) setHeldContender(null);
+      // Remember only the immediately prior successful pick for this request.
+      // A failed request leaves this pair untouched; refinements change the criteria.
+      if (options.isRefinement) {
+        setHeldContender(null);
+      } else if (options.isSwap && previousPick?.primary && String(previousPick.primary.id) !== String(nextPayload.primary?.id)) {
+        setHeldContender({ pick: previousPick, prompt: originalPickPrompt, includeTheatrical });
+      }
       setPickResult(nextPayload);
       setSwapQueue(buildSwapQueueFromPayload(nextPayload));
       setCandidatePoolIds(Array.isArray(nextPayload.candidate_pool_ids) ? nextPayload.candidate_pool_ids : []);
@@ -2094,8 +2099,6 @@ function Home({ routeView = "popular", isFeedRoute = false }) {
             current={pickResult}
             held={heldContender?.prompt === originalPickPrompt && heldContender?.includeTheatrical === includeTheatrical ? heldContender.pick : null}
             disabled={isPickBusy || isRequestEditing}
-            onKeep={() => setHeldContender({ pick: pickResult, prompt: originalPickPrompt, includeTheatrical })}
-            onRemove={() => setHeldContender(null)}
             onReturn={() => {
               if (isPickBusy || !heldContender?.pick?.primary) return;
               const previous = pickResult;

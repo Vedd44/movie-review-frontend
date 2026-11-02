@@ -1,74 +1,85 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import PickContender, { comparisonFacts, HomeContenderProvider, useHomeContender } from './PickContender';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import PickContender, { comparisonFacts, comparisonReason, HomeContenderProvider, useHomeContender } from './PickContender';
 
-test('comparison uses known fields, never genre-derived mood or suitability', () => {
-  expect(comparisonFacts({ runtime: 0, genre_names: ['Animation', 'Thriller'], release_date: 'unknown' })).toEqual({ runtime: null, year: null, overview: '' });
-  expect(comparisonFacts({ runtime: '77', release_date: '2005-09-12', overview: ' A story. ' })).toEqual({ runtime: 77, year: '2005', overview: 'A story.' });
+const current = { primary: { id: 2, title: 'Current', runtime: 110, release_date: '2025-01-01', poster_path: '/current.jpg', reason: 'A playful mystery with a warm comic voice.' } };
+const previous = { primary: { id: 1, title: 'Previous', runtime: 112, release_date: '2001-01-01', overview: 'A long plot synopsis.' }, rationale: { primary_reason: 'A gentler mystery with dry wit and an offbeat detective.' } };
+
+test('no first-pick banner or identical-film comparison', () => {
+  const { rerender } = render(<PickContender current={current} />);
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
+  rerender(<PickContender current={current} held={{ primary: { ...current.primary, id: '2' } }} />);
+  expect(screen.queryByRole('region', { name: 'Previous pick' })).not.toBeInTheDocument();
 });
-test('missing metadata is explicit and does not generate a comparison claim', () => {
-  render(<PickContender current={{ primary: { id: 2, title: 'Current' } }} held={{ primary: { id: 1, title: 'Held' } }} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Compare the two' }));
-  expect(screen.getAllByText('Not available')).toHaveLength(4);
-  expect(screen.queryByText(/shorter/)).not.toBeInTheDocument();
+test('comparison uses existing reasons and supporting metadata, never plot or genre-based claims', () => {
+  expect(comparisonFacts({ runtime: 0, genre_names: ['Animation'], release_date: 'unknown' })).toEqual({ runtime: null, year: null });
+  expect(comparisonReason({ primary: { genre_names: ['Animation'], overview: 'A plot.' } })).toBe('');
+  expect(comparisonReason({ primary: { reason: ' A reason.\n Another sentence. ' } })).toBe('A reason. Another sentence.');
+  render(<PickContender current={current} held={previous} />);
+  expect(screen.getByText('Previous pick:')).toBeVisible();
+  expect(screen.queryByRole('heading', { name: 'Which feels right tonight?' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  expect(screen.getByText(current.primary.reason)).toBeVisible();
+  expect(screen.getByText(previous.rationale.primary_reason)).toBeVisible();
+  expect(screen.getByText(/110 min/)).toBeVisible();
+  expect(screen.getByText(/112 min/)).toBeVisible();
+  expect(screen.queryByText(/shorter|long plot synopsis/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Return to Previous' })).toBeVisible();
 });
-test('holding is memory-only and survives child navigation within its provider', () => {
-  function Child({ active }) {
-    const [held, setHeld] = useHomeContender();
-    return active ? <button onClick={() => setHeld({ primary: { title: 'Held' } })}>{held?.primary.title || 'Keep'}</button> : null;
-  }
-  const { rerender } = render(<HomeContenderProvider><Child active /></HomeContenderProvider>);
-  fireEvent.click(screen.getByRole('button', { name: 'Keep' }));
-  rerender(<HomeContenderProvider><Child active={false} /></HomeContenderProvider>);
-  rerender(<HomeContenderProvider><Child active /></HomeContenderProvider>);
-  expect(screen.getByRole('button', { name: 'Held' })).toBeVisible();
+test('missing metadata and reason remain explicit without fabricated fit', () => {
+  render(<PickContender current={{ primary: { id: 2, title: 'Current' } }} held={{ primary: { id: 1, title: 'Previous' } }} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  expect(screen.getAllByText(/Runtime unavailable/)).toHaveLength(2);
+  expect(screen.getAllByText('A recommendation reason isn’t available for this pick.')).toHaveLength(2);
 });
-test('busy state prevents comparison mutations', () => {
-  render(<PickContender current={{ primary: { id: 2, title: 'Current' } }} held={{ primary: { id: 1, title: 'Held' } }} disabled />);
-  expect(screen.getByRole('button', { name: 'Compare the two' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Remove Held as an option' })).toBeDisabled();
-});
-test('clearing a held option closes comparison before a new pair is kept', () => {
-  const current = { primary: { id: 2, title: 'Current' } };
-  const held = { primary: { id: 1, title: 'Held' } };
-  const { rerender } = render(<PickContender current={current} held={held} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Compare the two' }));
-  expect(screen.getByRole('heading', { name: 'Which would you rather watch?' })).toBeVisible();
-  rerender(<PickContender current={current} held={null} />);
-  rerender(<PickContender current={current} held={{ primary: { id: 3, title: 'New option' } }} />);
-  expect(screen.getByRole('button', { name: 'Compare the two' })).toHaveAttribute('aria-expanded', 'false');
-  expect(screen.queryByRole('heading', { name: 'Which would you rather watch?' })).not.toBeInTheDocument();
-});
-test('changing identity clears only the held option without remounting children', () => {
+test('previous pick is memory-only, survives child navigation, and clears on identity changes without remounting', () => {
   let mounts = 0;
-  function Child() {
+  function Child({ active }) {
     React.useEffect(() => { mounts += 1; }, []);
     const [held, setHeld] = useHomeContender();
-    return <button onClick={() => setHeld({ primary: { title: 'Held' } })}>{held?.primary.title || 'Keep'}</button>;
+    return active ? <button onClick={() => setHeld(previous)}>{held?.primary.title || 'Remember fixture'}</button> : null;
   }
-  const { rerender } = render(<HomeContenderProvider identity="guest"><Child /></HomeContenderProvider>);
-  fireEvent.click(screen.getByRole('button', { name: 'Keep' }));
-  rerender(<HomeContenderProvider identity="signed-in"><Child /></HomeContenderProvider>);
-  expect(screen.getByRole('button', { name: 'Keep' })).toBeVisible();
+  const { rerender } = render(<HomeContenderProvider identity="guest"><Child active /></HomeContenderProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'Remember fixture' }));
+  rerender(<HomeContenderProvider identity="guest"><Child active={false} /></HomeContenderProvider>);
+  rerender(<HomeContenderProvider identity="guest"><Child active /></HomeContenderProvider>);
+  expect(screen.getByRole('button', { name: 'Previous' })).toBeVisible();
+  rerender(<HomeContenderProvider identity="signed-in"><Child active /></HomeContenderProvider>);
+  expect(screen.getByRole('button', { name: 'Remember fixture' })).toBeVisible();
   expect(mounts).toBe(1);
 });
-test('keep, remove and return restore focus to the remaining action', async () => {
+test('busy and editing states disable direct return, comparison and choices', () => {
+  const { rerender } = render(<PickContender current={current} held={previous} disabled />);
+  expect(screen.getByRole('button', { name: 'Compare picks' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Return to Previous' })).toBeDisabled();
+  rerender(<PickContender current={current} held={previous} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  rerender(<PickContender current={current} held={previous} disabled />);
+  expect(screen.getByRole('button', { name: 'Return to Previous' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Stay with Current' })).toBeDisabled();
+});
+test('a new pair starts collapsed, including after clearing previous context', () => {
+  const { rerender } = render(<PickContender current={current} held={previous} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  rerender(<PickContender current={{ primary: { id: 3, title: 'Next' } }} held={current} />);
+  expect(screen.getByRole('button', { name: 'Compare picks' })).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  rerender(<PickContender current={current} held={null} />);
+  rerender(<PickContender current={current} held={previous} />);
+  expect(screen.getByRole('button', { name: 'Compare picks' })).toHaveAttribute('aria-expanded', 'false');
+});
+test('return and stay restore focus to the comparison action', async () => {
   function Harness() {
-    const [current, setCurrent] = React.useState({ primary: { id: 2, title: 'Current' } });
-    const [held, setHeld] = React.useState(null);
-    return <><button onClick={() => setCurrent({ primary: { id: 3, title: 'Next' } })}>Next fixture</button><PickContender current={current} held={held} onKeep={() => setHeld(current)} onRemove={() => setHeld(null)} onReturn={() => { setCurrent(held); setHeld(current); }} /></>;
+    const [pick, setPick] = React.useState(current);
+    const [prior, setPrior] = React.useState(previous);
+    return <PickContender current={pick} held={prior} onReturn={() => { setPick(prior); setPrior(pick); }} />;
   }
   render(<Harness />);
-  const { waitFor } = require('@testing-library/react');
-  screen.getByRole('button', { name: 'Keep this option' }).focus();
-  fireEvent.click(document.activeElement);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Remove Current as an option' })).toHaveFocus());
-  fireEvent.click(screen.getByRole('button', { name: 'Next fixture' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Compare the two' }));
-  screen.getByRole('button', { name: 'Return to Current' }).focus();
-  fireEvent.click(document.activeElement);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Compare the two' })).toHaveFocus());
-  screen.getByRole('button', { name: 'Remove Next as an option' }).focus();
-  fireEvent.click(document.activeElement);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Keep this option' })).toHaveFocus());
+  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Return to Previous' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Compare picks' })).toHaveFocus());
+  expect(screen.getByRole('status')).toHaveTextContent('Returned to Previous.');
+  fireEvent.click(screen.getByRole('button', { name: 'Compare picks' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Stay with Previous' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Compare picks' })).toHaveFocus());
 });

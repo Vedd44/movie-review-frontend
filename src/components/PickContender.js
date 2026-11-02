@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import ArtworkFallback from "./ArtworkFallback";
+import MovieCopy from "./MovieCopy";
 import "./PickContender.css";
 
 // Deliberately memory-only: no watchlist, taste signal, analytics or API calls.
@@ -20,56 +22,63 @@ export function comparisonFacts(movie = {}) {
   return {
     runtime: Number.isFinite(runtime) && runtime > 0 ? runtime : null,
     year: /^\d{4}-\d{2}-\d{2}$/.test(movie.release_date || "") ? movie.release_date.slice(0, 4) : null,
-    overview: typeof movie.overview === "string" ? movie.overview.trim() : "",
   };
 }
 
-export default function PickContender({ current, held, disabled, onKeep, onRemove, onReturn }) {
+// Reuse the explanation already attached to this exact pick. Do not infer mood
+// from genre tags, substitute a plot synopsis, or ask the model to compare again.
+export function comparisonReason(pick) {
+  const reasons = [pick?.rationale?.primary_reason, pick?.primary?.reason, pick?.rationale?.decisionSentence];
+  const reason = reasons.find(value => typeof value === "string" && value.trim());
+  return reason ? reason.replace(/\s+/g, " ").trim() : "";
+}
+
+export default function PickContender({ current, held, disabled, onReturn }) {
   const rootRef = useRef(null);
-  const restoreFocus = () => window.requestAnimationFrame(() => rootRef.current?.querySelector("button:not(:disabled)")?.focus({ preventScroll: true }));
-  const [expanded, setExpanded] = useState(false);
+  const [expandedPair, setExpandedPair] = useState(null);
   const [notice, setNotice] = useState(null);
   const currentMovie = current?.primary;
-  const heldMovie = held?.primary;
-  useEffect(() => {
-    if (!heldMovie) setExpanded(false);
-  }, [heldMovie]);
-  if (!currentMovie) return null;
-  const noticeKey = `${currentMovie.id}:${heldMovie?.id || ""}`;
-  const announce = (text, currentId, heldId) => setNotice({ text, key: `${currentId}:${heldId || ""}` });
-  const sameMovie = String(currentMovie.id) === String(heldMovie?.id);
-  const canCompare = Boolean(heldMovie && !sameMovie);
-  const left = comparisonFacts(heldMovie);
-  const right = comparisonFacts(currentMovie);
-  const difference = left.runtime && right.runtime ? Math.abs(left.runtime - right.runtime) : null;
-  const shorter = left.runtime < right.runtime ? heldMovie : currentMovie;
+  const previousMovie = held?.primary;
+  const pairKey = `${currentMovie?.id || ""}:${previousMovie?.id || ""}`;
+  const expanded = expandedPair === pairKey;
+  useEffect(() => { setExpandedPair(null); }, [pairKey]);
+  const restoreFocus = () => window.requestAnimationFrame(() => rootRef.current?.querySelector(".pick-contender-toggle:not(:disabled)")?.focus({ preventScroll: true }));
+  const returnToPrevious = () => {
+    onReturn();
+    setExpandedPair(null);
+    setNotice({ key: `${previousMovie.id}:${currentMovie.id}`, text: `Returned to ${previousMovie.title}.` });
+    restoreFocus();
+  };
+  if (!currentMovie || !previousMovie || String(currentMovie.id) === String(previousMovie.id)) return null;
+
   return (
-    <section ref={rootRef} className="pick-contender" aria-label="Keep a contender">
+    <section ref={rootRef} className="pick-contender" aria-label="Previous pick">
       <div className="pick-contender-bar">
-        <div>
-          {heldMovie ? <><span className="pick-contender-label">Kept as an option</span><strong>{heldMovie.title}</strong></> : <><strong>Like this one, but still looking?</strong><span>Keep it here while you try another pick.</span></>}
+        <div className="pick-contender-previous">
+          <span>Previous pick:</span>
+          {expanded ? <span className="pick-contender-previous-title">{previousMovie.title}</span> : <button type="button" disabled={disabled} className="pick-contender-return" aria-label={`Return to ${previousMovie.title}`} title={`Return to ${previousMovie.title}`} onClick={returnToPrevious}>{previousMovie.title}<span aria-hidden="true"> ↶</span></button>}
         </div>
-        <div className="pick-contender-controls">
-          {!heldMovie ? <button type="button" disabled={disabled} onClick={() => { onKeep(); announce(`${currentMovie.title} kept. You can get another pick without losing it.`, currentMovie.id, currentMovie.id); restoreFocus(); }}>Keep this option</button> : <>
-            {canCompare ? <button type="button" disabled={disabled} aria-expanded={expanded} aria-controls="pick-contender-comparison" onClick={() => setExpanded(value => !value)}>{expanded ? "Close comparison" : "Compare the two"}</button> : <span className="pick-contender-next">Try “Get another pick” below.</span>}
-            <button type="button" disabled={disabled} className="pick-contender-remove" aria-label={`Remove ${heldMovie.title} as an option`} onClick={() => { onRemove(); setExpanded(false); announce("Option removed. Your current pick is unchanged.", currentMovie.id, null); restoreFocus(); }}>Remove</button>
-          </>}
-        </div>
+        <button type="button" disabled={disabled} className="pick-contender-toggle" aria-expanded={expanded} aria-controls="pick-contender-comparison" onClick={() => setExpandedPair(expanded ? null : pairKey)}>{expanded ? "Close comparison" : "Compare picks"}</button>
       </div>
-      <p className="pick-contender-notice" role="status">{notice?.key === noticeKey ? notice.text : ""}</p>
-      {canCompare && expanded ? <div id="pick-contender-comparison" className="pick-contender-comparison">
-        <h3>Which would you rather watch?</h3>
-        {difference !== null ? <p className="pick-contender-difference">{difference === 0 ? "Both have the same runtime." : `${shorter.title} is ${difference} minutes shorter.`}</p> : null}
+      <span className="sr-only" role="status">{notice?.key === pairKey ? notice.text : ""}</span>
+      {expanded ? <div id="pick-contender-comparison" className="pick-contender-comparison">
+        <h3>Which feels right tonight?</h3>
         <div className="pick-contender-grid">
-          {[{ movie: heldMovie, facts: left, isHeld: true }, { movie: currentMovie, facts: right, isHeld: false }].map(({ movie, facts, isHeld }) => <article key={movie.id} className="pick-contender-film">
-            <span className="pick-contender-label">{isHeld ? "Your kept option" : "Your current pick"}</span>
-            <h4>{movie.title}</h4>
-            <dl><div><dt>Year</dt><dd>{facts.year || "Not available"}</dd></div><div><dt>Runtime</dt><dd>{facts.runtime ? `${facts.runtime} min` : "Not available"}</dd></div></dl>
-            <p>{facts.overview || "A plot summary isn’t available for this pick. Open the film details for more information."}</p>
-            <button type="button" disabled={disabled} onClick={() => { if (isHeld) onReturn(); setExpanded(false); announce(`${movie.title} is your current pick. The other option is still here.`, movie.id, isHeld ? currentMovie.id : heldMovie.id); restoreFocus(); }}>{isHeld ? `Return to ${movie.title}` : `Stay with ${movie.title}`}</button>
-          </article>)}
+          {[{ pick: held, isPrevious: true }, { pick: current, isPrevious: false }].map(({ pick, isPrevious }) => {
+            const movie = pick.primary;
+            const facts = comparisonFacts(movie);
+            const reason = comparisonReason(pick);
+            return <article key={movie.id} className="pick-contender-film">
+              <div className="pick-contender-film-heading">
+                {movie.poster_path ? <img className="pick-contender-poster" src={`https://image.tmdb.org/t/p/w154${movie.poster_path}`} alt="" width="54" height="81" /> : <ArtworkFallback className="pick-contender-poster" />}
+                <div><span className="pick-contender-label">{isPrevious ? "Previous pick" : "Current pick"}</span><h4>{movie.title}</h4><p className="pick-contender-meta">{facts.year || "Year unavailable"}<span aria-hidden="true"> · </span>{facts.runtime ? `${facts.runtime} min` : "Runtime unavailable"}</p></div>
+              </div>
+              <p className="pick-contender-reason">{reason ? <MovieCopy titles={[movie.title]}>{reason}</MovieCopy> : "A recommendation reason isn’t available for this pick."}</p>
+              <button type="button" className="pick-contender-choice" disabled={disabled} onClick={isPrevious ? returnToPrevious : () => { setExpandedPair(null); setNotice({ key: pairKey, text: `Staying with ${movie.title}.` }); restoreFocus(); }}>{isPrevious ? `Return to ${movie.title}` : `Stay with ${movie.title}`}</button>
+            </article>;
+          })}
         </div>
-        <p className="pick-contender-caption">Keeping an option doesn’t save it to My Movies or mark it watched.</p>
+        <p className="pick-contender-caption">Just for this session. Neither choice saves a movie or changes your taste profile.</p>
       </div> : null}
     </section>
   );
