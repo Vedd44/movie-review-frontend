@@ -1,3 +1,4 @@
+import { parseSeenFeedback } from "./seenFeedback";
 export const ASK_INTENTS = Object.freeze({
   CURRENT_MOVIE_QUESTION: "CURRENT_MOVIE_QUESTION",
   MOVIE_RECOMMENDATION: "MOVIE_RECOMMENDATION",
@@ -35,6 +36,10 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
   const hasActiveHomePick = page === "home" && Boolean(context.currentPick?.id);
   if (!value) return ASK_INTENTS.UNKNOWN;
   if (/\b(?:new topic|start fresh|start over|forget (?:that|the previous|my previous)(?: request)?|change (?:the )?topic)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
+  const seenFeedback = parseSeenFeedback(value);
+  if (seenFeedback.followUp) return classifyAskIntent({ prompt: seenFeedback.followUp, context, conversation });
+  if (seenFeedback.question && (hasAnchor || hasActiveHomePick)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
+  if (seenFeedback.seen && (hasRecommendation || hasAnchor || hasActiveHomePick)) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (identificationPattern.test(value) || (normalize(conversation.activeTask || conversation.activeIntent)==='movie_identification' && /^(?:it\b|he\b|she\b|they\b|there\b|i remember\b|actually\b|no\b|the (?:man|woman|guy|movie|film)\b)/i.test(value) && !recommendationPattern.test(value))) return ASK_INTENTS.MOVIE_IDENTIFICATION;
   // Spoiler requests are questions about the anchored movie, never discovery prompts.
   // This must precede recommendation matching (e.g. "give me ...").
