@@ -45,6 +45,7 @@ function SearchResults() {
         signal: controller.signal,
       })
       .then((response) => {
+        if (controller.signal.aborted) return;
         setSearchPayload({
           results: response.data.results || [],
           top_match: response.data.top_match || null,
@@ -53,7 +54,7 @@ function SearchResults() {
         setError(null);
       })
       .catch((requestError) => {
-        if (axios.isCancel(requestError) || requestError?.code === "ERR_CANCELED") {
+        if (controller.signal.aborted || axios.isCancel(requestError) || requestError?.code === "ERR_CANCELED") {
           return;
         }
 
@@ -62,6 +63,7 @@ function SearchResults() {
         setSearchPayload({ results: [], top_match: null, related_results: [] });
       })
       .finally(() => {
+        if (controller.signal.aborted) return;
         setLoading(false);
       });
 
