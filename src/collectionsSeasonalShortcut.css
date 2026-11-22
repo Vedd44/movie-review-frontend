@@ -1,0 +1,10 @@
+.collections-seasonal-shortcut { margin: 0 0 20px; }
+.collections-seasonal-shortcut h2 { margin: 0 0 8px; font-size: 1rem; }
+.collections-seasonal-shortcut ul {
+  display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0;
+}
+.collections-seasonal-shortcut a {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  box-sizing: border-box; border-radius: 10px; text-decoration: none;
+}
+.collections-seasonal-shortcut a:focus-visible { outline: 2px solid #f4c15e; outline-offset: 2px; }

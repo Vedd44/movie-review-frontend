@@ -56,3 +56,23 @@ test('identification survives intervening questions and explicit new topics over
  expect(classifyAskIntent({prompt:'He used Polaroid photographs too.',conversation})).toBe('MOVIE_IDENTIFICATION');
  expect(classifyAskIntent({prompt:'Actually, start fresh: a romantic comedy',conversation})).toBe(ASK_INTENTS.GENERAL_RECOMMENDATION);
 });
+
+test.each([
+  ["Actually, change of plan: a comedy under 120 minutes", ASK_INTENTS.GENERAL_RECOMMENDATION, "Finding your pick…"],
+  ["Change of plans: a comedy under 120 minutes", ASK_INTENTS.GENERAL_RECOMMENDATION, "Finding your pick…"],
+  ["New plan: a comedy under 120 minutes", ASK_INTENTS.GENERAL_RECOMMENDATION, "Finding your pick…"],
+  ["Actually, shorter please", ASK_INTENTS.REFINE_RECOMMENDATION, "Finding your pick…"],
+  ["Start fresh: a comedy under 120 minutes", ASK_INTENTS.GENERAL_RECOMMENDATION, "Finding your pick…"],
+  ["Why does he change plans?", ASK_INTENTS.CURRENT_MOVIE_QUESTION, "Checking…"],
+  ["Does he have a new plan?", ASK_INTENTS.CURRENT_MOVIE_QUESTION, "Checking…"],
+  ["Another under 90 minutes", ASK_INTENTS.REFINE_RECOMMENDATION, "Finding your pick…"],
+])("distinguishes explicit plan resets from follow-ups: %s", (prompt, expected, loadingCopy) => {
+  const conversation = {
+    activeIntent: ASK_INTENTS.GENERAL_RECOMMENDATION,
+    activeRequest: "A serious thriller under 95 minutes",
+    anchorMovie: movieContext.movie,
+  };
+  const intent = classifyAskIntent({ prompt, context: movieContext, conversation });
+  expect(intent).toBe(expected);
+  expect(getAskLoadingCopy(intent)).toBe(loadingCopy);
+});

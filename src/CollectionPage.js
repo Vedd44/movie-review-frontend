@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
+import "./collectionsSeasonalShortcut.css";
 import CollectionPreviewCard from "./components/CollectionPreviewCard";
 import NotFound from "./NotFound";
 import MovieCardMeta from "./components/MovieCardMeta";
@@ -18,6 +19,8 @@ import collectionMovieManifest from "./generatedCollectionMovies.json";
 import { collectionMovieNote, collectionItemList, collectionSocialImagePath } from "./collectionEditorial";
 import { getSiteOrigin } from "./siteConfig";
 import { collectionCalendarDay, getNextCollectionBoundary, sortCollections } from "./collectionOrder";
+
+const christmasShortcuts = ["family-christmas-movies", "christmas-movies-for-adults"].map(getCollection);
 
 function CollectionCard({ movie, note, collection }) {
   const state = createCollectionVisit(collection, movie);
@@ -66,6 +69,10 @@ export function CollectionsIndex() {
     (category) => category.toLowerCase() === searchParams.get("category")
   ) || "All";
 
+  // Use the existing New York seasonal calendar; leave filtered results focused.
+  const showChristmasShortcuts = activeCategory === "All" &&
+    calendarDay?.slice(5, 7) === "12" && christmasShortcuts.every(Boolean);
+
   const setActiveCategory = (category) => {
     const nextParams = new URLSearchParams(searchParams);
     if (category === "All") nextParams.delete("category");
@@ -99,6 +106,20 @@ export function CollectionsIndex() {
           <h1 className="browse-title">Movie collections</h1>
           <p className="collection-dek">Handpicked collections for every mood, genre, era, and kind of movie night.</p>
         </section>
+        {showChristmasShortcuts ? (
+          <nav className="collections-seasonal-shortcut" aria-labelledby="collections-christmas-heading">
+            <h2 id="collections-christmas-heading">Christmas movie night</h2>
+            <ul>
+              {christmasShortcuts.map(({ slug, title }) => (
+                <li key={slug}>
+                  <Link to={`/collections/${slug}`} className="collections-filter-chip">
+                    {title} <span aria-hidden="true">→</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : null}
         <section className="collections-discovery" aria-label="Filter collections">
           <div className="collections-filter-row">
             <div className="collections-filter-chips" role="group" aria-label="Filter collections">

@@ -35,7 +35,10 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
   const hasRecommendation = /recommendation/.test(activeIntent) || (Boolean(conversation.activeRequest) && normalize(conversation.activeTask || activeIntent) !== 'movie_identification');
   const hasActiveHomePick = page === "home" && Boolean(context.currentPick?.id);
   if (!value) return ASK_INTENTS.UNKNOWN;
-  if (/\b(?:new topic|start fresh|start over|forget (?:that|the previous|my previous)(?: request)?|change (?:the )?topic)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
+  // Match the server’s explicit reset phrasing before the generic refinement rules.
+  // Anchor plan changes so questions about a character changing plans remain factual.
+  if (/^(?:actually[,:]?\s+)?(?:change of plans?|new plan)\b/i.test(value)
+    || /\b(?:new topic|start fresh|start over|forget (?:that|the previous|my previous)(?: request)?|change (?:the )?topic)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
   const seenFeedback = parseSeenFeedback(value);
   if (seenFeedback.followUp) return classifyAskIntent({ prompt: seenFeedback.followUp, context, conversation });
   if (seenFeedback.question && (hasAnchor || hasActiveHomePick)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
@@ -49,7 +52,6 @@ export const classifyAskIntent = ({ prompt, context = {}, conversation = {} } = 
   if (hasRecommendation && (continuationPattern.test(value) || constraintChangePattern.test(value))) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (hasActiveHomePick && homePickRefinementPattern.test(value)) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (page === "home" && homeDiscoveryPattern.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
-  if (/\b(?:new topic|start fresh|start over|forget (?:that|the previous|my previous)(?: request)?|change (?:the )?topic)\b/i.test(value)) return ASK_INTENTS.GENERAL_RECOMMENDATION;
   if (hasAnchor && /^(?:is|was|does|do|how|who|why|what)\b/i.test(value) && questionPattern.test(value) && !recommendationPattern.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
   if (refinementPattern.test(value) && hasRecommendation) return ASK_INTENTS.REFINE_RECOMMENDATION;
   if (hasRecommendation && hasAnchor && /^(?:why|is|was|does|how|what).*(?:this|that|it|one|pick)/i.test(value)) return ASK_INTENTS.CURRENT_MOVIE_QUESTION;
