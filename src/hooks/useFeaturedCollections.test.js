@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import useFeaturedCollections from './useFeaturedCollections';
-import { OCTOBER_END } from '../featuredCollections';
+import { OCTOBER_END, CHRISTMAS_START, CHRISTMAS_END } from '../featuredCollections';
 import { COLLECTIONS } from '../collections';
 
 afterEach(() => jest.useRealTimers());
@@ -28,6 +28,20 @@ test('rechecks a background tab when it becomes visible after the November bound
   const { result, unmount } = renderHook(() => useFeaturedCollections(COLLECTIONS));
   act(() => { jest.setSystemTime(OCTOBER_END + 1000); document.dispatchEvent(new Event('visibilitychange')); });
   expect(result.current.collections.map(c => c.slug)).toEqual(['best-feel-good-movies', 'great-thrillers-under-2-hours', 'animated-movies-for-adults']);
+  unmount();
+  expect(jest.getTimerCount()).toBe(0);
+});
+
+test.each([
+  [CHRISTMAS_START, 'Explore our collections', 'Christmas movie night'],
+  [CHRISTMAS_END, 'Christmas movie night', 'Explore our collections'],
+])('an open tab updates at the exact Christmas boundary %s', (boundary, before, after) => {
+  jest.useFakeTimers().setSystemTime(boundary - 1);
+  const { result, unmount } = renderHook(() => useFeaturedCollections(COLLECTIONS));
+  expect(result.current.heading).toBe(before);
+  act(() => jest.advanceTimersByTime(1));
+  expect(result.current.heading).toBe(after);
+  expect(result.current.collections).toHaveLength(3);
   unmount();
   expect(jest.getTimerCount()).toBe(0);
 });

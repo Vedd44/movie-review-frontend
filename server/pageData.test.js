@@ -123,9 +123,9 @@ test('persistent or long metadata throttling remains bounded and preserves retry
 
 test('homepage editorial links and cache expiration match the client campaign', async () => {
   const collections = require('./collections').readCollections();
-  const { getFeaturedCollections, OCTOBER_START, OCTOBER_END } = require('../src/featuredCollections');
+  const { getFeaturedCollections, OCTOBER_START, OCTOBER_END, CHRISTMAS_START, CHRISTMAS_END } = require('../src/featuredCollections');
   const fetcher = async () => ({ ok: true, json: async () => ({results:[]}) });
-  for (const now of [OCTOBER_START - 1, OCTOBER_START, OCTOBER_END - 500, OCTOBER_END]) {
+  for (const now of [OCTOBER_START - 1, OCTOBER_START, OCTOBER_END - 500, OCTOBER_END, CHRISTMAS_START - 500, CHRISTMAS_START, CHRISTMAS_END - 500, CHRISTMAS_END]) {
     const data = await getPageData('/', new URLSearchParams(), { collections, fetcher, now });
     const featured = getFeaturedCollections(collections, now);
     assert.ok(data.content.includes(featured.heading));
@@ -133,8 +133,25 @@ test('homepage editorial links and cache expiration match the client campaign', 
     const orderedLinks = [...data.content.matchAll(/href="\/collections\/([^"/]+)"/g)].map(match=>match[1]);
     assert.deepEqual(orderedLinks,featured.collections.map(c=>c.slug));
     assert.equal((data.content.match(/<li>/g) || []).length, 3);
-    if (now === OCTOBER_END - 500 || now === OCTOBER_START - 1) assert.equal(data.cacheMaxAgeSeconds, 0);
+    if ([OCTOBER_END - 500, OCTOBER_START - 1, CHRISTMAS_START - 500, CHRISTMAS_END - 500].includes(now)) assert.equal(data.cacheMaxAgeSeconds, 0);
     if (now < OCTOBER_END && now >= OCTOBER_START) assert.ok(data.cacheMaxAgeSeconds + data.cacheStaleSeconds <= Math.floor((OCTOBER_END - now) / 1000));
     if (now === OCTOBER_END) assert.ok(!data.content.includes('/collections/best-halloween-movies'));
   }
+});
+
+test('homepage Christmas cache cannot outlive either boundary and static fallbacks stay evergreen', async () => {
+  const collections = require('./collections').readCollections();
+  const fetcher = async () => ({ ok: true, json: async () => ({ results: [] }) });
+  const page = (now, featuredMode) => getPageData('/', new URLSearchParams(), { collections, fetcher, now, featuredMode });
+  for (const timestamp of ['2026-12-01T02:00:00Z', '2027-01-01T02:00:00Z']) {
+    const data = await page(Date.parse(timestamp));
+    assert.equal(data.cacheMaxAgeSeconds + data.cacheStaleSeconds, 3 * 60 * 60);
+  }
+  const dec = await page(Date.parse('2026-12-16T17:00:00Z'));
+  const jan = await page(Date.parse('2027-01-01T05:00:00Z'));
+  const fallback = await page(Date.parse('2026-12-16T17:00:00Z'), 'evergreen');
+  assert.match(dec.content, /Christmas movie night/);
+  assert.doesNotMatch(dec.content, /christmas-horror-movies/);
+  assert.doesNotMatch(jan.content, /Christmas movie night/);
+  assert.equal(fallback.content, jan.content);
 });

@@ -4,10 +4,10 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const { getPageData, renderPage, escapeHtml } = require('./pageData');
-const { OCTOBER_START, OCTOBER_END } = require('../src/featuredCollections');
+const { OCTOBER_START, OCTOBER_END, CHRISTMAS_START, CHRISTMAS_END } = require('../src/featuredCollections');
 
 test('the actual postbuild script keeps static homepage evergreen across campaign dates', async () => {
-  for (const now of [OCTOBER_START, OCTOBER_END - 1, OCTOBER_END]) {
+  for (const now of [OCTOBER_START, OCTOBER_END - 1, OCTOBER_END, CHRISTMAS_START, CHRISTMAS_END - 1, CHRISTMAS_END]) {
     const writes = new Map();
     const pending = [];
     const shell = '<html><head><title>ReelBot</title></head><body><div id="root"></div></body></html>';
@@ -39,5 +39,7 @@ test('the actual postbuild script keeps static homepage evergreen across campaig
     assert.ok(!html.includes('/collections/movies-like-heat'));
     assert.ok(!html.includes('/collections/best-halloween-movies'));
     assert.ok(!html.includes('Oh, the Horror!'));
+    assert.ok(!html.includes('/collections/best-christmas-movies'));
+    assert.ok(!html.includes('Christmas movie night'));
   }
 });

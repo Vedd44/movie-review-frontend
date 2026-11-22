@@ -1,5 +1,5 @@
 import { COLLECTIONS } from './collections';
-import { getFeaturedCollections, getNextFeaturedBoundary, OCTOBER_START, OCTOBER_END } from './featuredCollections';
+import { getFeaturedCollections, getNextFeaturedBoundary, OCTOBER_START, OCTOBER_END, CHRISTMAS_START, CHRISTMAS_END } from './featuredCollections';
 import manifest from './generatedCollectionMovies.json';
 import previews from './generatedCollectionPreviews.json';
 
@@ -16,10 +16,12 @@ test('runs only in October 2026 using New York midnight boundaries', () => {
   expect(slugs(NaN)).toEqual(evergreen);
 });
 
-test('boundary scheduling ends after this campaign', () => {
+test('schedules both transitions for each reviewed campaign', () => {
   expect(getNextFeaturedBoundary(OCTOBER_START - 1)).toBe(OCTOBER_START);
   expect(getNextFeaturedBoundary(OCTOBER_START)).toBe(OCTOBER_END);
-  expect(getNextFeaturedBoundary(OCTOBER_END)).toBeNull();
+  expect(getNextFeaturedBoundary(OCTOBER_END)).toBe(CHRISTMAS_START);
+  expect(getNextFeaturedBoundary(CHRISTMAS_START)).toBe(CHRISTMAS_END);
+  expect(getNextFeaturedBoundary(CHRISTMAS_END)).toBeNull();
 });
 
 test('uses unique existing collections without changing catalog order and has cached posters', () => {
@@ -63,4 +65,22 @@ test('the November mix keeps all 37 reviewed films, distinct lineups and cached 
   });
   featured.forEach(c => c.movies.slice(0, 3).forEach(slug => expect(previews[slug]?.poster_path).toBeTruthy()));
   expect(JSON.stringify(COLLECTIONS)).toBe(before);
+});
+
+test('December shows exactly three Christmas collections between New York midnight boundaries', () => {
+  const christmas = ['best-christmas-movies', 'family-christmas-movies', 'christmas-movies-for-adults'];
+  const start = Date.parse('2026-12-01T05:00:00Z');
+  const end = Date.parse('2027-01-01T05:00:00Z');
+  expect(slugs(start - 1)).toEqual(evergreen);
+  expect(slugs(start)).toEqual(christmas);
+  expect(slugs(end - 1)).toEqual(christmas);
+  expect(slugs(end)).toEqual(evergreen);
+  expect(slugs(Date.parse('2027-12-15T17:00:00Z'))).toEqual(evergreen);
+  const seasonal = getFeaturedCollections(COLLECTIONS, start);
+  expect(seasonal.heading).toBe('Christmas movie night');
+  expect(seasonal.isOctober).toBe(false);
+  expect(Object.keys(seasonal.notes)).toEqual(christmas);
+  expect(getFeaturedCollections(COLLECTIONS, end)).toEqual(getFeaturedCollections(COLLECTIONS, start - 1));
+  expect(getFeaturedCollections(COLLECTIONS, start, 'evergreen')).toEqual(getFeaturedCollections(COLLECTIONS, end));
+  seasonal.collections.forEach(c => c.movies.slice(0, 3).forEach(slug => expect(previews[slug]?.poster_path).toBeTruthy()));
 });
