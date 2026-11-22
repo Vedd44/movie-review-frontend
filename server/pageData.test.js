@@ -143,13 +143,15 @@ test('homepage Christmas cache cannot outlive either boundary and static fallbac
   const collections = require('./collections').readCollections();
   const fetcher = async () => ({ ok: true, json: async () => ({ results: [] }) });
   const page = (now, featuredMode) => getPageData('/', new URLSearchParams(), { collections, fetcher, now, featuredMode });
-  for (const timestamp of ['2026-12-01T02:00:00Z', '2027-01-01T02:00:00Z']) {
+  for (const timestamp of ['2026-11-21T02:00:00Z', '2027-01-01T02:00:00Z']) {
     const data = await page(Date.parse(timestamp));
     assert.equal(data.cacheMaxAgeSeconds + data.cacheStaleSeconds, 3 * 60 * 60);
   }
+  const activeNow = await page(Date.parse('2026-11-22T01:24:00Z'));
   const dec = await page(Date.parse('2026-12-16T17:00:00Z'));
   const jan = await page(Date.parse('2027-01-01T05:00:00Z'));
   const fallback = await page(Date.parse('2026-12-16T17:00:00Z'), 'evergreen');
+  assert.equal(activeNow.content, dec.content);
   assert.match(dec.content, /Christmas movie night/);
   assert.doesNotMatch(dec.content, /christmas-horror-movies/);
   assert.doesNotMatch(jan.content, /Christmas movie night/);

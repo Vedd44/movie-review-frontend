@@ -2,7 +2,7 @@
 // Explicit offsets avoid dependence on the browser/server timezone or annual recurrence.
 const OCTOBER_START = Date.parse("2026-10-01T00:00:00-04:00");
 const OCTOBER_END = Date.parse("2026-11-01T00:00:00-04:00");
-const CHRISTMAS_START = Date.parse("2026-12-01T00:00:00-05:00");
+const CHRISTMAS_START = Date.parse("2026-11-21T00:00:00-05:00");
 const CHRISTMAS_END = Date.parse("2027-01-01T00:00:00-05:00");
 const FEATURED_BOUNDARIES = [OCTOBER_START, OCTOBER_END, CHRISTMAS_START, CHRISTMAS_END];
 // Reviewed November handoff: three distinct viewing needs from the existing catalog.

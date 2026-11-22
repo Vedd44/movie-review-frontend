@@ -67,12 +67,13 @@ test('the November mix keeps all 37 reviewed films, distinct lineups and cached 
   expect(JSON.stringify(COLLECTIONS)).toBe(before);
 });
 
-test('December shows exactly three Christmas collections between New York midnight boundaries', () => {
+test('the holiday window shows exactly three Christmas collections between New York midnight boundaries', () => {
   const christmas = ['best-christmas-movies', 'family-christmas-movies', 'christmas-movies-for-adults'];
-  const start = Date.parse('2026-12-01T05:00:00Z');
+  const start = Date.parse('2026-11-21T05:00:00Z');
   const end = Date.parse('2027-01-01T05:00:00Z');
   expect(slugs(start - 1)).toEqual(evergreen);
   expect(slugs(start)).toEqual(christmas);
+  expect(slugs(Date.parse('2026-11-22T01:24:00Z'))).toEqual(christmas);
   expect(slugs(end - 1)).toEqual(christmas);
   expect(slugs(end)).toEqual(evergreen);
   expect(slugs(Date.parse('2027-12-15T17:00:00Z'))).toEqual(evergreen);
